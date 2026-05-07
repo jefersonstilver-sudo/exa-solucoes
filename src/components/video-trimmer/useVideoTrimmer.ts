@@ -41,7 +41,17 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
   const endTime = state.startTime + windowSize;
   const selectedDuration = Math.round(windowSize * 10) / 10;
 
-  // Load video and generate thumbnails
+  // Refs to read latest values inside RAF loops without stale closures
+  const startTimeRef = useRef(0);
+  const endTimeRef = useRef(0);
+  const isPlayingRef = useRef(false);
+  useEffect(() => {
+    startTimeRef.current = state.startTime;
+    endTimeRef.current = state.startTime + Math.min(maxDuration, state.duration || maxDuration);
+    isPlayingRef.current = state.isPlaying;
+  }, [state.startTime, state.duration, state.isPlaying, maxDuration]);
+
+  // Load video (preview) — never used for thumbnail seeks
   useEffect(() => {
     const url = URL.createObjectURL(file);
     videoUrl.current = url;
@@ -51,64 +61,98 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
 
     video.src = url;
     video.preload = 'auto';
+    video.muted = true;
 
-    video.onloadedmetadata = () => {
+    const onMeta = () => {
       const dur = video.duration;
       setState(prev => ({
         ...prev,
         duration: dur,
         startTime: 0,
+        currentTime: 0,
         isReady: true,
       }));
-      generateThumbnails(video, dur);
+      try { video.currentTime = 0.001; } catch {}
+      generateThumbnailsOffscreen(url, dur);
     };
 
+    const onTimeUpdate = () => {
+      setState(prev => {
+        if (Math.abs(prev.currentTime - video.currentTime) < 0.03) return prev;
+        return { ...prev, currentTime: video.currentTime };
+      });
+    };
+
+    video.addEventListener('loadedmetadata', onMeta);
+    video.addEventListener('timeupdate', onTimeUpdate);
+    video.addEventListener('seeked', onTimeUpdate);
+
     return () => {
+      video.removeEventListener('loadedmetadata', onMeta);
+      video.removeEventListener('timeupdate', onTimeUpdate);
+      video.removeEventListener('seeked', onTimeUpdate);
       URL.revokeObjectURL(url);
       cancelAnimationFrame(animFrameRef.current);
     };
   }, [file, maxDuration]);
 
-  const generateThumbnails = async (video: HTMLVideoElement, duration: number) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // When the user drags the red window, immediately seek the preview to its start
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !state.isReady) return;
+    if (state.isPlaying) return;
+    const target = state.startTime;
+    if (Math.abs(video.currentTime - target) > 0.05) {
+      try { video.currentTime = target; } catch {}
+    }
+  }, [state.startTime, state.isReady, state.isPlaying]);
 
+  const generateThumbnailsOffscreen = async (url: string, duration: number) => {
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const isIOS = /iPad|iPhone|iPod/.test(ua) ||
       (/(Macintosh).*Version\/.+ Mobile/.test(ua));
     const isAndroid = /Android/i.test(ua);
-    const isMobile = isIOS || isAndroid;
-
-    // Em mobile, o trimmer usa um slider simples (sem thumbnails),
-    // então não desperdiçamos seeks pesados que travam o Safari.
-    if (isMobile) {
+    if (isIOS || isAndroid) {
       setState(prev => ({ ...prev, thumbnails: [] }));
       return;
     }
 
+    const offVideo = document.createElement('video');
+    offVideo.src = url;
+    offVideo.muted = true;
+    offVideo.preload = 'auto';
+    (offVideo as any).playsInline = true;
+
+    await new Promise<void>((resolve) => {
+      const onLoaded = () => { offVideo.removeEventListener('loadedmetadata', onLoaded); resolve(); };
+      offVideo.addEventListener('loadedmetadata', onLoaded);
+    });
+
     const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
     const lowEnd = isSafari;
-
     const thumbCount = lowEnd
       ? Math.min(8, Math.max(5, Math.floor(duration)))
       : Math.min(16, Math.max(8, Math.floor(duration * 1.5)));
+
+    const canvas = document.createElement('canvas');
     canvas.width = lowEnd ? 120 : 160;
     canvas.height = lowEnd ? 68 : 90;
-    const thumbs: string[] = [];
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
+    const thumbs: string[] = [];
     for (let i = 0; i < thumbCount; i++) {
       const time = (i / thumbCount) * duration;
       try {
-        await seekTo(video, time);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        await seekTo(offVideo, time);
+        ctx.drawImage(offVideo, 0, 0, canvas.width, canvas.height);
         thumbs.push(canvas.toDataURL('image/jpeg', 0.55));
       } catch {
         thumbs.push('');
       }
     }
-
     setState(prev => ({ ...prev, thumbnails: thumbs }));
+    try { offVideo.removeAttribute('src'); offVideo.load(); } catch {}
   };
 
   const seekTo = (video: HTMLVideoElement, time: number): Promise<void> => {
@@ -122,7 +166,6 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     });
   };
 
-  // Only setter: slides the fixed window along the timeline
   const setStartTime = useCallback((time: number) => {
     setState(prev => {
       const ws = Math.min(maxDuration, prev.duration);
@@ -135,30 +178,37 @@ export const useVideoTrimmer = ({ file, maxDuration }: UseVideoTrimmerProps) => 
     const video = videoRef.current;
     if (!video) return;
 
-    setState(prev => {
-      if (prev.isPlaying) {
-        video.pause();
-        cancelAnimationFrame(animFrameRef.current);
-        return { ...prev, isPlaying: false };
-      } else {
-        const ws = Math.min(maxDuration, prev.duration);
-        const end = prev.startTime + ws;
-        video.currentTime = prev.startTime;
-        video.play();
+    if (isPlayingRef.current) {
+      video.pause();
+      cancelAnimationFrame(animFrameRef.current);
+      isPlayingRef.current = false;
+      setState(prev => ({ ...prev, isPlaying: false }));
+      return;
+    }
 
-        const tick = () => {
-          if (video.currentTime >= end) {
-            video.currentTime = prev.startTime;
-          }
-          setState(s => ({ ...s, currentTime: video.currentTime }));
-          animFrameRef.current = requestAnimationFrame(tick);
-        };
-        tick();
+    const start = startTimeRef.current;
+    const end = endTimeRef.current;
+    if (video.currentTime < start || video.currentTime >= end - 0.05) {
+      video.currentTime = start;
+    }
+    video.play().catch(() => {});
+    isPlayingRef.current = true;
+    setState(prev => ({ ...prev, isPlaying: true }));
 
-        return { ...prev, isPlaying: true };
+    const tick = () => {
+      if (!isPlayingRef.current) return;
+      const s = startTimeRef.current;
+      const e = endTimeRef.current;
+      if (video.currentTime >= e) {
+        video.currentTime = s;
+      } else if (video.currentTime < s) {
+        video.currentTime = s;
       }
-    });
-  }, [maxDuration]);
+      setState(prevSt => ({ ...prevSt, currentTime: video.currentTime }));
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+    tick();
+  }, []);
 
   const seekPreview = useCallback((time: number) => {
     const video = videoRef.current;
