@@ -142,13 +142,50 @@ const QrCodesRastreaveis: React.FC = () => {
     );
   };
 
-  // Agrupa logs por título para estatísticas
+  // Estatísticas
   const stats = useMemo(() => {
     const totalCliques = logs.length;
     const titulosUnicos = new Set(logs.map((l) => l.titulo).filter(Boolean)).size;
     const prediosAtivos = new Set(logs.map((l) => l.cliente_id).filter(Boolean)).size;
     return { totalCliques, titulosUnicos, prediosAtivos };
   }, [logs]);
+
+  // Filtro por prédio (cliente_id)
+  const [predioFiltro, setPredioFiltro] = useState<string>('all');
+
+  // Agrupa logs por prédio (cliente_id)
+  const grupos = useMemo(() => {
+    const map = new Map<string, { cliente_id: string; titulo?: string; nome_cliente?: string; link?: string; horarios: string[] }>();
+    logs.forEach((l) => {
+      const key = l.cliente_id || 'unknown';
+      if (predioFiltro !== 'all' && key !== predioFiltro) return;
+      const existing = map.get(key);
+      if (existing) {
+        if (l.data_hora) existing.horarios.push(l.data_hora);
+      } else {
+        map.set(key, {
+          cliente_id: key,
+          titulo: l.titulo,
+          nome_cliente: l.nome_cliente,
+          link: l.link,
+          horarios: l.data_hora ? [l.data_hora] : [],
+        });
+      }
+    });
+    // Ordena horários desc
+    return Array.from(map.values())
+      .map((g) => ({ ...g, horarios: g.horarios.sort((a, b) => (a < b ? 1 : -1)) }))
+      .sort((a, b) => b.horarios.length - a.horarios.length);
+  }, [logs, predioFiltro]);
+
+  // Lista de prédios disponíveis no filtro (a partir dos logs)
+  const prediosDisponiveis = useMemo(() => {
+    const ids = Array.from(new Set(logs.map((l) => l.cliente_id).filter(Boolean))) as string[];
+    return ids.map((cid) => ({
+      cid,
+      nome: buildingsByCid[cid]?.nome || cid,
+    }));
+  }, [logs, buildingsByCid]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -186,17 +223,31 @@ const QrCodesRastreaveis: React.FC = () => {
           </Card>
         </div>
 
-        {/* Search */}
+        {/* Filtros */}
         <Card className="p-4 shadow-sm border-slate-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Buscar por título da campanha..."
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="pl-10 h-11 border-slate-200"
-            />
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Buscar por título da campanha..."
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                className="pl-10 h-11 border-slate-200"
+              />
+            </div>
+            <select
+              value={predioFiltro}
+              onChange={(e) => setPredioFiltro(e.target.value)}
+              className="h-11 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 md:w-64"
+            >
+              <option value="all">Todos os prédios</option>
+              {prediosDisponiveis.map((p) => (
+                <option key={p.cid} value={p.cid}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
           </div>
         </Card>
 
@@ -207,12 +258,12 @@ const QrCodesRastreaveis: React.FC = () => {
           </Card>
         )}
 
-        {/* Logs */}
+        {/* Grupos */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-[#C7141A]" />
           </div>
-        ) : logs.length === 0 ? (
+        ) : grupos.length === 0 ? (
           <Card className="p-12 text-center border-dashed border-slate-300 bg-white/50">
             <QrCode className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-600 font-medium">Nenhum clique registrado ainda</p>
@@ -221,18 +272,18 @@ const QrCodesRastreaveis: React.FC = () => {
             </p>
           </Card>
         ) : (
-          <div className="grid gap-3">
-            {logs.map((log, i) => {
-              const building = log.cliente_id ? buildingsByCid[log.cliente_id] : undefined;
-              const video = findVideo(log.titulo);
+          <div className="grid gap-4">
+            {grupos.map((g) => {
+              const building = buildingsByCid[g.cliente_id];
+              const video = findVideo(g.titulo);
               return (
                 <Card
-                  key={i}
-                  className="p-4 shadow-sm hover:shadow-md transition-shadow border-slate-200"
+                  key={g.cliente_id}
+                  className="p-5 shadow-sm hover:shadow-md transition-shadow border-slate-200"
                 >
-                  <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex flex-col md:flex-row gap-5">
                     {/* Foto prédio */}
-                    <div className="flex-shrink-0 w-full md:w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-full md:w-40 h-32 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
                       {building?.foto ? (
                         <img
                           src={building.foto}
@@ -240,12 +291,12 @@ const QrCodesRastreaveis: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <Building2 className="w-8 h-8 text-slate-300" />
+                        <Building2 className="w-10 h-10 text-slate-300" />
                       )}
                     </div>
 
-                    {/* Vídeo miniatura */}
-                    <div className="flex-shrink-0 w-full md:w-32 h-24 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center relative">
+                    {/* Vídeo */}
+                    <div className="flex-shrink-0 w-full md:w-48 h-32 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
                       {video?.url ? (
                         <video
                           src={video.url}
@@ -257,47 +308,66 @@ const QrCodesRastreaveis: React.FC = () => {
                           preload="metadata"
                         />
                       ) : (
-                        <VideoIcon className="w-8 h-8 text-slate-600" />
+                        <VideoIcon className="w-10 h-10 text-slate-600" />
                       )}
                     </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-start justify-between gap-2 flex-wrap">
-                          <h3 className="font-semibold text-slate-900 truncate">
-                            {log.titulo || 'Sem título'}
+                    {/* Info + Horários */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-lg text-slate-900 truncate">
+                            {building?.nome || g.nome_cliente || g.cliente_id}
                           </h3>
-                          <Badge variant="secondary" className="text-xs font-mono">
-                            {log.cliente_id}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-slate-600 mt-1 flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          {building?.nome || log.nome_cliente || '—'}
                           {building?.bairro && (
-                            <span className="text-slate-400">· {building.bairro}</span>
+                            <p className="text-xs text-slate-500">{building.bairro}</p>
                           )}
-                        </p>
-                        {log.link && (
-                          <div className="mt-2 flex items-start gap-1.5 text-xs">
-                            <LinkIcon className="w-3.5 h-3.5 flex-shrink-0 text-[#C7141A] mt-0.5" />
-                            <a
-                              href={log.link}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[#C7141A] hover:underline break-all font-mono"
-                            >
-                              {log.link}
-                            </a>
-                          </div>
-                        )}
+                        </div>
+                        <Badge className="bg-[#C7141A]/10 text-[#C7141A] hover:bg-[#C7141A]/15 border-0">
+                          {g.horarios.length} {g.horarios.length === 1 ? 'clique' : 'cliques'}
+                        </Badge>
                       </div>
-                      <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
-                        <span className="text-xs text-slate-500 flex items-center gap-1.5">
+
+                      {g.titulo && (
+                        <p className="text-sm text-slate-600 mt-1 truncate">
+                          <span className="text-slate-400">Campanha:</span> {g.titulo}
+                        </p>
+                      )}
+
+                      {g.link && (
+                        <div className="mt-2 flex items-start gap-1.5 text-xs">
+                          <LinkIcon className="w-3.5 h-3.5 flex-shrink-0 text-[#C7141A] mt-0.5" />
+                          <a
+                            href={g.link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[#C7141A] hover:underline break-all font-mono"
+                          >
+                            {g.link}
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Lista de horários */}
+                      <div className="mt-3 pt-3 border-t border-slate-100">
+                        <p className="text-xs uppercase tracking-wide text-slate-400 mb-2 flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5" />
-                          {formatDateBR(log.data_hora)}
-                        </span>
+                          Escaneamentos
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                          {g.horarios.length === 0 ? (
+                            <span className="text-xs text-slate-400">Sem horário registrado</span>
+                          ) : (
+                            g.horarios.map((h, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs px-2 py-1 rounded-md bg-slate-100 text-slate-700 font-mono"
+                              >
+                                {formatDateBR(h)}
+                              </span>
+                            ))
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
