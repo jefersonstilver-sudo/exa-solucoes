@@ -180,13 +180,13 @@ const QrCodesRastreaveis: React.FC = () => {
         setBuildingsById(bById);
         setBuildingsByCid(bByCid);
 
-        // Buscar pedido_videos + videos
+        // Buscar pedido_videos + videos — só os marcados com QR rastreável (qr_config.enabled = true)
         const pedidoIds = pedidosArr.map((p) => p.id);
         let pedidoVideos: any[] = [];
         if (pedidoIds.length) {
           const { data } = await supabase
             .from('pedido_videos')
-            .select('pedido_id, videos(id, nome, url, created_at)')
+            .select('pedido_id, qr_config, videos(id, nome, url, created_at)')
             .in('pedido_id', pedidoIds);
           pedidoVideos = (data || []) as any[];
         }
@@ -195,8 +195,11 @@ const QrCodesRastreaveis: React.FC = () => {
         pedidoVideos.forEach((pv) => {
           const v = pv.videos;
           if (!v) return;
+          // ⚡ Só vídeos marcados como QR rastreável no upload
+          const qr = pv.qr_config as any;
+          if (!qr || qr.enabled !== true) return;
+
           if (!videosByPedido[pv.pedido_id]) videosByPedido[pv.pedido_id] = [];
-          // evitar duplicatas
           if (!videosByPedido[pv.pedido_id].some((x) => x.id === v.id)) {
             videosByPedido[pv.pedido_id].push({
               id: v.id,
@@ -207,15 +210,18 @@ const QrCodesRastreaveis: React.FC = () => {
           }
         });
 
-        const built: Pedido[] = pedidosArr.map((p) => ({
-          id: p.id,
-          data_inicio: p.data_inicio,
-          data_fim: p.data_fim,
-          status: p.status,
-          plano_meses: p.plano_meses || 0,
-          lista_predios: p.lista_predios || [],
-          videos: videosByPedido[p.id] || [],
-        }));
+        // Pedidos sem nenhum vídeo rastreável são descartados
+        const built: Pedido[] = pedidosArr
+          .map((p) => ({
+            id: p.id,
+            data_inicio: p.data_inicio,
+            data_fim: p.data_fim,
+            status: p.status,
+            plano_meses: p.plano_meses || 0,
+            lista_predios: p.lista_predios || [],
+            videos: videosByPedido[p.id] || [],
+          }))
+          .filter((p) => p.videos.length > 0);
 
         setPedidos(built);
       } catch (e: any) {
