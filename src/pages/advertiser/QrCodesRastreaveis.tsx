@@ -10,7 +10,22 @@ interface QrLog {
   data_hora?: string;
 }
 
-const API_BASE = 'http://18.228.252.149:8000/qrcode/logs';
+const fetchLogs = async (cid: string, titulo: string, signal?: AbortSignal): Promise<QrLog[]> => {
+  const { data, error } = await supabase.functions.invoke('qrcode-logs-proxy', {
+    body: null,
+    method: 'GET' as any,
+    headers: {},
+  });
+  // fallback: usar fetch direto com query string para a edge function
+  const SUPABASE_URL = (supabase as any).supabaseUrl || 'https://aakenoljsycyrcrchgxj.supabase.co';
+  const url = new URL(`${SUPABASE_URL}/functions/v1/qrcode-logs-proxy`);
+  url.searchParams.set('cliente_id', cid);
+  if (titulo.trim()) url.searchParams.set('titulo', titulo.trim());
+  const res = await fetch(url.toString(), { signal });
+  if (!res.ok) return [];
+  const json = await res.json().catch(() => []);
+  return Array.isArray(json) ? json : [];
+};
 
 const formatDateBR = (iso?: string) => {
   if (!iso) return '-';
