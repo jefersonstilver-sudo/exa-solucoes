@@ -1,42 +1,33 @@
-## Diagnóstico
+# Liberar todos os 10 slots de vídeo para pedidos verticais
 
-Existem 3 problemas se sobrepondo em `useVideoTrimmer.ts`:
+## Causa raiz
 
-1. **Erro de hooks** (`Rendered more hooks than during the previous render`): a montagem do modal está executando ordem de hooks diferente entre renders. A causa prática é o `useEffect` extra adicionado depois (sync dos refs `startTimeRef`/`endTimeRef`/`isPlayingRef`) combinado com a remontagem rápida do modal quando `trimmerFile` chega — em StrictMode o primeiro mount aborta e o segundo encontra contagem diferente. Vou consolidar em um único bloco de inicialização e mover a sincronização dos refs para dentro do mesmo lugar onde o `setState` ocorre (sem `useEffect` redundante).
+A função `validateSlotCapacity` em `src/services/videoUploadService.ts` (linha 52-66) lê `produtos_exa.max_videos_por_pedido` e bloqueia qualquer slot acima desse valor.
 
-2. **Thumbnails não aparecem** (timeline cinza/pulsante): o `<video>` offscreen é criado com `document.createElement` mas **não é anexado ao DOM**. Em Chrome/Safari atuais isso resulta em `drawImage` pintando frame vazio e/ou `seeked` que nunca dispara — daí a sensação de "tudo travado". Além disso, o código pula totalmente o mobile e só escuta `loadedmetadata` (sem esperar `loadeddata`/decode do primeiro frame).
+Estado atual no banco:
+- `horizontal` → `max_videos_por_pedido = 10` ✅
+- `vertical_premium` → `max_videos_por_pedido = 1` ❌ (causa do erro)
 
-3. **Seek do offVideo pode pendurar para sempre**: `seekTo` aguarda evento `seeked` sem timeout. Se o navegador rejeitar o seek (tempo == currentTime, fim do arquivo, etc.), a Promise nunca resolve e a geração de thumbs trava — bloqueando indiretamente a UX.
+O pedido `b4b2f33a-d37d-40a8-98fb-77177fa0b35f` é `vertical_premium`, daí o bloqueio do Slot 2.
 
-## O que será alterado
+## Correção (1 alteração, sem mexer em UI/lógica)
 
-Arquivo único: `src/components/video-trimmer/useVideoTrimmer.ts`.
+**Migração SQL** atualizando o produto vertical para o mesmo padrão do horizontal (alinhado à política "Max 10 video slots per order"):
 
-### 1. Estabilizar a ordem dos hooks
-- Manter exatamente esta sequência (sem hooks condicionais): `useRef` × N → `useState` → `useEffect` (load) → `useEffect` (sync de seek ao mudar startTime) → `useCallback` × 4.
-- Remover o `useEffect` separado que sincroniza `startTimeRef/endTimeRef/isPlayingRef` e fazer essa atualização **inline** no callback de `setState` (atribuição direta nos refs antes do `setState`), eliminando um hook e a corrida que causa o erro de StrictMode.
+```sql
+UPDATE produtos_exa
+SET max_videos_por_pedido = 10
+WHERE codigo = 'vertical_premium';
+```
 
-### 2. Geração de thumbnails robusta
-- Criar o `<video>` offscreen, **anexar** a um container `position:fixed; left:-99999px; width:1px; height:1px;` no `document.body`, e remover ao final.
-- Aguardar `loadeddata` (não só `loadedmetadata`) antes do primeiro draw.
-- Substituir `seekTo` por uma versão com **timeout de 800 ms**: resolve mesmo se `seeked` não disparar, garantindo progresso.
-- Preferir `requestVideoFrameCallback` quando disponível (Chrome) para draw após frame realmente decodado; fallback para `seeked` + `setTimeout(40)`.
-- Clamp do tempo do seek para `Math.min(time, duration - 0.05)`, evitando seeks no fim do arquivo.
-- Permitir thumbnails também em mobile (qualidade reduzida, 5–6 thumbs), removendo o early-return do iOS/Android. Se falhar, segue sem thumbs (UX já tem fallback de gradient pulsante).
-- Try/finally para sempre limpar o nó offscreen, mesmo em erro.
+## Validação
 
-### 3. Loop de play mais leve
-- Em vez de chamar `setState` a cada `requestAnimationFrame` (re-render por frame), o RAF apenas **lê** `video.currentTime` e o `state.currentTime` continua sendo atualizado pelo listener `timeupdate` nativo do `<video>` (já existe). O RAF passa a ter como única responsabilidade fazer o loop A↔B (voltar para `start` ao chegar em `end`). Isso elimina re-render por frame que é parte da sensação de "travado".
+Após aplicar a migração:
+1. Recarregar `/anunciante/pedido/b4b2f33a-d37d-40a8-98fb-77177fa0b35f`
+2. Tentar upload no Slot 2 — deve aceitar (e até o Slot 10)
+3. Verificar que pedidos `horizontal` continuam aceitando 10 slots (sem regressão)
 
-### 4. Effect de load com deps mínimas
-- Remover `maxDuration` do array de deps do effect de load (ele não influencia o carregamento do `src`), evitando recargas desnecessárias do `<video>` quando o pai re-renderiza.
+## Fora do escopo
 
-## Resultado esperado
-
-- Sem erro de hooks ao abrir o modal.
-- Thumbnails aparecem na timeline (8–16 no desktop, 5–6 no mobile).
-- Playhead branco acompanha o vídeo em tempo real e pode ser arrastado.
-- Arrastar a janela vermelha re-posiciona o preview imediatamente.
-- Sem travas mesmo se o navegador "engolir" um evento `seeked`.
-
-Nenhuma outra UI/fluxo é alterada.
+- Não alterar nenhuma UI, fluxo de upload, trimmer ou validações de status do pedido.
+- Não mexer em `videoUploadService.ts` — a lógica está correta; apenas o dado do produto está errado.
