@@ -1,0 +1,1 @@
+UPDATE public.produtos_exa SET max_videos_por_pedido = 10 WHERE codigo = 'vertical_premium';
