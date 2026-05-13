@@ -461,6 +461,15 @@ const OrdersPage = () => {
           onOpenChange={setShowCreateOrder}
           onSuccess={refetch}
         />
+
+        {/* Visão do cliente (impersonação interna) */}
+        <ClientOrderViewSheet
+          open={!!clientView}
+          onOpenChange={(v) => { if (!v) setClientView(null); }}
+          pedidoId={clientView?.pedidoId || null}
+          clientId={clientView?.clientId || null}
+          clientLabel={clientView?.clientLabel || null}
+        />
       </div>
     );
   }
