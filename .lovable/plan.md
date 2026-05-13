@@ -1,90 +1,49 @@
-## Plano consolidado — Segurança (3 superfícies) + Filtros/Ordenação de Prédios
+# Correção dos filtros da página /super_admin/predios
 
-Duas frentes independentes nesta entrega. Nenhuma altera UX/funcionalidade fora do escopo.
+## Diagnóstico (causa raiz)
 
----
+Auditando a base e o código:
 
-## PARTE A — Refatoração de Segurança (3 superfícies públicas)
+- DB tem hoje: `ativo` (18), `interno` (3), `instalacao` (2). Não existe `manutenção` nem `inativo`.
+- Em `BuildingsFilters3.tsx` os valores comparados estão com acento/cedilha: `'manutenção'` e `'instalação'`. Por isso a pílula **Instalação aparece 0** mesmo com 2 prédios.
+- Não existe pílula para **Internos**, então os 3 prédios internos não têm filtro próprio (apesar de virem na lista).
+- A linha do dropdown **Airbnb / Padrão / Painéis / Device** existe no componente, mas fica "escondida" como terceira linha; o usuário relata não vê-la. Precisa ficar visível e usável no fluxo.
+- `tem_airbnb` está corretamente lido (2 prédios marcados), só falta dar destaque ao filtro.
 
-Endurecer 3 policies hoje abertas (`USING true`) sem quebrar fluxos públicos. **Garantia: zero exposição de dados de representante legal.**
+## O que vai mudar (somente UI/filtros)
 
-### A1. `proposals` — propostas públicas por token
-- Criar RPC `public.get_public_proposal(_token text)` `SECURITY DEFINER STABLE` retornando apenas a proposta cujo token bate, e apenas colunas necessárias para a página pública (sem CPF, sem dados internos).
-- Substituir policy `SELECT USING true` por:
-  - `super_admin`/`admin`/`comercial` via `has_role()`
-  - `auth.uid() = user_id` (cliente dono)
-  - Anônimo somente via RPC.
-- Refatorar a página pública de proposta para usar `supabase.rpc('get_public_proposal', { _token })`.
+Arquivos: `src/components/admin/buildings/v3/BuildingsFilters3.tsx` e `src/pages/admin/BuildingsManagement3.tsx`. Nada em RLS, edge functions, cards, modais ou fluxo comercial.
 
-### A2. `configuracoes_empresa` — split público vs sensível
-- Criar RPC `public.get_public_company_info()` `SECURITY DEFINER STABLE` retornando APENAS: razão social, nome fantasia, CNPJ, endereço, telefones institucionais, e-mail institucional, website, instagram, foro. **NUNCA** `representante_cpf`, `representante_rg`, `representante_email`.
-- Remover policy pública de `SELECT`. Manter `SELECT` apenas para `super_admin`/`admin` e `service_role` (Edge Functions de contrato).
-- Refatorar `useCompanySettings` com 2 modos:
-  - **Público (default):** chama RPC. Campos sensíveis ficam ausentes.
-  - **Admin (`{ includeSensitive: true }`):** select direto na tabela (RLS bloqueia se não for admin).
-- Auditar usos de `representante_cpf/rg/email` no frontend — só podem aparecer em telas admin ou PDFs server-side.
+### 1. Corrigir os status para os valores reais do DB
+- `'manutenção'` → `'manutencao'`
+- `'instalação'` → `'instalacao'`
+- Adicionar pílula **Internos** com `status === 'interno'` (ícone Lock/EyeOff, cor roxa, alinhado ao memory de visibilidade — Interno é admin-only).
+- Contagens das pílulas passam a refletir o que existe (Ativos 18, Internos 3, Instalação 2, Inativos 0, Manutenção 0).
 
-### A3. `painels` — pareamento sem expor credenciais
-- Criar RPC `public.get_painel_pairing_info(_codigo_pareamento text)` retornando apenas campos seguros (id, nome, predio_id, status, código). **Sem** `senha_anydesk`, `token_acesso`, `ip`, `mac`.
-- Remover policy `SELECT USING true`. Manter `SELECT` para `super_admin`/`admin`/`admin_marketing` e `service_role`.
-- Atualizar páginas públicas (`PainelAguardandoVinculo`, `PublicBuildingDisplay`, monitor) para usar a RPC.
+### 2. Tornar o filtro Airbnb explícito e visível
+- Promover Airbnb a uma **pílula toggle dedicada** ao lado das pílulas de status (3 estados em 1 clique: Todos → Com Airbnb → Sem Airbnb), com ícone Home e contagem (`com Airbnb: N`).
+- Manter também na linha de filtros refinados o restante (Padrão de público, Painéis, Device) como Selects, mas com rótulos mais claros (`Padrão: Alto/Médio/Normal`, `Painéis: Com ativos/Sem`, `Device: Online/Offline/Sem`).
 
-### Princípios de segurança
-- Todas as funções `SECURITY DEFINER` + `SET search_path = public` + `STABLE`.
-- `GRANT EXECUTE` apenas onde necessário (anon/authenticated).
-- Nenhuma alteração em RLS de outras tabelas, edge functions ou fluxos administrativos.
-- Validação pós-deploy: `supabase--linter`, testes manuais dos 3 fluxos públicos, e tentativa de leitura anônima de campos sensíveis (deve falhar).
+### 3. Manter ordenação atual
+- Default `Atualizado recentemente` (`local_updated_at desc`) — já implementado, garante que prédio editado sobe para o topo via trigger + realtime.
+- Demais opções permanecem: Mais recentes, Nome A→Z, Maior público, Mais painéis ativos.
 
----
+### 4. Botão "Limpar filtros" reaparece sempre que qualquer filtro (incluindo status, airbnb, padrão, painéis, device) sair do default.
 
-## PARTE B — Filtros e Ordenação de Prédios (`/super_admin/predios`)
+## Layout final da barra
 
-**Diagnóstico atual** (`BuildingsManagement3` + `BuildingsFilters3`):
-- Só existe filtro por `status` (pills) e busca textual.
-- Estado `filters` ainda carrega `bairro` e `padrao_publico`, mas a UI não os expõe.
-- Sem ordenação configurável. Sem filtro de Airbnb. Sem indicação de "atualizado recentemente".
+```text
+[ 🔍 Buscar nome/endereço/bairro ]                       [ ↕ Atualizado recentemente ▾ ]
 
-**Banco confirmado anteriormente:** não há `updated_at`; existem `local_updated_at` e `created_at`. Trigger de auto-update em `local_updated_at` precisa ser criado para a ordenação por edição funcionar de fato.
+[Todos 23] [Ativos 18] [Internos 3] [Instalação 2] [Manutenção 0] [Inativos 0]   |   [🏠 Airbnb: Todos ▸]
 
-### B1. Migration (banco)
-- `CREATE TRIGGER buildings_set_local_updated_at BEFORE UPDATE ON public.buildings FOR EACH ROW EXECUTE FUNCTION ...` que faz `NEW.local_updated_at = now()`. Garante que qualquer edição "sobe" o prédio para o topo.
-- Função criada com `SECURITY DEFINER` + `SET search_path = public`.
+[Padrão ▾] [Painéis ▾] [Device ▾]                                            [✕ Limpar filtros]
+```
 
-### B2. Processor (`buildingsAdminProcessor.ts`)
-- Incluir `local_updated_at` e `created_at` no objeto `AdminBuilding` retornado (hoje só `created_at`).
+## Validação após deploy
 
-### B3. Filtros (revisão profissional — sem bairro)
-Linha de filtros abaixo da busca, chips horizontais com scroll em mobile:
-1. **Status** (pills atuais — mantém)
-2. **Airbnb** — Todos / Com Airbnb / Sem Airbnb (`tem_airbnb`)
-3. **Padrão de público** — Todos / Alto / Médio / Normal
-4. **Painéis** — Todos / Com painéis ativos / Sem painéis
-5. **Device** — Todos / Online / Offline / Sem device
-
-Botão "Limpar filtros" aparece somente quando há filtro não-default. Removido filtro de bairro (irrelevante para ~23 prédios; a busca textual já cobre).
-
-### B4. Ordenação
-Dropdown "Ordenar por" no canto direito da barra de filtros:
-- **Atualizado recentemente** (default) — `local_updated_at desc` (fallback `created_at`)
-- **Mais recentes** — `created_at desc`
-- **Nome (A→Z)**
-- **Maior público estimado** — `publico_estimado desc`
-- **Mais painéis ativos** — `paineis_ativos desc`
-
-### B5. Realtime
-- `useAdminBuildingsData` já escuta `postgres_changes` em `buildings`. Combinado com o trigger + ordenação default, qualquer edição move o prédio para o topo automaticamente.
-
-### B6. Arquivos afetados (Parte B)
-- 1 migration (trigger + função)
-- `src/services/buildingsAdminProcessor.ts` (incluir `local_updated_at`)
-- `src/components/admin/buildings/v3/BuildingsFilters3.tsx` (nova linha de filtros + dropdown sort)
-- `src/pages/admin/BuildingsManagement3.tsx` (estado `sortBy`, lógica de filtro+sort, props novas)
-
-**Não tocar:** `BuildingCard3`, modais, upload, trimmer, RLS de outras tabelas, fluxos comerciais.
-
----
-
-## Ordem de execução
-1. Parte A (segurança) — migration + refatorações de hooks/páginas públicas.
-2. Parte B (filtros) — migration trigger + UI.
-3. Validação final: linter + testes manuais.
+- Pílula **Instalação** mostra 2 e filtra corretamente.
+- Pílula **Internos** aparece e mostra 3.
+- Pílula **Airbnb** alterna entre Todos/Com/Sem e a contagem bate com o DB (2 com Airbnb).
+- Editar um prédio (qualquer campo) faz ele subir para o topo mantendo filtros aplicados.
+- Nenhum card, modal, upload ou fluxo de contrato sofre alteração.

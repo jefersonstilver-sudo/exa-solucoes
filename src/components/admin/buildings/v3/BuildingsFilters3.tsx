@@ -17,6 +17,8 @@ import {
   Clock,
   ArrowUpDown,
   X,
+  EyeOff,
+  Home,
 } from 'lucide-react';
 
 export type SortKey =
@@ -64,18 +66,30 @@ const BuildingsFilters3: React.FC<BuildingsFilters3Props> = ({
   const statusCounts = {
     all: buildings.length,
     ativo: buildings.filter((b) => b.status === 'ativo').length,
+    interno: buildings.filter((b) => b.status === 'interno').length,
     inativo: buildings.filter((b) => b.status === 'inativo').length,
-    manutencao: buildings.filter((b) => b.status === 'manutenção').length,
-    instalacao: buildings.filter((b) => b.status === 'instalação').length,
+    manutencao: buildings.filter((b) => b.status === 'manutencao' || b.status === 'manutenção').length,
+    instalacao: buildings.filter((b) => b.status === 'instalacao' || b.status === 'instalação').length,
   };
+
+  const airbnbCount = buildings.filter((b) => Boolean(b.tem_airbnb)).length;
 
   const statusOptions = [
     { value: 'all', label: 'Todos', count: statusCounts.all, icon: Building2, color: 'gray' },
     { value: 'ativo', label: 'Ativos', count: statusCounts.ativo, icon: CheckCircle, color: 'emerald' },
+    { value: 'interno', label: 'Internos', count: statusCounts.interno, icon: EyeOff, color: 'purple' },
+    { value: 'instalacao', label: 'Instalação', count: statusCounts.instalacao, icon: Clock, color: 'blue' },
+    { value: 'manutencao', label: 'Manutenção', count: statusCounts.manutencao, icon: Wrench, color: 'amber' },
     { value: 'inativo', label: 'Inativos', count: statusCounts.inativo, icon: XCircle, color: 'gray' },
-    { value: 'manutenção', label: 'Manutenção', count: statusCounts.manutencao, icon: Wrench, color: 'amber' },
-    { value: 'instalação', label: 'Instalação', count: statusCounts.instalacao, icon: Clock, color: 'blue' },
   ];
+
+  const airbnbCycle: Record<BuildingsFiltersState['airbnb'], BuildingsFiltersState['airbnb']> = {
+    all: 'with',
+    with: 'without',
+    without: 'all',
+  };
+  const airbnbLabel =
+    filters.airbnb === 'all' ? 'Airbnb: Todos' : filters.airbnb === 'with' ? 'Com Airbnb' : 'Sem Airbnb';
 
   const hasActiveFilters =
     filters.status !== 'all' ||
