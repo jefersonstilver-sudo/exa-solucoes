@@ -17,6 +17,9 @@ const CompleteResponsiveLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isMobile, isTablet, isDesktop, isXl } = useMobileBreakpoints();
   const location = useLocation();
+  // Modo embutido: usado quando o portal é renderizado dentro de um iframe
+  // a partir do super_admin (ClientOrderViewSheet). Esconde sidebar/header.
+  const isEmbedded = new URLSearchParams(location.search).get('embedded') === '1';
 
   const getPageTitle = () => {
     if (location.pathname.includes('/pedido/')) return 'Detalhes do Pedido';
