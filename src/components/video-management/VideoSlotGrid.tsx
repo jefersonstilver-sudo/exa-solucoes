@@ -7,6 +7,7 @@ import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffectiveAuth } from '@/hooks/useEffectiveAuth';
 
 interface VideoSlot {
   id?: string;
@@ -65,6 +66,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
+  const { userProfile } = useEffectiveAuth();
   const { currentVideo, refreshCurrentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
   const [companyInfoComplete, setCompanyInfoComplete] = useState<boolean | null>(null);
 
@@ -72,16 +74,28 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   useEffect(() => {
     const checkCompanyInfo = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        const effectiveUserId = (userProfile as any)?.id;
+        if (!effectiveUserId) {
           setCompanyInfoComplete(false);
+          return;
+        }
+
+        const profileHasCompleteCompany = !!(
+          (userProfile as any)?.empresa_nome &&
+          (userProfile as any)?.empresa_pais &&
+          (userProfile as any)?.empresa_documento &&
+          (userProfile as any)?.empresa_segmento &&
+          (userProfile as any)?.empresa_aceite_termo
+        );
+        if (profileHasCompleteCompany) {
+          setCompanyInfoComplete(true);
           return;
         }
 
         const { data, error } = await supabase
           .from('users')
           .select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo')
-          .eq('id', user.id)
+          .eq('id', effectiveUserId)
           .single();
 
         if (error) throw error;
@@ -102,7 +116,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
     };
     
     checkCompanyInfo();
-  }, []);
+  }, [userProfile]);
 
 
   // Contar vídeos aprovados
