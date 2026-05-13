@@ -1,5 +1,5 @@
 
-import { useAuth } from './useAuth';
+import { useEffectiveAuth as useAuth } from './useEffectiveAuth';
 import { useMemo } from 'react';
 
 // Re-export UserProfile type
