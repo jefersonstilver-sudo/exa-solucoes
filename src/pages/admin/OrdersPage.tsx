@@ -18,6 +18,7 @@ import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/ad
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 import { FixPedidoListaPaineisButton } from '@/components/admin/FixPedidoListaPaineisButton';
 import AdminCreateOrderDialog from '@/components/admin/orders/create/AdminCreateOrderDialog';
+import ClientOrderViewSheet from '@/components/impersonation/ClientOrderViewSheet';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
