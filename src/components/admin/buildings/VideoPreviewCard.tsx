@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Play, User, Clock, Calendar } from 'lucide-react';
+import { Play, User, Clock, Calendar, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
 
 interface VideoPreviewCardProps {
   video: {
@@ -8,6 +9,9 @@ interface VideoPreviewCardProps {
     video_name: string;
     video_url: string;
     client_name?: string;
+    client_email?: string;
+    client_id?: string;
+    pedido_id?: string;
     is_scheduled?: boolean;
     video_duracao?: number;
   };
