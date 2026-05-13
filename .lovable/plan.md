@@ -1,74 +1,125 @@
-# Auditoria do Logo Ticker da Home (`/`)
+# Modo "Admin Master de Vídeo" — Acessar como Cliente
 
-## O que verifiquei
+Função super avançada que permite admin master entrar na área `/anunciante` como se fosse o cliente (em nova aba isolada), com poderes de editar, trocar e excluir vídeos individualmente ou em massa, com auditoria completa.
 
-1. **Renderização atual no preview** — capturei screenshot da home e o ticker está rodando: 6 logos visíveis (M ARK-SE, KAMUI, DuQuintal, SECOVI-PR, Portal da Cidade, Grupo Kammer, Shopping China…), todas em **branco**, em barra de altura `h-20 md:h-24 lg:h-28` sobre `bg-[#7D1818]`, animação infinita ativa.
-2. **Banco de dados** — 14 logos `is_active = true`, todas `color_variant = 'white'`, com `scale_factor` variando de 1.0 a 3.5 (o que explica tamanhos diferentes entre logos — é proposital, configurável no admin).
-3. **Console logs** — `✅ Logos fetched successfully: 14` (Edge Function `logos` respondendo OK).
-4. **Memória do projeto** confirma o padrão: *"WHITE logos only on #7D1818, no scrollbars, 10-400% scale"*. O código atual cumpre.
-5. **Histórico (git)** dos arquivos `LogoTicker.tsx` e `TickerLogoItem.tsx` — última alteração relevante foi no commit `45f1327b0` que separou `scale_factor` em `height/maxWidth` inline (em vez de transform), e o `brightness-0 invert` está presente desde o commit `0492b0631`.
+## 1. Novo nível de acesso: `admin_master_video`
 
-## Diagnóstico — o que provavelmente você está vendo
+- Adicionar valor `admin_master_video` ao enum `app_role` (Postgres).
+- No console de usuários (Tipos de Conta), adicionar a opção para super_admin atribuir/remover essa role.
+- Helper `has_role(uid, 'admin_master_video')` (já existe pattern) usado em policies e UI.
+- Permissão de impersonar concedida a: `super_admin` **OU** `admin_master_video`.
 
-Comparando seu screenshot (logos pequenas, algumas coloridas: Shopping China vermelho, Del Fuego laranja, SPLENDIDA cremoso) com o preview atual (todas brancas, tamanho correto):
+### Onboarding moderno na primeira entrada
+- Email transacional via `send-transactional-email` (template novo `admin-master-video-ativado`) disparado quando role é atribuída.
+- No primeiro login após receber a role, modal "Premium Apple-like" full-screen mostra: o que é, para que serve, cuidados (auditoria, ações irreversíveis, expiração 30min), botão "Entendi e aceito".
+- Aceite gravado em `admin_master_video_onboarding (user_id, accepted_at)`.
 
-- **O código está correto.** O filtro `brightness-0 invert` é aplicado em `TickerLogoItem.tsx:113` e funciona — o preview confirma.
-- Seu screenshot parece ser de uma versão **em cache** (Safari/PWA) ou da **URL publicada antiga** (`exa-solucoes.lovable.app` / `examidia.com.br`) que ainda não recebeu o build atual.
-- **Sintoma secundário real**: a Edge Function `logos` demora ~8 segundos para responder em cold start. Durante esse tempo aparece "Carregando logos…" sobre fundo `bg-white/5` (cinza translúcido) que destoa do `#7D1818` final — gerando a sensação de "ticker quebrado".
+## 2. Sessão de impersonação (modo "view-as")
 
-## O que proponho ajustar (apenas restauração visual, sem mexer em lógica)
+Sem trocar JWT — mantém sessão admin e usa flag de contexto:
 
-### 1. Skeleton de loading consistente
-- Trocar o fundo do skeleton de `bg-white/5` por `bg-[#7D1818]` (mesmo do ticker final), e remover o `container mx-auto px-4 lg:px-8` que limita largura — para o skeleton ocupar `w-screen` igual ao ticker real. Sem mais "flash" cinza.
-- Texto "Carregando logos…" em `text-white/40` mantém discrição.
+- Tabela `admin_impersonation_sessions`:
+  - `id`, `admin_user_id`, `target_user_id`, `target_pedido_id` (nullable), `started_at`, `expires_at` (default `now()+30min`), `ended_at`, `end_reason` ('manual'|'expired'|'forced').
+- Edge function `start-impersonation`: valida role, cria registro, retorna `session_id` + `target_user_id`.
+- Edge function `end-impersonation`: marca `ended_at`.
+- Frontend abre nova aba: `/anunciante/dashboard?impersonate=<session_id>`.
+- Hook global `useImpersonation` lê o param, valida via edge function `verify-impersonation` (retorna target user + dados), guarda em `ImpersonationContext`.
+- `useAuth()` derivado expõe `effectiveUserId` (target quando impersonando, próprio user_id caso contrário). Todas as queries do anunciante usam `effectiveUserId`.
 
-### 2. Forçar invalidação de cache no asset
-- Confirmar que o build incrementa o hash do bundle (Vite faz por padrão). Não há mudança de código — apenas validação. Se o usuário ainda ver versão antiga, é cache do navegador/PWA.
+### Barra fixa topo (red EXA)
+- `<ImpersonationTopBar />` renderizada no layout do anunciante quando contexto ativo.
+- Mostra: avatar/email do cliente, contador regressivo até `expires_at`, botão "Sair do modo cliente".
+- Auto-expira 30min — fecha aba e mostra toast.
 
-### 3. Validar configuração do ticker no DB
-- Listar as 14 logos ativas e seus `scale_factor`:
-  ```
-  Secovi logo                2.0
-  Portal da cidae            2.7
-  Grupo Kammer Logo branca   1.1
-  shopping china             2.5
-  splendida                  1.0
-  Del Fuego restaurante      1.9
-  pao supremo branco         1.4
-  wizard                     1.3
-  lolita                     3.1
-  du quintal                 1.6
-  kamui sem fundo            2.5
-  ChatGPT Image (10/02 10h)  2.1
-  ChatGPT Image (10/02 14h)  3.5
-  logo (1)                   1.0
-  ```
-- **Nenhuma logo precisa de mudança**: estão todas `color_variant = 'white'` e ativas. O usuário pode ajustar `scale_factor` individual em `/admin/logos` se alguma estiver pequena demais (ex: `splendida` e `logo (1)` em 1.0 podem subir para 1.5–2.0).
+## 3. Pontos de entrada (UI)
 
-### 4. Não mexer em (preservar como está)
-- `bg-[#7D1818]` do `<section>` interno
-- `brightness-0 invert` em todas as `<img>` do ticker
-- `w-screen left-1/2 -translate-x-1/2` para full-bleed
-- Animação `@keyframes logoTicker` infinita
-- Posicionamento em `Exa.tsx` com `-mt-2 md:-mt-20 lg:-mt-28`
+### A) Modal "Vídeos em Exibição" do prédio (`/super_admin/predios` → botão Playlist)
+Em cada item da playlist:
+- Linha `Dono: cliente@email.com`.
+- Botão vermelho "Acessar como cliente" → chama `start-impersonation` com `target_pedido_id` e abre `/anunciante/pedidos/{pedido_id}?impersonate=<session_id>` em nova aba.
 
-## Detalhe técnico
+### B) Lista de Pedidos admin
+- Botão "Acessar como cliente" no card do pedido + dentro do detalhe do pedido (header).
 
-Arquivo a editar: **`src/components/exa/LogoTicker.tsx`** (apenas o bloco de skeleton, linhas 134–144). Nenhuma outra alteração.
+## 4. Poderes do admin no modo cliente
 
-```diff
-- <section id="home-logo-ticker" aria-label="Marcas parceiras" className="relative container mx-auto px-4 lg:px-8">
--   <div className="ticker h-24 md:h-20 sm:h-16 relative overflow-hidden rounded-2xl bg-white/5 animate-pulse">
-+ <section id="home-logo-ticker" aria-label="Marcas parceiras" className="relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-[#7D1818]">
-+   <div className="ticker w-full h-20 md:h-24 lg:h-28 relative overflow-hidden bg-[#7D1818] animate-pulse">
-      <div className="flex items-center justify-center h-full">
--       <div className="text-white/60 text-sm">Carregando logos...</div>
-+       <div className="text-white/40 text-sm">Carregando logos...</div>
-      </div>
-    </div>
-  </section>
+Layout idêntico ao anunciante — escopo: **Pedidos, Vídeos, Relatórios e QR Codes Rastreáveis**.
+
+### Trocar vídeo
+- Mesmo fluxo TUS do cliente (`uploadVideo` em VideoSlotUpload).
+- Auto-aprovação: quando `impersonating === true`, força `approval_status: 'approved'`, `is_active: true`.
+
+### Deletar 1 vídeo (admin-only botão)
+- Hard delete: chama edge function nova `admin-hard-delete-video`:
+  1. Deleta `pedido_videos`, `videos`, `video_schedules`.
+  2. Remove do storage (signed delete).
+  3. Chama `delete-video-from-external-api` (AWS).
+  4. Loga em `admin_impersonation_actions`.
+- Botão visível só quando `impersonating && hasRole('admin_master_video'|'super_admin')`.
+
+### Deletar TODOS vídeos do pedido (admin-only)
+- Botão "Limpar playlist do pedido" no detalhe do pedido.
+- Modal Danger Zone: usuário digita o **nome do cliente OU id do pedido** para confirmar.
+- Edge function `admin-purge-pedido-videos`: itera + hard-delete (banco + storage + AWS), loga cada item.
+
+### Status do pedido
+- Permitido em **qualquer status**, inclusive finalizado/cancelado. Sem restrição extra.
+
+## 5. Auditoria
+
+- Tabela `admin_impersonation_actions`:
+  - `id`, `session_id` FK, `admin_user_id`, `target_user_id`, `pedido_id`, `action` ('view'|'upload_video'|'delete_video'|'purge_pedido'|'approve_video'|'edit_qr'|'edit_schedule'), `entity_id`, `payload` (jsonb), `created_at`.
+- Cada ação no modo impersonado escreve aqui (via edge function `log-impersonation-action`).
+- Cliente NÃO é notificado (apenas log).
+
+### Página de auditoria: `/super_admin/auditoria-impersonacao`
+- Tabela com filtros: admin, cliente, pedido, ação, intervalo de datas.
+- Drill-in: linha → drawer com timeline da sessão (start → ações → end).
+- Acessível só para super_admin.
+
+## 6. RLS / Segurança
+
+- Edge functions usam `service_role` para bypass; validam role do chamador via JWT antes de executar.
+- Policies das tabelas `pedido_videos`, `videos`, etc. recebem cláusulas adicionais permitindo `has_role(auth.uid(), 'admin_master_video')` OR `has_role(auth.uid(),'super_admin')` para escrita.
+- Nada exposto no client além de `session_id` (UUID opaco) — `target_user_id` é resolvido server-side a cada request crítica.
+- Sessão expira em 30min server-side; edge functions rejeitam ações com `expires_at < now()`.
+
+## Detalhes técnicos
+
+```text
+DB Schema (migration única)
+├── ALTER TYPE app_role ADD VALUE 'admin_master_video';
+├── admin_impersonation_sessions
+├── admin_impersonation_actions
+├── admin_master_video_onboarding
+└── RLS: policies + helper has_role já existente
+
+Edge Functions
+├── start-impersonation      (POST: target_user_id, pedido_id?)
+├── verify-impersonation     (GET: session_id → target user payload)
+├── end-impersonation        (POST: session_id)
+├── log-impersonation-action (POST: action payload)
+├── admin-hard-delete-video  (POST: video_id, pedido_id, session_id)
+├── admin-purge-pedido-videos(POST: pedido_id, confirmation_text, session_id)
+└── (reuso) delete-video-from-external-api
+
+Frontend
+├── src/contexts/ImpersonationContext.tsx
+├── src/hooks/useImpersonation.ts (effectiveUserId)
+├── src/components/impersonation/ImpersonationTopBar.tsx
+├── src/components/impersonation/AdminMasterWelcomeDialog.tsx
+├── src/components/admin/buildings/PlaylistVideoOwnerActions.tsx
+├── src/components/admin/orders/AccessAsClientButton.tsx
+├── src/components/admin/orders/PurgePedidoVideosDialog.tsx
+├── src/pages/super_admin/AuditoriaImpersonacao.tsx
+└── Patch: useAuth → effectiveUserId; layout do anunciante renderiza TopBar
+
+Email
+└── send-transactional-email template: admin-master-video-ativado
 ```
 
-## Pergunta antes de implementar
+## Fora de escopo (intencionalmente)
 
-Você confirma que a versão que você quer restaurar é exatamente esta (logos brancas em `#7D1818`, alturas escaladas pelo `scale_factor` do admin, animação infinita)? Ou existia uma configuração anterior diferente (ex: altura fixa, sem `scale_factor` por logo) que você quer recuperar?
+- Impersonação fora do anunciante (perfil, faturas, configs do cliente).
+- Notificação ao cliente (apenas log).
+- Suporte mobile da barra impersonação (V2).
