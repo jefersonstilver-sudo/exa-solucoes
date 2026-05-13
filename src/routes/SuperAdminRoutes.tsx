@@ -90,6 +90,7 @@ const AdminProfileSettings = lazy(() => import('@/pages/admin/AdminProfileSettin
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
 const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
+const AuditoriaImpersonacao = lazy(() => import('@/pages/super_admin/AuditoriaImpersonacao'));
 
 const SuperAdminRoutes = () => {
   return (
