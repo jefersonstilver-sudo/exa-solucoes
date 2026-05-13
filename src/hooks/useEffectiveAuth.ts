@@ -26,7 +26,7 @@ export const useEffectiveAuth = () => {
 
     const target = effectiveUserProfile as any;
     // Map DB row -> UserProfile shape used across the app.
-    const userProfile: UserProfile = {
+    const userProfile = {
       id: target.id,
       email: target.email ?? '',
       name: target.nome ?? target.name ?? undefined,
@@ -41,7 +41,7 @@ export const useEffectiveAuth = () => {
       empresa_documento: target.empresa_documento ?? undefined,
       empresa_segmento: target.empresa_segmento ?? undefined,
       empresa_aceite_termo: target.empresa_aceite_termo ?? undefined,
-    };
+    } as UserProfile & Record<string, any>;
 
     // Fake a `user` shape so code that reads `user.id` still works.
     const fakeUser = {
