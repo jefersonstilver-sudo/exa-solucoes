@@ -80,6 +80,104 @@ export type Database = {
           },
         ]
       }
+      admin_impersonation_actions: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          entity_id: string | null
+          id: string
+          payload: Json | null
+          pedido_id: string | null
+          session_id: string
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          payload?: Json | null
+          pedido_id?: string | null
+          session_id: string
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          payload?: Json | null
+          pedido_id?: string | null
+          session_id?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_impersonation_actions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "admin_impersonation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_impersonation_sessions: {
+        Row: {
+          admin_user_id: string
+          end_reason: string | null
+          ended_at: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          started_at: string
+          target_pedido_id: string | null
+          target_user_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          started_at?: string
+          target_pedido_id?: string | null
+          target_user_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          started_at?: string
+          target_pedido_id?: string | null
+          target_user_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      admin_master_video_onboarding: {
+        Row: {
+          accepted_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_context: {
         Row: {
           id: string
@@ -16587,6 +16685,7 @@ export type Database = {
         | "admin_departamental"
         | "gestor_comercial"
         | "diretora_operacoes"
+        | "admin_master_video"
       caixa_origem: "dinheiro" | "cheque" | "vale" | "ajuste" | "outros"
       caixa_tipo: "entrada" | "saida"
       categoria_tipo: "fixa" | "variavel" | "ambos" | "investimento"
@@ -16828,6 +16927,7 @@ export const Constants = {
         "admin_departamental",
         "gestor_comercial",
         "diretora_operacoes",
+        "admin_master_video",
       ],
       caixa_origem: ["dinheiro", "cheque", "vale", "ajuste", "outros"],
       caixa_tipo: ["entrada", "saida"],
