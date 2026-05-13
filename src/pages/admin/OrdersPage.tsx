@@ -35,6 +35,7 @@ const OrdersPage = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'pagos' | 'aguardando' | 'ativos'>('all');
   const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [clientView, setClientView] = useState<{ pedidoId: string; clientId: string; clientLabel?: string } | null>(null);
   
   // Estado para pedidos com vídeos ativos (campanhas em exibição)
   const [activeOrdersCount, setActiveOrdersCount] = React.useState(0);
