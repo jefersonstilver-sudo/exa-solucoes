@@ -1,0 +1,1 @@
+UPDATE public.buildings SET tem_airbnb = true WHERE id IN ('f5207451-fa43-4a38-8fac-f6e62c56ca6e','6e3e0e94-28ca-40ad-bc79-bbe301a0400f','bc17603b-5013-406f-9da8-243f7aa2d737','df70a9c6-7883-4a83-8d8a-e40e1bb0a43d');
