@@ -12,6 +12,12 @@ interface AccessAsClientButtonProps extends Omit<ButtonProps, 'onClick'> {
   redirectPath?: string;
   label?: string;
   iconOnly?: boolean;
+  /**
+   * Quando definido, o botão NÃO navega para `/anunciante/...`.
+   * Em vez disso, inicia a sessão de impersonação e chama esse callback
+   * com o `session_id` para que o caller abra o painel/modal interno.
+   */
+  onInternalView?: (sessionId: string) => void;
 }
 
 /**
@@ -26,6 +32,7 @@ const AccessAsClientButton: React.FC<AccessAsClientButtonProps> = ({
   redirectPath,
   label = 'Acessar como cliente',
   iconOnly = false,
+  onInternalView,
   className,
   variant = 'destructive',
   size = 'sm',
@@ -47,6 +54,12 @@ const AccessAsClientButton: React.FC<AccessAsClientButtonProps> = ({
       if (error) throw error;
       const sessionId = (data as any)?.session_id;
       if (!sessionId) throw new Error('Sessão não retornada.');
+
+      if (onInternalView) {
+        toast.success('Modo cliente ativo (30 min).');
+        onInternalView(sessionId);
+        return;
+      }
 
       const path = redirectPath ?? (pedidoId ? `pedido/${pedidoId}` : 'pedidos');
       const url = `/anunciante/${path}?impersonate=${encodeURIComponent(sessionId)}`;
