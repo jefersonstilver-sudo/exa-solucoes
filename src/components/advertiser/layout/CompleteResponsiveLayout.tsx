@@ -32,7 +32,9 @@ const CompleteResponsiveLayout = () => {
   const toggleSidebarCollapse = () => setSidebarCollapsed(!sidebarCollapsed);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex w-full relative">
+    <ImpersonationProvider fallbackUserId={(userProfile as any)?.user_id || (userProfile as any)?.id || null}>
+      <ImpersonationTopBar />
+      <div className="min-h-screen bg-gray-50 flex w-full relative">
       <ResponsiveAdvertiserSidebar
         isOpen={sidebarOpen}
         onClose={handleSidebarClose}
