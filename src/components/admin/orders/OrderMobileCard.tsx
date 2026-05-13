@@ -12,6 +12,7 @@ import { useLongPress } from '@/hooks/useLongPress';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
 
 interface Installment {
   installment: number;
