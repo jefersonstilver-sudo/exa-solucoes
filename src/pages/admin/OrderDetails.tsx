@@ -8,6 +8,7 @@ import { ProfessionalOrderReport } from '@/components/admin/orders/ProfessionalO
 import { ProfessionalPDFExporter } from '@/components/admin/orders/ProfessionalPDFExporter';
 import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
 import PurgePedidoVideosDialog from '@/components/impersonation/PurgePedidoVideosDialog';
+import ClientOrderViewSheet from '@/components/impersonation/ClientOrderViewSheet';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -15,6 +16,7 @@ const OrderDetails = () => {
   const { loading, orderDetails, orderVideos, panelData, refetch } = useRealOrderDetails(id || '');
   const [isExporting, setIsExporting] = React.useState(false);
   const [purgeOpen, setPurgeOpen] = useState(false);
+  const [clientViewSessionId, setClientViewSessionId] = useState<string | null>(null);
 
   const handleExportPDF = async () => {
     if (!orderDetails) return;
@@ -74,6 +76,7 @@ const OrderDetails = () => {
                 pedidoId={id}
                 variant="default"
                 className="bg-[#C7141A] hover:bg-[#B40D1A] text-white"
+                onInternalView={(sid) => setClientViewSessionId(sid)}
               />
             )}
             <Button
@@ -116,6 +119,14 @@ const OrderDetails = () => {
             onPurged={refetch}
           />
         )}
+
+        <ClientOrderViewSheet
+          open={!!clientViewSessionId}
+          onOpenChange={(v) => { if (!v) setClientViewSessionId(null); }}
+          pedidoId={id || null}
+          sessionId={clientViewSessionId}
+          clientLabel={orderDetails?.client_name || orderDetails?.client_email || null}
+        />
       </div>
     </div>
   );
