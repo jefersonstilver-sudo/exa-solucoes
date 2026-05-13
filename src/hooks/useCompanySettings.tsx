@@ -109,8 +109,15 @@ export const useCompanySettings = () => {
             `CEP ${data.endereco_cep}`
           ].filter(Boolean).join(', ').replace(', ,', ',');
 
+          // Mescla os campos sensíveis (cpf/rg/email do representante) a partir dos defaults,
+          // pois a RPC pública NÃO os retorna. Componentes admin que precisam dos valores reais
+          // devem consultar a tabela diretamente (RLS libera para admin/super_admin).
           setSettings({
+            ...DEFAULT_SETTINGS,
             ...data,
+            representante_cpf: DEFAULT_SETTINGS.representante_cpf,
+            representante_rg: DEFAULT_SETTINGS.representante_rg,
+            representante_email: DEFAULT_SETTINGS.representante_email,
             endereco_completo,
             foro_completo: `${data.foro_comarca}/${data.foro_estado}`,
           } as CompanySettings);
