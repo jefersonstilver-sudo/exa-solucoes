@@ -96,27 +96,6 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
             />
           )}
         </div>
-
-        {/* Corpo */}
-        <div className="flex-1 bg-gray-50 relative overflow-hidden">
-          {iframeLoading && iframeUrl && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10 pointer-events-none">
-              <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="text-sm">Carregando visão do cliente…</span>
-              </div>
-            </div>
-          )}
-          {iframeUrl && (
-            <iframe
-              key={iframeUrl}
-              src={iframeUrl}
-              title="Visão do cliente"
-              className="w-full h-full border-0"
-              onLoad={() => setIframeLoading(false)}
-            />
-          )}
-        </div>
       </SheetPrimitiveContent>
     </Sheet>
   );
