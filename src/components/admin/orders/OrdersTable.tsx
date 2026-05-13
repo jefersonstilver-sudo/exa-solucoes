@@ -129,15 +129,27 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
                 </div>
               </TableCell>
               <TableCell>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/super_admin/pedidos/${order.id}`)}
-                  className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  Ver
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/super_admin/pedidos/${order.id}`)}
+                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Ver
+                  </Button>
+                  {order.client_id && (
+                    <AccessAsClientButton
+                      targetUserId={order.client_id}
+                      pedidoId={order.id}
+                      iconOnly
+                      variant="destructive"
+                      size="sm"
+                      title="Acessar como cliente"
+                    />
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
