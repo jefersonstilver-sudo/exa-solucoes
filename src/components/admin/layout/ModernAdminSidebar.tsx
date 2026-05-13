@@ -7,6 +7,7 @@ import {
   Settings, 
   Users, 
   Shield,
+  ShieldCheck,
   Crown,
   Video,
   Images,
@@ -405,7 +406,21 @@ export function ModernAdminSidebar() {
           href: buildPath('configuracoes'),
           icon: Settings,
           moduleKey: MODULE_KEYS.configuracoes
-        }
+        },
+        ...(isSuperAdmin ? [
+          {
+            title: 'Admin Master Vídeo',
+            href: '/super_admin/admin-master-video',
+            icon: ShieldCheck,
+            moduleKey: '__always_visible__'
+          },
+          {
+            title: 'Auditoria Impersonação',
+            href: '/super_admin/auditoria-impersonacao',
+            icon: FileBarChart,
+            moduleKey: '__always_visible__'
+          }
+        ] : [])
       ]
     },
     // 7. CONTA - Sempre visível
