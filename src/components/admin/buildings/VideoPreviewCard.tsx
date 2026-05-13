@@ -121,6 +121,26 @@ const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({ video }) => {
               </div>
             )}
           </div>
+
+          {video.client_email && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate" title={`Dono: ${video.client_email}`}>
+              <Mail className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Dono: {video.client_email}</span>
+            </div>
+          )}
+
+          {video.client_id && (
+            <div className="pt-1">
+              <AccessAsClientButton
+                targetUserId={video.client_id}
+                pedidoId={video.pedido_id ?? null}
+                size="sm"
+                variant="destructive"
+                className="w-full h-7 text-[10px]"
+                label="Acessar como cliente"
+              />
+            </div>
+          )}
         </div>
       </div>
 
