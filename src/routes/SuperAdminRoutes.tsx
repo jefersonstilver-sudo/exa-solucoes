@@ -91,6 +91,7 @@ const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage')
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
 const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
 const AuditoriaImpersonacao = lazy(() => import('@/pages/super_admin/AuditoriaImpersonacao'));
+const AdminMasterVideoConsole = lazy(() => import('@/pages/super_admin/AdminMasterVideoConsole'));
 
 const SuperAdminRoutes = () => {
   return (
@@ -265,6 +266,7 @@ const SuperAdminRoutes = () => {
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="seguranca" element={<SecurityDashboard />} />
       <Route path="auditoria-impersonacao" element={<Suspense fallback={<GlobalLoadingPage />}><AuditoriaImpersonacao /></Suspense>} />
+      <Route path="admin-master-video" element={<Suspense fallback={<GlobalLoadingPage />}><AdminMasterVideoConsole /></Suspense>} />
       <Route path="zapi-diagnostico" element={<ZApiDiagnostics />} />
       
       {/* ============ MEU PERFIL ============ */}

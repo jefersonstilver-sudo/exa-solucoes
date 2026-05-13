@@ -7,6 +7,7 @@ import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { SofiaVoiceButton } from '@/components/admin/sofia';
 import { SofiaProvider } from '@/contexts/SofiaContext';
+import AdminMasterWelcomeDialog from '@/components/impersonation/AdminMasterWelcomeDialog';
 
 // Rotas que devem ocultar o header para modo fullscreen
 const FULLSCREEN_ROUTES = ['/admin/contatos-kanban', '/super_admin/contatos-kanban', '/tarefas/fullscreen'];
@@ -77,6 +78,8 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
           
           {/* Sofia Voice AI Button */}
           <SofiaVoiceButton />
+          {/* Onboarding for Admin Master de Vídeo (first login) */}
+          <AdminMasterWelcomeDialog />
         </div>
       </SidebarProvider>
     </SofiaProvider>
