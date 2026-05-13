@@ -17,9 +17,10 @@ Deno.serve(async (req) => {
     }
 
     const supabase = getServiceClient();
+    // Return full target user record so the front can substitute userProfile completely.
     const { data: targetUser } = await supabase
       .from('users')
-      .select('id, email, nome')
+      .select('*')
       .eq('id', session.target_user_id)
       .maybeSingle();
 
