@@ -131,7 +131,7 @@ const BuildingsFilters3: React.FC<BuildingsFilters3Props> = ({
         </div>
       </div>
 
-      {/* Linha 2: status pills (mantém destaque visual) */}
+      {/* Linha 2: status pills + Airbnb toggle */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {statusOptions.map((option) => {
           const isActive = filters.status === option.value;
@@ -151,6 +151,8 @@ const BuildingsFilters3: React.FC<BuildingsFilters3Props> = ({
                       ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-300'
                       : option.color === 'blue'
                       ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-300'
+                      : option.color === 'purple'
+                      ? 'bg-purple-100 text-purple-700 ring-1 ring-purple-300'
                       : 'bg-gray-100 text-gray-700 ring-1 ring-gray-300'
                     : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                 }
@@ -169,24 +171,38 @@ const BuildingsFilters3: React.FC<BuildingsFilters3Props> = ({
             </button>
           );
         })}
+
+        <div className="h-5 w-px bg-gray-200 mx-1" />
+
+        <button
+          onClick={() =>
+            onFiltersChange({ ...filters, airbnb: airbnbCycle[filters.airbnb] })
+          }
+          title="Clique para alternar: Todos → Com Airbnb → Sem Airbnb"
+          className={`
+            flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap
+            transition-all duration-200
+            ${
+              filters.airbnb !== 'all'
+                ? 'bg-rose-100 text-rose-700 ring-1 ring-rose-300'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }
+          `}
+        >
+          <Home className="h-3 w-3" />
+          {airbnbLabel}
+          <span
+            className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+              filters.airbnb !== 'all' ? 'bg-white/50' : 'bg-gray-200/50'
+            }`}
+          >
+            {airbnbCount}
+          </span>
+        </button>
       </div>
 
       {/* Linha 3: filtros refinados */}
       <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={filters.airbnb}
-          onValueChange={(v) => onFiltersChange({ ...filters, airbnb: v as any })}
-        >
-          <SelectTrigger className="h-8 w-auto min-w-[140px] bg-white border-gray-200 text-xs">
-            <SelectValue placeholder="Airbnb" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Airbnb: Todos</SelectItem>
-            <SelectItem value="with">Com Airbnb</SelectItem>
-            <SelectItem value="without">Sem Airbnb</SelectItem>
-          </SelectContent>
-        </Select>
-
         <Select
           value={filters.padrao_publico}
           onValueChange={(v) => onFiltersChange({ ...filters, padrao_publico: v })}
