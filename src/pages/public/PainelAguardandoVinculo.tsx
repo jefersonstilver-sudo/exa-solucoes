@@ -19,25 +19,36 @@ const PainelAguardandoVinculo = () => {
 
     // Buscar informações do painel
     const carregarPainel = async () => {
-      const { data, error } = await supabase
-        .from('painels')
-        .select('*, buildings(*)')
-        .eq('id', painelId)
-        .maybeSingle();
+      // 🔒 SEGURANÇA: usa RPC dedicada que devolve apenas campos seguros do painel
+      // (sem senha_anydesk, token_acesso, mac_address, ip_interno).
+      const { data: rows, error } = await (supabase as any)
+        .rpc('get_painel_pairing_info', { _painel_id: painelId });
 
       if (error) {
         console.error('Erro ao carregar painel:', error);
         return;
       }
 
-      if (data) {
-        setPainelInfo(data);
+      const row = Array.isArray(rows) ? rows[0] : null;
+      if (row) {
+        const painelLike = {
+          id: row.id,
+          building_id: row.building_id,
+          status: row.status,
+          status_vinculo: row.status_vinculo,
+          numero_painel: row.numero_painel,
+          codigo_vinculacao: row.codigo_vinculacao,
+          buildings: row.building_id
+            ? { nome: row.building_nome, endereco: row.building_endereco }
+            : null,
+        };
+        setPainelInfo(painelLike);
         setLoading(false);
 
         // Se já tem prédio vinculado, redirecionar imediatamente
-        if (data.building_id) {
+        if (row.building_id) {
           console.log('✅ Prédio vinculado detectado, redirecionando...');
-          window.location.href = `/painel/${data.building_id}`;
+          window.location.href = `/painel/${row.building_id}`;
         }
       }
     };

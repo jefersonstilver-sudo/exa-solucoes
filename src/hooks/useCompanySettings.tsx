@@ -87,12 +87,12 @@ export const useCompanySettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const { data, error: fetchError } = await supabase
-          .from('configuracoes_empresa')
-          .select('*')
-          .eq('is_active', true)
-          .limit(1)
-          .maybeSingle();
+        // 🔒 SEGURANÇA: usa RPC pública que NÃO retorna CPF/RG/email pessoal do representante.
+        // Telas administrativas (super_admin/admin) que precisam dos dados sensíveis devem
+        // consultar diretamente a tabela — a RLS libera somente para esses papéis.
+        const { data: rpcRows, error: fetchError } = await (supabase as any)
+          .rpc('get_public_company_info');
+        const data = Array.isArray(rpcRows) ? rpcRows[0] : null;
 
         if (fetchError) {
           console.error('Erro ao buscar configurações da empresa:', fetchError);
@@ -109,8 +109,15 @@ export const useCompanySettings = () => {
             `CEP ${data.endereco_cep}`
           ].filter(Boolean).join(', ').replace(', ,', ',');
 
+          // Mescla os campos sensíveis (cpf/rg/email do representante) a partir dos defaults,
+          // pois a RPC pública NÃO os retorna. Componentes admin que precisam dos valores reais
+          // devem consultar a tabela diretamente (RLS libera para admin/super_admin).
           setSettings({
+            ...DEFAULT_SETTINGS,
             ...data,
+            representante_cpf: DEFAULT_SETTINGS.representante_cpf,
+            representante_rg: DEFAULT_SETTINGS.representante_rg,
+            representante_email: DEFAULT_SETTINGS.representante_email,
             endereco_completo,
             foro_completo: `${data.foro_comarca}/${data.foro_estado}`,
           } as CompanySettings);
@@ -136,12 +143,10 @@ export const useCompanySettings = () => {
 // Função utilitária para buscar configurações de forma síncrona (para Edge Functions)
 export const getCompanySettingsSync = async (): Promise<CompanySettings> => {
   try {
-    const { data, error } = await supabase
-      .from('configuracoes_empresa')
-      .select('*')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
+    // 🔒 SEGURANÇA: RPC pública sem dados pessoais do representante.
+    const { data: rpcRows, error } = await (supabase as any)
+      .rpc('get_public_company_info');
+    const data = Array.isArray(rpcRows) ? rpcRows[0] : null;
 
     if (error || !data) {
       return DEFAULT_SETTINGS;
@@ -157,7 +162,11 @@ export const getCompanySettingsSync = async (): Promise<CompanySettings> => {
     ].filter(Boolean).join(', ').replace(', ,', ',');
 
     return {
+      ...DEFAULT_SETTINGS,
       ...data,
+      representante_cpf: DEFAULT_SETTINGS.representante_cpf,
+      representante_rg: DEFAULT_SETTINGS.representante_rg,
+      representante_email: DEFAULT_SETTINGS.representante_email,
       endereco_completo,
       foro_completo: `${data.foro_comarca}/${data.foro_estado}`,
     } as CompanySettings;

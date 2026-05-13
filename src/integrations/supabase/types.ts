@@ -15833,6 +15833,19 @@ export type Database = {
           valor_total: number
         }[]
       }
+      get_painel_pairing_info: {
+        Args: { _painel_id: string }
+        Returns: {
+          building_endereco: string
+          building_id: string
+          building_nome: string
+          codigo_vinculacao: string
+          id: string
+          numero_painel: string
+          status: string
+          status_vinculo: string
+        }[]
+      }
       get_panel_credentials: {
         Args: { p_panel_id: string }
         Returns: {
@@ -15959,6 +15972,36 @@ export type Database = {
       get_provider_benefits_stats_by_month: {
         Args: { p_month: number; p_year: number }
         Returns: Json
+      }
+      get_public_company_info: {
+        Args: never
+        Returns: {
+          cnpj: string
+          email_institucional: string
+          endereco_bairro: string
+          endereco_cep: string
+          endereco_cidade: string
+          endereco_complemento: string
+          endereco_estado: string
+          endereco_logradouro: string
+          endereco_numero: string
+          foro_comarca: string
+          foro_estado: string
+          id: string
+          indice_reajuste: string
+          inscricao_estadual: string
+          inscricao_municipal: string
+          instagram: string
+          multa_rescisao_percentual: number
+          nome_fantasia: string
+          prazo_aviso_rescisao_dias: number
+          razao_social: string
+          representante_cargo: string
+          representante_nome: string
+          telefone_principal: string
+          website: string
+          whatsapp_comercial: string
+        }[]
       }
       get_real_approval_stats: {
         Args: never

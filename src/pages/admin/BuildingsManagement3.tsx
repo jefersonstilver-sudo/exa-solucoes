@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useAdminBuildingsData } from '@/hooks/useAdminBuildingsData';
 import { useBuildingActions } from '@/hooks/useBuildingActions';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import BuildingsHeader3 from '@/components/admin/buildings/v3/BuildingsHeader3';
-import BuildingsFilters3 from '@/components/admin/buildings/v3/BuildingsFilters3';
+import BuildingsFilters3, {
+  DEFAULT_BUILDINGS_FILTERS,
+  type BuildingsFiltersState,
+  type SortKey,
+} from '@/components/admin/buildings/v3/BuildingsFilters3';
 import BuildingsList3 from '@/components/admin/buildings/v3/BuildingsList3';
 import BuildingFormDialog3 from '@/components/admin/buildings/v3/BuildingFormDialog3';
 import BuildingDetailsDialog from '@/components/admin/buildings/BuildingDetailsDialog';
@@ -14,11 +18,8 @@ import BuildingImageManager from '@/components/admin/buildings/BuildingImageMana
 const BuildingsManagement3 = () => {
   const { buildings, stats, loading, refetch, deleteBuilding } = useAdminBuildingsData();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
-    status: 'all',
-    bairro: 'all',
-    padrao_publico: 'all'
-  });
+  const [filters, setFilters] = useState<BuildingsFiltersState>(DEFAULT_BUILDINGS_FILTERS);
+  const [sortBy, setSortBy] = useState<SortKey>('updated_desc');
 
   const {
     selectedBuilding,
@@ -35,20 +36,72 @@ const BuildingsManagement3 = () => {
     handleEditBuilding,
     handleImageManager,
     handleSuccess,
-    handleCloseDetails
+    handleCloseDetails,
   } = useBuildingActions(deleteBuilding, refetch);
 
-  const filteredBuildings = buildings.filter(building => {
-    const matchesSearch = building.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         building.endereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         building.bairro.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = filters.status === 'all' || building.status === filters.status;
-    const matchesBairro = filters.bairro === 'all' || building.bairro === filters.bairro;
-    const matchesPadrao = filters.padrao_publico === 'all' || building.padrao_publico === filters.padrao_publico;
-    
-    return matchesSearch && matchesStatus && matchesBairro && matchesPadrao;
-  });
+  const filteredAndSorted = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    const list = buildings.filter((b: any) => {
+      const matchesSearch =
+        !term ||
+        (b.nome || '').toLowerCase().includes(term) ||
+        (b.endereco || '').toLowerCase().includes(term) ||
+        (b.bairro || '').toLowerCase().includes(term);
+
+      const matchesStatus = filters.status === 'all' || b.status === filters.status;
+
+      const matchesAirbnb =
+        filters.airbnb === 'all' ||
+        (filters.airbnb === 'with' && Boolean(b.tem_airbnb)) ||
+        (filters.airbnb === 'without' && !b.tem_airbnb);
+
+      const matchesPadrao =
+        filters.padrao_publico === 'all' || b.padrao_publico === filters.padrao_publico;
+
+      const matchesPaineis =
+        filters.paineis === 'all' ||
+        (filters.paineis === 'with' && (b.paineis_ativos || 0) > 0) ||
+        (filters.paineis === 'without' && (b.paineis_ativos || 0) === 0);
+
+      const matchesDevice =
+        filters.device === 'all' ||
+        (filters.device === 'online' && b.device_status === 'online') ||
+        (filters.device === 'offline' && b.device_status === 'offline') ||
+        (filters.device === 'none' && (!b.device_status || b.device_status === 'not_connected'));
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesAirbnb &&
+        matchesPadrao &&
+        matchesPaineis &&
+        matchesDevice
+      );
+    });
+
+    const sorted = [...list];
+    sorted.sort((a: any, b: any) => {
+      switch (sortBy) {
+        case 'name_asc':
+          return (a.nome || '').localeCompare(b.nome || '', 'pt-BR');
+        case 'audience_desc':
+          return (b.publico_estimado || 0) - (a.publico_estimado || 0);
+        case 'panels_desc':
+          return (b.paineis_ativos || 0) - (a.paineis_ativos || 0);
+        case 'created_desc':
+          return (
+            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+          );
+        case 'updated_desc':
+        default: {
+          const aTime = new Date(a.local_updated_at || a.created_at || 0).getTime();
+          const bTime = new Date(b.local_updated_at || b.created_at || 0).getTime();
+          return bTime - aTime;
+        }
+      }
+    });
+    return sorted;
+  }, [buildings, searchTerm, filters, sortBy]);
 
   if (loading) {
     return (
@@ -79,11 +132,13 @@ const BuildingsManagement3 = () => {
             onSearchChange={setSearchTerm}
             filters={filters}
             onFiltersChange={setFilters}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
             buildings={buildings}
           />
 
           <BuildingsList3
-            buildings={filteredBuildings}
+            buildings={filteredAndSorted}
             onView={handleViewBuilding}
             onEdit={handleEditBuilding}
             onImageManager={handleImageManager}

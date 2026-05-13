@@ -47,6 +47,7 @@ export const processAdminBuildingsData = (buildingsData: any[]): AdminBuilding[]
         imagem_4: building.imagem_4 || '',
         caracteristicas: Array.isArray(building.caracteristicas) ? building.caracteristicas : [],
         created_at: building.created_at || new Date().toISOString(),
+        local_updated_at: building.local_updated_at || null,
         codigo_predio: building.codigo_predio || '000',
         nome_sindico: building.nome_sindico || '',
         contato_sindico: building.contato_sindico || '',
