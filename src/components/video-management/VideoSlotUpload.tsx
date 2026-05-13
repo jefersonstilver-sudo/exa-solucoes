@@ -63,7 +63,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     
     // Caso contrário, verificar (fallback)
     checkCompanyInfo();
-  }, [companyInfoCompleteProp]);
+  }, [companyInfoCompleteProp, userProfile]);
   const checkCompanyInfo = async () => {
     try {
       const effectiveUserId = (userProfile as any)?.id;
