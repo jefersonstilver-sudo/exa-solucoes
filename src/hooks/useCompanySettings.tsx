@@ -87,12 +87,12 @@ export const useCompanySettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const { data, error: fetchError } = await supabase
-          .from('configuracoes_empresa')
-          .select('*')
-          .eq('is_active', true)
-          .limit(1)
-          .maybeSingle();
+        // 🔒 SEGURANÇA: usa RPC pública que NÃO retorna CPF/RG/email pessoal do representante.
+        // Telas administrativas (super_admin/admin) que precisam dos dados sensíveis devem
+        // consultar diretamente a tabela — a RLS libera somente para esses papéis.
+        const { data: rpcRows, error: fetchError } = await (supabase as any)
+          .rpc('get_public_company_info');
+        const data = Array.isArray(rpcRows) ? rpcRows[0] : null;
 
         if (fetchError) {
           console.error('Erro ao buscar configurações da empresa:', fetchError);
