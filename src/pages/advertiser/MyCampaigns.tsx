@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileMyCampaigns from './MobileMyCampaigns';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

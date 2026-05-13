@@ -10,7 +10,7 @@ import {
   QrCode
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';

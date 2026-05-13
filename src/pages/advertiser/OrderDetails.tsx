@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useAdvertiserProtection } from '@/hooks/useAdvertiserProtection';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrderViewTracking } from '@/hooks/tracking/useOrderViewTracking';

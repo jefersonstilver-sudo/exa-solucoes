@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';

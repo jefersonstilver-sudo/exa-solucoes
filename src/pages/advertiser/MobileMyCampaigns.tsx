@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useMobileOptimization } from '@/hooks/useMobileOptimization';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Plus, Search, Filter, TrendingUp } from 'lucide-react';

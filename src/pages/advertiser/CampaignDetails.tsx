@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useCampaignDetails } from '@/hooks/campaigns/useCampaignDetails';
 import { Loader2, ArrowLeft, Calendar, Monitor, Play, Eye, Edit, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
