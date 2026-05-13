@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { validateVideoFile } from '@/services/videoStorageService';
 import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal';
 import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
+import { useEffectiveAuth } from '@/hooks/useEffectiveAuth';
 interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
@@ -27,6 +28,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
+  const { userProfile } = useEffectiveAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [titleError, setTitleError] = useState('');
@@ -64,20 +66,29 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   }, [companyInfoCompleteProp]);
   const checkCompanyInfo = async () => {
     try {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      if (!user) {
+      const effectiveUserId = (userProfile as any)?.id;
+      if (!effectiveUserId) {
         setCompanyInfoComplete(false);
+        setCheckingCompanyInfo(false);
+        return;
+      }
+
+      const profileHasCompleteCompany = !!(
+        (userProfile as any)?.empresa_nome &&
+        (userProfile as any)?.empresa_pais &&
+        (userProfile as any)?.empresa_documento &&
+        (userProfile as any)?.empresa_segmento &&
+        (userProfile as any)?.empresa_aceite_termo
+      );
+      if (profileHasCompleteCompany) {
+        setCompanyInfoComplete(true);
         setCheckingCompanyInfo(false);
         return;
       }
       const {
         data,
         error
-      } = await supabase.from('users').select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo').eq('id', user.id).single();
+      } = await supabase.from('users').select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo').eq('id', effectiveUserId).single();
       if (error) throw error;
       const isComplete = !!(data?.empresa_nome && data?.empresa_pais && data?.empresa_documento && data?.empresa_segmento && data?.empresa_aceite_termo);
       setCompanyInfoComplete(isComplete);
