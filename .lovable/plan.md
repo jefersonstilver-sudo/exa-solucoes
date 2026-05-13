@@ -1,56 +1,93 @@
-## Auditoria: por que não funcionou
+## Diagnóstico
 
-Encontrei 3 problemas principais no fluxo atual:
+O fluxo foi invertido na última alteração:
 
-1. O botão `Ver` ainda navega para `/super_admin/pedidos/:id`, ou seja, troca de página para o detalhe administrativo. Pelo que você pediu, ao clicar em `Ver` no pedido do cliente, o conteúdo do cliente precisa abrir dentro da própria tela atual, sem sair para outra página.
-2. O botão de impersonação foi colocado como navegação para `/anunciante/...`; isso ainda troca o contexto inteiro da aplicação e pode cair em rotas/guards/roles do anunciante, causando a tela aparecer como cliente errado ou não carregar dados.
-3. Os cards compactos da lista (`MinimalOrderCard`/`EnhancedOrderCard`) não usam `AccessAsClientButton` diretamente no fluxo do `Ver`; então clicar em `Ver o Duquintão` continua usando detalhe admin, não um modo embutido de cliente.
+- Hoje o botão **Ver** em `/super_admin/pedidos` tenta abrir direto a visão de cliente dentro de um Sheet/iframe.
+- O correto é: **Ver** deve abrir a página administrativa do pedido (`/super_admin/pedidos/:id`), como antes.
+- Dentro dessa página de detalhe admin, o botão **Acessar/Entrar como cliente** deve abrir a visão do cliente em um modal/painel flutuante, sem trocar para outra página e sem abrir nova aba.
+- O botão `AccessAsClientButton` ainda navega para `/anunciante/...`, então precisa ser ajustado para o modal interno quando usado na página de detalhe do pedido.
+- A lista de pedidos também tem possível inconsistência porque `OrdersPage` e `OrdersTabsRefactored` carregam dados separadamente; os filtros/contadores do topo podem não bater com os cards renderizados.
 
 ## Plano de correção
 
-### 1. Trocar o modelo de navegação por painel interno
-- Criar um modo interno na tela `/super_admin/pedidos`: `clienteEmVisualizacao`.
-- Ao clicar em `Ver` em um pedido, em vez de navegar para outra rota, abrir um painel/drawer/modal grande dentro da própria página de pedidos.
-- Esse painel mostrará o pedido do cliente e as ações necessárias sem sair da tela do super_admin.
+### 1. Restaurar o botão Ver
 
-### 2. Usar impersonação apenas como contexto interno do painel
-- O painel chamará `start-impersonation` para registrar a sessão e auditoria.
-- Em vez de redirecionar para `/anunciante`, ele renderizará o conteúdo do cliente dentro da janela atual.
-- Ao fechar o painel, chamar `end-impersonation` e voltar exatamente para a lista de pedidos, mantendo filtros/posição da página.
+Em `src/pages/admin/OrdersPage.tsx`:
 
-### 3. Renderizar o detalhe do pedido do anunciante dentro do painel
-- Reaproveitar a página/componente do detalhe do pedido do anunciante sempre que possível.
-- Passar o `pedidoId` e o `clientId` efetivos para que as queries usem o cliente correto.
-- Evitar depender de `auth.uid()` do anunciante; a sessão real continua sendo a do super_admin, mas os filtros do front usam o cliente alvo.
+- Remover o estado `clientView` da página de lista.
+- Remover o `ClientOrderViewSheet` renderizado na lista.
+- Alterar `handleViewOrderDetails` para sempre navegar para:
 
-### 4. Corrigir os cards da lista
-- `MinimalOrderCard`, `EnhancedOrderCard`, `OrderMobileCard` e a tabela receberão uma nova callback, algo como `onOpenClientView(orderId, clientId)`.
-- O botão `Ver` continuará visualmente igual, mas abrirá o painel interno quando estiver na página de pedidos do super_admin.
-- O detalhe administrativo continuará disponível apenas onde já existe fluxo específico de admin, sem quebrar outras telas.
+```text
+/super_admin/pedidos/:orderId
+```
 
-### 5. Bloquear mistura de usuários
-- O painel exibirá uma faixa clara: “Visualizando como cliente: [nome/email]”.
-- Sidebar/menu do anunciante não será usado nesse fluxo interno, evitando mostrar `jefersonstilver@gmail.com` ou avatar do super_admin.
-- Dados serão filtrados por `pedidoId` + `clientId` do pedido selecionado.
+Isso devolve o comportamento anterior: clicar em **Ver** abre a página funcional de detalhe administrativo do pedido.
 
-### 6. Teste funcional
-- Testar em `/super_admin/pedidos`:
-  - clicar `Ver` no pedido “Duquintão”;
-  - confirmar que abre dentro da mesma página, sem mudar para `/anunciante` nem `/super_admin/pedidos/:id`;
-  - confirmar que o nome/email exibido é do cliente do pedido;
-  - confirmar que vídeos/upload/ações do pedido aparecem para o pedido correto;
-  - fechar o painel e confirmar retorno para a lista sem perder contexto.
+### 2. Mover a visão de cliente para dentro do detalhe do pedido
 
-## Arquivos que devem ser alterados
+Em `src/pages/admin/OrderDetails.tsx`:
+
+- Adicionar estado local para abrir/fechar o painel de visualização como cliente.
+- Manter a página de detalhe admin como está.
+- No topo, onde já existe `AccessAsClientButton`, trocar o comportamento para abrir o painel flutuante interno.
+- O painel usará o `pedidoId`, `client_id` e nome/email do pedido carregado.
+
+Fluxo final:
+
+```text
+Pedidos -> Ver -> Detalhe admin do pedido -> Entrar como cliente -> modal interno com visão do cliente
+```
+
+### 3. Ajustar o botão Entrar como cliente para não navegar fora quando for modal
+
+Em `src/components/impersonation/AccessAsClientButton.tsx`:
+
+- Adicionar uma prop opcional, por exemplo `onStartInternalView` ou `mode="internal"`.
+- Quando essa prop existir, o botão não fará `navigate('/anunciante/...')`.
+- Ele apenas chamará o callback para abrir o painel interno.
+- Preservar o comportamento atual em outros lugares que ainda dependem do botão navegando, para não quebrar fluxos fora desse problema.
+
+### 4. Reaproveitar e corrigir o painel interno
+
+Em `src/components/impersonation/ClientOrderViewSheet.tsx`:
+
+- Manter o Sheet como modal flutuante interno.
+- Garantir que ele receba `pedidoId` e `clientId` vindos da página de detalhe admin.
+- Remover/evitar o botão **Abrir em nova aba**, porque o fluxo pedido é “sem abrir nova página”.
+- Corrigir o alerta de acessibilidade do Radix adicionando `SheetTitle` e `SheetDescription` ocultos/adequados.
+- Manter `start-impersonation` ao abrir e `end-impersonation` ao fechar.
+
+### 5. Corrigir inconsistência da lista de pedidos
+
+Em `src/components/admin/orders/OrdersTabsRefactored.tsx`:
+
+- Fazer o componente aceitar opcionalmente os dados já carregados pela `OrdersPage` (`ordersAndAttempts`, `loading`, `refetch`).
+- A `OrdersPage` passará esses dados para evitar duas buscas independentes.
+- Isso mantém cards, filtros, contadores e “Ver” trabalhando sobre a mesma lista.
+
+### 6. Status que não aparecem corretamente
+
+Em `src/components/admin/orders/OrdersTabsRefactored.tsx`:
+
+- Incluir status legados usados no banco nos agrupamentos corretos, especialmente:
+  - `pago` e `pago_pendente_video` como aguardando vídeo;
+  - manter `aguardando_video` também;
+  - `ativo` e/ou `video_aprovado` conforme lógica atual.
+
+Isso evita pedidos sumirem de abas por diferença entre status novo e legado.
+
+## Arquivos previstos
 
 - `src/pages/admin/OrdersPage.tsx`
+- `src/pages/admin/OrderDetails.tsx`
+- `src/components/impersonation/AccessAsClientButton.tsx`
+- `src/components/impersonation/ClientOrderViewSheet.tsx`
 - `src/components/admin/orders/OrdersTabsRefactored.tsx`
-- `src/components/admin/orders/components/MinimalOrderCard.tsx`
-- `src/components/admin/orders/components/EnhancedOrderCard.tsx`
-- `src/components/admin/orders/OrderMobileList.tsx` / `OrderMobileCard.tsx`
-- `src/components/impersonation/AccessAsClientButton.tsx` ou novo componente específico para painel interno
-- possivelmente `src/pages/advertiser/OrderDetails.tsx`, com ajuste mínimo para aceitar contexto embutido sem depender da rota
 
 ## Resultado esperado
 
-Clicar em `Ver` no pedido do cliente abre uma visualização de cliente dentro da própria tela de pedidos do super_admin, sem nova aba, sem troca de página e sem conflito visual de roles.
+- Na lista de pedidos, clicar **Ver** abre a página de detalhe admin do pedido, como antes.
+- Na página de detalhe, clicar **Entrar/Acessar como cliente** abre a visualização do cliente dentro de um modal/painel na mesma tela.
+- Nenhuma nova aba e nenhuma navegação direta para `/anunciante` nesse fluxo do pedido.
+- A lista passa a usar uma única fonte de dados, reduzindo pedidos duplicados, ausentes ou fora de status.
