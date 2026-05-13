@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetPrimitiveContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { X, ShieldAlert, Loader2 } from 'lucide-react';
@@ -54,7 +54,7 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleClose(); else onOpenChange(true); }}>
-      <SheetContent
+      <SheetPrimitiveContent
         side="right"
         className="w-full sm:max-w-none p-0 gap-0 flex flex-col"
         style={{ width: '100vw', maxWidth: '100vw' }}
@@ -69,10 +69,7 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
         </VisuallyHidden>
 
         {/* Faixa de identidade */}
-        <div
-          className="flex items-center justify-between gap-3 px-4 py-2 text-white shadow-md"
-          style={{ background: 'linear-gradient(90deg, #7D1818 0%, #C7141A 100%)' }}
-        >
+        <div className="flex items-center justify-between gap-3 px-4 py-2 text-primary-foreground shadow-md bg-gradient-to-r from-exa-red-dark to-exa-red">
           <div className="flex items-center gap-2 min-w-0">
             <ShieldAlert className="h-5 w-5 flex-shrink-0" />
             <div className="text-sm font-semibold truncate">
@@ -84,7 +81,7 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
           <Button
             size="sm"
             variant="secondary"
-            className="bg-white text-[#7D1818] hover:bg-white/90 font-semibold"
+            className="bg-background text-exa-red hover:bg-background/90 font-semibold"
             onClick={handleClose}
           >
             <X className="h-4 w-4 mr-1" /> Fechar
@@ -111,7 +108,7 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
             />
           )}
         </div>
-      </SheetContent>
+      </SheetPrimitiveContent>
     </Sheet>
   );
 };

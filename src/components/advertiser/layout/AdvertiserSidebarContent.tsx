@@ -35,6 +35,8 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUserSession();
+  const displayName = (user as any)?.empresa_nome || user?.nome || user?.email?.split('@')[0] || 'Anunciante';
+  const preservedSearch = location.search.includes('impersonate=') || location.search.includes('embedded=') ? location.search : '';
 
   const handleSignOut = async () => {
     try {
@@ -126,7 +128,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
           <div className="flex items-center justify-between animate-in fade-in slide-in-from-left-5 duration-300">
             <div className="flex-1 min-w-0">
               <div className="text-white font-semibold text-sm truncate">
-                {user?.email?.split('@')[0] || 'Anunciante'}
+                {displayName}
               </div>
               <div className="flex items-center space-x-2 mt-1">
                 <Crown className="h-3 w-3 text-blue-400 flex-shrink-0" />
@@ -153,7 +155,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                 <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
                   <div className="flex flex-col space-y-1 p-2">
                     <p className="text-sm font-medium leading-none text-gray-900">
-                      {user?.email || 'Anunciante'}
+                        {displayName}
                     </p>
                     <p className="text-xs leading-none text-blue-600 font-medium">
                       Portal do Anunciante
@@ -223,7 +225,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
               {items.map((item) => (
                 <Link
                   key={item.href}
-                  to={item.href}
+                  to={`${item.href}${preservedSearch}`}
                   onClick={onItemClick}
                   className={cn(
                     'flex items-center rounded-xl text-sm font-medium transition-all duration-200 group',

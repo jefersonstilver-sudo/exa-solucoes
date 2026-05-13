@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from './useAuth';
+import { useEffectiveAuth as useAuth } from './useEffectiveAuth';
 
 /**
  * Hook de proteção para páginas do portal do anunciante

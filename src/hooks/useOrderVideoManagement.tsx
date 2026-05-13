@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useVideoManagement } from '@/hooks/useVideoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { VideoSlot } from '@/types/videoManagement';

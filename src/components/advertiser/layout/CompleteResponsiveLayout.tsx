@@ -18,7 +18,8 @@ const CompleteResponsiveLayout = () => {
   const { isMobile, isTablet, isDesktop, isXl } = useMobileBreakpoints();
   const location = useLocation();
   // Modo embutido: usado quando o portal é renderizado dentro de um iframe
-  // a partir do super_admin (ClientOrderViewSheet). Esconde sidebar/header.
+  // a partir do super_admin (ClientOrderViewSheet). Mantém a navegação do cliente
+  // dentro do próprio painel, mas sem duplicar a barra vermelha global.
   const isEmbedded = new URLSearchParams(location.search).get('embedded') === '1';
 
   const getPageTitle = () => {
@@ -38,7 +39,6 @@ const CompleteResponsiveLayout = () => {
     <ImpersonationProvider fallbackUserId={(userProfile as any)?.user_id || (userProfile as any)?.id || null}>
       {!isEmbedded && <ImpersonationTopBar />}
       <div className="min-h-screen bg-gray-50 flex w-full relative">
-      {!isEmbedded && (
         <ResponsiveAdvertiserSidebar
           isOpen={sidebarOpen}
           onClose={handleSidebarClose}
@@ -46,14 +46,13 @@ const CompleteResponsiveLayout = () => {
           isTablet={isTablet}
           isCollapsed={sidebarCollapsed}
         />
-      )}
 
       <main className={cn(
         "flex-1 w-full min-h-screen overflow-y-auto transition-all duration-300",
-        !isEmbedded && !(isMobile || isTablet) && (sidebarCollapsed ? 'ml-16' : 'ml-80')
+        !(isMobile || isTablet) && (sidebarCollapsed ? 'ml-16' : 'ml-80')
       )}>
         <div className="h-full">
-          {!isEmbedded && (isDesktop || isXl) && (
+          {(isDesktop || isXl) && (
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
               <div className="px-4 sm:px-6 py-4">
                 <div className="flex items-center space-x-4">
@@ -74,14 +73,14 @@ const CompleteResponsiveLayout = () => {
             </div>
           )}
 
-          {!isEmbedded && (isMobile || isTablet) && (
+          {(isMobile || isTablet) && (
             <UnifiedAdvertiserMobileHeader
               title={getPageTitle()}
               onMenuClick={handleSidebarOpen}
             />
           )}
 
-          <div className={isEmbedded ? "p-3 sm:p-4" : "p-4 sm:p-6"}>
+          <div className="p-4 sm:p-6">
             <Outlet />
           </div>
         </div>
