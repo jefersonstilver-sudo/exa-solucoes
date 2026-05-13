@@ -33,6 +33,7 @@ export interface AdminBuilding {
   imagem_4: string;
   caracteristicas: string[];
   created_at: string;
+  local_updated_at?: string | null;
   codigo_predio: string;
   nome_sindico: string;
   contato_sindico: string;
@@ -46,6 +47,7 @@ export interface AdminBuilding {
   device_id: string | null;
   device_status: 'online' | 'offline' | 'not_connected';
   device_last_online_at: string | null;
+  tem_airbnb?: boolean;
 }
 
 export const fetchAllBuildingsForAdmin = async () => {
