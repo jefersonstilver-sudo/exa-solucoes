@@ -264,6 +264,7 @@ const SuperAdminRoutes = () => {
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="seguranca" element={<SecurityDashboard />} />
+      <Route path="auditoria-impersonacao" element={<Suspense fallback={<GlobalLoadingPage />}><AuditoriaImpersonacao /></Suspense>} />
       <Route path="zapi-diagnostico" element={<ZApiDiagnostics />} />
       
       {/* ============ MEU PERFIL ============ */}
