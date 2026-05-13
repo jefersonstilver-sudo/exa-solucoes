@@ -7,6 +7,7 @@ import {
   Settings, 
   Users, 
   Shield,
+  ShieldCheck,
   Crown,
   Video,
   Images,
