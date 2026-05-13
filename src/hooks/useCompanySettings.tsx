@@ -136,12 +136,10 @@ export const useCompanySettings = () => {
 // Função utilitária para buscar configurações de forma síncrona (para Edge Functions)
 export const getCompanySettingsSync = async (): Promise<CompanySettings> => {
   try {
-    const { data, error } = await supabase
-      .from('configuracoes_empresa')
-      .select('*')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
+    // 🔒 SEGURANÇA: RPC pública sem dados pessoais do representante.
+    const { data: rpcRows, error } = await (supabase as any)
+      .rpc('get_public_company_info');
+    const data = Array.isArray(rpcRows) ? rpcRows[0] : null;
 
     if (error || !data) {
       return DEFAULT_SETTINGS;
