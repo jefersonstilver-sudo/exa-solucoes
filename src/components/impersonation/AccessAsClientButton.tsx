@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, ButtonProps } from '@/components/ui/button';
 import { UserCog, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,8 +16,9 @@ interface AccessAsClientButtonProps extends Omit<ButtonProps, 'onClick'> {
 
 /**
  * Button visible only to super_admin / admin_master_video.
- * Calls start-impersonation and opens /anunciante in a new isolated tab
- * with ?impersonate=<session_id>.
+ * Calls start-impersonation and navigates (same window) to /anunciante
+ * with ?impersonate=<session_id>. The advertiser portal then substitutes
+ * the userProfile via useEffectiveAuth.
  */
 const AccessAsClientButton: React.FC<AccessAsClientButtonProps> = ({
   targetUserId,
@@ -30,6 +32,7 @@ const AccessAsClientButton: React.FC<AccessAsClientButtonProps> = ({
   ...rest
 }) => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleClick = async () => {
     if (!targetUserId) {
@@ -47,8 +50,8 @@ const AccessAsClientButton: React.FC<AccessAsClientButtonProps> = ({
 
       const path = redirectPath ?? (pedidoId ? `pedido/${pedidoId}` : 'pedidos');
       const url = `/anunciante/${path}?impersonate=${encodeURIComponent(sessionId)}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-      toast.success('Sessão de impersonação iniciada (30 min).');
+      toast.success('Modo cliente ativo (30 min).');
+      navigate(url);
     } catch (e: any) {
       console.error('start-impersonation error', e);
       toast.error(e?.message || 'Falha ao iniciar impersonação.');
