@@ -208,6 +208,17 @@ const OrdersPage = () => {
   };
 
   const handleViewOrderDetails = (orderId: string) => {
+    // Abre o painel interno (sem trocar de página) com a visão do cliente.
+    const item = ordersAndAttempts.find((o) => o.id === orderId);
+    if (item && item.type === 'order' && item.client_id) {
+      setClientView({
+        pedidoId: orderId,
+        clientId: item.client_id,
+        clientLabel: item.client_name || item.client_email || undefined,
+      });
+      return;
+    }
+    // Fallback: tentativas ou pedidos sem client_id mantêm o detalhe admin.
     navigate(`/super_admin/pedidos/${orderId}`);
   };
 
