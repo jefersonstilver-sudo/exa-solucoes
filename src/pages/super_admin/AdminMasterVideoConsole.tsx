@@ -54,7 +54,15 @@ const AdminMasterVideoConsole: React.FC = () => {
         role: 'admin_master_video',
       });
       if (error) throw error;
-      toast.success(`${u.email} é agora Admin Master de Vídeo.`);
+      // Notificação por email (não bloqueia o sucesso)
+      try {
+        await supabase.functions.invoke('send-admin-master-video-notice', {
+          body: { email: u.email, name: u.nome },
+        });
+      } catch (mailErr) {
+        console.warn('Falha ao enviar email de aviso:', mailErr);
+      }
+      toast.success(`${u.email} é agora Admin Master de Vídeo. Email de aviso enviado.`);
       await loadAdmins();
     } catch (e: any) {
       toast.error(e?.message || 'Falha ao conceder.');
