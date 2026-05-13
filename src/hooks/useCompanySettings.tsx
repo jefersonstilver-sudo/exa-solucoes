@@ -162,7 +162,11 @@ export const getCompanySettingsSync = async (): Promise<CompanySettings> => {
     ].filter(Boolean).join(', ').replace(', ,', ',');
 
     return {
+      ...DEFAULT_SETTINGS,
       ...data,
+      representante_cpf: DEFAULT_SETTINGS.representante_cpf,
+      representante_rg: DEFAULT_SETTINGS.representante_rg,
+      representante_email: DEFAULT_SETTINGS.representante_email,
       endereco_completo,
       foro_completo: `${data.foro_comarca}/${data.foro_estado}`,
     } as CompanySettings;
