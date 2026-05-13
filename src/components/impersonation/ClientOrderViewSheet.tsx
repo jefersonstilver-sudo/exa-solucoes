@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Sheet, SheetPrimitiveContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
-import { X, ShieldAlert, Loader2 } from 'lucide-react';
+import { X, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ClientOrderViewSheetProps {
@@ -31,15 +31,9 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
   sessionId,
   clientLabel,
 }) => {
-  const [iframeLoading, setIframeLoading] = useState(true);
-
   const iframeUrl = open && pedidoId && sessionId
     ? `/anunciante/pedido/${pedidoId}?impersonate=${encodeURIComponent(sessionId)}&embedded=1`
     : null;
-
-  useEffect(() => {
-    if (open) setIframeLoading(true);
-  }, [open, iframeUrl]);
 
   const handleClose = async () => {
     if (sessionId) {
@@ -69,42 +63,36 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
         </VisuallyHidden>
 
         {/* Faixa de identidade */}
-        <div className="flex items-center justify-between gap-3 px-4 py-2 text-primary-foreground shadow-md bg-gradient-to-r from-exa-red-dark to-exa-red">
+        <div
+          className="relative z-20 flex items-center justify-between gap-3 px-4 py-2 text-white shadow-md"
+          style={{ backgroundColor: 'hsl(var(--exa-red))' }}
+        >
           <div className="flex items-center gap-2 min-w-0">
-            <ShieldAlert className="h-5 w-5 flex-shrink-0" />
-            <div className="text-sm font-semibold truncate">
+            <ShieldAlert className="h-5 w-5 flex-shrink-0 text-white" />
+            <div className="text-sm font-semibold truncate text-white">
               Visualizando como cliente
-              {clientLabel && <span className="font-bold ml-1">{clientLabel}</span>}
-              {pedidoId && <span className="ml-2 font-mono text-xs opacity-80">#{pedidoId.substring(0, 8)}</span>}
+              {clientLabel && <span className="font-bold ml-1 text-white">{clientLabel}</span>}
+              {pedidoId && <span className="ml-2 font-mono text-xs opacity-80 text-white">#{pedidoId.substring(0, 8)}</span>}
             </div>
           </div>
           <Button
             size="sm"
             variant="secondary"
-            className="bg-background text-exa-red hover:bg-background/90 font-semibold"
+            className="bg-white text-exa-red hover:bg-white/90 font-semibold"
             onClick={handleClose}
           >
             <X className="h-4 w-4 mr-1" /> Fechar
           </Button>
         </div>
 
-        {/* Corpo */}
+        {/* Corpo — sem loader próprio: o portal do anunciante exibe seu próprio loader dentro do iframe */}
         <div className="flex-1 bg-gray-50 relative overflow-hidden">
-          {iframeLoading && iframeUrl && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10 pointer-events-none">
-              <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="text-sm">Carregando visão do cliente…</span>
-              </div>
-            </div>
-          )}
           {iframeUrl && (
             <iframe
               key={iframeUrl}
               src={iframeUrl}
               title="Visão do cliente"
               className="w-full h-full border-0"
-              onLoad={() => setIframeLoading(false)}
             />
           )}
         </div>
