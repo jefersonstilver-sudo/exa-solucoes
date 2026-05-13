@@ -1,60 +1,56 @@
-## Objetivo
+## Auditoria: por que não funcionou
 
-Quando o super_admin (ou admin_master_video) clicar em "Acessar como cliente", o portal `/anunciante` deve abrir **na mesma janela** e operar **completamente como o cliente alvo** (nome, email, pedidos, vídeos, faturas, QR codes, relatórios) — sem mostrar o nome do super_admin nem dados misturados.
+Encontrei 3 problemas principais no fluxo atual:
 
-## Arquivos afetados
+1. O botão `Ver` ainda navega para `/super_admin/pedidos/:id`, ou seja, troca de página para o detalhe administrativo. Pelo que você pediu, ao clicar em `Ver` no pedido do cliente, o conteúdo do cliente precisa abrir dentro da própria tela atual, sem sair para outra página.
+2. O botão de impersonação foi colocado como navegação para `/anunciante/...`; isso ainda troca o contexto inteiro da aplicação e pode cair em rotas/guards/roles do anunciante, causando a tela aparecer como cliente errado ou não carregar dados.
+3. Os cards compactos da lista (`MinimalOrderCard`/`EnhancedOrderCard`) não usam `AccessAsClientButton` diretamente no fluxo do `Ver`; então clicar em `Ver o Duquintão` continua usando detalhe admin, não um modo embutido de cliente.
 
-- `src/components/impersonation/AccessAsClientButton.tsx` — navegar na mesma aba
-- `supabase/functions/verify-impersonation/index.ts` — retornar perfil completo do cliente
-- `src/contexts/ImpersonationContext.tsx` — expor `effectiveUserProfile` e voltar para `/super_admin/pedidos` ao sair
-- **Novo:** `src/hooks/useEffectiveAuth.ts` — wrapper de `useAuth` que substitui `userProfile` pelo cliente quando impersonando
-- Páginas do anunciante (trocar `useAuth` por `useEffectiveAuth`):
-  - `AdvertiserDashboard.tsx` (e bypass do redirect que expulsa super_admin)
-  - `AdvertiserOrders.tsx`, `AdvertiserInvoices.tsx`, `AdvertiserReports.tsx`, `AdvertiserSettings.tsx`
-  - `MyCampaigns.tsx`, `MyVideos.tsx`, `CampaignDetails.tsx`, `QrCodesRastreaveis.tsx`, `GeradorRoteiros.tsx`
-- `ResponsiveAdvertiserSidebar`, `NewModernAdvertiserSidebar`, `AdvertiserDesktopSidebar`, `ResponsiveAdvertiserLayout`, `CompleteResponsiveLayout`, `UnifiedAdvertiserMobileHeader` (sidebars/headers que mostram nome/email)
+## Plano de correção
 
-## Mudanças, etapa por etapa
+### 1. Trocar o modelo de navegação por painel interno
+- Criar um modo interno na tela `/super_admin/pedidos`: `clienteEmVisualizacao`.
+- Ao clicar em `Ver` em um pedido, em vez de navegar para outra rota, abrir um painel/drawer/modal grande dentro da própria página de pedidos.
+- Esse painel mostrará o pedido do cliente e as ações necessárias sem sair da tela do super_admin.
 
-### 1. Abrir na mesma janela
-- `AccessAsClientButton`: trocar `window.open(url, '_blank')` por `navigate(url)` (react-router). Mantém `?impersonate=<session_id>` na URL.
-- Botão "Sair do modo cliente" passa a navegar para `/super_admin/pedidos` (quando origem foi super_admin).
+### 2. Usar impersonação apenas como contexto interno do painel
+- O painel chamará `start-impersonation` para registrar a sessão e auditoria.
+- Em vez de redirecionar para `/anunciante`, ele renderizará o conteúdo do cliente dentro da janela atual.
+- Ao fechar o painel, chamar `end-impersonation` e voltar exatamente para a lista de pedidos, mantendo filtros/posição da página.
 
-### 2. Verify retorna perfil completo
-`verify-impersonation` passa a retornar o registro inteiro do cliente em `target_user` (id, email, nome, role, telefone, empresa_nome, avatar_url, cnpj, etc.) — mesmo formato esperado pelo `userProfile` do `useAuth`.
+### 3. Renderizar o detalhe do pedido do anunciante dentro do painel
+- Reaproveitar a página/componente do detalhe do pedido do anunciante sempre que possível.
+- Passar o `pedidoId` e o `clientId` efetivos para que as queries usem o cliente correto.
+- Evitar depender de `auth.uid()` do anunciante; a sessão real continua sendo a do super_admin, mas os filtros do front usam o cliente alvo.
 
-### 3. Hook `useEffectiveAuth`
-```text
-useEffectiveAuth() →
-  se isImpersonating:
-    userProfile = effectiveUserProfile (do cliente alvo)
-    isImpersonating = true
-  senão:
-    delega 100% ao useAuth() original
-```
-Este hook é a substituição **drop-in** do `useAuth` em todas as páginas do `/anunciante`.
+### 4. Corrigir os cards da lista
+- `MinimalOrderCard`, `EnhancedOrderCard`, `OrderMobileCard` e a tabela receberão uma nova callback, algo como `onOpenClientView(orderId, clientId)`.
+- O botão `Ver` continuará visualmente igual, mas abrirá o painel interno quando estiver na página de pedidos do super_admin.
+- O detalhe administrativo continuará disponível apenas onde já existe fluxo específico de admin, sem quebrar outras telas.
 
-### 4. Substituir `useAuth` por `useEffectiveAuth`
-Em todas as páginas e componentes listados acima do `/anunciante`. Páginas fora do portal (`/super_admin`, `/admin`, etc.) continuam com `useAuth` normal.
+### 5. Bloquear mistura de usuários
+- O painel exibirá uma faixa clara: “Visualizando como cliente: [nome/email]”.
+- Sidebar/menu do anunciante não será usado nesse fluxo interno, evitando mostrar `jefersonstilver@gmail.com` ou avatar do super_admin.
+- Dados serão filtrados por `pedidoId` + `clientId` do pedido selecionado.
 
-### 5. Bypass do redirect no Dashboard
-`AdvertiserDashboard` só redireciona super_admin se **não** estiver impersonando.
+### 6. Teste funcional
+- Testar em `/super_admin/pedidos`:
+  - clicar `Ver` no pedido “Duquintão”;
+  - confirmar que abre dentro da mesma página, sem mudar para `/anunciante` nem `/super_admin/pedidos/:id`;
+  - confirmar que o nome/email exibido é do cliente do pedido;
+  - confirmar que vídeos/upload/ações do pedido aparecem para o pedido correto;
+  - fechar o painel e confirmar retorno para a lista sem perder contexto.
 
-### 6. TopBar visível sempre
-- Garantir que `ImpersonationTopBar` (z-1000) fica acima do header sticky (z-10) e do sidebar — já está, só revalidar.
-- Adicionar margem ao topo do `<main>` para não ficar coberto pelo banner em todas as larguras.
+## Arquivos que devem ser alterados
 
-### 7. Ações sensíveis
-- Edge functions `admin-hard-delete-video` e `admin-purge-pedido-videos` já operam por `pedido_id` + service role — continuam funcionando porque o `pedidoId` vem do contexto de impersonação.
-- Logging via `log-impersonation-action` continua registrando o admin real.
+- `src/pages/admin/OrdersPage.tsx`
+- `src/components/admin/orders/OrdersTabsRefactored.tsx`
+- `src/components/admin/orders/components/MinimalOrderCard.tsx`
+- `src/components/admin/orders/components/EnhancedOrderCard.tsx`
+- `src/components/admin/orders/OrderMobileList.tsx` / `OrderMobileCard.tsx`
+- `src/components/impersonation/AccessAsClientButton.tsx` ou novo componente específico para painel interno
+- possivelmente `src/pages/advertiser/OrderDetails.tsx`, com ajuste mínimo para aceitar contexto embutido sem depender da rota
 
-### 8. QA manual após implementação
-- Login super_admin → Pedidos → "Acessar como cliente" em um pedido real
-- Verificar: banner vermelho aparece no topo, sidebar mostra nome/email do **cliente**, pedidos listados são do cliente, faturas idem, relatórios idem, QR Codes idem
-- Clicar "Sair do modo cliente" → volta para `/super_admin/pedidos`
-- Auto-expira em 30min
+## Resultado esperado
 
-## Notas
-
-- Não altera RLS nem auth.uid() — a sessão real continua a do super_admin (necessário para edge functions admin-only). A "troca" é apenas do `userProfile` no front, que dirige as queries `.eq('client_id', X)`. Como super_admin já tem RLS de leitura ampla, as queries retornam os dados do cliente normalmente.
-- O badge "Atualização do app disponível" na imagem é do anti-cache existente e não está relacionado.
+Clicar em `Ver` no pedido do cliente abre uma visualização de cliente dentro da própria tela de pedidos do super_admin, sem nova aba, sem troca de página e sem conflito visual de roles.
