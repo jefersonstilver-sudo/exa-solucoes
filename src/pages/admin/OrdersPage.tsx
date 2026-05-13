@@ -18,6 +18,7 @@ import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/ad
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 import { FixPedidoListaPaineisButton } from '@/components/admin/FixPedidoListaPaineisButton';
 import AdminCreateOrderDialog from '@/components/admin/orders/create/AdminCreateOrderDialog';
+import ClientOrderViewSheet from '@/components/impersonation/ClientOrderViewSheet';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ const OrdersPage = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'pagos' | 'aguardando' | 'ativos'>('all');
   const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [clientView, setClientView] = useState<{ pedidoId: string; clientId: string; clientLabel?: string } | null>(null);
   
   // Estado para pedidos com vídeos ativos (campanhas em exibição)
   const [activeOrdersCount, setActiveOrdersCount] = React.useState(0);
@@ -206,6 +208,17 @@ const OrdersPage = () => {
   };
 
   const handleViewOrderDetails = (orderId: string) => {
+    // Abre o painel interno (sem trocar de página) com a visão do cliente.
+    const item = ordersAndAttempts.find((o) => o.id === orderId);
+    if (item && item.type === 'order' && item.client_id) {
+      setClientView({
+        pedidoId: orderId,
+        clientId: item.client_id,
+        clientLabel: item.client_name || item.client_email || undefined,
+      });
+      return;
+    }
+    // Fallback: tentativas ou pedidos sem client_id mantêm o detalhe admin.
     navigate(`/super_admin/pedidos/${orderId}`);
   };
 
@@ -448,6 +461,15 @@ const OrdersPage = () => {
           onOpenChange={setShowCreateOrder}
           onSuccess={refetch}
         />
+
+        {/* Visão do cliente (impersonação interna) */}
+        <ClientOrderViewSheet
+          open={!!clientView}
+          onOpenChange={(v) => { if (!v) setClientView(null); }}
+          pedidoId={clientView?.pedidoId || null}
+          clientId={clientView?.clientId || null}
+          clientLabel={clientView?.clientLabel || null}
+        />
       </div>
     );
   }
@@ -503,6 +525,15 @@ const OrdersPage = () => {
         open={showCreateOrder}
         onOpenChange={setShowCreateOrder}
         onSuccess={refetch}
+      />
+
+      {/* Visão do cliente (impersonação interna) */}
+      <ClientOrderViewSheet
+        open={!!clientView}
+        onOpenChange={(v) => { if (!v) setClientView(null); }}
+        pedidoId={clientView?.pedidoId || null}
+        clientId={clientView?.clientId || null}
+        clientLabel={clientView?.clientLabel || null}
       />
     </div>
   );
