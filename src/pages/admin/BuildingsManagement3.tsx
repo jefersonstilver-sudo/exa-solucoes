@@ -48,7 +48,13 @@ const BuildingsManagement3 = () => {
         (b.endereco || '').toLowerCase().includes(term) ||
         (b.bairro || '').toLowerCase().includes(term);
 
-      const matchesStatus = filters.status === 'all' || b.status === filters.status;
+      const normalize = (s?: string) =>
+        (s || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+      const matchesStatus =
+        filters.status === 'all' || normalize(b.status) === normalize(filters.status);
 
       const matchesAirbnb =
         filters.airbnb === 'all' ||
