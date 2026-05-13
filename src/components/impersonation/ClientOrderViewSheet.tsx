@@ -64,21 +64,22 @@ const ClientOrderViewSheet: React.FC<ClientOrderViewSheetProps> = ({
 
         {/* Faixa de identidade */}
         <div
-          className="relative z-20 flex items-center justify-between gap-3 px-4 py-2 text-white shadow-md"
-          style={{ backgroundColor: 'hsl(var(--exa-red))' }}
+          className="relative z-20 flex items-center justify-between gap-3 px-4 py-2 shadow-md"
+          style={{ backgroundColor: '#C7141A', color: '#ffffff' }}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <ShieldAlert className="h-5 w-5 flex-shrink-0 text-white" />
-            <div className="text-sm font-semibold truncate text-white">
+          <div className="flex items-center gap-2 min-w-0" style={{ color: '#ffffff' }}>
+            <ShieldAlert className="h-5 w-5 flex-shrink-0" style={{ color: '#ffffff' }} />
+            <div className="text-sm font-semibold truncate" style={{ color: '#ffffff' }}>
               Visualizando como cliente
-              {clientLabel && <span className="font-bold ml-1 text-white">{clientLabel}</span>}
-              {pedidoId && <span className="ml-2 font-mono text-xs opacity-80 text-white">#{pedidoId.substring(0, 8)}</span>}
+              {clientLabel && <span className="font-bold ml-1" style={{ color: '#ffffff' }}>{clientLabel}</span>}
+              {pedidoId && <span className="ml-2 font-mono text-xs opacity-80" style={{ color: '#ffffff' }}>#{pedidoId.substring(0, 8)}</span>}
             </div>
           </div>
           <Button
             size="sm"
             variant="secondary"
-            className="bg-white text-exa-red hover:bg-white/90 font-semibold"
+            className="font-semibold hover:opacity-90"
+            style={{ backgroundColor: '#ffffff', color: '#C7141A' }}
             onClick={handleClose}
           >
             <X className="h-4 w-4 mr-1" /> Fechar
