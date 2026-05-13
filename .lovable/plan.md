@@ -1,49 +1,27 @@
-# Correção dos filtros da página /super_admin/predios
+## Diagnóstico
 
-## Diagnóstico (causa raiz)
+O `/catalogo` lê os dados do **Notion** (edge function `catalogo-predios`), enquanto o admin lê da tabela `buildings` do Supabase. Por isso a flag Airbnb está dessincronizada.
 
-Auditando a base e o código:
+No Notion temos **21 prédios marcados com Airbnb**. Cruzando por nome com os prédios `ativo` / `instalacao` da nossa tabela `buildings`, **3 já estão corretos** (Residencial Miró, Riverside, Royal Legacy) e **4 estão faltando** ser marcados:
 
-- DB tem hoje: `ativo` (18), `interno` (3), `instalacao` (2). Não existe `manutenção` nem `inativo`.
-- Em `BuildingsFilters3.tsx` os valores comparados estão com acento/cedilha: `'manutenção'` e `'instalação'`. Por isso a pílula **Instalação aparece 0** mesmo com 2 prédios.
-- Não existe pílula para **Internos**, então os 3 prédios internos não têm filtro próprio (apesar de virem na lista).
-- A linha do dropdown **Airbnb / Padrão / Painéis / Device** existe no componente, mas fica "escondida" como terceira linha; o usuário relata não vê-la. Precisa ficar visível e usável no fluxo.
-- `tem_airbnb` está corretamente lido (2 prédios marcados), só falta dar destaque ao filtro.
+| Nome no admin | Status | Equivalente no Notion |
+|---|---|---|
+| Condomínio Cheverny | ativo | Condomínio Edifício Cheverny |
+| Foz Residence | ativo | Edifício Foz Residence |
+| Saint Peter | ativo | Condomínio Residencial Saint Peter |
+| Omoiru | instalação | Omoiru |
 
-## O que vai mudar (somente UI/filtros)
+Os demais marcados no Notion são `interesse` (não estão no admin como ativo/instalação) ou variantes/torres ainda não cadastradas separadamente no admin (ex.: "Cheverny 2", "Riverside Residence 2", "Royal Legacy 2/3"). Esses **não** serão tocados — apenas se você pedir explicitamente para criar/desdobrar.
 
-Arquivos: `src/components/admin/buildings/v3/BuildingsFilters3.tsx` e `src/pages/admin/BuildingsManagement3.tsx`. Nada em RLS, edge functions, cards, modais ou fluxo comercial.
+## O que será feito
 
-### 1. Corrigir os status para os valores reais do DB
-- `'manutenção'` → `'manutencao'`
-- `'instalação'` → `'instalacao'`
-- Adicionar pílula **Internos** com `status === 'interno'` (ícone Lock/EyeOff, cor roxa, alinhado ao memory de visibilidade — Interno é admin-only).
-- Contagens das pílulas passam a refletir o que existe (Ativos 18, Internos 3, Instalação 2, Inativos 0, Manutenção 0).
+1. `UPDATE buildings SET tem_airbnb = true WHERE id IN (...)` para os 4 IDs acima.
+   - IDs: `f5207451-fa43-4a38-8fac-f6e62c56ca6e` (Cheverny), `6e3e0e94-28ca-40ad-bc79-bbe301a0400f` (Foz Residence), `bc17603b-5013-406f-9da8-243f7aa2d737` (Saint Peter), `df70a9c6-7883-4a83-8d8a-e40e1bb0a43d` (Omoiru).
+2. Nada mais é alterado: sem mudanças em UI, filtros, RLS, edge functions, ou em qualquer outro prédio.
+3. Após a atualização o pill "Com Airbnb" no `/super_admin/predios` passará a contar **7** (3 atuais + 4 novos).
 
-### 2. Tornar o filtro Airbnb explícito e visível
-- Promover Airbnb a uma **pílula toggle dedicada** ao lado das pílulas de status (3 estados em 1 clique: Todos → Com Airbnb → Sem Airbnb), com ícone Home e contagem (`com Airbnb: N`).
-- Manter também na linha de filtros refinados o restante (Padrão de público, Painéis, Device) como Selects, mas com rótulos mais claros (`Padrão: Alto/Médio/Normal`, `Painéis: Com ativos/Sem`, `Device: Online/Offline/Sem`).
+## Fora do escopo (não será feito sem ok explícito)
 
-### 3. Manter ordenação atual
-- Default `Atualizado recentemente` (`local_updated_at desc`) — já implementado, garante que prédio editado sobe para o topo via trigger + realtime.
-- Demais opções permanecem: Mais recentes, Nome A→Z, Maior público, Mais painéis ativos.
-
-### 4. Botão "Limpar filtros" reaparece sempre que qualquer filtro (incluindo status, airbnb, padrão, painéis, device) sair do default.
-
-## Layout final da barra
-
-```text
-[ 🔍 Buscar nome/endereço/bairro ]                       [ ↕ Atualizado recentemente ▾ ]
-
-[Todos 23] [Ativos 18] [Internos 3] [Instalação 2] [Manutenção 0] [Inativos 0]   |   [🏠 Airbnb: Todos ▸]
-
-[Padrão ▾] [Painéis ▾] [Device ▾]                                            [✕ Limpar filtros]
-```
-
-## Validação após deploy
-
-- Pílula **Instalação** mostra 2 e filtra corretamente.
-- Pílula **Internos** aparece e mostra 3.
-- Pílula **Airbnb** alterna entre Todos/Com/Sem e a contagem bate com o DB (2 com Airbnb).
-- Editar um prédio (qualquer campo) faz ele subir para o topo mantendo filtros aplicados.
-- Nenhum card, modal, upload ou fluxo de contrato sofre alteração.
+- Criar prédios novos para "Cheverny 2", "Riverside Residence 2", "Royal Legacy 2/3".
+- Marcar prédios em status `interesse`/leads.
+- Sincronização automática Notion → Supabase (pode ser proposta depois como rotina).
