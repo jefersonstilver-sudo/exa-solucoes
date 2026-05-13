@@ -353,6 +353,16 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
         >
           Ver Detalhes
         </Button>
+        {order.client_id && (
+          <AccessAsClientButton
+            targetUserId={order.client_id}
+            pedidoId={order.id}
+            variant="outline"
+            size="sm"
+            className="w-full h-9 text-sm border-[#C7141A]/40 text-[#C7141A] hover:bg-[#C7141A]/10"
+            label="Acessar como cliente"
+          />
+        )}
       </div>
     </div>
   );
