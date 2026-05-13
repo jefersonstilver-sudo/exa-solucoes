@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Calendar, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
 
 interface OrderWithClient {
   id: string;
