@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { cleanupPendingUploads } from '@/services/videoStorageService';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { toast } from 'sonner';
 
 interface VideoSlot {
