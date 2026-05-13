@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useVideoActivityTracking = () => {
