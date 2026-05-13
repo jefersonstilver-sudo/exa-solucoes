@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Sheet, SheetPrimitiveContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
-import { X, ShieldAlert, Loader2 } from 'lucide-react';
+import { X, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ClientOrderViewSheetProps {
