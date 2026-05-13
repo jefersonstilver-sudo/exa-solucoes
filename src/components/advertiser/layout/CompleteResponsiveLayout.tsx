@@ -7,8 +7,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 import UnifiedAdvertiserMobileHeader from './UnifiedAdvertiserMobileHeader';
+import { ImpersonationProvider } from '@/contexts/ImpersonationContext';
+import ImpersonationTopBar from '@/components/impersonation/ImpersonationTopBar';
+import { useAuth } from '@/hooks/useAuth';
 
 const CompleteResponsiveLayout = () => {
+  const { userProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isMobile, isTablet, isDesktop, isXl } = useMobileBreakpoints();
