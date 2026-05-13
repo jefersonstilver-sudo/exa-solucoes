@@ -253,6 +253,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           video_url: videoData.url,
           video_duracao: videoData.duracao || 30,
           pedido_id: pedido.id,
+          client_id: pedido.client_id,
           client_email: clientEmail,
           client_name: clientName,
           valor_total: pedido.valor_total || 0,
