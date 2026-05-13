@@ -1,125 +1,60 @@
-# Modo "Admin Master de Vídeo" — Acessar como Cliente
+## Objetivo
 
-Função super avançada que permite admin master entrar na área `/anunciante` como se fosse o cliente (em nova aba isolada), com poderes de editar, trocar e excluir vídeos individualmente ou em massa, com auditoria completa.
+Quando o super_admin (ou admin_master_video) clicar em "Acessar como cliente", o portal `/anunciante` deve abrir **na mesma janela** e operar **completamente como o cliente alvo** (nome, email, pedidos, vídeos, faturas, QR codes, relatórios) — sem mostrar o nome do super_admin nem dados misturados.
 
-## 1. Novo nível de acesso: `admin_master_video`
+## Arquivos afetados
 
-- Adicionar valor `admin_master_video` ao enum `app_role` (Postgres).
-- No console de usuários (Tipos de Conta), adicionar a opção para super_admin atribuir/remover essa role.
-- Helper `has_role(uid, 'admin_master_video')` (já existe pattern) usado em policies e UI.
-- Permissão de impersonar concedida a: `super_admin` **OU** `admin_master_video`.
+- `src/components/impersonation/AccessAsClientButton.tsx` — navegar na mesma aba
+- `supabase/functions/verify-impersonation/index.ts` — retornar perfil completo do cliente
+- `src/contexts/ImpersonationContext.tsx` — expor `effectiveUserProfile` e voltar para `/super_admin/pedidos` ao sair
+- **Novo:** `src/hooks/useEffectiveAuth.ts` — wrapper de `useAuth` que substitui `userProfile` pelo cliente quando impersonando
+- Páginas do anunciante (trocar `useAuth` por `useEffectiveAuth`):
+  - `AdvertiserDashboard.tsx` (e bypass do redirect que expulsa super_admin)
+  - `AdvertiserOrders.tsx`, `AdvertiserInvoices.tsx`, `AdvertiserReports.tsx`, `AdvertiserSettings.tsx`
+  - `MyCampaigns.tsx`, `MyVideos.tsx`, `CampaignDetails.tsx`, `QrCodesRastreaveis.tsx`, `GeradorRoteiros.tsx`
+- `ResponsiveAdvertiserSidebar`, `NewModernAdvertiserSidebar`, `AdvertiserDesktopSidebar`, `ResponsiveAdvertiserLayout`, `CompleteResponsiveLayout`, `UnifiedAdvertiserMobileHeader` (sidebars/headers que mostram nome/email)
 
-### Onboarding moderno na primeira entrada
-- Email transacional via `send-transactional-email` (template novo `admin-master-video-ativado`) disparado quando role é atribuída.
-- No primeiro login após receber a role, modal "Premium Apple-like" full-screen mostra: o que é, para que serve, cuidados (auditoria, ações irreversíveis, expiração 30min), botão "Entendi e aceito".
-- Aceite gravado em `admin_master_video_onboarding (user_id, accepted_at)`.
+## Mudanças, etapa por etapa
 
-## 2. Sessão de impersonação (modo "view-as")
+### 1. Abrir na mesma janela
+- `AccessAsClientButton`: trocar `window.open(url, '_blank')` por `navigate(url)` (react-router). Mantém `?impersonate=<session_id>` na URL.
+- Botão "Sair do modo cliente" passa a navegar para `/super_admin/pedidos` (quando origem foi super_admin).
 
-Sem trocar JWT — mantém sessão admin e usa flag de contexto:
+### 2. Verify retorna perfil completo
+`verify-impersonation` passa a retornar o registro inteiro do cliente em `target_user` (id, email, nome, role, telefone, empresa_nome, avatar_url, cnpj, etc.) — mesmo formato esperado pelo `userProfile` do `useAuth`.
 
-- Tabela `admin_impersonation_sessions`:
-  - `id`, `admin_user_id`, `target_user_id`, `target_pedido_id` (nullable), `started_at`, `expires_at` (default `now()+30min`), `ended_at`, `end_reason` ('manual'|'expired'|'forced').
-- Edge function `start-impersonation`: valida role, cria registro, retorna `session_id` + `target_user_id`.
-- Edge function `end-impersonation`: marca `ended_at`.
-- Frontend abre nova aba: `/anunciante/dashboard?impersonate=<session_id>`.
-- Hook global `useImpersonation` lê o param, valida via edge function `verify-impersonation` (retorna target user + dados), guarda em `ImpersonationContext`.
-- `useAuth()` derivado expõe `effectiveUserId` (target quando impersonando, próprio user_id caso contrário). Todas as queries do anunciante usam `effectiveUserId`.
-
-### Barra fixa topo (red EXA)
-- `<ImpersonationTopBar />` renderizada no layout do anunciante quando contexto ativo.
-- Mostra: avatar/email do cliente, contador regressivo até `expires_at`, botão "Sair do modo cliente".
-- Auto-expira 30min — fecha aba e mostra toast.
-
-## 3. Pontos de entrada (UI)
-
-### A) Modal "Vídeos em Exibição" do prédio (`/super_admin/predios` → botão Playlist)
-Em cada item da playlist:
-- Linha `Dono: cliente@email.com`.
-- Botão vermelho "Acessar como cliente" → chama `start-impersonation` com `target_pedido_id` e abre `/anunciante/pedidos/{pedido_id}?impersonate=<session_id>` em nova aba.
-
-### B) Lista de Pedidos admin
-- Botão "Acessar como cliente" no card do pedido + dentro do detalhe do pedido (header).
-
-## 4. Poderes do admin no modo cliente
-
-Layout idêntico ao anunciante — escopo: **Pedidos, Vídeos, Relatórios e QR Codes Rastreáveis**.
-
-### Trocar vídeo
-- Mesmo fluxo TUS do cliente (`uploadVideo` em VideoSlotUpload).
-- Auto-aprovação: quando `impersonating === true`, força `approval_status: 'approved'`, `is_active: true`.
-
-### Deletar 1 vídeo (admin-only botão)
-- Hard delete: chama edge function nova `admin-hard-delete-video`:
-  1. Deleta `pedido_videos`, `videos`, `video_schedules`.
-  2. Remove do storage (signed delete).
-  3. Chama `delete-video-from-external-api` (AWS).
-  4. Loga em `admin_impersonation_actions`.
-- Botão visível só quando `impersonating && hasRole('admin_master_video'|'super_admin')`.
-
-### Deletar TODOS vídeos do pedido (admin-only)
-- Botão "Limpar playlist do pedido" no detalhe do pedido.
-- Modal Danger Zone: usuário digita o **nome do cliente OU id do pedido** para confirmar.
-- Edge function `admin-purge-pedido-videos`: itera + hard-delete (banco + storage + AWS), loga cada item.
-
-### Status do pedido
-- Permitido em **qualquer status**, inclusive finalizado/cancelado. Sem restrição extra.
-
-## 5. Auditoria
-
-- Tabela `admin_impersonation_actions`:
-  - `id`, `session_id` FK, `admin_user_id`, `target_user_id`, `pedido_id`, `action` ('view'|'upload_video'|'delete_video'|'purge_pedido'|'approve_video'|'edit_qr'|'edit_schedule'), `entity_id`, `payload` (jsonb), `created_at`.
-- Cada ação no modo impersonado escreve aqui (via edge function `log-impersonation-action`).
-- Cliente NÃO é notificado (apenas log).
-
-### Página de auditoria: `/super_admin/auditoria-impersonacao`
-- Tabela com filtros: admin, cliente, pedido, ação, intervalo de datas.
-- Drill-in: linha → drawer com timeline da sessão (start → ações → end).
-- Acessível só para super_admin.
-
-## 6. RLS / Segurança
-
-- Edge functions usam `service_role` para bypass; validam role do chamador via JWT antes de executar.
-- Policies das tabelas `pedido_videos`, `videos`, etc. recebem cláusulas adicionais permitindo `has_role(auth.uid(), 'admin_master_video')` OR `has_role(auth.uid(),'super_admin')` para escrita.
-- Nada exposto no client além de `session_id` (UUID opaco) — `target_user_id` é resolvido server-side a cada request crítica.
-- Sessão expira em 30min server-side; edge functions rejeitam ações com `expires_at < now()`.
-
-## Detalhes técnicos
-
+### 3. Hook `useEffectiveAuth`
 ```text
-DB Schema (migration única)
-├── ALTER TYPE app_role ADD VALUE 'admin_master_video';
-├── admin_impersonation_sessions
-├── admin_impersonation_actions
-├── admin_master_video_onboarding
-└── RLS: policies + helper has_role já existente
-
-Edge Functions
-├── start-impersonation      (POST: target_user_id, pedido_id?)
-├── verify-impersonation     (GET: session_id → target user payload)
-├── end-impersonation        (POST: session_id)
-├── log-impersonation-action (POST: action payload)
-├── admin-hard-delete-video  (POST: video_id, pedido_id, session_id)
-├── admin-purge-pedido-videos(POST: pedido_id, confirmation_text, session_id)
-└── (reuso) delete-video-from-external-api
-
-Frontend
-├── src/contexts/ImpersonationContext.tsx
-├── src/hooks/useImpersonation.ts (effectiveUserId)
-├── src/components/impersonation/ImpersonationTopBar.tsx
-├── src/components/impersonation/AdminMasterWelcomeDialog.tsx
-├── src/components/admin/buildings/PlaylistVideoOwnerActions.tsx
-├── src/components/admin/orders/AccessAsClientButton.tsx
-├── src/components/admin/orders/PurgePedidoVideosDialog.tsx
-├── src/pages/super_admin/AuditoriaImpersonacao.tsx
-└── Patch: useAuth → effectiveUserId; layout do anunciante renderiza TopBar
-
-Email
-└── send-transactional-email template: admin-master-video-ativado
+useEffectiveAuth() →
+  se isImpersonating:
+    userProfile = effectiveUserProfile (do cliente alvo)
+    isImpersonating = true
+  senão:
+    delega 100% ao useAuth() original
 ```
+Este hook é a substituição **drop-in** do `useAuth` em todas as páginas do `/anunciante`.
 
-## Fora de escopo (intencionalmente)
+### 4. Substituir `useAuth` por `useEffectiveAuth`
+Em todas as páginas e componentes listados acima do `/anunciante`. Páginas fora do portal (`/super_admin`, `/admin`, etc.) continuam com `useAuth` normal.
 
-- Impersonação fora do anunciante (perfil, faturas, configs do cliente).
-- Notificação ao cliente (apenas log).
-- Suporte mobile da barra impersonação (V2).
+### 5. Bypass do redirect no Dashboard
+`AdvertiserDashboard` só redireciona super_admin se **não** estiver impersonando.
+
+### 6. TopBar visível sempre
+- Garantir que `ImpersonationTopBar` (z-1000) fica acima do header sticky (z-10) e do sidebar — já está, só revalidar.
+- Adicionar margem ao topo do `<main>` para não ficar coberto pelo banner em todas as larguras.
+
+### 7. Ações sensíveis
+- Edge functions `admin-hard-delete-video` e `admin-purge-pedido-videos` já operam por `pedido_id` + service role — continuam funcionando porque o `pedidoId` vem do contexto de impersonação.
+- Logging via `log-impersonation-action` continua registrando o admin real.
+
+### 8. QA manual após implementação
+- Login super_admin → Pedidos → "Acessar como cliente" em um pedido real
+- Verificar: banner vermelho aparece no topo, sidebar mostra nome/email do **cliente**, pedidos listados são do cliente, faturas idem, relatórios idem, QR Codes idem
+- Clicar "Sair do modo cliente" → volta para `/super_admin/pedidos`
+- Auto-expira em 30min
+
+## Notas
+
+- Não altera RLS nem auth.uid() — a sessão real continua a do super_admin (necessário para edge functions admin-only). A "troca" é apenas do `userProfile` no front, que dirige as queries `.eq('client_id', X)`. Como super_admin já tem RLS de leitura ampla, as queries retornam os dados do cliente normalmente.
+- O badge "Atualização do app disponível" na imagem é do anti-cache existente e não está relacionado.

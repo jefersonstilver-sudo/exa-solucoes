@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Shield, TrendingUp, Eye, Play, ShoppingBag, Calendar, Monitor, AlertCircle, CheckCircle, Clock, DollarSign, Video } from 'lucide-react';
 import { toast } from 'sonner';

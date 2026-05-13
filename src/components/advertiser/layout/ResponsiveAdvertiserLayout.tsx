@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import MobileBottomNavigation from '@/components/mobile/MobileBottomNavigation';
 import MobileDrawerNavigation from '@/components/mobile/MobileDrawerNavigation';
 import AdvertiserDesktopSidebar from './AdvertiserDesktopSidebar';

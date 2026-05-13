@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { Loader2, FileText, FlaskConical } from 'lucide-react';
 import { useVideoReportData, DateRange } from '@/hooks/useVideoReportData';
 import { CampaignSummaryStats } from '@/components/advertiser/CampaignSummaryStats';
