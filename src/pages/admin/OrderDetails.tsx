@@ -1,17 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Download } from 'lucide-react';
+import { Loader2, ArrowLeft, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
 import { ProfessionalOrderReport } from '@/components/admin/orders/ProfessionalOrderReport';
 import { ProfessionalPDFExporter } from '@/components/admin/orders/ProfessionalPDFExporter';
+import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
+import PurgePedidoVideosDialog from '@/components/impersonation/PurgePedidoVideosDialog';
 
 const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { loading, orderDetails, orderVideos, panelData, refetch } = useRealOrderDetails(id || '');
   const [isExporting, setIsExporting] = React.useState(false);
+  const [purgeOpen, setPurgeOpen] = useState(false);
 
   const handleExportPDF = async () => {
     if (!orderDetails) return;
@@ -64,18 +67,36 @@ const OrderDetails = () => {
             Voltar para Lista
           </Button>
 
-          <Button
-            onClick={handleExportPDF}
-            disabled={isExporting}
-            className="flex items-center gap-2 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white font-semibold shadow-lg transition-all"
-          >
-            {isExporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {orderDetails?.client_id && (
+              <AccessAsClientButton
+                targetUserId={orderDetails.client_id}
+                pedidoId={id}
+                variant="default"
+                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white"
+              />
             )}
-            {isExporting ? 'Gerando PDF...' : 'Exportar PDF'}
-          </Button>
+            <Button
+              variant="outline"
+              onClick={() => setPurgeOpen(true)}
+              className="border-destructive/40 text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Excluir todos os vídeos
+            </Button>
+            <Button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              className="flex items-center gap-2 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white font-semibold shadow-lg transition-all"
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isExporting ? 'Gerando PDF...' : 'Exportar PDF'}
+            </Button>
+          </div>
         </div>
 
         {/* Relatório Profissional */}
@@ -85,6 +106,16 @@ const OrderDetails = () => {
           videos={orderVideos}
           onBuildingChanged={refetch}
         />
+
+        {id && (
+          <PurgePedidoVideosDialog
+            open={purgeOpen}
+            onOpenChange={setPurgeOpen}
+            pedidoId={id}
+            expectedConfirmation={id}
+            onPurged={refetch}
+          />
+        )}
       </div>
     </div>
   );
