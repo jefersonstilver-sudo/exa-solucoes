@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Play, User, Clock, Calendar } from 'lucide-react';
+import { Play, User, Clock, Calendar, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
 
 interface VideoPreviewCardProps {
   video: {
@@ -8,6 +9,9 @@ interface VideoPreviewCardProps {
     video_name: string;
     video_url: string;
     client_name?: string;
+    client_email?: string;
+    client_id?: string;
+    pedido_id?: string;
     is_scheduled?: boolean;
     video_duracao?: number;
   };
@@ -117,6 +121,26 @@ const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({ video }) => {
               </div>
             )}
           </div>
+
+          {video.client_email && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground truncate" title={`Dono: ${video.client_email}`}>
+              <Mail className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Dono: {video.client_email}</span>
+            </div>
+          )}
+
+          {video.client_id && (
+            <div className="pt-1">
+              <AccessAsClientButton
+                targetUserId={video.client_id}
+                pedidoId={video.pedido_id ?? null}
+                size="sm"
+                variant="destructive"
+                className="w-full h-7 text-[10px]"
+                label="Acessar como cliente"
+              />
+            </div>
+          )}
         </div>
       </div>
 
