@@ -17,6 +17,7 @@ export interface BuildingActiveVideo {
   video_url: string;
   video_duracao: number;
   pedido_id: string;
+  client_id?: string;
   client_email: string;
   client_name: string;
   valor_total: number;
