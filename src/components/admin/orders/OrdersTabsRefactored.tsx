@@ -140,10 +140,10 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         )
       ),
       
-      // 📹 AGUARDANDO VÍDEO
+      // 📹 AGUARDANDO VÍDEO (inclui status legados pago / pago_pendente_video)
       aguardando_video: sortItems(
         ordersAndAttempts.filter(item => 
-          item.type === 'order' && item.status === 'aguardando_video'
+          item.type === 'order' && ['aguardando_video', 'pago', 'pago_pendente_video'].includes(item.status)
         )
       ),
       
