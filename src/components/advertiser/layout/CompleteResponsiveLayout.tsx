@@ -7,8 +7,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 import UnifiedAdvertiserMobileHeader from './UnifiedAdvertiserMobileHeader';
+import { ImpersonationProvider } from '@/contexts/ImpersonationContext';
+import ImpersonationTopBar from '@/components/impersonation/ImpersonationTopBar';
+import { useAuth } from '@/hooks/useAuth';
 
 const CompleteResponsiveLayout = () => {
+  const { userProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isMobile, isTablet, isDesktop, isXl } = useMobileBreakpoints();
@@ -28,7 +32,9 @@ const CompleteResponsiveLayout = () => {
   const toggleSidebarCollapse = () => setSidebarCollapsed(!sidebarCollapsed);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex w-full relative">
+    <ImpersonationProvider fallbackUserId={(userProfile as any)?.user_id || (userProfile as any)?.id || null}>
+      <ImpersonationTopBar />
+      <div className="min-h-screen bg-gray-50 flex w-full relative">
       <ResponsiveAdvertiserSidebar
         isOpen={sidebarOpen}
         onClose={handleSidebarClose}
@@ -75,7 +81,8 @@ const CompleteResponsiveLayout = () => {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </ImpersonationProvider>
   );
 };
 

@@ -90,6 +90,7 @@ const AdminProfileSettings = lazy(() => import('@/pages/admin/AdminProfileSettin
 const ProcessosPage = lazy(() => import('@/pages/admin/processos/ProcessosPage'));
 const DepartmentProcessesPage = lazy(() => import('@/pages/admin/processos/DepartmentProcessesPage'));
 const ProcessEditorPage = lazy(() => import('@/pages/admin/processos/ProcessEditorPage'));
+const AuditoriaImpersonacao = lazy(() => import('@/pages/super_admin/AuditoriaImpersonacao'));
 
 const SuperAdminRoutes = () => {
   return (
@@ -263,6 +264,7 @@ const SuperAdminRoutes = () => {
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="seguranca" element={<SecurityDashboard />} />
+      <Route path="auditoria-impersonacao" element={<Suspense fallback={<GlobalLoadingPage />}><AuditoriaImpersonacao /></Suspense>} />
       <Route path="zapi-diagnostico" element={<ZApiDiagnostics />} />
       
       {/* ============ MEU PERFIL ============ */}
