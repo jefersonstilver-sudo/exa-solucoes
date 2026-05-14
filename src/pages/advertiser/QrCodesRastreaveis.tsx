@@ -735,7 +735,7 @@ const Timeline: React.FC<{ scans: QrLog[] }> = ({ scans }) => {
     [...scans]
       .sort((a, b) => (b.data_hora || '').localeCompare(a.data_hora || ''))
       .forEach((s) => {
-        const d = s.data_hora ? new Date(s.data_hora) : null;
+        const d = parseScanDate(s.data_hora);
         const key = d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : 'Sem data';
         if (!map[key]) map[key] = [];
         map[key].push(s);
