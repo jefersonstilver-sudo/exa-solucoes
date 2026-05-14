@@ -752,7 +752,7 @@ const Timeline: React.FC<{ scans: QrLog[] }> = ({ scans }) => {
           </p>
           <div className="space-y-1">
             {items.map((s, i) => {
-              const d = s.data_hora ? new Date(s.data_hora) : null;
+              const d = parseScanDate(s.data_hora);
               const hora = d
                 ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
                 : '—';
