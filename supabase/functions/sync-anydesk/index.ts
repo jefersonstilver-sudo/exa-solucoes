@@ -206,10 +206,30 @@ serve(async (req) => {
           .eq('anydesk_client_id', anydeskId)
           .maybeSingle();
         
-        // SKIP DELETED DEVICES - não sincronizar devices marcados como excluídos
+        // SKIP DELETED DEVICES - exceto quando o CID foi reaproveitado no AnyDesk
+        // (comentário diferente = renomeado/reusado → auto-revive em vez de pular silenciosamente)
         if (existingDevice?.is_deleted === true) {
-          console.log(`[SYNC-ANYDESK] ⏭️ Skipping deleted device ${anydeskId} (${existingDevice?.name})`);
-          continue;
+          const oldComment = (existingDevice?.comments || '').trim();
+          const newComment = (comment || '').trim();
+          const commentChanged = newComment.length > 0 && oldComment !== newComment;
+
+          if (commentChanged) {
+            console.log(`[SYNC-ANYDESK] ♻️ Auto-revive CID ${anydeskId}: comentário mudou de "${oldComment}" para "${newComment}"`);
+            await supabase
+              .from('devices')
+              .update({
+                is_deleted: false,
+                deleted_at: null,
+                deleted_by: null,
+                status: 'unknown',
+              })
+              .eq('id', existingDevice.id);
+            // segue o fluxo normal de update abaixo (vai re-parsear o novo comentário)
+            (existingDevice as any).is_deleted = false;
+          } else {
+            console.log(`[SYNC-ANYDESK] ⏭️ Skipping deleted device ${anydeskId} (${existingDevice?.name})`);
+            continue;
+          }
         }
         
         // ============ IMPROVED DEBOUNCE LOGIC ============
