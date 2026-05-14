@@ -96,8 +96,8 @@ const formatDateShort = (iso?: string) => {
 
 const timeAgo = (iso?: string): string => {
   if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
+  const d = parseScanDate(iso);
+  if (!d) return '—';
   const diffMs = Date.now() - d.getTime();
   const min = Math.floor(diffMs / 60000);
   if (min < 1) return 'agora';
