@@ -65,10 +65,23 @@ const buildProxyUrl = (cids: string[], titulo: string) => {
   return url.toString();
 };
 
+/**
+ * Interpreta o `data_hora` vindo da API externa de scans (18.228.252.149:8000),
+ * que grava horário local de Brasília mas rotula como `+00:00` (UTC).
+ * Solução: descartar o sufixo de fuso e tratar o valor como horário local.
+ * NÃO usar para timestamps do nosso Postgres (esses já são UTC corretos).
+ */
+const parseScanDate = (iso?: string): Date | null => {
+  if (!iso) return null;
+  const naive = iso.replace(/(?:Z|[+-]\d{2}:?\d{2})$/, '');
+  const d = new Date(naive);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 const formatDateBR = (iso?: string) => {
   if (!iso) return '-';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
+  const d = parseScanDate(iso);
+  if (!d) return iso || '-';
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
