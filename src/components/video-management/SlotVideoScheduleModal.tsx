@@ -230,15 +230,14 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
         toast.success('Agendamento salvo com sucesso!');
       }
 
-      // Enviar webhook após salvar com sucesso (só se tiver orderId)
+      // Enviar para AWS após salvar com sucesso (só se tiver orderId)
       if (orderId) {
-        console.log('📡 [SCHEDULE_MODAL] Enviando webhook de programação...');
+        console.log('📡 [SCHEDULE_MODAL] Enviando programação AWS...');
         try {
-          await sendWebhookAfterScheduleSave(orderId, videoName);
-          console.log('✅ [SCHEDULE_MODAL] Webhook enviado com sucesso');
+          await sendWebhookAfterScheduleSave(orderId, videoName, videoId, scheduleRules.length === 0);
+          console.log('✅ [SCHEDULE_MODAL] Programação AWS enviada');
         } catch (webhookError) {
-          console.error('❌ [SCHEDULE_MODAL] Erro no webhook (não afeta o save):', webhookError);
-          // Não mostrar erro do webhook para o usuário, pois o save foi bem-sucedido
+          console.error('❌ [SCHEDULE_MODAL] Erro no envio AWS (não afeta o save):', webhookError);
         }
       }
       onClose();

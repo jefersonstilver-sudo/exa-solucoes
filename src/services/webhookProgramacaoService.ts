@@ -242,17 +242,34 @@ export async function sendScheduledProgrammingWebhook(orderId: string): Promise<
 }
 
 /**
- * Envia webhook especificamente após salvar agendamento de um vídeo
- * Usado pelo SlotVideoScheduleModal
+ * Envia a programação de UM vídeo para a API externa AWS
+ * Endpoint: PUT http://18.228.252.149:8000/programacao/{client_id}/{titulo}
+ * Usado pelo SlotVideoScheduleModal ao salvar OU excluir agendamento.
+ *
+ * @param orderId   ID do pedido
+ * @param videoId   ID do vídeo cuja programação foi alterada
+ * @param videoName Nome do vídeo (apenas para logs)
+ * @param clear     true => envia programação vazia (limpa agendamento)
  */
-export async function sendWebhookAfterScheduleSave(orderId: string, videoName: string): Promise<void> {
+export async function sendWebhookAfterScheduleSave(
+  orderId: string,
+  videoName: string,
+  videoId?: string,
+  clear: boolean = false
+): Promise<void> {
   try {
-    console.log(`🎯 [WEBHOOK] Enviando webhook após salvar agendamento do vídeo "${videoName}"`);
-    await sendScheduledProgrammingWebhook(orderId);
-    console.log(`✅ [WEBHOOK] Webhook enviado com sucesso para o vídeo "${videoName}"`);
+    if (!videoId) {
+      console.warn('⚠️ [WEBHOOK] sendWebhookAfterScheduleSave chamado sem videoId, pulando envio AWS');
+      return;
+    }
+    console.log(`🎯 [WEBHOOK] Enviando programação AWS do vídeo "${videoName}" (clear=${clear})`);
+    const { data, error } = await supabase.functions.invoke('update-video-schedule-aws', {
+      body: { pedido_id: orderId, video_id: videoId, clear }
+    });
+    if (error) throw error;
+    console.log(`✅ [WEBHOOK] Programação AWS enviada para "${videoName}":`, data);
   } catch (error) {
-    console.error(`❌ [WEBHOOK] Erro ao enviar webhook para o vídeo "${videoName}":`, error);
-    // Não re-throw o erro para não bloquear o save
-    // O usuário já foi notificado do sucesso do save, e o webhook é um extra
+    console.error(`❌ [WEBHOOK] Erro ao enviar programação AWS para "${videoName}":`, error);
+    // Não re-throw para não bloquear o fluxo de salvamento
   }
 }
