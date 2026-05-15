@@ -7,6 +7,29 @@ const corsHeaders = {
 
 const EXTERNAL_API_BASE = 'http://18.228.252.149:8000'
 
+const DAY_NAMES_MAP: Record<number, string> = {
+  0: 'domingo', 1: 'segunda', 2: 'terca', 3: 'quarta',
+  4: 'quinta', 5: 'sexta', 6: 'sabado',
+}
+
+function emptyProgramacao() {
+  return {
+    segunda: [] as Array<{ inicio: string; fim: string }>,
+    terca: [] as Array<{ inicio: string; fim: string }>,
+    quarta: [] as Array<{ inicio: string; fim: string }>,
+    quinta: [] as Array<{ inicio: string; fim: string }>,
+    sexta: [] as Array<{ inicio: string; fim: string }>,
+    sabado: [] as Array<{ inicio: string; fim: string }>,
+    domingo: [] as Array<{ inicio: string; fim: string }>,
+  };
+}
+
+function trimSeconds(t: string) {
+  if (!t) return t;
+  const p = t.split(':');
+  return p.length >= 2 ? `${p[0]}:${p[1]}` : t;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
