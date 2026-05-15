@@ -126,43 +126,9 @@ serve(async (req) => {
       regra: 'primeiros_4_digitos_uuid_sem_hifens'
     });
 
-    // 3. Buscar programação do vídeo
-    let programacao = getDefaultSchedule();
-    
-    // Verificar se existe campanha avançada para este pedido
-    const { data: campaign } = await supabase
-      .from('campaigns_advanced')
-      .select('id')
-      .eq('pedido_id', pedidoVideo.pedido_id)
-      .maybeSingle();
-
-    if (campaign) {
-      console.log('📅 [UPLOAD_EXTERNAL_API] Campanha encontrada:', campaign.id);
-      
-      // Buscar regras de agendamento
-      const { data: schedules } = await supabase
-        .from('campaign_video_schedules')
-        .select(`
-          campaign_schedule_rules!inner (
-            days_of_week,
-            start_time,
-            end_time,
-            is_active
-          )
-        `)
-        .eq('campaign_id', campaign.id)
-        .eq('video_id', pedidoVideo.video_id)
-        .eq('slot_position', pedidoVideo.slot_position);
-
-      if (schedules && schedules.length > 0) {
-        console.log('⏰ [UPLOAD_EXTERNAL_API] Programação customizada encontrada');
-        programacao = convertScheduleRulesToProgramacao(schedules);
-      } else {
-        console.log('⏰ [UPLOAD_EXTERNAL_API] Usando programação padrão 24/7');
-      }
-    } else {
-      console.log('⏰ [UPLOAD_EXTERNAL_API] Sem campanha - usando programação padrão 24/7');
-    }
+    // 3. Programação SEMPRE vazia neste momento — agendamento será feito por função dedicada futura
+    const programacao: Record<string, any[]> = {};
+    console.log('⏰ [UPLOAD_EXTERNAL_API] Enviando programação VAZIA (agendamento desativado por ora)');
 
     // 4. Determinar flag `master` para a API externa.
     // Regra: apenas UM master por pedido. Primeiro vídeo do pedido = master:true.
