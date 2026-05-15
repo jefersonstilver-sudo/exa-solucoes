@@ -20,8 +20,9 @@ serve(async (req: Request): Promise<Response> => {
     const titulo = payload.titulo ?? null;
     // Aceita `master` (novo) ou `ativo` (legado) — sempre envia `master` para a API externa
     const master = payload.master !== undefined ? payload.master === true : payload.ativo === true;
+    const id_pedido = payload.id_pedido ?? payload.pedidoId ?? null;
 
-    console.log('🔔 [NOTIFY-ACTIVE] Payload recebido:', { clientId, buildingUuid, titulo, master });
+    console.log('🔔 [NOTIFY-ACTIVE] Payload recebido:', { clientId, buildingUuid, titulo, master, id_pedido });
 
     if (!clientId || typeof clientId !== 'string' || clientId.length < 1) {
       console.error('❌ [NOTIFY-ACTIVE] clientId inválido:', clientId);
@@ -40,9 +41,10 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const url = `http://18.228.252.149:8000/ativo/${clientId}`;
-    const body = {
+    const body: Record<string, unknown> = {
       titulo,
-      master: master === true
+      master: master === true,
+      ...(id_pedido ? { id_pedido } : {})
     };
 
     console.log('🌐 [NOTIFY-ACTIVE] Enviando PATCH para API externa:', { url, buildingUuid, clientId, body });

@@ -137,7 +137,8 @@ export const selectVideoForDisplay = async (
                   clientId: buildingId.substring(0, 4),
                   buildingUuid: buildingId,
                   titulo: videoName,
-                  master: isMaster  // true para o master, false para os outros
+                  master: isMaster,  // true para o master, false para os outros
+                  id_pedido: videoData.pedido_id
                 }
               });
               
