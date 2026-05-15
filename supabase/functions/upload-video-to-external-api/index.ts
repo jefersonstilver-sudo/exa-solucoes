@@ -187,18 +187,18 @@ serve(async (req) => {
         .limit(1);
 
       if (!othersDisplayed || othersDisplayed.length === 0) {
-        // Nenhum outro vídeo principal → este vira o principal
-        activeFlag = true;
+        // Nenhum outro vídeo master → este vira o master
+        masterFlag = true;
       } else {
         otherCurrentSlot = othersDisplayed[0] as any;
       }
     }
 
-    console.log('🎯 [UPLOAD_EXTERNAL_API] Decisão de flag ativo:', {
+    console.log('🎯 [UPLOAD_EXTERNAL_API] Decisão de flag master:', {
       pedido_id: pedidoVideo.pedido_id,
       thisSlotIsCurrent,
       otherCurrentSlot,
-      activeFlag
+      masterFlag
     });
 
     // 5. Preparar metadados
