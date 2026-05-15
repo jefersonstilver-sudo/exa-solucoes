@@ -52,7 +52,7 @@ serve(async (req) => {
     const results: any[] = [];
     for (const buildingUuid of lista) {
       const clientId = buildingUuid.replace(/-/g, '').substring(0, 4);
-      const endpoint = `${EXTERNAL_API_BASE}/master/${clientId}`;
+      const endpoint = `${EXTERNAL_API_BASE}/master/master/${clientId}`;
       const body = {
         cliente_id: clientId,
         pedido_id,
