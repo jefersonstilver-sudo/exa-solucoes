@@ -349,20 +349,19 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
       console.warn('[SET_BASE_VIDEO] Failed to log action:', logErr);
     }
     
-    // 🔔 NOTIFICAR API EXTERNA - Centralizado via notify-video-toggle
-    console.log('🔔 [SET_BASE_VIDEO] Iniciando notificação da API externa...');
-    
+    // 🔔 NOTIFICAR API EXTERNA — Apenas PATCH /master/master/{client_id}
+    // (NÃO chamar sync-buildings-external-api: re-upload pesado e desnecessário ao trocar master)
+    console.log('🔔 [SET_BASE_VIDEO] Iniciando PATCH /master...');
+
     try {
-      // Buscar pedido_id e video_id do novo vídeo base
       const { data: currentSlot, error: slotError } = await supabase
         .from('pedido_videos')
-        .select('pedido_id, video_id')
+        .select('pedido_id, video_id, videos(nome)')
         .eq('id', slotId)
         .single();
-      
+
       if (slotError || !currentSlot?.pedido_id || !currentSlot?.video_id) {
         console.error('❌ [SET_BASE_VIDEO] Erro ao buscar dados do slot:', slotError);
-        // Não bloquear o retorno - API externa é secundária
         return {
           success: true,
           timestamp: now(),
@@ -372,49 +371,41 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         };
       }
 
-      console.log('🔔 [SET_BASE_VIDEO] Notificando API externa:', {
-        pedidoId: currentSlot.pedido_id,
-        activeVideoId: currentSlot.video_id,
-        previousVideoId
-      });
-
-      // Chamar função centralizada de notificação
-      console.log('🔔 [SET_BASE_VIDEO] Chamando notifyExternalAPI...');
-      const notifyResult = await notifyExternalAPI(currentSlot.pedido_id, currentSlot.video_id, previousVideoId);
-      console.log('✅ [SET_BASE_VIDEO] API externa notificada com sucesso:', notifyResult);
-
-      // 🔄 AUTO-SYNC: Ensure all buildings have the video
-      try {
-        console.log('🔄 [SET_BASE_VIDEO] Auto-sync: sincronizando todos os prédios...');
-        const { data: orderData } = await supabase
-          .from('pedidos')
-          .select('lista_predios')
-          .eq('id', currentSlot.pedido_id)
-          .single();
-
-        const buildingIds: string[] = orderData?.lista_predios || [];
-        if (buildingIds.length > 0) {
-          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-buildings-external-api', {
-            body: { pedido_id: currentSlot.pedido_id, action: 'add', building_ids: buildingIds }
-          });
-          if (syncError) {
-            console.error('⚠️ [SET_BASE_VIDEO] Auto-sync erro:', syncError);
-          } else {
-            console.log('✅ [SET_BASE_VIDEO] Auto-sync concluído:', syncData);
-          }
-        }
-      } catch (autoSyncErr: any) {
-        console.error('⚠️ [SET_BASE_VIDEO] Auto-sync exceção:', autoSyncErr.message);
+      // Título do vídeo anterior (para desativar_master)
+      let desativarTitulo: string | null = null;
+      if (previousVideoId && previousVideoId !== currentSlot.video_id) {
+        const { data: prevVideo } = await supabase
+          .from('videos')
+          .select('nome')
+          .eq('id', previousVideoId)
+          .maybeSingle();
+        desativarTitulo = extractTitulo((prevVideo as any)?.nome);
       }
-    } catch (err: any) {
-      console.error('❌ [SET_BASE_VIDEO] ERRO CRÍTICO ao notificar API externa:', err);
-      console.error('❌ [SET_BASE_VIDEO] Erro detalhado:', {
-        message: err.message,
-        stack: err.stack,
-        error: err
+
+      const ativarTitulo = extractTitulo((currentSlot as any).videos?.nome);
+
+      console.log('🔔 [SET_BASE_VIDEO] PATCH /master ->', {
+        pedido_id: currentSlot.pedido_id,
+        ativar_master: ativarTitulo,
+        desativar_master: desativarTitulo,
       });
-      
-      // MOSTRAR ERRO PARA O USUÁRIO
+
+      const { error: masterError } = await supabase.functions.invoke('update-video-master-aws', {
+        body: {
+          pedido_id: currentSlot.pedido_id,
+          ativar_titulo: ativarTitulo,
+          desativar_titulo: desativarTitulo,
+        },
+      });
+
+      if (masterError) {
+        console.error('❌ [SET_BASE_VIDEO] Erro PATCH /master:', masterError);
+        throw masterError;
+      }
+
+      console.log('✅ [SET_BASE_VIDEO] Master trocado com sucesso na API externa');
+    } catch (err: any) {
+      console.error('❌ [SET_BASE_VIDEO] ERRO ao chamar PATCH /master:', err);
       const { toast } = await import("@/hooks/use-toast");
       toast({
         title: "⚠️ Vídeo definido, mas API externa não foi atualizada",
