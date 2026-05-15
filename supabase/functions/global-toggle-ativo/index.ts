@@ -230,7 +230,7 @@ serve(async (req: Request): Promise<Response> => {
         const deactivateResponse = await fetchWithTimeout(baseUrl, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ titulo, ativo: false })
+          body: JSON.stringify({ titulo, master: false })
         }, 10000);
 
         const deactivateText = await deactivateResponse.text().catch(() => '');
