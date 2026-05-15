@@ -164,20 +164,19 @@ serve(async (req) => {
       console.log('⏰ [UPLOAD_EXTERNAL_API] Sem campanha - usando programação padrão 24/7');
     }
 
-    // 4. Determinar flag `ativo` para a API externa.
-    // Regra correta (substitui antiga "isFirstApproved"):
-    //  a) Se este slot já é o `selected_for_display` no banco -> ativo: true
-    //  b) Senão, se NÃO houver outro slot do mesmo pedido com `selected_for_display=true && is_active=true` -> ativo: true
-    //  c) Caso contrário -> ativo: false (já existe principal vigente)
-    // Agendamentos são tratados pela função sync-video-status-to-aws no toggle de troca de principal.
+    // 4. Determinar flag `master` para a API externa.
+    // Regra: apenas UM master por pedido. Primeiro vídeo do pedido = master:true.
+    //  a) Se este slot já é o `selected_for_display` no banco -> master: true
+    //  b) Senão, se NÃO houver outro slot do mesmo pedido com `selected_for_display=true && is_active=true` -> master: true
+    //  c) Caso contrário -> master: false (já existe master vigente)
     const thisSlotIsCurrent =
       (pedidoVideo as any).selected_for_display === true &&
       (pedidoVideo as any).is_active === true;
 
-    let activeFlag = thisSlotIsCurrent;
+    let masterFlag = thisSlotIsCurrent;
     let otherCurrentSlot: { id: string; video_id: string } | null = null;
 
-    if (!activeFlag) {
+    if (!masterFlag) {
       const { data: othersDisplayed } = await supabase
         .from('pedido_videos')
         .select('id, video_id')
