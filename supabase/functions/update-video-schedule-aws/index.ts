@@ -112,26 +112,10 @@ serve(async (req) => {
       });
     }
 
-    // 3. master / ativo
-    const ativo = (pedidoVideo as any).is_active === true && (pedidoVideo as any).selected_for_display === true;
-    let master = ativo;
-    if (!master) {
-      const { data: others } = await supabase
-        .from('pedido_videos')
-        .select('id')
-        .eq('pedido_id', pedido_id)
-        .eq('selected_for_display', true)
-        .eq('is_active', true)
-        .neq('id', (pedidoVideo as any).id)
-        .limit(1);
-      if (!others || others.length === 0) master = true;
-    }
-
+    // 3. Payload final — rota /programacao aceita apenas id_pedido + programacao
     const body = {
       id_pedido: pedido_id,
       programacao,
-      ativo,
-      master,
     };
 
     console.log('📦 [SCHEDULE_AWS] Payload:', JSON.stringify(body));
