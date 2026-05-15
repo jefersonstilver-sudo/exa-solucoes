@@ -121,7 +121,8 @@ serve(async (req) => {
         body: JSON.stringify({
           client_ids: allClientIds,
           titulo: tituloAtivo,
-          master: true
+          master: true,
+          id_pedido: pedidoId
         })
       });
       const activateData = await activateResponse.json().catch(() => null);
