@@ -236,7 +236,7 @@ serve(async (req) => {
     const metadataJson = {
       [storageFileName]: {
         ...metadata,
-        ativo: activeFlag,
+        master: masterFlag,
         status: 'new',
         ...(isVertical && { isPlus: true }),
         ...qrFields
