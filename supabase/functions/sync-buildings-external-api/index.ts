@@ -167,6 +167,35 @@ Deno.serve(async (req) => {
             console.log(`🔳 [SYNC-BUILDINGS] QR Code incluído para ${fileNameClean}:`, qrFields);
           }
 
+          // Build programacao from campaign_video_schedules (same logic as update-video-schedule-aws)
+          const programacao = emptyProgramacao();
+          try {
+            const { data: schedules } = await supabase
+              .from('campaign_video_schedules')
+              .select('id, campaign_schedule_rules ( days_of_week, start_time, end_time, is_active, is_all_day )')
+              .eq('video_id', pv.video_id)
+              .eq('slot_position', (pv as any).slot_position);
+
+            const rules: any[] = [];
+            (schedules || []).forEach((s: any) => {
+              (s.campaign_schedule_rules || []).filter((r: any) => r.is_active).forEach((r: any) => rules.push(r));
+            });
+            rules.forEach((rule) => {
+              const slot = {
+                inicio: rule.is_all_day ? '00:00' : trimSeconds(rule.start_time),
+                fim: rule.is_all_day ? '23:59' : trimSeconds(rule.end_time),
+              };
+              (rule.days_of_week || []).forEach((d: number) => {
+                const day = DAY_NAMES_MAP[d];
+                if (day) (programacao as any)[day].push(slot);
+              });
+            });
+            const total = Object.values(programacao).reduce((acc: number, arr: any) => acc + arr.length, 0);
+            console.log(`📅 [SYNC-BUILDINGS] ${fileNameClean}: ${total} slot(s) de programação`);
+          } catch (schedErr: any) {
+            console.error(`⚠️ [SYNC-BUILDINGS] Erro ao buscar programação de ${fileNameClean}:`, schedErr.message);
+          }
+
           metadados[fileNameClean] = {
             titulo: video.nome || 'Campanha',
             data_ini: dataIni,
@@ -174,7 +203,7 @@ Deno.serve(async (req) => {
             master: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
             id_pedido: pedido_id,
             isPlus: isVertical,
-            programacao: {},
+            programacao,
             ...qrFields
           }
         } catch (dlError: any) {
