@@ -142,7 +142,7 @@ serve(async (req) => {
           body: JSON.stringify({
             client_ids: allClientIds,
             titulo: otherTitulo,
-            ativo: false
+            master: false
           })
         });
         const deactivateData = await deactivateResponse.json().catch(() => null);
