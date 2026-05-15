@@ -172,7 +172,7 @@ serve(async (req: Request): Promise<Response> => {
       const activateResponse = await fetchWithTimeout(baseUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo: tituloAtivo, ativo: true })
+        body: JSON.stringify({ titulo: tituloAtivo, master: true })
       }, 10000);
 
       const activateText = await activateResponse.text().catch(() => '');
