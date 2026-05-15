@@ -164,20 +164,19 @@ serve(async (req) => {
       console.log('⏰ [UPLOAD_EXTERNAL_API] Sem campanha - usando programação padrão 24/7');
     }
 
-    // 4. Determinar flag `ativo` para a API externa.
-    // Regra correta (substitui antiga "isFirstApproved"):
-    //  a) Se este slot já é o `selected_for_display` no banco -> ativo: true
-    //  b) Senão, se NÃO houver outro slot do mesmo pedido com `selected_for_display=true && is_active=true` -> ativo: true
-    //  c) Caso contrário -> ativo: false (já existe principal vigente)
-    // Agendamentos são tratados pela função sync-video-status-to-aws no toggle de troca de principal.
+    // 4. Determinar flag `master` para a API externa.
+    // Regra: apenas UM master por pedido. Primeiro vídeo do pedido = master:true.
+    //  a) Se este slot já é o `selected_for_display` no banco -> master: true
+    //  b) Senão, se NÃO houver outro slot do mesmo pedido com `selected_for_display=true && is_active=true` -> master: true
+    //  c) Caso contrário -> master: false (já existe master vigente)
     const thisSlotIsCurrent =
       (pedidoVideo as any).selected_for_display === true &&
       (pedidoVideo as any).is_active === true;
 
-    let activeFlag = thisSlotIsCurrent;
+    let masterFlag = thisSlotIsCurrent;
     let otherCurrentSlot: { id: string; video_id: string } | null = null;
 
-    if (!activeFlag) {
+    if (!masterFlag) {
       const { data: othersDisplayed } = await supabase
         .from('pedido_videos')
         .select('id, video_id')
@@ -188,18 +187,18 @@ serve(async (req) => {
         .limit(1);
 
       if (!othersDisplayed || othersDisplayed.length === 0) {
-        // Nenhum outro vídeo principal → este vira o principal
-        activeFlag = true;
+        // Nenhum outro vídeo master → este vira o master
+        masterFlag = true;
       } else {
         otherCurrentSlot = othersDisplayed[0] as any;
       }
     }
 
-    console.log('🎯 [UPLOAD_EXTERNAL_API] Decisão de flag ativo:', {
+    console.log('🎯 [UPLOAD_EXTERNAL_API] Decisão de flag master:', {
       pedido_id: pedidoVideo.pedido_id,
       thisSlotIsCurrent,
       otherCurrentSlot,
-      activeFlag
+      masterFlag
     });
 
     // 5. Preparar metadados
@@ -237,7 +236,7 @@ serve(async (req) => {
     const metadataJson = {
       [storageFileName]: {
         ...metadata,
-        ativo: activeFlag,
+        master: masterFlag,
         status: 'new',
         ...(isVertical && { isPlus: true }),
         ...qrFields
@@ -400,9 +399,9 @@ serve(async (req) => {
       throw new Error(`Falha ao enviar vídeo para todos os ${failedCount} prédios`);
     }
 
-    // 8. Pós-upload: se este vídeo entrou como ativo e havia outro principal anterior,
-    // disparar sync para garantir desativação consistente do anterior na AWS.
-    if (activeFlag && successCount > 0) {
+    // 8. Pós-upload: se este vídeo entrou como master e havia outro master anterior,
+    // disparar sync para garantir consistência do master na AWS.
+    if (masterFlag && successCount > 0) {
       try {
         console.log('🔄 [UPLOAD_EXTERNAL_API] Disparando sync-video-status-to-aws para reforço de estado');
         await supabase.functions.invoke('sync-video-status-to-aws', {
@@ -423,7 +422,7 @@ serve(async (req) => {
         message: `Vídeo enviado para ${successCount}/${uploadResults.length} prédios`,
         results: uploadResults,
         videoFileName: storageFileName,
-        ativo_aws: activeFlag
+        master_aws: masterFlag
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

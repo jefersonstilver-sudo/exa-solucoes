@@ -127,9 +127,9 @@ export const selectVideoForDisplay = async (
             // 4️⃣ Notificar CADA vídeo individualmente (síncrono)
             for (const video of allVideos) {
               const videoName = video.videos?.nome || 'Video';
-              const isActive = video.selected_for_display && video.is_active;
+              const isMaster = video.selected_for_display && video.is_active;
               
-              console.log(`📹 [VIDEO_ACTION] Notificando vídeo "${videoName}": ativo=${isActive}`);
+              console.log(`📹 [VIDEO_ACTION] Notificando vídeo "${videoName}": master=${isMaster}`);
               
               // Chamada SÍNCRONA (await) para garantir ordem
               const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-active', {
@@ -137,7 +137,7 @@ export const selectVideoForDisplay = async (
                   clientId: buildingId.substring(0, 4),
                   buildingUuid: buildingId,
                   titulo: videoName,
-                  ativo: isActive  // true para o ativo, false para os outros
+                  master: isMaster  // true para o master, false para os outros
                 }
               });
               
@@ -146,7 +146,7 @@ export const selectVideoForDisplay = async (
                 throw notifyError; // Bloquear se falhar
               }
               
-              console.log(`✅ [VIDEO_ACTION] Vídeo "${videoName}" notificado com ativo=${isActive}`);
+              console.log(`✅ [VIDEO_ACTION] Vídeo "${videoName}" notificado com master=${isMaster}`);
             }
             
             console.log(`✅ [VIDEO_ACTION] Prédio ${buildingId} sincronizado com sucesso`);

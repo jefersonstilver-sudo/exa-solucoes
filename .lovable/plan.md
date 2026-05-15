@@ -1,30 +1,48 @@
-# Correção da barra de impersonação e loader duplicado
+## Objetivo
 
-## Problemas identificados
+Substituir o campo `ativo` por `master` em TODOS os payloads enviados para a API externa AWS. Endpoints (URLs) ficam como estão por enquanto — foco somente no payload de envio.
 
-**1. Barra superior renderizando com erro**
-A faixa "Visualizando como cliente" está aparecendo com fundo branco (do `bg-background` do Sheet) e o texto/botão ficam quase invisíveis. O gradiente `from-exa-red-dark to-exa-red` não está sobrepondo corretamente o background do Sheet, resultando em texto vermelho-claro sobre branco.
+## Regras
 
-**2. Dois loaders aparecendo simultaneamente**
-Durante o carregamento aparecem duas mensagens sobrepostas:
-- "Carregando visão do cliente…" (overlay do `ClientOrderViewSheet` enquanto o iframe carrega)
-- "Carregando área do anunciante…" (loader interno do portal do anunciante dentro do iframe)
+- Primeiro vídeo de um pedido → `master: true`
+- Demais vídeos do mesmo pedido → `master: false`
+- Apenas UM master por pedido a qualquer momento
+- Nenhuma mudança em UI, fluxo de upload, agendamento interno ou lógica do site
 
-Os dois ficam visíveis ao mesmo tempo porque o overlay do Sheet é semitransparente (`bg-white/70`).
+## Arquivos a modificar
 
-## Mudanças (apenas em `src/components/impersonation/ClientOrderViewSheet.tsx`)
+1. **`supabase/functions/upload-video-to-external-api/index.ts`**
+   - Renomear variável `activeFlag` → `masterFlag` (mantendo a lógica atual de "primeiro slot ativo do pedido = master:true").
+   - No body do POST para a API externa: trocar `ativo: activeFlag` por `master: masterFlag`.
+   - Atualizar logs e comentários (ativo → master).
+   - Manter persistência interna (`is_active`, `selected_for_display`) intacta — só muda o nome do campo enviado.
 
-### A. Faixa superior com renderização sólida
-- Aplicar `bg-exa-red` sólido (em vez de gradiente) e reforçar com `style={{ backgroundColor: 'hsl(var(--exa-red))' }}` para garantir cobertura mesmo sobre o `bg-background` do Sheet.
-- Garantir `text-white` explícito no container e no botão "Fechar" para contraste consistente.
-- Adicionar `relative z-20` para a faixa ficar acima de qualquer overlay do Radix.
+2. **`supabase/functions/sync-video-status-to-aws/index.ts`**
+   - Nas duas chamadas `PATCH ${EXTERNAL_API_BASE}/ativo/batch`:
+     - URL permanece (definirmos depois conforme combinado)
+     - Body: `{ ativo: true }` → `{ master: true }` (ativar selecionado)
+     - Body: `{ ativo: false }` → `{ master: false }` (desativar os demais)
+   - Atualizar logs.
 
-### B. Remover loader duplicado
-- Remover o overlay interno "Carregando visão do cliente…" do `ClientOrderViewSheet`.
-- Manter apenas o loader nativo do portal do anunciante (que já roda dentro do iframe e mostra "Carregando área do anunciante…").
-- Manter o `setIframeLoading` apenas como fallback para um spinner discreto opcional caso o iframe demore mais que ~3s — ou simplesmente eliminar completamente o estado `iframeLoading` para evitar qualquer chance de duplicação.
+3. **`supabase/functions/audit-sync-all-active-orders/index.ts`**
+   - Verificar se algum payload de reconciliação envia `ativo` e trocar por `master`.
 
-## Arquivos afetados
-- `src/components/impersonation/ClientOrderViewSheet.tsx` (único arquivo)
+4. **`src/services/videoApprovalWebhookService.ts`** e **`src/services/webhookProgramacaoService.ts`**
+   - Onde houver `ativo:` no payload do webhook AWS → trocar por `master:`.
+   - Manter `programacao`, `isPlus`, `QRLocale`, `id_pedido`, `titulo`, `data_ini`, `data_fim`, `redirecionamento` como estão (já alinhados com o novo contrato).
 
-Nenhuma outra parte do fluxo (botão, contexto de impersonação, layout do anunciante, OrderDetails) será alterada.
+5. **`src/services/videoBaseService.ts`**
+   - Atualizar logs (`Video ativo:` → `Video master:`) se houver envio para AWS.
+
+## O que NÃO muda
+
+- URLs/endpoints AWS (`/ativo/batch` continua até decisão posterior)
+- Banco Supabase: colunas `is_active`, `selected_for_display`, `is_master` (essa última é de pedido, não de vídeo)
+- Polling/agendamento interno do site
+- Qualquer UI
+
+## Validação
+
+- Lint dos edge functions modificados
+- Smoke test: chamar `upload-video-to-external-api` em pedido de teste e confirmar payload com `master:true` no primeiro vídeo
+- Verificar logs de `sync-video-status-to-aws` ao trocar principal: `master:true` no novo, `master:false` nos demais

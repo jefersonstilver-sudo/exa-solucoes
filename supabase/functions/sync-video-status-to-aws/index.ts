@@ -121,7 +121,7 @@ serve(async (req) => {
         body: JSON.stringify({
           client_ids: allClientIds,
           titulo: tituloAtivo,
-          ativo: true
+          master: true
         })
       });
       const activateData = await activateResponse.json().catch(() => null);
@@ -142,7 +142,7 @@ serve(async (req) => {
           body: JSON.stringify({
             client_ids: allClientIds,
             titulo: otherTitulo,
-            ativo: false
+            master: false
           })
         });
         const deactivateData = await deactivateResponse.json().catch(() => null);
