@@ -90,77 +90,35 @@ export const selectVideoForDisplay = async (
 
       const newVideoName = newVideoInfo?.video_data?.nome;
       
-      // 🔔 SINCRONIZAÇÃO SÍNCRONA COM API EXTERNA - Notificar TODOS os vídeos
+      // 🔔 SINCRONIZAÇÃO COM API EXTERNA — Nova rota PATCH /master/{client_id}
       try {
-        console.log('🔔 [VIDEO_ACTION] Iniciando sincronização síncrona com API externa...');
-        
-        // 1️⃣ Buscar TODOS os vídeos do pedido
-        const { data: allVideos, error: videosError } = await supabase
-          .from('pedido_videos')
-          .select('id, video_id, is_active, selected_for_display, videos(nome)')
-          .eq('pedido_id', videoData.pedido_id);
+        const ativarTitulo = (newVideoName || '').replace(/\.[^/.]+$/, '');
+        const desativarTitulo = ((currentSelectedVideo as any)?.video_data?.nome || '').replace(/\.[^/.]+$/, '');
 
-        if (videosError) {
-          console.error('❌ [VIDEO_ACTION] Erro ao buscar vídeos:', videosError);
-          throw videosError;
+        console.log('🔔 [VIDEO_ACTION] PATCH /master ->', {
+          pedido_id: videoData.pedido_id,
+          ativar_master: ativarTitulo,
+          desativar_master: desativarTitulo,
+        });
+
+        const { error: masterError } = await supabase.functions.invoke('update-video-master-aws', {
+          body: {
+            pedido_id: videoData.pedido_id,
+            ativar_titulo: ativarTitulo,
+            desativar_titulo: desativarTitulo || null,
+          },
+        });
+
+        if (masterError) {
+          console.error('❌ [VIDEO_ACTION] Erro ao trocar master na AWS:', masterError);
+          throw masterError;
         }
 
-        // 2️⃣ Buscar prédios do pedido
-        const { data: pedidoData, error: pedidoError } = await supabase
-          .from('pedidos')
-          .select('lista_predios')
-          .eq('id', videoData.pedido_id)
-          .single();
-
-        if (pedidoError) {
-          console.error('❌ [VIDEO_ACTION] Erro ao buscar pedido:', pedidoError);
-          throw pedidoError;
-        }
-
-        if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios) && allVideos && allVideos.length > 0) {
-          console.log(`🏢 [VIDEO_ACTION] Notificando ${allVideos.length} vídeos para ${pedidoData.lista_predios.length} prédios`);
-          
-          // 3️⃣ Para cada prédio, notificar TODOS os vídeos
-          for (const buildingId of pedidoData.lista_predios) {
-            console.log(`🔔 [VIDEO_ACTION] Processando prédio ${buildingId}...`);
-            
-            // 4️⃣ Notificar CADA vídeo individualmente (síncrono)
-            for (const video of allVideos) {
-              const videoName = video.videos?.nome || 'Video';
-              const isMaster = video.selected_for_display && video.is_active;
-              
-              console.log(`📹 [VIDEO_ACTION] Notificando vídeo "${videoName}": master=${isMaster}`);
-              
-              // Chamada SÍNCRONA (await) para garantir ordem
-              const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-active', {
-                body: {
-                  clientId: buildingId.substring(0, 4),
-                  buildingUuid: buildingId,
-                  titulo: videoName,
-                  master: isMaster,  // true para o master, false para os outros
-                  id_pedido: videoData.pedido_id
-                }
-              });
-              
-              if (notifyError) {
-                console.error(`❌ [VIDEO_ACTION] Erro ao notificar "${videoName}":`, notifyError);
-                throw notifyError; // Bloquear se falhar
-              }
-              
-              console.log(`✅ [VIDEO_ACTION] Vídeo "${videoName}" notificado com master=${isMaster}`);
-            }
-            
-            console.log(`✅ [VIDEO_ACTION] Prédio ${buildingId} sincronizado com sucesso`);
-          }
-          
-          console.log('🎉 [VIDEO_ACTION] Sincronização completa com API externa');
-        } else {
-          console.warn('⚠️ [VIDEO_ACTION] Nenhum prédio ou vídeo encontrado para notificar');
-        }
+        console.log('🎉 [VIDEO_ACTION] Master trocado com sucesso na API externa');
       } catch (apiError) {
-        console.error('💥 [VIDEO_ACTION] Erro crítico ao notificar API externa:', apiError);
-        toast.error('Erro ao sincronizar com painéis físicos');
-        throw apiError; // Bloquear fluxo em caso de erro
+        console.error('💥 [VIDEO_ACTION] Erro crítico ao trocar master na API externa:', apiError);
+        toast.error('Erro ao sincronizar master com painéis físicos');
+        throw apiError;
       }
       
       // Chamar callback de sucesso se fornecido
