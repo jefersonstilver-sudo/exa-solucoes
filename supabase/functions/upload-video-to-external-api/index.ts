@@ -399,9 +399,9 @@ serve(async (req) => {
       throw new Error(`Falha ao enviar vídeo para todos os ${failedCount} prédios`);
     }
 
-    // 8. Pós-upload: se este vídeo entrou como ativo e havia outro principal anterior,
-    // disparar sync para garantir desativação consistente do anterior na AWS.
-    if (activeFlag && successCount > 0) {
+    // 8. Pós-upload: se este vídeo entrou como master e havia outro master anterior,
+    // disparar sync para garantir consistência do master na AWS.
+    if (masterFlag && successCount > 0) {
       try {
         console.log('🔄 [UPLOAD_EXTERNAL_API] Disparando sync-video-status-to-aws para reforço de estado');
         await supabase.functions.invoke('sync-video-status-to-aws', {
@@ -422,7 +422,7 @@ serve(async (req) => {
         message: `Vídeo enviado para ${successCount}/${uploadResults.length} prédios`,
         results: uploadResults,
         videoFileName: storageFileName,
-        ativo_aws: activeFlag
+        master_aws: masterFlag
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
