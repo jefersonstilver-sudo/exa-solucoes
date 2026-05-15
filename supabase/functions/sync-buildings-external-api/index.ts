@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
             data_ini: dataIni,
             data_fim: dataFim,
             master: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
+            id_pedido: pedido_id,
             isPlus: isVertical,
             programacao: {},
             ...qrFields

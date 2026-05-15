@@ -204,6 +204,7 @@ serve(async (req) => {
         ...metadata,
         master: masterFlag,
         status: 'new',
+        id_pedido: pedidoVideo.pedido_id,
         ...(isVertical && { isPlus: true }),
         ...qrFields
       }
