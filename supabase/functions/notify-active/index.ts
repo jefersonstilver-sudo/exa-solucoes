@@ -1,88 +1,29 @@
-// deno-lint-ignore-file no-explicit-any
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json"
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req: Request): Promise<Response> => {
-  // CORS preflight
+/**
+ * DEPRECATED: A rota PATCH /ativo/{client_id} da API externa AWS foi descontinuada.
+ * No-op preservado para compatibilidade com chamadores existentes.
+ */
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
   try {
     const payload = await req.json().catch(() => ({}));
-    const clientId = payload.clientId ?? null;
-    const buildingUuid = payload.buildingUuid ?? null;
-    const titulo = payload.titulo ?? null;
-    // Aceita `master` (novo) ou `ativo` (legado) — sempre envia `master` para a API externa
-    const master = payload.master !== undefined ? payload.master === true : payload.ativo === true;
-    const id_pedido = payload.id_pedido ?? payload.pedidoId ?? null;
-
-    console.log('🔔 [NOTIFY-ACTIVE] Payload recebido:', { clientId, buildingUuid, titulo, master, id_pedido });
-
-    if (!clientId || typeof clientId !== 'string' || clientId.length < 1) {
-      console.error('❌ [NOTIFY-ACTIVE] clientId inválido:', clientId);
-      return new Response(JSON.stringify({ ok: false, error: 'clientId inválido ou ausente' }), {
-        status: 400,
-        headers: corsHeaders
-      });
-    }
-
-    if (!titulo || typeof titulo !== 'string') {
-      console.error('❌ [NOTIFY-ACTIVE] titulo inválido:', titulo);
-      return new Response(JSON.stringify({ ok: false, error: 'titulo inválido ou ausente' }), {
-        status: 400,
-        headers: corsHeaders
-      });
-    }
-
-    const url = `http://18.228.252.149:8000/ativo/${clientId}`;
-    const body: Record<string, unknown> = {
-      titulo,
-      master: master === true,
-      ...(id_pedido ? { id_pedido } : {})
-    };
-
-    console.log('🌐 [NOTIFY-ACTIVE] Enviando PATCH para API externa:', { url, buildingUuid, clientId, body });
-
-    const res = await fetch(url, { 
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    
-    const text = await res.text().catch(() => '');
-
-    console.log(`${res.ok ? '✅' : '❌'} [NOTIFY-ACTIVE] Resposta da API externa:`, { 
-      status: res.status, 
-      statusText: res.statusText, 
-      responseBody: text 
-    });
-
+    console.log('⚠️ [NOTIFY-ACTIVE] PATCH /ativo descontinuado. No-op chamado com:', payload);
     return new Response(
-      JSON.stringify({ 
-        ok: res.ok, 
-        status: res.status, 
-        statusText: res.statusText, 
-        url, 
-        buildingUuid, 
-        requestBody: body,
-        responseBody: text 
-      }),
-      { status: 200, headers: corsHeaders }
+      JSON.stringify({ success: true, skipped: true, reason: 'PATCH /ativo removido' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
-  } catch (e: any) {
-    console.error('💥 [NOTIFY-ACTIVE] Erro fatal:', e?.message || e);
-    return new Response(JSON.stringify({ ok: false, error: e?.message || 'unknown error' }), {
-      status: 500,
-      headers: corsHeaders
-    });
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({ success: false, error: error?.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
 });
-
