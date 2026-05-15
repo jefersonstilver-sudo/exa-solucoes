@@ -7,6 +7,29 @@ const corsHeaders = {
 
 const EXTERNAL_API_BASE = 'http://18.228.252.149:8000'
 
+const DAY_NAMES_MAP: Record<number, string> = {
+  0: 'domingo', 1: 'segunda', 2: 'terca', 3: 'quarta',
+  4: 'quinta', 5: 'sexta', 6: 'sabado',
+}
+
+function emptyProgramacao() {
+  return {
+    segunda: [] as Array<{ inicio: string; fim: string }>,
+    terca: [] as Array<{ inicio: string; fim: string }>,
+    quarta: [] as Array<{ inicio: string; fim: string }>,
+    quinta: [] as Array<{ inicio: string; fim: string }>,
+    sexta: [] as Array<{ inicio: string; fim: string }>,
+    sabado: [] as Array<{ inicio: string; fim: string }>,
+    domingo: [] as Array<{ inicio: string; fim: string }>,
+  };
+}
+
+function trimSeconds(t: string) {
+  if (!t) return t;
+  const p = t.split(':');
+  return p.length >= 2 ? `${p[0]}:${p[1]}` : t;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -32,7 +55,7 @@ Deno.serve(async (req) => {
       // Get approved videos for this order
       const { data: videos, error: videoError } = await supabase
         .from('pedido_videos')
-        .select('video_id, selected_for_display, qr_config, videos(nome, url, duracao, orientacao)')
+        .select('video_id, slot_position, selected_for_display, qr_config, videos(nome, url, duracao, orientacao)')
         .eq('pedido_id', pedido_id)
         .eq('approval_status', 'approved')
 
@@ -144,6 +167,35 @@ Deno.serve(async (req) => {
             console.log(`🔳 [SYNC-BUILDINGS] QR Code incluído para ${fileNameClean}:`, qrFields);
           }
 
+          // Build programacao from campaign_video_schedules (same logic as update-video-schedule-aws)
+          const programacao = emptyProgramacao();
+          try {
+            const { data: schedules } = await supabase
+              .from('campaign_video_schedules')
+              .select('id, campaign_schedule_rules ( days_of_week, start_time, end_time, is_active, is_all_day )')
+              .eq('video_id', pv.video_id)
+              .eq('slot_position', (pv as any).slot_position);
+
+            const rules: any[] = [];
+            (schedules || []).forEach((s: any) => {
+              (s.campaign_schedule_rules || []).filter((r: any) => r.is_active).forEach((r: any) => rules.push(r));
+            });
+            rules.forEach((rule) => {
+              const slot = {
+                inicio: rule.is_all_day ? '00:00' : trimSeconds(rule.start_time),
+                fim: rule.is_all_day ? '23:59' : trimSeconds(rule.end_time),
+              };
+              (rule.days_of_week || []).forEach((d: number) => {
+                const day = DAY_NAMES_MAP[d];
+                if (day) (programacao as any)[day].push(slot);
+              });
+            });
+            const total = Object.values(programacao).reduce((acc: number, arr: any) => acc + arr.length, 0);
+            console.log(`📅 [SYNC-BUILDINGS] ${fileNameClean}: ${total} slot(s) de programação`);
+          } catch (schedErr: any) {
+            console.error(`⚠️ [SYNC-BUILDINGS] Erro ao buscar programação de ${fileNameClean}:`, schedErr.message);
+          }
+
           metadados[fileNameClean] = {
             titulo: video.nome || 'Campanha',
             data_ini: dataIni,
@@ -151,7 +203,7 @@ Deno.serve(async (req) => {
             master: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
             id_pedido: pedido_id,
             isPlus: isVertical,
-            programacao: {},
+            programacao,
             ...qrFields
           }
         } catch (dlError: any) {
