@@ -145,16 +145,7 @@ Deno.serve(async (req) => {
       let buildingIds = Array.isArray(pedido.lista_predios) ? [...pedido.lista_predios] : []
 
       if (includeChildBuildings && pedido.is_master) {
-        const { data: childOrders, error: childError } = await supabase
-          .from('pedidos')
-          .select('lista_predios')
-          .eq('master_pedido_id', pedido.id)
-          .in('status', ['ativo', 'video_aprovado'])
-        if (childError) throw childError
-        for (const child of childOrders || []) {
-          const childBuildings = Array.isArray((child as any).lista_predios) ? (child as any).lista_predios : []
-          buildingIds.push(...childBuildings)
-        }
+        console.log(`ℹ️ [RECONCILE_MASTER] Pedido ${pedido.id} é master, mas não há coluna de vínculo filho no schema atual; usando somente lista_predios do pedido.`)
       }
 
       buildingIds = [...new Set(buildingIds)].filter(Boolean)
