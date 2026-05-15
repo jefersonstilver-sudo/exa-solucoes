@@ -14,14 +14,14 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { clientId, buildingUuid, titulo, ativo } = await req.json().catch(() => ({ 
-      clientId: null, 
-      buildingUuid: null,
-      titulo: null,
-      ativo: true
-    }));
+    const payload = await req.json().catch(() => ({}));
+    const clientId = payload.clientId ?? null;
+    const buildingUuid = payload.buildingUuid ?? null;
+    const titulo = payload.titulo ?? null;
+    // Aceita `master` (novo) ou `ativo` (legado) — sempre envia `master` para a API externa
+    const master = payload.master !== undefined ? payload.master === true : payload.ativo === true;
 
-    console.log('🔔 [NOTIFY-ACTIVE] Payload recebido:', { clientId, buildingUuid, titulo, ativo });
+    console.log('🔔 [NOTIFY-ACTIVE] Payload recebido:', { clientId, buildingUuid, titulo, master });
 
     if (!clientId || typeof clientId !== 'string' || clientId.length < 1) {
       console.error('❌ [NOTIFY-ACTIVE] clientId inválido:', clientId);
@@ -42,7 +42,7 @@ serve(async (req: Request): Promise<Response> => {
     const url = `http://18.228.252.149:8000/ativo/${clientId}`;
     const body = {
       titulo,
-      ativo: ativo === true
+      master: master === true
     };
 
     console.log('🌐 [NOTIFY-ACTIVE] Enviando PATCH para API externa:', { url, buildingUuid, clientId, body });
