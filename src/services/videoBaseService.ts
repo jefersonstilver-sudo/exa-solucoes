@@ -349,7 +349,7 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
       console.warn('[SET_BASE_VIDEO] Failed to log action:', logErr);
     }
     
-    // 🔔 NOTIFICAR API EXTERNA — Apenas PATCH /master/master/{client_id}
+    // 🔔 NOTIFICAR API EXTERNA — Apenas PATCH /master/{client_id}
     // (NÃO chamar sync-buildings-external-api: re-upload pesado e desnecessário ao trocar master)
     console.log('🔔 [SET_BASE_VIDEO] Iniciando PATCH /master...');
 
