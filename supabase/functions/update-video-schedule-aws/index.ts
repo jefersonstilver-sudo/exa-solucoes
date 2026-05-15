@@ -81,10 +81,11 @@ serve(async (req) => {
       throw new Error('Pedido sem lista_predios');
     }
 
-    // titulo = nome do arquivo no storage sem extensão (mesmo padrão do upload)
-    const url: string = (pedidoVideo as any).videos.url;
-    const storageFileName = url.split('/').pop() || (pedidoVideo as any).videos.nome;
-    const titulo = storageFileName.replace(/\.[^/.]+$/, '');
+    // titulo = nome (título) do vídeo cadastrado pelo usuário, não o nome do arquivo
+    const titulo = ((pedidoVideo as any).videos.nome || '').replace(/\.[^/.]+$/, '');
+    if (!titulo) {
+      throw new Error('Vídeo sem título (videos.nome vazio)');
+    }
 
     // 2. Programação
     let programacao = emptyProgramacao();
