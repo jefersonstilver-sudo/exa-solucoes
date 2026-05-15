@@ -404,6 +404,25 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
       }
 
       console.log('✅ [SET_BASE_VIDEO] Master trocado com sucesso na API externa');
+
+      // 🧹 Limpar programação do novo master na API externa (master não tem programação)
+      try {
+        console.log('🧹 [SET_BASE_VIDEO] Limpando programação do novo master na API externa...');
+        const { error: clearSchedErr } = await supabase.functions.invoke('update-video-schedule-aws', {
+          body: {
+            pedido_id: currentSlot.pedido_id,
+            video_id: currentSlot.video_id,
+            clear: true,
+          },
+        });
+        if (clearSchedErr) {
+          console.warn('⚠️ [SET_BASE_VIDEO] Falha ao limpar programação externa:', clearSchedErr);
+        } else {
+          console.log('✅ [SET_BASE_VIDEO] Programação externa limpa');
+        }
+      } catch (clearErr: any) {
+        console.warn('⚠️ [SET_BASE_VIDEO] Erro ao limpar programação externa:', clearErr?.message);
+      }
     } catch (err: any) {
       console.error('❌ [SET_BASE_VIDEO] ERRO ao chamar PATCH /master:', err);
       const { toast } = await import("@/hooks/use-toast");
