@@ -34,7 +34,7 @@ export const useSuperAdminProtection = () => {
       if (import.meta.env.DEV) {
         console.log('🚫 PROTECTION: Acesso negado ao super_admin');
       }
-      navigate('/sistema/login', { replace: true });
+      navigate('/login', { replace: true });
       return;
     }
 
