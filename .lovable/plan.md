@@ -1,48 +1,42 @@
-## Objetivo
+# Remover página `/sistema/login` (ERP) e consolidar no login padrão
 
-Substituir o campo `ativo` por `master` em TODOS os payloads enviados para a API externa AWS. Endpoints (URLs) ficam como estão por enquanto — foco somente no payload de envio.
+## Causa raiz do problema
 
-## Regras
+A página `/sistema/login` (LoginERP) está causando o logout quando você tenta acessar `/admin/pedidos`:
 
-- Primeiro vídeo de um pedido → `master: true`
-- Demais vídeos do mesmo pedido → `master: false`
-- Apenas UM master por pedido a qualquer momento
-- Nenhuma mudança em UI, fluxo de upload, agendamento interno ou lógica do site
+1. `useSuperAdminProtection` redireciona para `/sistema/login` quando detecta perda momentânea de sessão / role.
+2. `SuperAdminPage` também força `/sistema/login` em vários pontos.
+3. Há um **redirecionamento de subdomínio** em `src/App.tsx` (linhas 113-127) que joga qualquer acesso via `sistema.examidia.com.br` direto pra `/sistema/login`, criando loops.
+4. O `LoginERP` faz `supabase.auth.signOut()` se a role não estiver imediatamente disponível (linha 98 do `ERPLoginForm`), o que explica o "ele desloga" durante a navegação.
 
-## Arquivos a modificar
+A página `/login` (`src/pages/Login.tsx`) já trata super_admin / admin / admin_marketing / admin_financeiro corretamente (linhas 38-43), então o ERP é redundante.
 
-1. **`supabase/functions/upload-video-to-external-api/index.ts`**
-   - Renomear variável `activeFlag` → `masterFlag` (mantendo a lógica atual de "primeiro slot ativo do pedido = master:true").
-   - No body do POST para a API externa: trocar `ativo: activeFlag` por `master: masterFlag`.
-   - Atualizar logs e comentários (ativo → master).
-   - Manter persistência interna (`is_active`, `selected_for_display`) intacta — só muda o nome do campo enviado.
+## Mudanças
 
-2. **`supabase/functions/sync-video-status-to-aws/index.ts`**
-   - Nas duas chamadas `PATCH ${EXTERNAL_API_BASE}/ativo/batch`:
-     - URL permanece (definirmos depois conforme combinado)
-     - Body: `{ ativo: true }` → `{ master: true }` (ativar selecionado)
-     - Body: `{ ativo: false }` → `{ master: false }` (desativar os demais)
-   - Atualizar logs.
+### 1. `src/App.tsx`
+- Remover `const LoginERP = lazy(...)` (linha 53).
+- Remover o bloco IIFE de redirecionamento de subdomínio (linhas 111-127) **ou** trocar o destino de `/sistema/login` por `/login`. Recomendado: **remover totalmente**, já que `sistema.examidia.com.br` pode usar `/login` igual ao domínio principal.
+- Remover a rota `<Route path="/sistema/login" ... />` (linha 562).
 
-3. **`supabase/functions/audit-sync-all-active-orders/index.ts`**
-   - Verificar se algum payload de reconciliação envia `ativo` e trocar por `master`.
+### 2. `src/hooks/useSuperAdminProtection.tsx`
+- Linha 37: trocar `navigate('/sistema/login', ...)` por `navigate('/login', ...)`.
 
-4. **`src/services/videoApprovalWebhookService.ts`** e **`src/services/webhookProgramacaoService.ts`**
-   - Onde houver `ativo:` no payload do webhook AWS → trocar por `master:`.
-   - Manter `programacao`, `isPlus`, `QRLocale`, `id_pedido`, `titulo`, `data_ini`, `data_fim`, `redirecionamento` como estão (já alinhados com o novo contrato).
+### 3. `src/pages/SuperAdminPage.tsx`
+- Linhas 44, 74, 77, 146: trocar todas as ocorrências de `/sistema/login` por `/login`.
 
-5. **`src/services/videoBaseService.ts`**
-   - Atualizar logs (`Video ativo:` → `Video master:`) se houver envio para AWS.
+### 4. `supabase/functions/resend-welcome-email/index.ts`
+- Linha 142: atualizar o link do email de `${siteUrl}/sistema/login` para `${siteUrl}/login`.
 
-## O que NÃO muda
+### 5. Arquivos a deletar (sem uso após as mudanças)
+- `src/pages/sistema/LoginERP.tsx`
+- `src/components/sistema/ERPLoginForm.tsx`
+- `src/components/sistema/ERPCircuitBackground.tsx`
+- Diretório `src/pages/sistema/` se ficar vazio.
 
-- URLs/endpoints AWS (`/ativo/batch` continua até decisão posterior)
-- Banco Supabase: colunas `is_active`, `selected_for_display`, `is_master` (essa última é de pedido, não de vídeo)
-- Polling/agendamento interno do site
-- Qualquer UI
+## Verificações pós-mudança
+- `rg "sistema/login|LoginERP|ERPLoginForm|ERPCircuitBackground"` deve retornar zero ocorrências.
+- Acessar `/admin/pedidos` logado como admin — não deve mais redirecionar/deslogar.
+- Acessar `/super_admin` deslogado — deve cair em `/login` (e não em `/sistema/login`).
 
-## Validação
-
-- Lint dos edge functions modificados
-- Smoke test: chamar `upload-video-to-external-api` em pedido de teste e confirmar payload com `master:true` no primeiro vídeo
-- Verificar logs de `sync-video-status-to-aws` ao trocar principal: `master:true` no novo, `master:false` nos demais
+## Fora do escopo
+- Nenhuma mudança no fluxo de autenticação do `/login` padrão, no 2FA ou nas roles. Apenas remoção do ERP duplicado.

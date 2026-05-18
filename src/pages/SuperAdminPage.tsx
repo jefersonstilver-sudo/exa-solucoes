@@ -41,7 +41,7 @@ const SuperAdminPage = () => {
     if (!isLoggedIn) {
       console.log('❌ NÃO LOGADO: Redirecionando para login ERP');
       toast.error('Você precisa estar logado para acessar esta área.');
-      navigate('/sistema/login', { replace: true });
+      navigate('/login', { replace: true });
       setHasChecked(true);
       return;
     }
@@ -71,10 +71,10 @@ const SuperAdminPage = () => {
           duration: 5000,
           action: {
             label: 'Fazer Login',
-            onClick: () => navigate('/sistema/login')
+            onClick: () => navigate('/login')
           }
         });
-        navigate('/sistema/login', { replace: true });
+        navigate('/login', { replace: true });
       }
       
       setHasChecked(true);
@@ -143,7 +143,7 @@ const SuperAdminPage = () => {
             </div>
           </div>
           <button
-            onClick={() => navigate('/sistema/login', { replace: true })}
+            onClick={() => navigate('/login', { replace: true })}
             className="px-6 py-3 bg-indexa-purple text-white rounded-lg hover:bg-indexa-purple/90 transition-colors"
           >
             Voltar ao Login

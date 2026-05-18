@@ -139,7 +139,7 @@ serve(async (req) => {
       </div>
       
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${siteUrl}/sistema/login" style="display: inline-block; background: linear-gradient(135deg, #C7141A 0%, #9C1E1E 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${siteUrl}/login" style="display: inline-block; background: linear-gradient(135deg, #C7141A 0%, #9C1E1E 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
           Acessar o Sistema →
         </a>
       </div>

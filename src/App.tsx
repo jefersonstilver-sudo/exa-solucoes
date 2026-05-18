@@ -50,7 +50,7 @@ const EmailNotConfirmed = lazy(() => import('./pages/EmailNotConfirmed'));
 const EmailEnviado = lazy(() => import('./pages/EmailEnviado'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const PainelKiosk = lazy(() => import('./pages/PainelKiosk'));
-const LoginERP = lazy(() => import('./pages/sistema/LoginERP'));
+
 const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const TestLinks = lazy(() => import('./pages/TestLinks'));
 const AIReportsPage = lazy(() => import('./pages/admin/monitoramento-ia/AIReportsPage'));
@@ -108,23 +108,6 @@ const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'))
 const GeradorRoteiros = lazy(() => import('./pages/advertiser/GeradorRoteiros'));
 const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
-// 🚨 SUBDOMAIN REDIRECT - Must run BEFORE React renders
-// Detecta se está acessando via sistema.examidia.com.br e redireciona para /sistema/login
-(() => {
-  const hostname = window.location.hostname;
-  const pathname = window.location.pathname;
-  
-  // Verifica se é o subdomínio do sistema ERP
-  const isERPSubdomain = hostname === 'sistema.examidia.com.br' || hostname.startsWith('sistema.');
-  
-  // Se for subdomínio ERP e NÃO estiver em uma rota /sistema/*, redirecionar
-  if (isERPSubdomain && !pathname.startsWith('/sistema')) {
-    console.log('🔄 [SUBDOMAIN] Detectado acesso via sistema.*, redirecionando para /sistema/login');
-    window.location.replace('/sistema/login');
-    // Não continua a execução
-    throw new Error('Redirecting to ERP login...');
-  }
-})();
 
 console.log('⚙️ Initializing QueryClient...');
 const queryClient = new QueryClient({
@@ -559,7 +542,7 @@ const AppContent = () => {
 
           {/* Rotas de autenticação */}
           <Route path="/login" element={<Suspense fallback={<GlobalLoadingPage />}><LoginPage /></Suspense>} />
-          <Route path="/sistema/login" element={<Suspense fallback={<GlobalLoadingPage />}><LoginERP /></Suspense>} />
+          <Route path="/sistema/login" element={<Navigate to="/login" replace />} />
           <Route path="/cadastro" element={<Suspense fallback={<GlobalLoadingPage />}><Cadastro /></Suspense>} />
           <Route path="/email-not-confirmed" element={<Suspense fallback={<GlobalLoadingPage />}><EmailNotConfirmed /></Suspense>} />
           <Route path="/termos-uso" element={<Suspense fallback={<GlobalLoadingPage />}><TermosUso /></Suspense>} />
