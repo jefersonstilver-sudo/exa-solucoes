@@ -57,6 +57,7 @@ const AIReportsPage = lazy(() => import('./pages/admin/monitoramento-ia/AIReport
 const AdvertiserInvoices = lazy(() => import('./pages/advertiser/AdvertiserInvoices'));
 const ParanaNutriTalentos = lazy(() => import('./pages/ParanaNutriTalentos'));
 const Catalogo = lazy(() => import('./pages/Catalogo'));
+const CatalogoClientes = lazy(() => import('./pages/CatalogoClientes'));
 
 // Video Editor Pages
 const VideoEditorDashboard = lazy(() => import('./pages/video-editor/VideoEditorDashboard'));
