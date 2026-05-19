@@ -220,6 +220,11 @@ const AppContent = () => {
         <Routes>
           {/* Rotas principais */}
           <Route path="/" element={<Exa />} />
+          <Route path="/catalogo-clientes" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando Mídia Kit..." />}>
+              <CatalogoClientes />
+            </Suspense>
+          } />
           <Route path="/coming-soon" element={<ComingSoonPage />} />
           <Route path="/portrasdamarca" element={
             <Suspense fallback={<GlobalLoadingPage message="" />}>
