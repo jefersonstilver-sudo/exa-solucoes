@@ -1,42 +1,111 @@
-# Remover página `/sistema/login` (ERP) e consolidar no login padrão
+# Plano: Página Pública `/catalogo-clientes` — Midia Kit EXA 2025
 
-## Causa raiz do problema
+## Objetivo
+Criar uma landing one-page pública (sem login, sem layout admin) que serve como Midia Kit interativo da EXA Mídia — arma de vendas para o time comercial enviar a leads.
 
-A página `/sistema/login` (LoginERP) está causando o logout quando você tenta acessar `/admin/pedidos`:
+## Entregáveis
 
-1. `useSuperAdminProtection` redireciona para `/sistema/login` quando detecta perda momentânea de sessão / role.
-2. `SuperAdminPage` também força `/sistema/login` em vários pontos.
-3. Há um **redirecionamento de subdomínio** em `src/App.tsx` (linhas 113-127) que joga qualquer acesso via `sistema.examidia.com.br` direto pra `/sistema/login`, criando loops.
-4. O `LoginERP` faz `supabase.auth.signOut()` se a role não estiver imediatamente disponível (linha 98 do `ERPLoginForm`), o que explica o "ele desloga" durante a navegação.
+### 1. Página React
+- **Novo arquivo:** `src/pages/CatalogoClientes.tsx`
+- Layout próprio fullscreen dark (não usa AdminLayout nem header padrão do site)
+- Sem autenticação, sem PWA constraints (permite seleção de texto e scroll vertical livre)
 
-A página `/login` (`src/pages/Login.tsx`) já trata super_admin / admin / admin_marketing / admin_financeiro corretamente (linhas 38-43), então o ERP é redundante.
+### 2. Rota em `src/App.tsx`
+- Adicionar `<Route path="/catalogo-clientes" element={<Suspense fallback={...}><CatalogoClientes /></Suspense>} />` junto às demais rotas públicas (próximo a `/portrasdamarca` ou `/loja`)
+- Lazy import para não impactar o bundle inicial
 
-## Mudanças
+### 3. SEO (react-helmet-async)
+- Title: `Midia Kit 2025 | EXA Midia — Sua marca na rotina dele`
+- Description conforme briefing
+- Canonical `https://examidia.com.br/catalogo-clientes`
+- OG image apontando para hero
 
-### 1. `src/App.tsx`
-- Remover `const LoginERP = lazy(...)` (linha 53).
-- Remover o bloco IIFE de redirecionamento de subdomínio (linhas 111-127) **ou** trocar o destino de `/sistema/login` por `/login`. Recomendado: **remover totalmente**, já que `sistema.examidia.com.br` pode usar `/login` igual ao domínio principal.
-- Remover a rota `<Route path="/sistema/login" ... />` (linha 562).
+### 4. Assets
+Copiar imagens do HTML de referência (`midia-kit-exa-2025.html`) para `public/midia-kit/`:
+- `hero.jpg` (mulher no elevador), `exa-player.jpg`, `logo-secovi.png`, screenshots da plataforma, 8 fotos de elevadores, QR Codes, `logo-exa-branca.png`
+- Imagens ausentes → fallback com placeholder (gradiente vermelho/escuro + texto)
+- Lazy loading em tudo abaixo do fold
 
-### 2. `src/hooks/useSuperAdminProtection.tsx`
-- Linha 37: trocar `navigate('/sistema/login', ...)` por `navigate('/login', ...)`.
+## Estrutura da Página (22 seções)
+Conforme briefing detalhado:
+1. Navbar fixa (blur ao scroll)
+2. Hero full-screen com métrica **40x/semana**
+3. A Dor (texto com strikethrough)
+4. A Ideia (grid 2 col)
+5. Quem Somos (grid invertido + stats inline)
+6. O Mecanismo (grid 2x2 cards)
+7. Cinco Pilares
+8. Métricas com countUp
+9. Presença nos prédios (4 fotos 9:16)
+10. **Catálogo dinâmico de prédios** (API live — ver técnico)
+11. Performance (pills)
+12. Vídeo Programável
+13. Como Anunciar (4 passos)
+14. Plataforma (carousel scroll-snap)
+15. Verticais EXA
+16. Perfil do Público
+17. Para Quem (3 ICPs)
+18. Portfolio Visual + CTAs WhatsApp
+19. Parcerias (SECOVI)
+20. Quote final
+21. Contato CTA + QR Codes
+22. Footer
 
-### 3. `src/pages/SuperAdminPage.tsx`
-- Linhas 44, 74, 77, 146: trocar todas as ocorrências de `/sistema/login` por `/login`.
+## Detalhes Técnicos
 
-### 4. `supabase/functions/resend-welcome-email/index.ts`
-- Linha 142: atualizar o link do email de `${siteUrl}/sistema/login` para `${siteUrl}/login`.
+### Design Tokens (escopo local da página)
+Como o design system global usa HSL/Tailwind semantic tokens e essa página tem identidade visual própria muito específica (dark premium com vermelho EXA #E8000D, Barlow Condensed + DM Sans), aplicar os tokens via **CSS variables inline no escopo da página** (`<style>` injetado ou className container com vars):
+- `--r: #E8000D`, `--bg: #07070c`, `--surf: rgba(255,255,255,.025)`, etc.
+- Fontes Google via `<link>` no `<Helmet>` da página (Barlow Condensed + DM Sans, display=swap)
+- Tailwind utilities + style inline quando necessário para fidelidade ao HTML de referência
 
-### 5. Arquivos a deletar (sem uso após as mudanças)
-- `src/pages/sistema/LoginERP.tsx`
-- `src/components/sistema/ERPLoginForm.tsx`
-- `src/components/sistema/ERPCircuitBackground.tsx`
-- Diretório `src/pages/sistema/` se ficar vazio.
+### Catálogo Dinâmico (Seção 10)
+- Endpoint **já existe**: `supabase.functions.invoke('catalogo-predios')` (ou fetch direto na URL pública). Confirmado: `supabase/functions/catalogo-predios` existe
+- Hook `useEffect` + fetch com loading spinner
+- Filtrar: `statusGroup IN ('ativo', 'instalacao')`
+- Ordenação custom: Riverside → Royal Legacy → Miro → Provence → Viena → demais por `unidades DESC`
+- Card: foto (4:3 cover) ou placeholder com iniciais, nome (Barlow uppercase), bairro, tags (unidades, andares, Airbnb destacado em #FF585D, Ativo vermelho)
+- 3 stat cards no topo com countUp (Ativos / Unidades / Pessoas)
+- **Fallback:** se API falhar → array hardcoded com 23 prédios (extraído do HTML de referência)
 
-## Verificações pós-mudança
-- `rg "sistema/login|LoginERP|ERPLoginForm|ERPCircuitBackground"` deve retornar zero ocorrências.
-- Acessar `/admin/pedidos` logado como admin — não deve mais redirecionar/deslogar.
-- Acessar `/super_admin` deslogado — deve cair em `/login` (e não em `/sistema/login`).
+### Animações
+- **Scroll reveal:** IntersectionObserver custom (fade-up 36px, delays escalonados) — mais leve que framer-motion para uma página tão longa
+- **CountUp:** hook custom com `requestAnimationFrame` + easing cubic (já existe `useCounterAnimation` em `src/hooks/`)
+- **Navbar:** state `scrolled` via scroll listener (throttle)
+- **Grain overlay:** SVG noise inline com `opacity: 0.03`
+- **Red glow:** divs decorativas com `radial-gradient` + `blur(160px)`
 
-## Fora do escopo
-- Nenhuma mudança no fluxo de autenticação do `/login` padrão, no 2FA ou nas roles. Apenas remoção do ERP duplicado.
+### Responsivo
+- Mobile-first; grids colapsam para 1 col em `< md`
+- Navbar mobile esconde links (só logo + CTA WhatsApp)
+- Hero metric com `clamp(4rem, 15vw, 12rem)`
+- Building grid: `repeat(auto-fill, minmax(240px, 1fr))`
+
+### Performance
+- Lazy load de todas as imagens abaixo do fold (`loading="lazy"`)
+- Fonts com `display=swap`
+- Edge function tem cache de 5min (respeitado)
+- Página lazy-loaded no router
+
+### Contatos
+- WhatsApp principal: `https://wa.me/5545991415856`
+- Jenni (Consultora): `https://wa.me/5545998323225`
+- Email: `comercial@examidia.com.br`
+
+## Arquivos Modificados
+1. **Criar** `src/pages/CatalogoClientes.tsx` (~800-1000 linhas — página completa)
+2. **Editar** `src/App.tsx` — adicionar lazy import + Route
+3. **Criar** `public/midia-kit/` com os assets disponíveis (alguns podem precisar ser fornecidos depois — usar placeholders por enquanto)
+
+## Fora de Escopo
+- Não modificar nenhuma outra página, layout ou rota
+- Não alterar a edge function `catalogo-predios` (já funcional)
+- Não adicionar autenticação/RLS (página é 100% pública)
+- Imagens não fornecidas usarão placeholders com gradiente — substituição posterior é trivial (drop nos paths esperados)
+
+## Validação Final
+- Acessar `/catalogo-clientes` em preview → ver hero, scroll completo, catálogo carregando da API real
+- Console sem erros; network mostra request bem-sucedido para `catalogo-predios`
+- Build passa sem warnings de TS
+
+Quer que eu implemente?
