@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXA Midia Kit 2025 — Sua marca na rotina dele</title>
+<meta name="description" content="EXA Midia — A unica midia que fala com o mesmo cliente, todos os dias. 23 pontos ativos em elevadores residenciais premium de Foz do Iguacu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   EXA MIDIA KIT 2025 — ARMA DE VENDAS
+   Posicionamento: "Sua marca na rotina dele."
+   Ideia unica: "A EXA faz sua marca virar rotina."
+   Numero heroi: 40x por semana
+   ═══════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --r:#E8000D;
+  --r2:#ff2d2d;
+  --r-dim:rgba(232,0,13,.12);
+  --r-glow:rgba(232,0,13,.25);
+  --bg:#07070c;
+  --bg2:#0b0b12;
+  --bg3:#0f0f18;
+  --surf:rgba(255,255,255,.025);
+  --surf2:rgba(255,255,255,.05);
+  --brd:rgba(255,255,255,.06);
+  --brd2:rgba(255,255,255,.1);
+  --t1:rgba(255,255,255,.93);
+  --t2:rgba(255,255,255,.58);
+  --t3:rgba(255,255,255,.3);
+  --hd:'Barlow Condensed',sans-serif;
+  --bd:'DM Sans',system-ui,sans-serif;
+  --px:clamp(20px,5vw,80px);
+  --max:1180px;
+  --rad:14px;
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{font-family:var(--bd);color:var(--t1);background:var(--bg);-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.65}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+
+/* Grain */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.03;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ═══ NAVIGATION ═══ */
+.topnav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:18px var(--px);display:flex;justify-content:space-between;align-items:center;
+  background:transparent;backdrop-filter:blur(0px);
+  border-bottom:1px solid transparent;transition:all .5s cubic-bezier(.16,1,.3,1);
+}
+.topnav.scrolled{
+  padding:12px var(--px);
+  background:rgba(7,7,12,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom-color:var(--brd);
+}
+.logo{display:flex;align-items:center}
+.logo img{height:28px;width:auto;filter:brightness(0) invert(1)}
+.nav-links{display:flex;gap:28px;font-size:13px;font-weight:500;color:var(--t2);letter-spacing:.3px}
+.nav-links a{transition:color .3s;position:relative}
+.nav-links a:hover{color:#fff}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1.5px;background:var(--r);transition:width .3s}
+.nav-links a:hover::after{width:100%}
+.nav-cta{
+  padding:9px 22px;background:var(--r);color:#fff;border-radius:8px;font-size:12px;font-weight:600;
+  letter-spacing:.5px;text-transform:uppercase;font-family:var(--hd);
+  transition:all .3s;box-shadow:0 2px 16px var(--r-glow);
+}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 24px var(--r-glow);background:#ff1a1a}
+@media(max-width:768px){.nav-links{display:none}}
+
+/* ═══ LAYOUT ═══ */
+section{position:relative;overflow:hidden}
+.container{max-width:var(--max);margin:0 auto;padding:0 var(--px)}
+.section-pad{padding:clamp(64px,12vh,140px) 0}
+
+/* ═══ REVEAL ═══ */
+.reveal{opacity:0;transform:translateY(36px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:none}
+.reveal-d1{transition-delay:.1s}.reveal-d2{transition-delay:.2s}.reveal-d3{transition-delay:.3s}
+.reveal-d4{transition-delay:.4s}.reveal-d5{transition-delay:.5s}.reveal-d6{transition-delay:.6s}
+
+/* ═══ TYPOGRAPHY ═══ */
+.eyebrow{
+  font-family:var(--hd);font-size:12px;letter-spacing:5px;text-transform:uppercase;
+  color:var(--r);margin-bottom:10px;font-weight:600;
+}
+.h1{font-family:var(--hd);font-size:clamp(48px,9vw,100px);font-weight:900;line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
+.h2{font-family:var(--hd);font-size:clamp(36px,5.5vw,64px);font-weight:800;line-height:1;letter-spacing:-.01em;text-transform:uppercase}
+.h3{font-family:var(--hd);font-size:clamp(22px,3vw,32px);font-weight:700;line-height:1.15;text-transform:uppercase}
+.red{color:var(--r)}
+.sub{font-size:clamp(16px,1.8vw,20px);font-weight:300;color:var(--t2);line-height:1.7;max-width:560px}
+.body-text{font-size:clamp(14px,1.2vw,16px);color:var(--t2);line-height:1.75}
+.red-line{width:52px;height:3px;background:var(--r);border-radius:2px;margin:18px 0;box-shadow:0 0 14px var(--r-glow)}
+
+/* ═══ CARDS ═══ */
+.card{
+  background:var(--surf);border:1px solid var(--brd);border-radius:var(--rad);
+  padding:clamp(20px,2.5vw,32px);transition:all .4s cubic-bezier(.16,1,.3,1);position:relative;overflow:hidden;
+}
+.card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .4s;
+  background:radial-gradient(ellipse at 50% 0%,rgba(232,0,13,.04),transparent 70%);pointer-events:none}
+.card:hover{border-color:rgba(232,0,13,.2);transform:translateY(-2px)}
+.card:hover::before{opacity:1}
+
+.glass{
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:var(--rad);
+}
+
+/* ═══ GRIDS ═══ */
+.grid{display:grid;gap:clamp(14px,2vw,24px)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g-auto{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+@media(min-width:901px) and (max-width:1100px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+
+/* ═══ STATS ═══ */
+.stat-num{font-family:var(--hd);font-size:clamp(40px,6vw,72px);font-weight:900;color:var(--r);line-height:1;letter-spacing:-.03em}
+.stat-label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:2.5px;margin-top:6px;font-family:var(--hd);font-weight:500}
+
+/* ═══ IMAGE FRAME ═══ */
+.frame{border-radius:var(--rad);overflow:hidden;border:1px solid var(--brd);position:relative}
+.frame img{width:100%;display:block}
+.frame::after{content:'';position:absolute;inset:0;border-radius:var(--rad);box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);pointer-events:none}
+
+/* ═══ GLOW / DIVIDER ═══ */
+.glow{position:absolute;border-radius:50%;background:var(--r);filter:blur(160px);opacity:.07;pointer-events:none}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--brd),transparent);margin:0}
+
+/* ═══════════════════════════════════════
+   HERO — "Sua marca na rotina dele."
+   ═══════════════════════════════════════ */
+.hero{min-height:100vh;display:flex;align-items:flex-end;position:relative;padding-bottom:clamp(60px,10vh,120px)}
+.hero-bg{position:absolute;inset:0;overflow:hidden}
+.hero-bg img{width:100%;height:100%;object-fit:cover;filter:blur(4px) brightness(.65);transform:scale(1.05)}
+.hero-overlay{position:absolute;inset:0;
+  background:linear-gradient(160deg,rgba(7,7,12,.92) 0%,rgba(7,7,12,.5) 40%,rgba(7,7,12,.85) 100%)}
+.hero-accent{position:absolute;bottom:0;left:0;right:0;height:320px;
+  background:linear-gradient(0deg,var(--bg) 5%,rgba(7,7,12,.6) 50%,transparent);pointer-events:none;z-index:1}
+.hero .container{position:relative;z-index:2}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 16px;border-radius:20px;font-size:11px;font-weight:600;
+  background:rgba(232,0,13,.08);border:1px solid rgba(232,0,13,.15);color:var(--r);
+  font-family:var(--hd);letter-spacing:3px;margin-bottom:24px;text-transform:uppercase;
+}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--r);
+  animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 var(--r-glow)}50%{opacity:.4;box-shadow:0 0 0 8px transparent}}
+
+/* Hero 40x counter */
+.hero-metric{
+  display:inline-flex;align-items:baseline;gap:6px;
+  margin-top:28px;padding:14px 28px;border-radius:12px;
+  background:rgba(232,0,13,.06);border:1px solid rgba(232,0,13,.12);
+}
+.hero-metric-num{font-family:var(--hd);font-size:clamp(48px,7vw,80px);font-weight:900;color:var(--r);line-height:1;letter-spacing:-.03em}
+.hero-metric-label{font-family:var(--hd);font-size:clamp(13px,1.4vw,16px);color:var(--t2);letter-spacing:1px;text-transform:uppercase;font-weight:500}
+
+.hero-scroll{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-family:var(--hd);
+}
+.hero-scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--r),transparent);animation:scrollDown 2s ease-in-out infinite}
+@keyframes scrollDown{0%{opacity:0;transform:scaleY(0);transform-origin:top}50%{opacity:1;transform:scaleY(1)}100%{opacity:0;transform:scaleY(0);transform-origin:bottom}}
+
+/* ═══ FULLWIDTH QUOTE ═══ */
+.quote-section{
+  padding:clamp(48px,8vh,100px) 0;
+  text-align:center;position:relative;
+}
+.quote-big{
+  font-family:var(--hd);font-size:clamp(28px,4.5vw,52px);font-weight:700;
+  line-height:1.15;text-transform:uppercase;max-width:900px;margin:0 auto;
+  letter-spacing:-.01em;
+}
+
+/* ═══ X-MIRA SIGNATURE ═══ */
+.xmira{position:relative;display:inline-block}
+.xmira::before,.xmira::after{
+  content:'';position:absolute;width:18px;height:18px;
+  border:2px solid var(--r);opacity:.4;
+}
+.xmira::before{top:-8px;left:-10px;border-right:none;border-bottom:none}
+.xmira::after{bottom:-8px;right:-10px;border-left:none;border-top:none}
+
+/* ═══ BUILDING CATALOG ═══ */
+.bld-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.bld-card{
+  border-radius:var(--rad);overflow:hidden;background:var(--surf);border:1px solid var(--brd);
+  transition:all .4s cubic-bezier(.16,1,.3,1);position:relative;
+}
+.bld-card:hover{transform:translateY(-4px);border-color:rgba(232,0,13,.25);box-shadow:0 20px 60px rgba(232,0,13,.08)}
+.bld-photo{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg2);object-position:center 30%}
+.bld-placeholder{
+  width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;
+  position:relative;overflow:hidden;
+  background:var(--bg2);
+}
+.bld-placeholder::before{content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 70% 30%,rgba(232,0,13,.10) 0%,transparent 50%),
+    radial-gradient(ellipse at 20% 80%,rgba(232,0,13,.05) 0%,transparent 50%),
+    linear-gradient(135deg,rgba(255,255,255,.015) 0%,transparent 50%);
+}
+.bld-placeholder::after{content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.04;
+}
+.bld-initial{
+  font-family:var(--hd);font-size:46px;font-weight:900;letter-spacing:6px;
+  text-transform:uppercase;line-height:1;position:relative;z-index:1;
+  background:linear-gradient(135deg,rgba(232,0,13,.28),rgba(232,0,13,.12));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.bld-placeholder .bld-icon{
+  font-size:9px;color:var(--t3);font-family:var(--hd);letter-spacing:3px;text-transform:uppercase;
+  position:relative;z-index:1;opacity:.35;font-weight:600;
+  border:1px solid rgba(255,255,255,.06);padding:3px 10px;border-radius:4px;
+}
+.bld-placeholder svg{position:absolute;bottom:10px;right:12px;opacity:.04;z-index:0;color:var(--r)}
+.bld-info{padding:14px 16px}
+.bld-name{font-family:var(--hd);font-weight:700;font-size:15px;margin-bottom:2px;letter-spacing:.3px;text-transform:uppercase}
+.bld-addr{font-size:11px;color:var(--t3);margin-bottom:8px;letter-spacing:.2px}
+.bld-tags{display:flex;gap:4px;flex-wrap:wrap}
+.bld-tag{
+  font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+  background:var(--surf2);color:var(--t2);border:1px solid var(--brd);font-family:var(--hd);
+}
+.bld-tag-active{background:rgba(232,0,13,.08);color:var(--r2);border-color:rgba(232,0,13,.15)}
+.bld-tag-airbnb{background:rgba(255,88,93,.12);color:#FF585D;border-color:rgba(255,88,93,.3);font-size:11px;padding:4px 10px;font-weight:700;letter-spacing:.6px}
+.spinner{width:24px;height:24px;border:2px solid var(--brd);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══ NUMBERED LIST ═══ */
+.num-list{display:flex;flex-direction:column;gap:18px}
+.num-item{display:flex;gap:16px;align-items:flex-start}
+.num-badge{
+  flex-shrink:0;width:44px;height:44px;border-radius:10px;
+  background:rgba(232,0,13,.06);border:1px solid rgba(232,0,13,.1);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--hd);font-size:14px;font-weight:800;color:var(--r);
+}
+.num-item h4{font-family:var(--hd);font-size:16px;font-weight:700;margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px}
+.num-item p{font-size:13px;color:var(--t2);line-height:1.6}
+
+/* ═══ STEPS ═══ */
+.step{position:relative;padding-left:24px}
+.step::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--r);border-radius:2px;box-shadow:0 0 10px var(--r-glow)}
+.step-num{font-family:var(--hd);font-size:10px;color:var(--r);letter-spacing:3px;margin-bottom:3px;font-weight:700;text-transform:uppercase}
+.step h4{font-family:var(--hd);font-size:16px;font-weight:700;margin-bottom:3px;text-transform:uppercase}
+.step p{font-size:13px;color:var(--t2);line-height:1.6}
+
+/* ═══ DATA TABLE ═══ */
+.dtable{width:100%;border-collapse:collapse}
+.dtable td{padding:14px 18px;border-bottom:1px solid var(--brd);font-size:14px}
+.dtable td:first-child{font-family:var(--hd);font-size:12px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;width:38%;font-weight:600}
+.dtable tr:last-child td{border-bottom:none}
+.dtable strong{color:var(--t1)}
+
+/* ═══ CTA ═══ */
+.cta-section{background:linear-gradient(180deg,var(--bg) 0%,rgba(232,0,13,.03) 50%,var(--bg) 100%)}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:8px;padding:16px 36px;
+  background:var(--r);color:#fff;border-radius:10px;
+  font-family:var(--hd);font-weight:700;font-size:16px;letter-spacing:1px;text-transform:uppercase;
+  transition:all .3s;box-shadow:0 4px 24px var(--r-glow);
+}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 40px var(--r-glow);background:#ff1a1a}
+.cta-btn-outline{
+  display:inline-flex;align-items:center;gap:8px;padding:16px 36px;
+  background:transparent;color:#fff;border-radius:10px;
+  font-family:var(--hd);font-weight:500;font-size:16px;letter-spacing:.5px;
+  border:1px solid var(--brd2);transition:all .3s;
+}
+.cta-btn-outline:hover{border-color:var(--r);color:var(--r)}
+
+/* ═══ SCREENSHOT CAROUSEL ═══ */
+.screenshot-row{display:flex;gap:20px;overflow-x:auto;padding:0 0 16px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.screenshot-row::-webkit-scrollbar{height:3px}
+.screenshot-row::-webkit-scrollbar-track{background:var(--surf)}
+.screenshot-row::-webkit-scrollbar-thumb{background:var(--r);border-radius:2px}
+.screenshot-item{flex:0 0 min(80vw,400px);scroll-snap-align:start}
+
+/* ═══ METRIC PILL ═══ */
+.metric-pill{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 20px;background:var(--surf);border:1px solid var(--brd);
+  border-radius:10px;transition:all .3s;
+}
+.metric-pill:hover{border-color:rgba(232,0,13,.15)}
+.metric-pill .label{font-size:13px;color:var(--t2)}
+.metric-pill .value{font-family:var(--hd);font-weight:700;font-size:15px;letter-spacing:.3px}
+
+/* ═══ ICP Cards ═══ */
+.icp-card{padding:clamp(24px,3vw,40px);position:relative}
+.icp-icon{font-size:32px;margin-bottom:14px}
+.icp-title{font-family:var(--hd);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.icp-pain{font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:14px}
+.icp-phrase{font-family:var(--hd);font-size:14px;font-weight:600;color:var(--r);font-style:italic;letter-spacing:.3px}
+
+/* ═══ FOOTER ═══ */
+footer{border-top:1px solid var(--brd);padding:48px 0;text-align:center}
+footer p{font-size:12px;color:var(--t3);letter-spacing:.3px}
+
+/* ═══ COUNTER ANIMATION ═══ */
+@keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.count-in{animation:countUp .6s cubic-bezier(.16,1,.3,1) forwards}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAVIGATION ═══ -->
+<nav class="topnav" id="topnav">
+  <div class="logo"><img src="logo-exa-branca.png" alt="EXA Midia"></div>
+  <div class="nav-links">
+    <a href="#ideia">A Ideia</a>
+    <a href="#metricas">Metricas</a>
+    <a href="#predios">Predios</a>
+    <a href="#plataforma">Plataforma</a>
+    <a href="#clientes">Para quem</a>
+    <a href="#contato">Contato</a>
+  </div>
+  <a href="https://wa.me/5545991415856" target="_blank" class="nav-cta">Fale Conosco</a>
+</nav>
+
+<!-- ═══════════════════════════ HERO — A UNICA IDEIA ═══════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-bg"><img src="pptx_extract/content/ppt/media/image3.png" alt="EXA no Elevador"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-accent"></div>
+  <div class="glow" style="width:700px;height:700px;right:-300px;bottom:-200px;opacity:.1"></div>
+  <div class="container">
+    <div class="hero-badge reveal">Midia Kit 2025</div>
+    <h1 class="h1 reveal reveal-d1" style="margin-bottom:16px">Sua marca na<br><span class="red">rotina dele.</span></h1>
+    <p class="sub reveal reveal-d2" style="margin-bottom:0;font-size:clamp(16px,1.8vw,21px);max-width:480px">A unica midia que fala com o mesmo cliente, todos os dias. Dentro do elevador onde ele mora.</p>
+    <div class="hero-metric reveal reveal-d3">
+      <span class="hero-metric-num">40x</span>
+      <div style="display:flex;flex-direction:column">
+        <span class="hero-metric-label">por semana</span>
+        <span style="font-size:11px;color:var(--t3);font-family:var(--hd);letter-spacing:.5px">mesmo morador, mesma marca</span>
+      </div>
+    </div>
+    <div class="reveal reveal-d4" style="margin-top:28px;display:flex;gap:14px;flex-wrap:wrap">
+      <a href="#predios" class="cta-btn">Ver 23 Predios Ativos</a>
+      <a href="#contato" class="cta-btn-outline">Falar com a EXA &rarr;</a>
+    </div>
+  </div>
+  <div class="hero-scroll"><span>Scroll</span><div class="hero-scroll-line"></div></div>
+</section>
+
+<!-- ═══════════════════════════ A DOR — CRENCA ERRADA ═══════════════════════════ -->
+<section class="quote-section" style="background:var(--bg2)">
+  <div class="glow" style="width:500px;height:500px;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.04"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <div class="eyebrow reveal" style="color:var(--t3)">O problema que ninguem fala</div>
+    <p class="quote-big reveal reveal-d1" style="color:var(--t2)">
+      Voce <span style="text-decoration:line-through;opacity:.5">nao precisa aparecer para mais gente.</span>
+    </p>
+    <p class="quote-big reveal reveal-d2" style="margin-top:8px">
+      Precisa aparecer <span class="red">mais vezes</span> para a <span class="red">gente certa.</span>
+    </p>
+    <div class="red-line reveal reveal-d3" style="margin:28px auto"></div>
+    <p class="body-text reveal reveal-d4" style="max-width:600px;margin:0 auto;text-align:center">O mercado de midia vende alcance &mdash; numero grande, grafico bonito. Mas ver uma vez nao constroi nada. A decisao de compra nasce de <strong style="color:#fff">repeticao sobre a pessoa certa</strong>. E e isso que a EXA entrega.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════ A IDEIA — ONDE NAO EXISTE SCROLL ═══════════════════════════ -->
+<section id="ideia">
+  <div class="container section-pad">
+    <div class="grid g2" style="align-items:center;gap:clamp(32px,5vw,80px)">
+      <div>
+        <div class="eyebrow reveal">A Ideia</div>
+        <h2 class="h2 reveal reveal-d1">Onde nao existe scroll, existe <span class="red">atencao.</span></h2>
+        <div class="red-line reveal reveal-d2"></div>
+        <p class="body-text reveal reveal-d3" style="margin-bottom:14px">No elevador, o morador encontra silencio, pausa e foco. Nao tem celular na mao, nao tem feed para rolar, nao tem concorrencia visual.</p>
+        <p class="body-text reveal reveal-d4"><strong style="color:#fff">A EXA faz sua marca virar rotina.</strong> O mesmo morador ve a sua marca ~40 vezes por semana. Repeticao vira familiaridade. Familiaridade vira preferencia. Preferencia vira venda.</p>
+      </div>
+      <div class="reveal reveal-d3">
+        <div class="frame"><img src="fotos paienis predios/IMG_0155.PNG" alt="Painel EXA no Edificio Barcelona — dashboard com noticias, clima e anuncios" style="aspect-ratio:3/4;object-fit:cover;object-position:center 20%"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ QUEM SOMOS ═══════════════════════════ -->
+<section style="background:var(--bg2)" id="sobre">
+  <div class="container section-pad">
+    <div class="grid g2" style="align-items:center;gap:clamp(32px,5vw,80px)">
+      <div class="reveal reveal-d2">
+        <div class="frame"><img src="pptx_extract/content/ppt/media/image27.png" alt="EXA Player no elevador" style="aspect-ratio:3/4;object-fit:cover"></div>
+      </div>
+      <div>
+        <div class="eyebrow reveal">Quem somos</div>
+        <h2 class="h2 reveal reveal-d1">A primeira. <span class="red">A unica.</span></h2>
+        <div class="red-line reveal reveal-d2"></div>
+        <p class="body-text reveal reveal-d3">A EXA e a primeira rede de midia indoor nos elevadores dos predios residenciais premium de Foz do Iguacu &mdash; a tecnologia que as grandes capitais ja tem, agora dentro de casa do seu cliente.</p>
+        <p class="body-text reveal reveal-d4" style="margin-top:14px">Nao vendemos espaco em tela. Vendemos <strong style="color:#fff">presenca diaria</strong> para empresas que querem se posicionar dentro do mundo verticalizado de Foz &mdash; exatamente onde mora o publico que decide e que tem poder de compra.</p>
+        <div class="reveal reveal-d5" style="margin-top:24px;display:flex;gap:24px;flex-wrap:wrap">
+          <div><div class="stat-num" style="font-size:clamp(32px,4vw,48px)">23</div><div class="stat-label">Pontos ativos</div></div>
+          <div><div class="stat-num" style="font-size:clamp(32px,4vw,48px)">1&ordf;</div><div class="stat-label">E unica em Foz</div></div>
+          <div><div class="stat-num" style="font-size:clamp(32px,4vw,48px)">27"</div><div class="stat-label">Telas Full HD</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════ O MECANISMO — DADOS & PERFIL ═══════════════════════════ -->
+<section>
+  <div class="container section-pad">
+    <div class="eyebrow reveal">O Mecanismo</div>
+    <h2 class="h2 reveal reveal-d1" style="margin-bottom:12px">Por que o elevador <span class="red">funciona</span></h2>
+    <p class="sub reveal reveal-d2" style="margin-bottom:32px">O unico lugar onde a atencao e garantida. Sem scroll. Sem skip. Sem concorrencia.</p>
+    <div class="grid g2" style="gap:20px">
+      <div>
+        <div class="card reveal reveal-d2" style="margin-bottom:16px">
+          <div style="font-family:var(--hd);font-size:11px;color:var(--r);letter-spacing:3px;margin-bottom:10px;font-weight:700;text-transform:uppercase">Rotina do Elevador</div>
+          <p class="body-text">Um morador usa o elevador em media <strong style="color:#fff">6 a 8 vezes por dia</strong>. Isso representa <strong style="color:var(--r)">~40 visualizacoes semanais</strong> da tela &mdash; com a mesma marca, a mesma pessoa.</p>
+        </div>
+        <div class="card reveal reveal-d3">
+          <div style="font-family:var(--hd);font-size:11px;color:var(--r);letter-spacing:3px;margin-bottom:10px;font-weight:700;text-transform:uppercase">Atencao Cativa</div>
+          <p class="body-text"><strong style="color:var(--r)">90%</strong> dos anuncios digitais sao ignorados. No elevador, a taxa de atencao e superior a <strong style="color:#fff">95%</strong>. Nao existe ad blocker para o elevador.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card reveal reveal-d2" style="margin-bottom:16px">
+          <div style="font-family:var(--hd);font-size:11px;color:var(--r);letter-spacing:3px;margin-bottom:10px;font-weight:700;text-transform:uppercase">Perfil do Publico</div>
+          <p class="body-text">25 a 55 anos. Classes A/B. <strong style="color:#fff">71%</strong> tomam decisoes de compra para a familia. <strong style="color:#fff">62%</strong> viajam internacionalmente ao menos 1x ao ano.</p>
+        </div>
+        <div class="card reveal reveal-d3">
+          <div style="font-family:var(--hd);font-size:11px;color:var(--r);letter-spacing:3px;margin-bottom:10px;font-weight:700;text-transform:uppercase">Comportamento Local</div>
+          <p class="body-text"><strong style="color:#fff">87%</strong> dos moradores preferem comprar em comercio proximo de casa. <strong style="color:#fff">78%</strong> acreditam que negocios de bairro fortalecem a cidade.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 5 PILARES ═══════════════════════════ -->
+<section style="background:var(--bg2)" id="diferenciais">
+  <div class="container section-pad">
+    <div class="grid g2" style="align-items:start;gap:clamp(32px,5vw,80px)">
+      <div>
+        <div class="eyebrow reveal">5 Pilares</div>
+        <h2 class="h2 reveal reveal-d1">Por que a EXA e <span class="red">diferente</span></h2>
+        <div class="red-line reveal reveal-d2"></div>
+        <p class="body-text reveal reveal-d3">Nao e "mais uma opcao de midia". E a unica que junta: mesmo cliente + todos os dias + sem concorrencia.</p>
+      </div>
+      <div class="num-list">
+        <div class="num-item reveal"><div class="num-badge">01</div><div><h4>Somos os unicos</h4><p>Nao existe concorrente direto em predios residenciais de Foz. Quem anuncia na EXA ocupa um espaco que ninguem mais pode dividir.</p></div></div>
+        <div class="num-item reveal reveal-d1"><div class="num-badge">02</div><div><h4>Repeticao diaria</h4><p>~40 vezes por semana. A repeticao cria familiaridade. Familiaridade cria preferencia. Preferencia gera venda.</p></div></div>
+        <div class="num-item reveal reveal-d2"><div class="num-badge">03</div><div><h4>Criacao propria</h4><p>A EXA nao so vende espaco &mdash; cria os videos dos clientes internamente. Pecas feitas para gerar resultado real.</p></div></div>
+        <div class="num-item reveal reveal-d3"><div class="num-badge">04</div><div><h4>Tecnologia de capital, em Foz</h4><p>Video programavel por horario. Plataforma com IA e automacao. O padrao de midia indoor que so existia em SP e Curitiba.</p></div></div>
+        <div class="num-item reveal reveal-d4"><div class="num-badge">05</div><div><h4>Telas que o morador quer olhar</h4><p>Noticias, avisos do condominio, clima, cambio, Copa do Mundo 2026 e Wi-Fi gratuito. O morador olha porque e util &mdash; e a marca entra junto.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════ METRICAS ═══════════════════════════ -->
+<section id="metricas">
+  <div class="container section-pad" style="text-align:center">
+    <div class="eyebrow reveal">A Prova</div>
+    <h2 class="h2 reveal reveal-d1">Numeros <span class="red">reais</span></h2>
+    <p class="sub reveal reveal-d2" style="margin:0 auto 40px;text-align:center">Nao e projecao. E rede operando hoje em Foz do Iguacu.</p>
+    <div class="grid g4 reveal reveal-d3" style="margin-bottom:24px">
+      <div class="card" style="text-align:center;padding:28px 16px">
+        <div class="stat-num" style="font-size:clamp(40px,5vw,60px)" data-count="23">23</div>
+        <div class="stat-label">Pontos ativos</div>
+      </div>
+      <div class="card" style="text-align:center;padding:28px 16px">
+        <div class="stat-num" style="font-size:clamp(40px,5vw,60px)" data-count="245">245</div>
+        <div class="stat-label">Exibicoes diarias</div>
+      </div>
+      <div class="card" style="text-align:center;padding:28px 16px">
+        <div class="stat-num" style="font-size:clamp(40px,5vw,60px)">91%</div>
+        <div class="stat-label">Aprovacao moradores</div>
+      </div>
+      <div class="card" style="text-align:center;padding:28px 16px">
+        <div class="stat-num" style="font-size:clamp(36px,4.5vw,52px)">+23mil</div>
+        <div class="stat-label">Pessoas alcancadas</div>
+      </div>
+    </div>
+    <!-- Hero metric repeated for emphasis -->
+    <div class="card reveal reveal-d4" style="max-width:600px;margin:0 auto;padding:24px 32px;border-color:rgba(232,0,13,.12);text-align:center">
+      <div style="font-family:var(--hd);font-size:clamp(48px,8vw,80px);font-weight:900;color:var(--r);line-height:1;letter-spacing:-.03em">~40x</div>
+      <div style="font-family:var(--hd);font-size:14px;color:var(--t2);letter-spacing:2px;text-transform:uppercase;margin-top:6px">por semana, o mesmo morador ve a mesma marca</div>
+      <p class="body-text" style="margin-top:12px;max-width:440px;display:inline-block">Nenhuma outra midia em Foz entrega essa frequencia sobre o mesmo publico. E essa repeticao que transforma marca em escolha.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PRESENCA NOS PREDIOS ═══════════════════════════ -->
+<section style="background:var(--bg2)">
+  <div class="container section-pad">
+    <div class="eyebrow reveal">Cobertura</div>
+    <h2 class="h2 reveal reveal-d1">Presenca nos <span class="red">Predios</span></h2>
+    <p class="body-text reveal reveal-d2" style="margin-bottom:32px;max-width:600px">A EXA esta presente em 23 edificios residenciais premium de Foz do Iguacu. Cada predio e um ponto de midia ativo, alcancando diariamente moradores, visitantes e prestadores de servico.</p>
+    <div class="grid g4 reveal reveal-d3" style="gap:12px">
+      <div class="frame"><img src="fotos paienis predios/IMG_0155.PNG" alt="Painel EXA no Edificio Barcelona" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0141.PNG" alt="Anuncio em elevador dourado" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0148.PNG" alt="Dashboard EXA com avisos" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0150.PNG" alt="Anuncio construtora no elevador" style="aspect-ratio:9/16;object-fit:cover"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ CATALOGO DINAMICO ═══════════════════════════ -->
+<section id="predios">
+  <div class="container section-pad">
+    <div class="eyebrow reveal">Rede Ativa</div>
+    <h2 class="h2 reveal reveal-d1">Catalogo de <span class="red">Predios</span></h2>
+    <p class="body-text reveal reveal-d2" style="margin-bottom:24px;max-width:600px">Todos os 23 edificios com paineis EXA instalados e ativos. A rede que faz sua marca virar rotina.</p>
+    <div class="reveal reveal-d2" style="display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap" id="catStats">
+      <div class="card" style="padding:14px 24px;text-align:center;min-width:120px"><div class="stat-num" style="font-size:36px" id="sA">&mdash;</div><div class="stat-label">Ativos</div></div>
+      <div class="card" style="padding:14px 24px;text-align:center;min-width:120px"><div class="stat-num" style="font-size:36px" id="sU">&mdash;</div><div class="stat-label">Unidades</div></div>
+      <div class="card" style="padding:14px 24px;text-align:center;min-width:120px"><div class="stat-num" style="font-size:36px" id="sP">&mdash;</div><div class="stat-label">Pessoas</div></div>
+    </div>
+    <div id="catBox" class="reveal reveal-d3">
+      <div style="display:flex;align-items:center;justify-content:center;padding:60px;gap:12px">
+        <div class="spinner"></div>
+        <span style="color:var(--t3);font-size:13px;font-family:var(--hd);letter-spacing:1px">Carregando predios ativos...</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════ PERFORMANCE ═══════════════════════════ -->
+<section style="background:var(--bg2)">
+  <div class="container section-pad">
+    <div class="grid g2" style="align-items:center;gap:clamp(32px,5vw,80px)">
+      <div>
+        <div class="eyebrow reveal">Performance</div>
+        <h2 class="h2 reveal reveal-d1">Metricas de <span class="red">resultado</span></h2>
+        <div class="red-line reveal reveal-d2"></div>
+        <p class="body-text reveal reveal-d3">Marketing de resultado nao nasce de ser visto uma vez por muita gente &mdash; nasce de ser visto muitas vezes pela pessoa certa. Cada campanha e mensuravel e acompanhada em tempo real.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="metric-pill reveal"><span class="label">Frequencia</span><span class="value red">~40x por semana</span></div>
+        <div class="metric-pill reveal reveal-d1"><span class="label">Exibicoes</span><span class="value red">245 por dia</span></div>
+        <div class="metric-pill reveal reveal-d2"><span class="label">Exposicao</span><span class="value">10 a 30 segundos</span></div>
+        <div class="metric-pill reveal reveal-d3"><span class="label">Lembranca</span><span class="value red">70% espontanea</span></div>
+        <div class="metric-pill reveal reveal-d4"><span class="label">Segmentacao</span><span class="value">Horario e perfil</span></div>
+        <div class="metric-pill reveal reveal-d5"><span class="label">CPM</span><span class="value red">Menor da regiao</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PLANEJAMENTO — ATE 10 VIDEOS ═══════════════════════════ -->
+<section>
+  <div class="container section-pad">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="eyebrow reveal">Video Programavel</div>
+      <h2 class="h2 reveal reveal-d1">Ate <span class="red">10 videos</span> por campanha</h2>
+      <p class="sub reveal reveal-d2" style="margin:12px auto 0;text-align:center">Crie uma linha de comunicacao diaria com os moradores. Cada video para um momento, um objetivo, uma mensagem diferente.</p>
+    </div>
+    <div class="grid g2" style="align-items:start;gap:clamp(32px,5vw,60px)">
+      <!-- Estrategia semanal -->
+      <div>
+        <h3 class="h3 reveal" style="margin-bottom:20px;font-size:18px">Exemplo de <span class="red">estrategia semanal</span></h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="card reveal" style="padding:12px 16px;display:flex;gap:12px;align-items:center">
+            <span style="font-family:var(--hd);font-size:11px;color:var(--r);font-weight:800;letter-spacing:1px;min-width:70px;text-transform:uppercase">Manha</span>
+            <span style="font-size:13px;color:var(--t2)"><strong style="color:#fff">Video 1</strong> &mdash; "Bom dia! Cafe fresquinho esperando voce" (cafeteria parceira)</span>
+          </div>
+          <div class="card reveal reveal-d1" style="padding:12px 16px;display:flex;gap:12px;align-items:center">
+            <span style="font-family:var(--hd);font-size:11px;color:var(--r);font-weight:800;letter-spacing:1px;min-width:70px;text-transform:uppercase">Almoco</span>
+            <span style="font-size:13px;color:var(--t2)"><strong style="color:#fff">Video 2</strong> &mdash; Delivery do restaurante com prato do dia + QR Code para pedir</span>
+          </div>
+          <div class="card reveal reveal-d2" style="padding:12px 16px;display:flex;gap:12px;align-items:center">
+            <span style="font-family:var(--hd);font-size:11px;color:var(--r);font-weight:800;letter-spacing:1px;min-width:70px;text-transform:uppercase">Tarde</span>
+            <span style="font-size:13px;color:var(--t2)"><strong style="color:#fff">Video 3</strong> &mdash; Clinica estetica: "Agende sua avaliacao" com QR para WhatsApp</span>
+          </div>
+          <div class="card reveal reveal-d3" style="padding:12px 16px;display:flex;gap:12px;align-items:center">
+            <span style="font-family:var(--hd);font-size:11px;color:var(--r);font-weight:800;letter-spacing:1px;min-width:70px;text-transform:uppercase">Noite</span>
+            <span style="font-size:13px;color:var(--t2)"><strong style="color:#fff">Video 4</strong> &mdash; Financas: "Invista seu 13o com seguranca" (escritorio de investimentos)</span>
+          </div>
+          <div class="card reveal reveal-d4" style="padding:12px 16px;display:flex;gap:12px;align-items:center">
+            <span style="font-family:var(--hd);font-size:11px;color:var(--r);font-weight:800;letter-spacing:1px;min-width:70px;text-transform:uppercase">Fds</span>
+            <span style="font-size:13px;color:var(--t2)"><strong style="color:#fff">Video 5</strong> &mdash; Promocao exclusiva de fim de semana + cupom de desconto com QR Code</span>
+          </div>
+        </div>
+        <div class="card reveal reveal-d5" style="margin-top:16px;padding:16px;border-color:rgba(232,0,13,.12)">
+          <div style="font-family:var(--hd);font-size:11px;color:var(--r);letter-spacing:3px;margin-bottom:8px;font-weight:700;text-transform:uppercase">O que voce pode fazer com 10 videos</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="bld-tag">QR Codes interativos</span>
+            <span class="bld-tag">Cupons de desconto</span>
+            <span class="bld-tag">Promocoes por horario</span>
+            <span class="bld-tag">Videos por dia da semana</span>
+            <span class="bld-tag">Lancamentos de produto</span>
+            <span class="bld-tag">Conteudo sazonal</span>
+            <span class="bld-tag">Mensagens de fidelidade</span>
+            <span class="bld-tag">Cardapios rotativos</span>
+          </div>
+        </div>
+      </div>
+      <!-- Screenshot -->
+      <div>
+        <div class="reveal reveal-d2">
+          <div class="frame"><img src="pptx_extract/content/ppt/media/image21.png" alt="Interface de agendamento"></div>
+          <p style="font-family:var(--hd);font-size:12px;color:var(--t3);margin-top:10px;text-align:center;letter-spacing:.5px;text-transform:uppercase">Programe cada video por horario e dia</p>
+        </div>
+        <div class="reveal reveal-d3" style="margin-top:16px">
+          <div class="frame"><img src="pptx_extract/content/ppt/media/image22.png" alt="Slots de video"></div>
+          <p style="font-family:var(--hd);font-size:12px;color:var(--t3);margin-top:10px;text-align:center;letter-spacing:.5px;text-transform:uppercase">Ate 10 videos diferentes por pedido</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+          <div class="card reveal reveal-d3" style="padding:12px 16px">
+            <strong style="color:var(--r);font-family:var(--hd);font-size:13px;letter-spacing:.5px">TARGET</strong>
+            <span style="font-size:12px;color:var(--t2);display:block;margin-top:2px">Campanhas direcionadas a perfis especificos.</span>
+          </div>
+          <div class="card reveal reveal-d4" style="padding:12px 16px">
+            <strong style="color:var(--r);font-family:var(--hd);font-size:13px;letter-spacing:.5px">PONTO A PONTO</strong>
+            <span style="font-size:12px;color:var(--t2);display:block;margin-top:2px">Selecione os predios exatos onde quer aparecer.</span>
+          </div>
+          <div class="card reveal reveal-d5" style="padding:12px 16px">
+            <strong style="color:var(--r);font-family:var(--hd);font-size:13px;letter-spacing:.5px">CONTEXTUAL</strong>
+            <span style="font-size:12px;color:var(--t2);display:block;margin-top:2px">Manha, tarde, noite, fim de semana &mdash; cada momento com uma mensagem.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ COMO ANUNCIAR ═══════════════════════════ -->
+<section style="background:var(--bg2)">
+  <div class="container section-pad">
+    <div class="eyebrow reveal">Passo a passo</div>
+    <h2 class="h2 reveal reveal-d1" style="margin-bottom:32px">Entre na rotina <span class="red">do seu cliente</span></h2>
+    <div class="grid g2" style="gap:clamp(32px,5vw,80px)">
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <div class="step reveal"><div class="step-num">Passo 01</div><h4>Escolha os predios</h4><p>Selecione os edificios ou regioes onde deseja aparecer. Todos geolocalizados e segmentados por perfil de moradores.</p></div>
+        <div class="step reveal reveal-d1"><div class="step-num">Passo 02</div><h4>Defina o periodo</h4><p>Escolha data de inicio e fim, duracao dos videos (10s, 15s ou 30s) e horarios de exibicao.</p></div>
+        <div class="step reveal reveal-d2"><div class="step-num">Passo 03</div><h4>Envie ou crie o material</h4><p>Upload direto pela plataforma ou use nosso departamento de criacao para produzir o video do zero.</p></div>
+        <div class="step reveal reveal-d3"><div class="step-num">Passo 04</div><h4>Acompanhe em tempo real</h4><p>A campanha entra no ar em minutos. Acompanhe exibicoes, alcance e frequencia direto no painel.</p></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px" class="reveal reveal-d2">
+        <div class="frame"><img src="pptx_extract/content/ppt/media/image18.png" alt="Loja EXA"></div>
+        <div class="frame"><img src="pptx_extract/content/ppt/media/image20.png" alt="Mapa EXA"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PLATAFORMA SCREENSHOTS ═══════════════════════════ -->
+<section id="plataforma">
+  <div class="container section-pad">
+    <div style="text-align:center;margin-bottom:36px">
+      <div class="eyebrow reveal">Plataforma</div>
+      <h2 class="h2 reveal reveal-d1">Controle <span class="red">total</span></h2>
+      <div class="red-line reveal reveal-d2" style="margin:20px auto"></div>
+    </div>
+    <div class="screenshot-row reveal reveal-d3">
+      <div class="screenshot-item">
+        <div class="frame"><img src="pptx_extract/content/ppt/media/image21.png" alt="Agendar"></div>
+        <p style="font-family:var(--hd);font-size:13px;color:var(--t2);margin-top:12px;text-align:center;letter-spacing:.5px;text-transform:uppercase">Defina hora e dia de cada video</p>
+      </div>
+      <div class="screenshot-item">
+        <div class="frame"><img src="pptx_extract/content/ppt/media/image22.png" alt="Videos"></div>
+        <p style="font-family:var(--hd);font-size:13px;color:var(--t2);margin-top:12px;text-align:center;letter-spacing:.5px;text-transform:uppercase">Ate 4 videos por pedido</p>
+      </div>
+      <div class="screenshot-item">
+        <div class="frame"><img src="pptx_extract/content/ppt/media/image27.png" alt="Ao vivo"></div>
+        <p style="font-family:var(--hd);font-size:13px;color:var(--t2);margin-top:12px;text-align:center;letter-spacing:.5px;text-transform:uppercase">Veja o video ao vivo no elevador</p>
+      </div>
+      <div class="screenshot-item">
+        <div class="frame"><img src="pptx_extract/content/ppt/media/image23.png" alt="Resultados"></div>
+        <p style="font-family:var(--hd);font-size:13px;color:var(--t2);margin-top:12px;text-align:center;letter-spacing:.5px;text-transform:uppercase">Acompanhe resultados no portal</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════ VERTICAIS ═══════════════════════════ -->
+<section>
+  <div class="container section-pad" style="text-align:center">
+    <div class="eyebrow reveal">Segmentos</div>
+    <h2 class="h2 reveal reveal-d1">Verticais <span class="red">EXA</span></h2>
+    <p class="sub reveal reveal-d2" style="margin:0 auto 40px">Cada elevador e um ponto de midia inevitavel.</p>
+    <div class="grid g3 reveal reveal-d3" style="max-width:900px;margin:0 auto">
+      <div class="card" style="text-align:center;padding:32px 20px">
+        <div class="stat-num" style="font-size:clamp(36px,4vw,48px)">63%</div>
+        <h4 style="font-family:var(--hd);margin:10px 0 6px;font-size:16px;text-transform:uppercase;letter-spacing:.5px">Residenciais</h4>
+        <p style="font-size:12px;color:var(--t3)">21,6 milhoes de impactos/semana</p>
+      </div>
+      <div class="card" style="text-align:center;padding:32px 20px">
+        <div class="stat-num" style="font-size:clamp(36px,4vw,48px)">37%</div>
+        <h4 style="font-family:var(--hd);margin:10px 0 6px;font-size:16px;text-transform:uppercase;letter-spacing:.5px">Comerciais</h4>
+        <p style="font-size:12px;color:var(--t3)">12,8 milhoes de impactos/semana</p>
+      </div>
+      <div class="card" style="text-align:center;padding:32px 20px;border-color:rgba(232,0,13,.12)">
+        <div class="stat-num" style="font-size:clamp(36px,4vw,48px)">34M+</div>
+        <h4 style="font-family:var(--hd);margin:10px 0 6px;font-size:16px;text-transform:uppercase;letter-spacing:.5px">Rede Premium</h4>
+        <p style="font-size:12px;color:var(--t3)">Impactos totais por semana</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PERFIL DETALHADO ═══════════════════════════ -->
+<section style="background:var(--bg2)">
+  <div class="container section-pad">
+    <div class="grid g2" style="align-items:center;gap:clamp(32px,5vw,80px)">
+      <div>
+        <div class="eyebrow reveal">Audiencia</div>
+        <h2 class="h2 reveal reveal-d1">Perfil do <span class="red">Publico</span></h2>
+        <div class="red-line reveal reveal-d2"></div>
+        <p class="body-text reveal reveal-d3">Moradores de padrao B, B+ e A &mdash; pessoas com poder de compra real e papel de decisao nas compras da familia. Parte da rede inclui predios com Airbnb, ampliando o alcance para turistas com alta intencao de consumo.</p>
+      </div>
+      <div class="card reveal reveal-d3">
+        <table class="dtable">
+          <tr><td>Faixa etaria</td><td><strong>25 a 55 anos</strong></td></tr>
+          <tr><td>Classe social</td><td><strong>A1, A2, B1, B2</strong></td></tr>
+          <tr><td>Decisores</td><td><strong style="color:var(--r)">78%</strong> participam das decisoes</td></tr>
+          <tr><td>Estilo</td><td>Urbano, conectado e aspiracional</td></tr>
+          <tr><td>Interesses</td><td>Tecnologia, bem-estar, estetica, experiencias</td></tr>
+          <tr><td>Airbnb</td><td>Turistas internacionais em predios da rede</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════ PARA QUEM — ICPs ═══════════════════════════ -->
+<section id="clientes">
+  <div class="container section-pad">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="eyebrow reveal">Para quem a EXA e a 1a escolha</div>
+      <h2 class="h2 reveal reveal-d1">Sua empresa <span class="red">aqui</span></h2>
+      <p class="sub reveal reveal-d2" style="margin:12px auto 0;text-align:center">Tres perfis de cliente onde a EXA entrega mais resultado que qualquer outra midia.</p>
+    </div>
+    <div class="grid g3 reveal reveal-d3">
+      <div class="card icp-card">
+        <div class="icp-icon">&#128722;</div>
+        <div class="icp-title">Comercio de Fronteira</div>
+        <p class="icp-pain">Atacado e varejo que vende para turista e morador que cruza para o Paraguai. Precisa ser lembrado antes do cliente atravessar a ponte.</p>
+        <p class="icp-phrase">"Apareca antes do seu cliente cruzar a ponte."</p>
+      </div>
+      <div class="card icp-card" style="border-color:rgba(232,0,13,.12)">
+        <div class="icp-icon">&#128142;</div>
+        <div class="icp-title">Negocio Premium Local</div>
+        <p class="icp-pain">Imobiliaria, clinica, restaurante, construtora. O cliente e de alto valor e dificil de mirar &mdash; midia de massa queima verba na gente errada.</p>
+        <p class="icp-phrase">"Sua marca dentro do predio onde seu cliente mora."</p>
+      </div>
+      <div class="card icp-card">
+        <div class="icp-icon">&#128260;</div>
+        <div class="icp-title">Negocio de Recorrencia</div>
+        <p class="icp-pain">Delivery, farmacia, pet shop, supermercado. Vive de ser lembrado no momento exato da necessidade &mdash; precisa de presenca constante.</p>
+        <p class="icp-phrase">"Seja lembrado toda vez que ele pensar em pedir."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PORTFOLIO — FOTOS REAIS ═══════════════════════════ -->
+<section style="background:var(--bg2)">
+  <div class="container section-pad">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="eyebrow reveal">Fotos reais dos elevadores</div>
+      <h2 class="h2 reveal reveal-d1">Portfolio <span class="red">Visual</span></h2>
+      <p class="sub reveal reveal-d2" style="margin:12px auto 0;text-align:center">Telas de 27" Full HD instaladas em elevadores reais. Veja como sua marca aparece para os moradores todos os dias.</p>
+    </div>
+    <div class="grid g4 reveal reveal-d3" style="gap:12px">
+      <div class="frame"><img src="fotos paienis predios/IMG_0141.PNG" alt="Anuncio Lolka em elevador dourado" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0155.PNG" alt="Black Bull + Boas Vindas Ed. Barcelona" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0153.PNG" alt="Anuncio moda em elevador inox" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0150.PNG" alt="Anuncio Edificio SoHo construtora" style="aspect-ratio:9/16;object-fit:cover"></div>
+    </div>
+    <div class="grid g4 reveal reveal-d4" style="gap:12px;margin-top:12px">
+      <div class="frame"><img src="fotos paienis predios/IMG_0138.PNG" alt="Dashboard EXA com anuncio otica" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0147.PNG" alt="Anuncio alimentacao + comunicado sindico" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0157.PNG" alt="Stories + noticias futebol" style="aspect-ratio:9/16;object-fit:cover"></div>
+      <div class="frame"><img src="fotos paienis predios/IMG_0151.PNG" alt="Anuncio apartamento SoHo interior" style="aspect-ratio:9/16;object-fit:cover"></div>
+    </div>
+    <!-- CTA Jenni -->
+    <div class="reveal reveal-d5" style="margin-top:48px;text-align:center">
+      <p style="font-family:var(--hd);font-size:clamp(18px,2.5vw,26px);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Quer sua marca nessas telas?</p>
+      <p class="body-text" style="margin-bottom:24px">Fale com a Jenni e comece a aparecer todos os dias.</p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:28px">
+        <a href="https://wa.me/5545998323225" target="_blank" class="cta-btn" style="font-size:14px;padding:14px 28px">Falar com a Jenni no WhatsApp</a>
+        <a href="https://examidia.com.br" target="_blank" class="cta-btn-outline" style="font-size:14px;padding:14px 28px">Acessar a Loja EXA</a>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <img src="pptx_extract/content/ppt/media/image44.png" alt="QR Code WhatsApp" style="width:100px;height:100px;border-radius:12px;background:#fff;padding:8px">
+        <span style="font-size:10px;color:var(--t3);letter-spacing:2px;font-family:var(--hd);text-transform:uppercase">Escaneie para falar com a Jenni</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PARCERIAS ═══════════════════════════ -->
+<section>
+  <div class="container section-pad" style="text-align:center">
+    <div class="eyebrow reveal">Credibilidade</div>
+    <h2 class="h2 reveal reveal-d1">Parcerias e <span class="red">Governanca</span></h2>
+    <div class="red-line reveal reveal-d2" style="margin:20px auto"></div>
+    <p class="sub reveal reveal-d3" style="margin:0 auto 36px">A EXA e construida sobre pilares de governanca e transparencia. O projeto tem apoio institucional que reforca a solidez.</p>
+    <div class="grid g2 reveal reveal-d4" style="max-width:700px;margin:0 auto">
+      <div class="card" style="text-align:center;padding:36px 24px">
+        <img src="pptx_extract/content/ppt/media/image37.png" alt="SECOVI-PR" style="width:90px;margin:0 auto 16px;filter:brightness(2)">
+        <h4 style="font-family:var(--hd);font-size:14px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">SECOVI-PR</h4>
+        <p style="font-size:13px;color:var(--t2);line-height:1.6">Apoio institucional que fortalece a credibilidade e o vinculo com o setor condominial.</p>
+      </div>
+      <div class="card" style="text-align:center;padding:36px 24px">
+        <div style="font-family:var(--hd);font-size:48px;font-weight:900;color:var(--r);margin-bottom:16px;line-height:1">23</div>
+        <h4 style="font-family:var(--hd);font-size:14px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Predios Parceiros</h4>
+        <p style="font-size:13px;color:var(--t2);line-height:1.6">Edificios que abrigam as telas EXA e garantem acesso ao publico premium.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════ FRASE FINAL ═══════════════════════════ -->
+<section class="quote-section">
+  <div class="container">
+    <p class="quote-big reveal" style="max-width:800px">
+      <span class="xmira">Repeticao vira familiaridade.</span><br>
+      Familiaridade vira <span class="red">preferencia.</span><br>
+      Preferencia vira <span class="red">venda.</span>
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ CONTATO CTA ═══════════════════════════ -->
+<section class="cta-section" id="contato">
+  <div class="glow" style="width:700px;height:700px;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.06"></div>
+  <div class="container section-pad" style="text-align:center;position:relative;z-index:1">
+    <div class="eyebrow reveal">Vamos conversar</div>
+    <h2 class="h2 reveal reveal-d1" style="max-width:800px;margin:0 auto 12px">Entre na rotina <span class="red">do seu cliente.</span></h2>
+    <p class="sub reveal reveal-d2" style="margin:0 auto 28px;text-align:center">A EXA nao te coloca na frente do cliente uma vez. Coloca todos os dias.</p>
+    <div class="reveal reveal-d3" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
+      <a href="https://wa.me/5545998323225" target="_blank" class="cta-btn">Falar com a Jenni</a>
+      <a href="https://examidia.com.br" target="_blank" class="cta-btn-outline">Acessar a Loja EXA</a>
+    </div>
+    <p class="reveal reveal-d3" style="font-size:12px;color:var(--t3);margin-bottom:28px;font-family:var(--hd);letter-spacing:.5px">Jenni &mdash; Consultora Comercial EXA &mdash; (45) 99832-3225</p>
+    <div class="reveal reveal-d4" style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <img src="pptx_extract/content/ppt/media/image48.png" alt="QR Code WhatsApp" style="width:110px;height:110px;border-radius:14px;background:#fff;padding:10px">
+        <span style="font-size:10px;color:var(--t3);letter-spacing:2px;font-family:var(--hd);text-transform:uppercase">WhatsApp Jenni</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <img src="pptx_extract/content/ppt/media/image44.png" alt="QR Code Loja" style="width:110px;height:110px;border-radius:14px;background:#fff;padding:10px">
+        <span style="font-size:10px;color:var(--t3);letter-spacing:2px;font-family:var(--hd);text-transform:uppercase">Loja EXA</span>
+      </div>
+    </div>
+    <div class="reveal reveal-d5" style="margin-top:24px;font-size:13px;color:var(--t3);display:flex;gap:28px;justify-content:center;flex-wrap:wrap;font-family:var(--hd);letter-spacing:.5px">
+      <span>@examidia</span>
+      <span>comercial@examidia.com.br</span>
+      <span>www.examidia.com.br</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<footer>
+  <div class="container" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div class="logo" style="justify-content:center"><img src="logo-exa-branca.png" alt="EXA Midia" style="height:38px"></div>
+    <p style="font-family:var(--hd);letter-spacing:2px;text-transform:uppercase;font-size:11px">Sua marca na rotina dele.</p>
+    <p>Foz do Iguacu, PR &mdash; 2025</p>
+  </div>
+</footer>
+
+<script>
+// ═══ SCROLL REVEAL ═══
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ═══ NAVBAR SCROLL ═══
+window.addEventListener('scroll', () => {
+  document.getElementById('topnav').classList.toggle('scrolled', window.scrollY > 60);
+}, { passive: true });
+
+// ═══ CATALOGO — TODOS OS PREDIOS ATIVOS ═══
+async function loadCatalog() {
+  const box = document.getElementById('catBox');
+  try {
+    const r = await fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/catalogo-predios');
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    const active = d.predios.filter(p => p.statusGroup === 'ativo' || p.statusGroup === 'instalacao');
+    renderBuildings(active);
+  } catch (e) {
+    console.warn('API indisponivel, usando dados locais:', e);
+    renderBuildings(FALLBACK_BUILDINGS);
+  }
+}
+
+// Fallback: TODOS os 23 predios com Status=Ativo do Notion (maio/2026)
+// Fallback already sorted: Riverside > Royal Legacy > Miro > Provence > Viena > rest by unidades
+const FALLBACK_BUILDINGS = [
+  { nome: 'Riverside Residence', bairro: 'Centro', unidades: 52, andares: 11, endereco: 'R. Belarmino de Mendonca, 358', temAirbnb: true },
+  { nome: 'Riverside Residence 2', bairro: 'Centro', unidades: 52, andares: 11, endereco: 'R. Belarmino de Mendonca, 358', temAirbnb: true },
+  { nome: 'Royal Legacy 1', bairro: 'Vila Yolanda', unidades: 48, andares: 12, endereco: 'Av. dos Imigrantes, 522', temAirbnb: true },
+  { nome: 'Royal Legacy 2', bairro: 'Vila Yolanda', unidades: 48, andares: 12, endereco: 'Av. dos Imigrantes, 522', temAirbnb: true },
+  { nome: 'Royal Legacy 3', bairro: 'Vila Yolanda', unidades: 48, andares: 12, endereco: 'Av. dos Imigrantes, 522', temAirbnb: true },
+  { nome: 'Residencial Miro', bairro: 'Centro', unidades: 68, andares: 17, endereco: 'R. Mal. Floriano Peixoto, 1210', temAirbnb: true },
+  { nome: 'Provence 1', bairro: 'Centro', unidades: 72, andares: 18, endereco: 'Av. Pedro Basso, 341', temAirbnb: false },
+  { nome: 'Provence 2', bairro: 'Centro', unidades: 72, andares: 18, endereco: 'Av. Pedro Basso, 341', temAirbnb: false },
+  { nome: 'Edificio Viena', bairro: 'Vila Maracana', unidades: 40, andares: 9, endereco: 'R. Patrulheiro Venanti Otremba, 293', temAirbnb: false },
+  { nome: 'Residence Renoir Foz', bairro: 'Centro', unidades: 88, andares: 22, endereco: 'R. Mal. Deodoro, 1185', temAirbnb: false },
+  { nome: 'Cond. Res. Saint Peter', bairro: 'Centro', unidades: 76, andares: 19, endereco: 'R. Rui Barbosa, 1786', temAirbnb: true },
+  { nome: 'Residencial Villa Appia', bairro: 'Centro', unidades: 76, andares: 19, endereco: 'R. Bartolomeu de Gusmao, 1564', temAirbnb: false },
+  { nome: 'Luis XV', bairro: 'Centro', unidades: 76, andares: 19, endereco: 'R. Mal. Floriano Peixoto, 1157', temAirbnb: false },
+  { nome: 'Cond. Ed. Torre Azul', bairro: 'Centro', unidades: 76, andares: 19, endereco: 'R. Jorge Sanwais, 1523', temAirbnb: false },
+  { nome: 'Edificio Las Brisas', bairro: 'Centro', unidades: 72, andares: 18, endereco: 'Av. Juscelino Kubitscheck, 133', temAirbnb: false },
+  { nome: 'Omoiru', bairro: 'Centro', unidades: 68, andares: 19, endereco: 'R. Padre Montoya, 490', temAirbnb: true },
+  { nome: 'Edificio Rio Negro', bairro: 'Centro', unidades: 68, andares: 17, endereco: 'R. Mal. Deodoro, 366', temAirbnb: false },
+  { nome: 'Cond. Ed. Cheverny', bairro: 'Centro', unidades: 64, andares: 16, endereco: 'Av. Jose Maria de Brito, 2930', temAirbnb: true },
+  { nome: 'Cond. Ed. Cheverny 2', bairro: 'Centro', unidades: 64, andares: 13, endereco: 'Av. Jose Maria de Brito, 2930', temAirbnb: true },
+  { nome: 'Edificio Vale do Monjolo', bairro: 'Centro', unidades: 64, andares: 16, endereco: 'Alameda Rui Ferreira, 26', temAirbnb: false },
+  { nome: 'Edificio Barcelona', bairro: 'Centro', unidades: 56, andares: 14, endereco: 'R. Dom Pedro II, 519', temAirbnb: false },
+  { nome: 'Edificio Foz Residence', bairro: 'Centro', unidades: 48, andares: 12, endereco: 'R. Santos Dumont, 1085', temAirbnb: true },
+  { nome: 'Edificio Pietro Angelo', bairro: 'Centro', unidades: 36, andares: 9, endereco: 'Av. Juscelino Kubitscheck, 626', temAirbnb: false },
+];
+
+// Photos come from the API (Supabase Storage URLs).
+// Fallback cards show building initials when API is unavailable.
+
+function bldFallback(img, initials) {
+  const div = document.createElement('div');
+  div.className = 'bld-placeholder';
+  div.innerHTML = `<span class="bld-initial">${initials}</span><span class="bld-icon">ponto ativo</span><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>`;
+  img.replaceWith(div);
+}
+
+// Custom sort: Riverside > Royal Legacy > Miro > Provence > Viena > rest
+const PRIORITY_ORDER = [
+  'riverside', 'royal legacy', 'mir', 'provence', 'viena'
+];
+function sortBuildings(list) {
+  return [...list].sort((a, b) => {
+    const na = (a.nome || '').toLowerCase();
+    const nb = (b.nome || '').toLowerCase();
+    let ia = PRIORITY_ORDER.length;
+    let ib = PRIORITY_ORDER.length;
+    for (let k = 0; k < PRIORITY_ORDER.length; k++) {
+      if (na.includes(PRIORITY_ORDER[k])) { ia = k; break; }
+    }
+    for (let k = 0; k < PRIORITY_ORDER.length; k++) {
+      if (nb.includes(PRIORITY_ORDER[k])) { ib = k; break; }
+    }
+    if (ia !== ib) return ia - ib;
+    return (b.unidades || 0) - (a.unidades || 0);
+  });
+}
+
+function renderBuildings(list) {
+  const box = document.getElementById('catBox');
+  const sorted = sortBuildings(list);
+  const count = sorted.length;
+  const units = sorted.reduce((s, p) => s + (p.unidades || 0), 0);
+
+  animateCounter('sA', count);
+  animateCounter('sU', units || 1100);
+  document.getElementById('sP').textContent = units ? '~' + (units * 2.5 / 1000).toFixed(0) + ' mil' : '~25 mil';
+
+  let h = '<div class="bld-grid">';
+  sorted.forEach((p, i) => {
+    const hasApiPhoto = p.fotoUrl && !p.fotoUrl.includes('attachment:') && !p.fotoUrl.startsWith('file://') && p.fotoUrl.startsWith('http');
+    const initials = (p.nome || 'EXA').split(/\s+/).map(w => w[0]).join('').substring(0, 3).toUpperCase();
+    const photo = hasApiPhoto
+      ? `<img class="bld-photo" src="${p.fotoUrl}" alt="${p.nome}" loading="lazy" onerror="bldFallback(this,'${initials}')">`
+      : `<div class="bld-placeholder"><span class="bld-initial">${initials}</span><span class="bld-icon">ponto ativo</span><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg></div>`;
+
+    const tags = [];
+    if (p.unidades) tags.push(`<span class="bld-tag">${p.unidades} un</span>`);
+    if (p.andares) tags.push(`<span class="bld-tag">${p.andares} and</span>`);
+    if (p.temAirbnb) tags.push('<span class="bld-tag bld-tag-airbnb">Airbnb</span>');
+    tags.push('<span class="bld-tag bld-tag-active">Ativo</span>');
+
+    h += `<div class="bld-card">
+      ${photo}
+      <div class="bld-info">
+        <div class="bld-name">${p.nome}</div>
+        <div class="bld-addr">${p.bairro || 'Foz do Iguacu'}</div>
+        <div class="bld-tags">${tags.join('')}</div>
+      </div>
+    </div>`;
+  });
+  h += '</div>';
+  box.innerHTML = h;
+}
+
+function animateCounter(id, target) {
+  const el = document.getElementById(id);
+  const duration = 1200;
+  const start = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target).toLocaleString('pt-BR');
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+loadCatalog();
+</script>
+</body>
+</html>
