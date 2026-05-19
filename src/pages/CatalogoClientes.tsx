@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import logoExaBranca from '@/assets/midia-kit/logo-exa-branca.png';
+import display01 from '@/assets/midia-kit/display-01.png';
+import display02 from '@/assets/midia-kit/display-02.png';
+import display03 from '@/assets/midia-kit/display-03.png';
+import mockup01 from '@/assets/midia-kit/mockup-01.png';
+import mockup02 from '@/assets/midia-kit/mockup-02.png';
+
+const MEDIA_V = [display01, mockup01, display02, mockup02, display03, display01, mockup01, display02];
+const MEDIA_H = [mockup02, display02, mockup01, display03];
+
 
 // ============================================================
 // EXA MIDIA KIT 2025 - Catálogo Clientes
@@ -424,7 +434,7 @@ export default function CatalogoClientes() {
       <div className="exa-mk">
         {/* NAVBAR */}
         <nav className={`topnav ${scrolled ? 'scrolled' : ''}`}>
-          <div className="logo"><span className="logo-dot" />EXA</div>
+          <div className="logo"><img src={logoExaBranca} alt="EXA Mídia" style={{ height: 28, width: 'auto' }} /></div>
           <div className="nav-links">
             <a href="#ideia">A Ideia</a>
             <a href="#metricas">Métricas</a>
@@ -438,7 +448,7 @@ export default function CatalogoClientes() {
 
         {/* HERO */}
         <section className="hero" id="hero">
-          <div className="hero-bg" />
+          <div className="hero-bg"><img src={mockup01} alt="EXA no elevador" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(.55)', transform: 'scale(1.05)' }} /></div>
           <div className="hero-overlay" />
           <div className="hero-accent" />
           <div className="glow" style={{ width: 700, height: 700, right: -300, bottom: -200, opacity: 0.1 }} />
@@ -503,8 +513,9 @@ export default function CatalogoClientes() {
                 </Reveal>
               </div>
               <Reveal delay={3}>
-                <div className="frame"><div className="ph-vertical" style={{ aspectRatio: '3/4' }}>EXA Player</div></div>
+                <div className="frame"><img src={display01} alt="Painel EXA — anúncio Edifício SoHo" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', objectPosition: 'center' }} loading="lazy" /></div>
               </Reveal>
+
             </div>
           </div>
         </section>
@@ -514,8 +525,9 @@ export default function CatalogoClientes() {
           <div className="container section-pad">
             <div className="grid g2" style={{ alignItems: 'center', gap: 'clamp(32px,5vw,80px)' }}>
               <Reveal delay={2}>
-                <div className="frame"><div className="ph-vertical" style={{ aspectRatio: '3/4' }}>EXA no Elevador</div></div>
+                <div className="frame"><img src={mockup01} alt="EXA Player no elevador" style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover' }} loading="lazy" /></div>
               </Reveal>
+
               <div>
                 <Reveal className="eyebrow">Quem somos</Reveal>
                 <Reveal as="h2" className="h2" delay={1}>A primeira. <span className="red">A única.</span></Reveal>
@@ -640,10 +652,11 @@ export default function CatalogoClientes() {
               A EXA está presente em 23 edifícios residenciais premium de Foz do Iguaçu. Cada prédio é um ponto de mídia ativo.
             </Reveal>
             <Reveal delay={3} className="grid g4" style={{ gap: 12 }}>
-              {['Barcelona', 'Cheverny', 'Riverside', 'Royal Legacy'].map(n => (
-                <div key={n} className="frame"><div className="ph-vertical">Painel {n}</div></div>
+              {[['Barcelona', display01], ['Cheverny', display02], ['Riverside', mockup02], ['Royal Legacy', display03]].map(([n, src]) => (
+                <div key={n as string} className="frame"><img src={src as string} alt={`Painel EXA — ${n}`} style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div>
               ))}
             </Reveal>
+
           </div>
         </section>
 
@@ -724,9 +737,10 @@ export default function CatalogoClientes() {
                 </Reveal>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <Reveal delay={2}><div className="frame"><div className="ph-horizontal">Agendamento por horário</div></div></Reveal>
-                <Reveal delay={3}><div className="frame"><div className="ph-horizontal">Até 10 vídeos por pedido</div></div></Reveal>
+                <Reveal delay={2}><div className="frame"><img src={mockup02} alt="Agendamento por horário — plataforma EXA" style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div></Reveal>
+                <Reveal delay={3}><div className="frame"><img src={display01} alt="Até 10 vídeos por pedido" style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div></Reveal>
               </div>
+
             </div>
           </div>
         </section>
@@ -754,9 +768,10 @@ export default function CatalogoClientes() {
                 ))}
               </div>
               <Reveal delay={2} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="frame"><div className="ph-horizontal">Loja EXA</div></div>
-                <div className="frame"><div className="ph-horizontal">Mapa EXA</div></div>
+                <div className="frame"><img src={display02} alt="Painéis EXA na rede" style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div>
+                <div className="frame"><img src={display03} alt="EXA — anúncio em elevador" style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div>
               </Reveal>
+
             </div>
           </div>
         </section>
@@ -770,15 +785,16 @@ export default function CatalogoClientes() {
               <Reveal className="red-line" delay={2} style={{ margin: '20px auto' }} />
             </div>
             <Reveal delay={3} className="screenshot-row">
-              {['Agendar — defina hora e dia', 'Vídeos — até 10 por pedido', 'Ao vivo — veja no elevador', 'Resultados — no portal'].map(t => (
-                <div key={t} className="screenshot-item">
-                  <div className="frame"><div className="ph-horizontal">{t.split('—')[0]}</div></div>
+              {[['Agendar — defina hora e dia', mockup02], ['Vídeos — até 10 por pedido', display01], ['Ao vivo — veja no elevador', display02], ['Resultados — no portal', mockup01]].map(([t, src]) => (
+                <div key={t as string} className="screenshot-item">
+                  <div className="frame"><img src={src as string} alt={(t as string).split('—')[0]} style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div>
                   <p style={{ fontFamily: 'var(--hd)', fontSize: 13, color: 'var(--t2)', marginTop: 12, textAlign: 'center', letterSpacing: '.5px', textTransform: 'uppercase' }}>
-                    {t}
+                    {t as string}
                   </p>
                 </div>
               ))}
             </Reveal>
+
           </div>
         </section>
 
@@ -876,11 +892,16 @@ export default function CatalogoClientes() {
               </Reveal>
             </div>
             <Reveal delay={3} className="grid g4" style={{ gap: 12 }}>
-              {[1, 2, 3, 4].map(i => <div key={i} className="frame"><div className="ph-vertical">Painel EXA</div></div>)}
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="frame"><img src={MEDIA_V[i]} alt={`Painel EXA ${i + 1}`} style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div>
+              ))}
             </Reveal>
             <Reveal delay={4} className="grid g4" style={{ gap: 12, marginTop: 12 }}>
-              {[5, 6, 7, 8].map(i => <div key={i} className="frame"><div className="ph-vertical">Painel EXA</div></div>)}
+              {[4, 5, 6, 7].map(i => (
+                <div key={i} className="frame"><img src={MEDIA_V[i]} alt={`Painel EXA ${i + 1}`} style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} loading="lazy" /></div>
+              ))}
             </Reveal>
+
             <Reveal delay={5} style={{ marginTop: 48, textAlign: 'center' }}>
               <p style={{ fontFamily: 'var(--hd)', fontSize: 'clamp(18px,2.5vw,26px)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
                 Quer sua marca nessas telas?
@@ -960,7 +981,7 @@ export default function CatalogoClientes() {
         {/* FOOTER */}
         <footer>
           <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <div className="logo" style={{ justifyContent: 'center' }}><span className="logo-dot" />EXA</div>
+            <div className="logo" style={{ justifyContent: 'center' }}><img src={logoExaBranca} alt="EXA Mídia" style={{ height: 38, width: 'auto' }} /></div>
             <p style={{ fontFamily: 'var(--hd)', letterSpacing: 2, textTransform: 'uppercase', fontSize: 11 }}>Sua marca na rotina dele.</p>
             <p>Foz do Iguaçu, PR — 2025</p>
           </div>
