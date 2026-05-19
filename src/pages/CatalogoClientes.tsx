@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import logoExaBranca from '@/assets/midia-kit/logo-exa-branca.png';
+import display01 from '@/assets/midia-kit/display-01.png';
+import display02 from '@/assets/midia-kit/display-02.png';
+import display03 from '@/assets/midia-kit/display-03.png';
+import mockup01 from '@/assets/midia-kit/mockup-01.png';
+import mockup02 from '@/assets/midia-kit/mockup-02.png';
+
+const MEDIA_V = [display01, mockup01, display02, mockup02, display03, display01, mockup01, display02];
+const MEDIA_H = [mockup02, display02, mockup01, display03];
+
 
 // ============================================================
 // EXA MIDIA KIT 2025 - Catálogo Clientes
