@@ -75,6 +75,9 @@ interface OrderVideo {
   selected_for_display: boolean;
   created_at?: string;
   uploaded_at?: string;
+  approved_at?: string;
+  is_base_video?: boolean;
+  schedule_rules?: { days_of_week: number[]; is_active: boolean; is_all_day?: boolean; created_at?: string }[];
   video_data?: {
     id: string;
     nome: string;
