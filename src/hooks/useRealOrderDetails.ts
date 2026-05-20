@@ -66,6 +66,8 @@ interface OrderVideo {
   created_at: string;
   approved_at?: string;
   rejection_reason?: string;
+  is_base_video?: boolean;
+  schedule_rules?: { days_of_week: number[]; is_active: boolean; is_all_day?: boolean; created_at?: string }[];
   video_data?: {
     id: string;
     nome: string;
@@ -267,6 +269,8 @@ export const useRealOrderDetails = (orderId: string) => {
             approval_status,
             is_active,
             selected_for_display,
+            is_base_video,
+            video_id,
             created_at,
             approved_at,
             rejection_reason,
@@ -284,12 +288,34 @@ export const useRealOrderDetails = (orderId: string) => {
 
         if (videosError) throw videosError;
 
-        const formattedVideos: OrderVideo[] = videos?.map(v => ({
+        // Buscar regras de agendamento para os vídeos deste pedido (fonte de verdade
+        // para "dias em exibição" quando o vídeo é agendado).
+        const videoIdsForSchedule = (videos || []).map((v: any) => v.video_id).filter(Boolean);
+        const schedulesByVideoId = new Map<string, any[]>();
+        if (videoIdsForSchedule.length > 0) {
+          const { data: scheduleData } = await supabase
+            .from('campaign_video_schedules')
+            .select(`video_id, campaign_schedule_rules (days_of_week, start_time, end_time, is_all_day, is_active, created_at)`)
+            .in('video_id', videoIdsForSchedule);
+          (scheduleData || []).forEach((s: any) => {
+            const rules = (s.campaign_schedule_rules || []).map((r: any) => ({
+              days_of_week: r.days_of_week,
+              is_active: r.is_active,
+              is_all_day: r.is_all_day,
+              created_at: r.created_at,
+            }));
+            if (rules.length) schedulesByVideoId.set(s.video_id, rules);
+          });
+        }
+
+        const formattedVideos: OrderVideo[] = videos?.map((v: any) => ({
           id: v.id,
           slot_position: v.slot_position,
           approval_status: v.approval_status as 'pending' | 'approved' | 'rejected',
           is_active: v.is_active,
           selected_for_display: v.selected_for_display,
+          is_base_video: !!v.is_base_video,
+          schedule_rules: schedulesByVideoId.get(v.video_id) || [],
           created_at: v.created_at,
           approved_at: v.approved_at,
           rejection_reason: v.rejection_reason,
