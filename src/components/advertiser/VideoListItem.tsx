@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, CheckCircle, Clock, XCircle, Pause, Calendar, Zap, Radio } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { VideoDaysBadge } from '@/components/video-management/VideoDaysBadge';
 
 export interface VideoListItemProps {
   id: string;
@@ -17,6 +18,9 @@ export interface VideoListItemProps {
   totalTelas?: number;
   isVertical?: boolean;
   isCurrentlyDisplaying?: boolean;
+  approvedAt?: string | null;
+  isBaseVideo?: boolean;
+  scheduleRules?: { days_of_week: number[]; is_active: boolean; is_all_day?: boolean; created_at?: string }[];
 }
 
 export const VideoListItem = ({
