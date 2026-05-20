@@ -380,6 +380,7 @@ export const uploadVideo = async (
     // Usar UPSERT para evitar race conditions em uploads simultâneos
     // Isso substitui a entrada existente OU cria uma nova automaticamente
     console.log('💾 Salvando/atualizando slot com UPSERT');
+    const nowIso = new Date().toISOString();
     const { error: slotError } = await supabase
       .from('pedido_videos')
       .upsert({
@@ -387,11 +388,13 @@ export const uploadVideo = async (
         video_id: videoRecord.id,
         slot_position: slotPosition,
         approval_status: approvalStatus,
+        // Fonte da verdade para "dias em exibição" — sempre gravar quando aprovado
+        ...(approvalStatus === 'approved' ? { approved_at: nowIso } : {}),
         selected_for_display: false,
         is_active: false,
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
         ...(qrConfig && qrConfig.enabled && qrConfig.redirect_url
-          ? { qr_config: { ...qrConfig, updated_at: new Date().toISOString() } as any }
+          ? { qr_config: { ...qrConfig, updated_at: nowIso } as any }
           : { qr_config: null as any })
       } as any, {
         onConflict: 'pedido_id,slot_position',
@@ -444,9 +447,10 @@ export const uploadVideo = async (
           // Hardening: se por qualquer razão o upsert salvou como pending, forçar approved
           if (newSlot.approval_status !== 'approved') {
             console.warn('⚠️ [MASTER] Status veio como', newSlot.approval_status, '— forçando approved');
+            const fixIso = new Date().toISOString();
             await supabase
               .from('pedido_videos')
-              .update({ approval_status: 'approved', updated_at: new Date().toISOString() })
+              .update({ approval_status: 'approved', approved_at: fixIso, updated_at: fixIso })
               .eq('id', newSlot.id);
           }
           
