@@ -230,6 +230,9 @@ export const CampaignReportCard = ({ campaign }: CampaignReportCardProps) => {
               <VideoListItem
                 key={video.id}
                 {...video}
+                approvedAt={video.approvedAt}
+                isBaseVideo={video.isBaseVideo}
+                scheduleRules={video.scheduleRules}
                 totalTelas={campaign.totalTelas}
                 isVertical={campaign.tipoProduto?.toLowerCase().includes('vertical')}
                 isCurrentlyDisplaying={currentVideo?.video_id === video.id}
