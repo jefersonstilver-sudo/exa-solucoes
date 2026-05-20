@@ -29,6 +29,15 @@ export interface VideoInfo {
   isActive: boolean;
   selectedForDisplay: boolean;
   scheduleInfo: string;
+  /** Fonte de verdade para "dias em exibição" */
+  approvedAt?: string | null;
+  isBaseVideo?: boolean;
+  scheduleRules?: {
+    days_of_week: number[];
+    is_active: boolean;
+    is_all_day?: boolean;
+    created_at?: string;
+  }[];
 }
 
 export interface VideoTimelinePoint {
@@ -201,7 +210,7 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
       const videoIds = (pedidoVideos || []).map(pv => pv.video_id).filter(Boolean);
       const { data: scheduleData } = await supabase
         .from('campaign_video_schedules')
-        .select(`video_id, campaign_schedule_rules (days_of_week, start_time, end_time, is_all_day, is_active)`)
+        .select(`video_id, campaign_schedule_rules (days_of_week, start_time, end_time, is_all_day, is_active, created_at)`)
         .in('video_id', videoIds);
 
       const schedulesByVideoId = new Map<string, ScheduleRule[]>();
@@ -450,6 +459,14 @@ export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => 
             isActive,
             selectedForDisplay,
             scheduleInfo,
+            approvedAt: (pv as any).approved_at ?? null,
+            isBaseVideo: !!(pv as any).is_base_video,
+            scheduleRules: rules.map(r => ({
+              days_of_week: r.days_of_week,
+              is_active: r.is_active,
+              is_all_day: r.is_all_day,
+              created_at: (r as any).created_at,
+            })),
           };
         });
 
