@@ -57,16 +57,19 @@ export const CampaignPerformanceChart = ({ data }: CampaignPerformanceChartProps
       : chartData;
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length && label) {
-      // Validar se label é uma data válida
-      const dateValue = new Date(label);
-      if (isNaN(dateValue.getTime())) return null;
-      
+    if (active && payload && payload.length) {
+      // O dataKey do XAxis é 'dataFormatada' (dd/MM) — usar a data ISO
+      // real guardada no ponto para evitar parse errado de mês.
+      const isoDate = payload[0]?.payload?.data;
+      const dateValue = isoDate ? new Date(isoDate) : null;
+      const titulo =
+        dateValue && !isNaN(dateValue.getTime())
+          ? format(dateValue, "dd 'de' MMMM", { locale: ptBR })
+          : label;
+
       return (
         <div className="bg-white rounded-xl shadow-lg p-4 border border-border/40">
-          <p className="font-semibold text-sm mb-2">
-            {format(dateValue, 'dd \'de\' MMMM', { locale: ptBR })}
-          </p>
+          <p className="font-semibold text-sm mb-2">{titulo}</p>
           <div className="space-y-1">
             {payload.map((entry: any, index: number) => {
               const video = allVideos.find(v => v.id === entry.dataKey);

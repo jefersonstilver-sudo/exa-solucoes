@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, CheckCircle, Clock, XCircle, Pause, Calendar, Zap, Radio } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { VideoDaysBadge } from '@/components/video-management/VideoDaysBadge';
 
 export interface VideoListItemProps {
   id: string;
@@ -17,6 +18,9 @@ export interface VideoListItemProps {
   totalTelas?: number;
   isVertical?: boolean;
   isCurrentlyDisplaying?: boolean;
+  approvedAt?: string | null;
+  isBaseVideo?: boolean;
+  scheduleRules?: { days_of_week: number[]; is_active: boolean; is_all_day?: boolean; created_at?: string }[];
 }
 
 export const VideoListItem = ({
@@ -32,6 +36,9 @@ export const VideoListItem = ({
   totalTelas = 1,
   isVertical = false,
   isCurrentlyDisplaying = false,
+  approvedAt = null,
+  isBaseVideo = false,
+  scheduleRules = [],
 }: VideoListItemProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoError, setVideoError] = useState(false);
@@ -205,6 +212,14 @@ export const VideoListItem = ({
         className="relative w-28 h-20 rounded-lg overflow-hidden cursor-pointer flex-shrink-0 bg-muted"
         onClick={handleVideoClick}
       >
+        {approvalStatus === 'approved' && (
+          <VideoDaysBadge
+            approved_at={approvedAt}
+            is_base_video={isBaseVideo}
+            schedule_rules={scheduleRules}
+            className="top-1 left-1 text-[9px] px-1.5 py-0"
+          />
+        )}
         {url && !videoError ? (
           <>
             <video

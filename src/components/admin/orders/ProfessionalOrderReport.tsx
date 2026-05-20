@@ -11,6 +11,7 @@ import { useOrderBuildingsManagement } from '@/hooks/useOrderBuildingsManagement
 import { BuildingManagementDialog } from './BuildingManagementDialog';
 import { OrderNameEdit } from '@/components/order/OrderNameEdit';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
+import { VideoDaysBadge } from '@/components/video-management/VideoDaysBadge';
 interface Parcela {
   id: string;
   numero_parcela: number;
@@ -75,6 +76,9 @@ interface OrderVideo {
   selected_for_display: boolean;
   created_at?: string;
   uploaded_at?: string;
+  approved_at?: string;
+  is_base_video?: boolean;
+  schedule_rules?: { days_of_week: number[]; is_active: boolean; is_all_day?: boolean; created_at?: string }[];
   video_data?: {
     id: string;
     nome: string;
@@ -1020,8 +1024,14 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                                 <Clock className="h-3 w-3" />
                                 Pendente
                               </span>}
-                            
-                            
+                            {video.approval_status === 'approved' && (
+                              <VideoDaysBadge
+                                approved_at={video.approved_at}
+                                is_base_video={video.is_base_video}
+                                schedule_rules={video.schedule_rules}
+                                inline
+                              />
+                            )}
                           </div>
                         </div>
                         
