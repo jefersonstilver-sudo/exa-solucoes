@@ -2,6 +2,7 @@ import React from 'react';
 import { Play, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { VideoInfo } from '@/hooks/useVideoReportData';
 import { Badge } from '@/components/ui/badge';
+import { VideoDaysBadge } from '@/components/video-management/VideoDaysBadge';
 
 interface VideoThumbnailGridProps {
   videos: VideoInfo[];
@@ -44,6 +45,13 @@ export const VideoThumbnailGrid = ({ videos }: VideoThumbnailGridProps) => {
           className="group bg-gradient-to-br from-background via-background to-accent/5 backdrop-blur-xl border border-border/40 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
         >
           <div className="relative aspect-video bg-muted">
+            {video.approvalStatus === 'approved' && (
+              <VideoDaysBadge
+                approved_at={video.approvedAt}
+                is_base_video={video.isBaseVideo}
+                schedule_rules={video.scheduleRules}
+              />
+            )}
             {video.url ? (
               <video
                 src={video.url}
