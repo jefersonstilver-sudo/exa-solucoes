@@ -212,6 +212,14 @@ export const VideoListItem = ({
         className="relative w-28 h-20 rounded-lg overflow-hidden cursor-pointer flex-shrink-0 bg-muted"
         onClick={handleVideoClick}
       >
+        {approvalStatus === 'approved' && (
+          <VideoDaysBadge
+            approved_at={approvedAt}
+            is_base_video={isBaseVideo}
+            schedule_rules={scheduleRules}
+            className="top-1 left-1 text-[9px] px-1.5 py-0"
+          />
+        )}
         {url && !videoError ? (
           <>
             <video
