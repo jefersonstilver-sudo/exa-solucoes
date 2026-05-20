@@ -57,3 +57,10 @@
 # Hashed/versioned build assets — long-lived immutable cache
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Rotas /embed/* — liberadas para iframe em qualquer domínio
+/embed/*
+  X-Frame-Options: ALLOWALL
+  Content-Security-Policy: frame-ancestors *;
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
