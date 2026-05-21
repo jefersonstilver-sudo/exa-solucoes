@@ -575,11 +575,16 @@
       Abaixo, o ticker em tempo real com as marcas que estão na grade dos painéis EXA hoje. Cada logo é um cliente ativo pagando para estar nos elevadores.
     </p>
 
-    <!-- Ticker ao vivo (inline, sem iframe) -->
+    <!-- Ticker ao vivo (iframe do embed oficial — mesmo componente da home) -->
     <div class="ticker-wrap reveal" style="margin-top:32px">
       <div class="ticker-label">Clientes ativos na rede EXA · ao vivo</div>
-      <div class="ticker-track" id="ticker-track">
-        <div class="ticker-scroll" id="ticker-scroll"></div>
+      <div class="ticker-track" style="padding:0;background:#7D1818">
+        <iframe
+          src="/embed/logos-ticker?bg=7D1818"
+          title="Clientes ativos EXA"
+          loading="lazy"
+          style="width:100%;height:112px;border:0;display:block;background:#7D1818"
+        ></iframe>
       </div>
     </div>
     <div class="ticker-cta reveal">A próxima logo aqui pode ser a da CellShop.</div>
