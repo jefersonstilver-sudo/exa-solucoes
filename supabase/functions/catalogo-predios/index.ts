@@ -134,7 +134,11 @@ Deno.serve(async (req: Request) => {
     predios.sort((a, b) => (order[a.statusGroup] - order[b.statusGroup]) || a.nome.localeCompare(b.nome, 'pt-BR'));
 
     return new Response(JSON.stringify({ counts, predios }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600, s-maxage=600' },
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Cache-Control': noCache ? 'no-store, no-cache, must-revalidate, max-age=0' : 'public, max-age=600, s-maxage=600',
+      },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
