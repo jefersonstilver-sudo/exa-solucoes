@@ -11,6 +11,10 @@
         if ((h === 'sistema.examidia.com.br' || h.indexOf('sistema.') === 0) && p.indexOf('/sistema') !== 0) {
           window.location.replace('/sistema/login');
         }
+        // Static proposal pages — bypass SPA, force load of static index.html
+        if (p === '/proposta-jorbel' || p === '/proposta-jorbel/') {
+          window.location.replace('/proposta-jorbel/index.html');
+        }
       })();
     </script>
 
