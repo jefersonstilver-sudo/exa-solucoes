@@ -10,9 +10,11 @@ const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window
 let lenis;
 if (!isMobile) {
   lenis = new Lenis({
-    duration: 1.2,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    duration: 0.9,
+    easing: (t) => 1 - Math.pow(1 - t, 3),
     smoothWheel: true,
+    wheelMultiplier: 1.2,
+    touchMultiplier: 1.5,
   });
 
   lenis.on("scroll", ScrollTrigger.update);
