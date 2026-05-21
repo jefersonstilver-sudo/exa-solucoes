@@ -1,53 +1,17 @@
-## Objetivo
-Permitir que o ticker de logos de clientes da home (`LogoTicker`) seja incorporado em qualquer site externo via `<iframe>`, sem alterar o ticker existente.
+## Mudanças
 
-## Hoje
-- Componente: `src/components/exa/LogoTicker.tsx`
-- Dados: hook `useLogos` (lê `client_logos` no Supabase, já público via RLS)
-- Usado em: `src/pages/Exa.tsx` (home), `SouSindico.tsx`, `PropostaPublicaPage.tsx`
-- Não existe rota standalone nem HTML estático — é React puro animado por CSS keyframes.
+### 1. `supabase/functions/catalogo-predios/index.ts`
+- Status mantidos exatamente como hoje (`Ativo`, `Instalação`, `Instalação Internet`, `Interesse`) — nenhuma mudança no filtro.
+- Adicionar suporte a `?nocache=1`: quando presente, responder com `Cache-Control: no-store` em vez de `public, max-age=600, s-maxage=600`.
 
-## O que será feito
-
-### 1. Nova página `src/pages/embed/LogosTickerEmbed.tsx`
-- Renderiza **apenas** `<LogoTicker contained pauseOnHover={false} />`, sem header, sidebar, layout ou auth.
-- Body com `background: transparent`, `margin: 0`, `overflow: hidden`.
-- Altura responsiva (80–112px, igual à home).
-- Sem PWA/splash/loaders globais.
-
-### 2. Nova rota pública em `src/routes/PublicRoutes.tsx`
-```
-/embed/logos-ticker  →  LogosTickerEmbed
-```
-Sem auth guard. Sem redirect PWA.
-
-### 3. Cabeçalhos para liberar iframe em qualquer domínio
-Atualizar `public/_headers` adicionando regra específica para `/embed/*`:
-```
-/embed/*
-  X-Frame-Options: ALLOWALL
-  Content-Security-Policy: frame-ancestors *
-```
-(Remove qualquer X-Frame-Options DENY/SAMEORIGIN herdado para essa rota.)
-
-### 4. Snippet de integração entregue ao usuário
-```html
-<iframe
-  src="https://examidia.com.br/embed/logos-ticker"
-  style="width:100%;height:112px;border:0;display:block;background:#7D1818"
-  loading="lazy"
-  title="Clientes EXA Mídia">
-</iframe>
-```
-
-## Garantias
-- **Zero mudança** no `LogoTicker.tsx`, `Exa.tsx`, ou qualquer página atual.
-- **Mesmos dados** da home (mesmo hook `useLogos`, mesma tabela).
-- **Atualização automática**: quando logos forem adicionadas/removidas no admin, o iframe reflete sem republicar nada no site externo.
-- Aceita qualquer domínio (público).
-- Sem parâmetros — visual fixo idêntico à home.
+### 2. `src/pages/embed/LogosTickerEmbed.tsx`
+- Ler `bg` da query string (`?bg=07070c` ou `?bg=transparent`).
+- Default: `#7D1818` (atual).
+- `transparent` → fundo transparente do wrapper e do body.
+- Hex sem `#` (3 ou 6 chars, validado por regex) → aplica `#<hex>`.
 
 ## Arquivos
-- **Criar:** `src/pages/embed/LogosTickerEmbed.tsx`
-- **Editar:** `src/routes/PublicRoutes.tsx` (adicionar 1 rota)
-- **Editar:** `public/_headers` (regra `/embed/*`)
+- Editar: `supabase/functions/catalogo-predios/index.ts`
+- Editar: `src/pages/embed/LogosTickerEmbed.tsx`
+
+Nenhuma mudança em UI/funcionalidade existente.

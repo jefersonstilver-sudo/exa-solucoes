@@ -41,6 +41,8 @@ function findTitleKey(props: any): string | null {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  const url = new URL(req.url);
+  const noCache = url.searchParams.get('nocache') === '1';
   const TOKEN = Deno.env.get('NOTION_API_KEY');
   if (!TOKEN) return new Response(JSON.stringify({ error: 'NOTION_API_KEY ausente' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
@@ -132,7 +134,11 @@ Deno.serve(async (req: Request) => {
     predios.sort((a, b) => (order[a.statusGroup] - order[b.statusGroup]) || a.nome.localeCompare(b.nome, 'pt-BR'));
 
     return new Response(JSON.stringify({ counts, predios }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600, s-maxage=600' },
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Cache-Control': noCache ? 'no-store, no-cache, must-revalidate, max-age=0' : 'public, max-age=600, s-maxage=600',
+      },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
