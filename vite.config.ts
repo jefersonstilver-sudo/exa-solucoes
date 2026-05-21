@@ -37,8 +37,8 @@ export default defineConfig(() => ({
     react(),
     {
       name: "static-proposta-jorbel",
-      configureServer(server) {
-        server.middlewares.use((req, _res, next) => {
+      configureServer(server: any) {
+        server.middlewares.use((req: any, _res: any, next: any) => {
           if (req.url === "/proposta-jorbel" || req.url === "/proposta-jorbel/") {
             req.url = "/proposta-jorbel/index.html";
           }
