@@ -36,6 +36,17 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     {
+      name: "static-proposta-jorbel",
+      configureServer(server: any) {
+        server.middlewares.use((req: any, _res: any, next: any) => {
+          if (req.url === "/proposta-jorbel" || req.url === "/proposta-jorbel/") {
+            req.url = "/proposta-jorbel/index.html";
+          }
+          next();
+        });
+      },
+    },
+    {
       name: "html-build-id",
       transformIndexHtml(html: string) {
         return html.split("__BUILD_ID__").join(BUILD_ID);
