@@ -41,6 +41,8 @@ function findTitleKey(props: any): string | null {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  const url = new URL(req.url);
+  const noCache = url.searchParams.get('nocache') === '1';
   const TOKEN = Deno.env.get('NOTION_API_KEY');
   if (!TOKEN) return new Response(JSON.stringify({ error: 'NOTION_API_KEY ausente' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
