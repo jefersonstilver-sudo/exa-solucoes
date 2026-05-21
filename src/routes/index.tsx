@@ -7,6 +7,7 @@ const Home = React.lazy(() => import('@/pages/Home'));
 const InteresseSindicoLanding = React.lazy(() => import('@/pages/InteresseSindicoLanding'));
 const InteresseSindicoFormulario = React.lazy(() => import('@/pages/InteresseSindicoFormulario'));
 const InteresseSindicoSucesso = React.lazy(() => import('@/pages/InteresseSindicoSucesso'));
+const PropostaJorbelRedirect = React.lazy(() => import('@/pages/PropostaJorbelRedirect'));
 
 export const AppRoutes = () => {
   return (
@@ -16,6 +17,8 @@ export const AppRoutes = () => {
       <Route path="/interessesindico" element={<InteresseSindicoLanding />} />
       <Route path="/interessesindico/formulario" element={<InteresseSindicoFormulario />} />
       <Route path="/interessesindico/sucesso" element={<InteresseSindicoSucesso />} />
+      <Route path="/proposta-jorbel" element={<PropostaJorbelRedirect />} />
+      <Route path="/proposta-jorbel/" element={<PropostaJorbelRedirect />} />
       <Route path="/*" element={<AuthRoutes />} />
     </Routes>
   );
