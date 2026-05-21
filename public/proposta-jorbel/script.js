@@ -3,24 +3,9 @@
    Animations & Interactions
    ═══════════════════════════════════════════════════════════════ */
 
-// ── Lenis Smooth Scroll (desktop only — mobile uses native scroll) ──
+// ── Native Scroll + ScrollTrigger ──
 gsap.registerPlugin(ScrollTrigger);
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
-
-let lenis;
-if (!isMobile) {
-  lenis = new Lenis({
-    duration: 0.9,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
-    smoothWheel: true,
-    wheelMultiplier: 1.2,
-    touchMultiplier: 1.5,
-  });
-
-  lenis.on("scroll", ScrollTrigger.update);
-  gsap.ticker.add((time) => lenis.raf(time * 1000));
-  gsap.ticker.lagSmoothing(0);
-}
 
 // ── Reveal on Scroll ──
 if (isMobile) {
