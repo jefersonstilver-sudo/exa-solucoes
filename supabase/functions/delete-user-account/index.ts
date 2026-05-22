@@ -221,6 +221,9 @@ Deno.serve(async (req) => {
     console.log('🧹 [DELETE-USER] Deletando dados relacionados...');
     
     const relatedTables = [
+      'assinaturas',
+      'assinatura_pagamentos',
+      'assinatura_historico',
       'user_custom_permissions',
       'user_roles',
       'user_sessions',
