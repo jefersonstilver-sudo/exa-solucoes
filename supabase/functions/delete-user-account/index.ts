@@ -221,6 +221,9 @@ Deno.serve(async (req) => {
     console.log('🧹 [DELETE-USER] Deletando dados relacionados...');
     
     const relatedTables = [
+      'assinaturas',
+      'assinatura_pagamentos',
+      'assinatura_historico',
       'user_custom_permissions',
       'user_roles',
       'user_sessions',
@@ -284,7 +287,19 @@ Deno.serve(async (req) => {
 
     // 5. Deletar da tabela users primeiro
     console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
-    await supabaseAdmin.from('users').delete().eq('id', userId);
+    const { error: usersDeleteError } = await supabaseAdmin.from('users').delete().eq('id', userId);
+    if (usersDeleteError) {
+      console.error('❌ [DELETE-USER] Erro ao deletar de users:', usersDeleteError);
+      return new Response(
+        JSON.stringify({
+          error: 'Erro ao deletar registros relacionados ao usuário',
+          code: 'USERS_DELETE_ERROR',
+          details: usersDeleteError.message,
+          hint: 'Existem registros em outras tabelas (ex: assinaturas) ainda vinculados a este usuário.'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     console.log('✅ [DELETE-USER] Tabela users limpa');
 
     // 5. Deletar do auth.users
