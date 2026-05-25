@@ -1,0 +1,7 @@
+# Static pages - serve directly without SPA catch-all
+/proposta-jorbel/*  /proposta-jorbel/:splat  200
+/midiakit-sindicos/*  /midiakit-sindicos/:splat  200
+/embed/*  /embed/:splat  200
+
+# SPA catch-all (must be LAST)
+/*  /index.html  200

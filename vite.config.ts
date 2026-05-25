@@ -36,11 +36,14 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     {
-      name: "static-proposta-jorbel",
+      name: "static-pages",
       configureServer(server: any) {
         server.middlewares.use((req: any, _res: any, next: any) => {
           if (req.url === "/proposta-jorbel" || req.url === "/proposta-jorbel/") {
             req.url = "/proposta-jorbel/index.html";
+          }
+          if (req.url === "/midiakit-sindicos" || req.url === "/midiakit-sindicos/") {
+            req.url = "/midiakit-sindicos/index.html";
           }
           next();
         });
