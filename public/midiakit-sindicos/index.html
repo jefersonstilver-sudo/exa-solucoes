@@ -92,7 +92,7 @@ body::before{
   display:flex;align-items:center;justify-content:space-between;
   transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);
 }
-.nav-logo img{height:30px}
+.nav-logo img{height:44px}
 .nav-cta{
   background:var(--red);color:#fff;
   font-family:'Barlow Condensed',sans-serif;
@@ -130,6 +130,10 @@ body::before{
 .hero-video video{
   width:100%;height:100%;object-fit:cover;
   filter:brightness(0.6) saturate(0.7);
+  will-change:transform;
+  transform:translateZ(0);
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
 }
 .hero-content{position:relative;z-index:4;max-width:680px}
 .hero-badge{
@@ -500,8 +504,8 @@ body::before{
 <!-- HERO -->
 <section class="hero" id="inicio">
   <div class="hero-video">
-    <video autoplay muted loop playsinline>
-      <source src="img/video-promo.mp4" type="video/mp4">
+    <video autoplay muted loop playsinline preload="auto" disablePictureInPicture>
+      <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/2dac60f0-421e-4729-ac22-0d32dc360292.MP4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzJkYWM2MGYwLTQyMWUtNDcyOS1hYzIyLTBkMzJkYzM2MDI5Mi5NUDQiLCJpYXQiOjE3Nzk3Mzg3MDgsImV4cCI6MTgxMTI3NDcwOH0.fE-l5SurNnk0qLbngklNOzomsvDVxJFqAbQGMzlw1oY" type="video/mp4">
     </video>
   </div>
   <div class="hero-content">
@@ -538,8 +542,8 @@ body::before{
         </div>
       </div>
       <div class="about-visual reveal-left">
-        <video autoplay muted loop playsinline style="width:85%;border-radius:var(--radius);display:block;margin:0 auto">
-          <source src="img/video-troca.mp4" type="video/mp4">
+        <video autoplay muted loop playsinline preload="auto" style="width:85%;border-radius:var(--radius);display:block;margin:0 auto;will-change:transform;transform:translateZ(0)">
+          <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/30.04.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzMwLjA0Lm1wNCIsImlhdCI6MTc3OTczODY5MCwiZXhwIjoxODExMjc0NjkwfQ.CTQRE23BunqBr80HohjKQwBt6Dzxq1VQfYv-o7sw00E" type="video/mp4">
         </video>
       </div>
     </div>
@@ -716,16 +720,16 @@ body::before{
     <p class="section-sub reveal reveal-delay-2">Assista como o síndico interage com a plataforma e como a tela transforma o elevador.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px;max-width:700px;margin-left:auto;margin-right:auto">
       <div class="reveal" style="position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);aspect-ratio:9/16">
-        <video controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover">
-          <source src="img/video-promo.mp4" type="video/mp4">
+        <video controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;will-change:transform;transform:translateZ(0)">
+          <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/2dac60f0-421e-4729-ac22-0d32dc360292.MP4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzJkYWM2MGYwLTQyMWUtNDcyOS1hYzIyLTBkMzJkYzM2MDI5Mi5NUDQiLCJpYXQiOjE3Nzk3Mzg3MDgsImV4cCI6MTgxMTI3NDcwOH0.fE-l5SurNnk0qLbngklNOzomsvDVxJFqAbQGMzlw1oY" type="video/mp4">
         </video>
         <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(to top,rgba(7,7,11,0.9),transparent);pointer-events:none">
           <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Pare de colar papel no elevador</span>
         </div>
       </div>
       <div class="reveal reveal-delay-1" style="position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);aspect-ratio:9/16">
-        <video controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover">
-          <source src="img/video-troca.mp4" type="video/mp4">
+        <video controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;will-change:transform;transform:translateZ(0)">
+          <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/30.04.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlLzMwLjA0Lm1wNCIsImlhdCI6MTc3OTczODY5MCwiZXhwIjoxODExMjc0NjkwfQ.CTQRE23BunqBr80HohjKQwBt6Dzxq1VQfYv-o7sw00E" type="video/mp4">
         </video>
         <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(to top,rgba(7,7,11,0.9),transparent);pointer-events:none">
           <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Síndico enviando comunicado via WhatsApp</span>
