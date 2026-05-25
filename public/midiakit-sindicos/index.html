@@ -948,7 +948,17 @@ async function loadBuildings() {
         if (!grouped[key].fotoUrl && p.fotoUrl) grouped[key].fotoUrl = p.fotoUrl;
       }
     });
-    const buildings = Object.values(grouped);
+    const priority = ['royal legacy','riverside','vila apia','miro','renoir','luis xv','viena'];
+    const prioIdx = (nome) => {
+      const n = nome.toLowerCase();
+      const i = priority.findIndex(p => n === p || n.startsWith(p));
+      return i === -1 ? 999 : i;
+    };
+    const buildings = Object.values(grouped).sort((a, b) => {
+      const da = prioIdx(a.nome), db = prioIdx(b.nome);
+      if (da !== db) return da - db;
+      return a.nome.localeCompare(b.nome, 'pt-BR');
+    });
 
     grid.innerHTML = buildings.map(b => `
       <div class="building-card">
