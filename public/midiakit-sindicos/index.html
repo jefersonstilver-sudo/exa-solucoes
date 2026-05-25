@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXA Midia | Midia Kit para Sindicos</title>
+<meta name="description" content="Transforme o elevador do seu predio em um ambiente inteligente. Instalacao sem custo para o condominio. EXA Midia - Foz do Iguacu.">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#E8000D;
+  --red-dark:#a30009;
+  --red-glow:rgba(232,0,13,0.3);
+  --bg:#0a0a0f;
+  --bg-card:#12121a;
+  --bg-card-hover:#1a1a25;
+  --text:#f0f0f5;
+  --text-muted:#9a9ab0;
+  --glass:rgba(255,255,255,0.04);
+  --glass-border:rgba(255,255,255,0.08);
+  --radius:16px;
+  --radius-sm:10px;
+}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Barlow Condensed',sans-serif;font-weight:700;line-height:1.1}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--red);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Utility */
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.section{padding:100px 0}
+.section-label{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:0.85rem;
+  font-weight:600;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--red);
+  margin-bottom:16px;
+}
+.section-title{font-size:clamp(2.2rem,5vw,3.5rem);margin-bottom:24px}
+.section-sub{font-size:1.1rem;color:var(--text-muted);max-width:640px;line-height:1.7}
+
+/* Scroll Animations */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 0.8s cubic-bezier(0.16,1,0.3,1),transform 0.8s cubic-bezier(0.16,1,0.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.1s}
+.reveal-delay-2{transition-delay:0.2s}
+.reveal-delay-3{transition-delay:0.3s}
+.reveal-delay-4{transition-delay:0.4s}
+.reveal-delay-5{transition-delay:0.5s}
+
+/* NAV */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:16px 24px;
+  background:rgba(10,10,15,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:space-between;
+  transition:transform 0.3s;
+}
+.nav-logo img{height:32px}
+.nav-cta{
+  background:var(--red);color:#fff;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;font-size:0.9rem;
+  padding:10px 24px;border-radius:50px;
+  text-transform:uppercase;letter-spacing:1px;
+  transition:all 0.3s;border:none;cursor:pointer;
+  text-decoration:none;
+}
+.nav-cta:hover{background:#fff;color:var(--bg);text-decoration:none;transform:scale(1.05)}
+
+/* HERO */
+.hero{
+  position:relative;
+  min-height:100vh;
+  display:flex;align-items:center;
+  padding:120px 24px 80px;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(10,10,15,0.92) 0%,rgba(10,10,15,0.6) 50%,rgba(10,10,15,0.85) 100%);
+  z-index:1;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:url('img/panel-elevator.webp') center/cover no-repeat;
+  filter:brightness(0.7) saturate(0.8);
+}
+.hero-content{position:relative;z-index:2;max-width:720px}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(232,0,13,0.12);
+  border:1px solid rgba(232,0,13,0.3);
+  border-radius:50px;padding:8px 18px;
+  font-size:0.8rem;font-weight:600;
+  color:var(--red);margin-bottom:28px;
+  letter-spacing:0.5px;
+  animation:pulse-badge 2s infinite;
+}
+@keyframes pulse-badge{0%,100%{box-shadow:0 0 0 0 rgba(232,0,13,0.2)}50%{box-shadow:0 0 0 8px rgba(232,0,13,0)}}
+.hero-badge::before{content:'';width:8px;height:8px;background:var(--red);border-radius:50%;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero h1{font-size:clamp(2.8rem,6vw,4.5rem);margin-bottom:20px;font-weight:800}
+.hero h1 span{color:var(--red)}
+.hero p{font-size:1.15rem;color:var(--text-muted);margin-bottom:36px;max-width:560px;line-height:1.7}
+.hero-actions{display:flex;gap:16px;flex-wrap:wrap}
+.btn-primary{
+  background:var(--red);color:#fff;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:1.05rem;
+  padding:16px 36px;border-radius:50px;
+  text-transform:uppercase;letter-spacing:1.5px;
+  transition:all 0.3s;border:none;cursor:pointer;
+  display:inline-flex;align-items:center;gap:10px;
+  text-decoration:none;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px var(--red-glow);text-decoration:none}
+.btn-secondary{
+  background:transparent;color:#fff;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;font-size:1.05rem;
+  padding:16px 36px;border-radius:50px;
+  text-transform:uppercase;letter-spacing:1.5px;
+  border:1px solid rgba(255,255,255,0.2);
+  transition:all 0.3s;cursor:pointer;
+  display:inline-flex;align-items:center;gap:10px;
+  text-decoration:none;
+}
+.btn-secondary:hover{border-color:#fff;background:rgba(255,255,255,0.05);text-decoration:none}
+
+/* WHAT IS EXA */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.about-visual{position:relative}
+.about-visual img{border-radius:var(--radius);box-shadow:0 40px 80px rgba(0,0,0,0.5)}
+.about-visual::after{
+  content:'';position:absolute;inset:-4px;
+  border-radius:calc(var(--radius) + 4px);
+  background:linear-gradient(135deg,var(--red),transparent 50%);
+  z-index:-1;opacity:0.4;
+}
+.about-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px}
+.about-stat{
+  background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);padding:20px;text-align:center;
+}
+.about-stat strong{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;color:var(--red);display:block}
+.about-stat span{font-size:0.82rem;color:var(--text-muted)}
+
+/* BENEFITS */
+.benefits-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-top:48px}
+.benefit-card{
+  background:var(--bg-card);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  padding:36px 28px;
+  transition:all 0.4s cubic-bezier(0.16,1,0.3,1);
+  position:relative;overflow:hidden;
+}
+.benefit-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--red),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.benefit-card:hover{transform:translateY(-4px);border-color:rgba(232,0,13,0.2);background:var(--bg-card-hover)}
+.benefit-card:hover::before{opacity:1}
+.benefit-icon{
+  width:48px;height:48px;
+  background:rgba(232,0,13,0.1);
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;margin-bottom:20px;
+}
+.benefit-card h4{font-size:1.3rem;margin-bottom:10px}
+.benefit-card p{color:var(--text-muted);font-size:0.92rem;line-height:1.6}
+
+/* HOW IT WORKS */
+.steps{display:flex;flex-direction:column;gap:0;margin-top:48px;position:relative}
+.steps::before{content:'';position:absolute;left:28px;top:28px;bottom:28px;width:2px;background:linear-gradient(to bottom,var(--red),rgba(232,0,13,0.1))}
+.step{display:flex;gap:24px;align-items:flex-start;padding:28px 0;position:relative}
+.step-number{
+  width:56px;height:56px;min-width:56px;
+  background:var(--bg-card);border:2px solid var(--red);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.3rem;
+  color:var(--red);position:relative;z-index:2;
+}
+.step-content h4{font-size:1.2rem;margin-bottom:6px}
+.step-content p{color:var(--text-muted);font-size:0.92rem}
+.step-note{
+  margin-top:24px;padding:20px 24px;
+  background:rgba(232,0,13,0.05);
+  border:1px solid rgba(232,0,13,0.15);
+  border-radius:var(--radius-sm);
+  font-size:0.9rem;color:var(--text-muted);
+  line-height:1.6;
+}
+.step-note strong{color:var(--text)}
+
+/* NUMBERS */
+.numbers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-top:48px}
+.number-card{
+  text-align:center;padding:40px 20px;
+  background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  transition:all 0.3s;
+}
+.number-card:hover{border-color:rgba(232,0,13,0.3);transform:scale(1.03)}
+.number-card .value{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:clamp(2.5rem,4vw,3.5rem);font-weight:800;
+  color:var(--red);display:block;line-height:1;margin-bottom:8px;
+}
+.number-card .label{font-size:0.88rem;color:var(--text-muted)}
+
+/* URGENCY */
+.urgency{
+  background:linear-gradient(135deg,rgba(232,0,13,0.08) 0%,rgba(10,10,15,1) 60%);
+  border-top:1px solid rgba(232,0,13,0.15);
+  border-bottom:1px solid rgba(232,0,13,0.15);
+}
+.urgency-content{text-align:center}
+.urgency-items{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-top:36px}
+.urgency-item{
+  background:var(--bg-card);border:1px solid rgba(232,0,13,0.2);
+  border-radius:var(--radius-sm);padding:20px 28px;
+  font-size:0.95rem;display:flex;align-items:center;gap:12px;
+}
+.urgency-item::before{content:'';width:10px;height:10px;background:var(--red);border-radius:50%;animation:pulse-badge 2s infinite}
+
+/* BUILDINGS GALLERY */
+.buildings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin-top:48px}
+.building-card{
+  background:var(--bg-card);border:1px solid var(--glass-border);
+  border-radius:var(--radius);overflow:hidden;
+  transition:all 0.3s;
+}
+.building-card:hover{transform:translateY(-4px);border-color:rgba(232,0,13,0.3)}
+.building-card img{width:100%;height:180px;object-fit:cover}
+.building-card .info{padding:16px}
+.building-card .info h5{font-size:1rem;margin-bottom:4px}
+.building-card .info span{font-size:0.82rem;color:var(--text-muted)}
+.buildings-fallback{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin-top:48px}
+
+/* PANELS GALLERY */
+.panels-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-top:48px}
+.panels-gallery img{
+  border-radius:var(--radius-sm);
+  width:100%;height:260px;object-fit:cover;
+  border:1px solid var(--glass-border);
+  transition:all 0.4s;
+}
+.panels-gallery img:hover{transform:scale(1.03);border-color:rgba(232,0,13,0.3)}
+
+/* TEAM */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:28px;margin-top:48px}
+.team-member{text-align:center}
+.team-member img{
+  width:120px;height:120px;border-radius:50%;
+  object-fit:cover;margin:0 auto 14px;
+  border:3px solid var(--glass-border);
+  transition:all 0.3s;
+}
+.team-member:hover img{border-color:var(--red);transform:scale(1.05)}
+.team-member h5{font-size:0.95rem;margin-bottom:2px}
+.team-member span{font-size:0.78rem;color:var(--text-muted)}
+
+/* FAQ */
+.faq-list{margin-top:48px;max-width:780px}
+.faq-item{
+  border-bottom:1px solid var(--glass-border);
+  padding:24px 0;
+}
+.faq-q{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1.2rem;font-weight:600;
+  cursor:pointer;display:flex;justify-content:space-between;align-items:center;
+  transition:color 0.2s;
+}
+.faq-q:hover{color:var(--red)}
+.faq-q::after{content:'+';font-size:1.5rem;color:var(--red);transition:transform 0.3s}
+.faq-item.open .faq-q::after{transform:rotate(45deg)}
+.faq-a{
+  max-height:0;overflow:hidden;
+  transition:max-height 0.4s cubic-bezier(0.16,1,0.3,1),padding 0.3s;
+  color:var(--text-muted);font-size:0.95rem;line-height:1.7;
+}
+.faq-item.open .faq-a{max-height:200px;padding-top:14px}
+
+/* CTA FINAL */
+.cta-final{
+  background:linear-gradient(180deg,var(--bg) 0%,rgba(232,0,13,0.06) 100%);
+  text-align:center;
+}
+.cta-final h2{font-size:clamp(2rem,4vw,3rem);margin-bottom:16px}
+.cta-final p{color:var(--text-muted);max-width:600px;margin:0 auto 40px;font-size:1.05rem}
+.cta-channels{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-top:32px}
+.cta-channel{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.9rem;color:var(--text-muted);
+}
+.cta-channel svg{width:20px;height:20px;fill:var(--red)}
+
+/* FOOTER */
+.footer{
+  padding:40px 24px;text-align:center;
+  border-top:1px solid var(--glass-border);
+  font-size:0.82rem;color:var(--text-muted);
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .about-grid{grid-template-columns:1fr;gap:40px}
+  .hero h1{font-size:2.4rem}
+  .benefits-grid{grid-template-columns:1fr}
+  .numbers-grid{grid-template-columns:repeat(2,1fr)}
+  .team-grid{grid-template-columns:repeat(3,1fr);gap:20px}
+  .team-member img{width:80px;height:80px}
+  .steps::before{left:20px}
+  .step-number{width:42px;height:42px;min-width:42px;font-size:1rem}
+  .section{padding:70px 0}
+  .urgency-items{flex-direction:column;align-items:stretch}
+  .panels-gallery{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .hero-actions{flex-direction:column}
+  .btn-primary,.btn-secondary{width:100%;justify-content:center}
+  .numbers-grid{grid-template-columns:1fr 1fr}
+  .team-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo"><img src="img/exa-logo.webp" alt="EXA Midia"></div>
+  <a href="https://wa.me/5545991415856?text=Ol%C3%A1!%20Tenho%20interesse%20em%20instalar%20a%20EXA%20no%20meu%20pr%C3%A9dio." class="nav-cta" target="_blank">Quero instalar</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="inicio">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-badge reveal">
+      <span>Fase 1 de expansao em Foz do Iguacu</span>
+    </div>
+    <h1 class="reveal reveal-delay-1">Transforme o elevador do seu predio em um <span>ambiente inteligente</span></h1>
+    <p class="reveal reveal-delay-2">A EXA instala, opera e mantem. Sem custo para o condominio. Sem obras. Sem complicacao. Voce so aprova.</p>
+    <div class="hero-actions reveal reveal-delay-3">
+      <a href="https://wa.me/5545991415856?text=Ol%C3%A1!%20Sou%20s%C3%ADndico%20e%20tenho%20interesse%20em%20instalar%20a%20EXA." class="btn-primary" target="_blank">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.61.609l4.458-1.496A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.24 0-4.326-.66-6.08-1.796l-.436-.29-2.647.888.889-2.647-.29-.437A9.958 9.958 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Fale com a equipe
+      </a>
+      <a href="#como-funciona" class="btn-secondary">Saiba mais</a>
+    </div>
+  </div>
+</section>
+
+<!-- O QUE E A EXA -->
+<section class="section" id="sobre">
+  <div class="container">
+    <div class="about-grid">
+      <div>
+        <p class="section-label reveal">Quem somos</p>
+        <h2 class="section-title reveal reveal-delay-1">A primeira plataforma de midia inteligente em elevadores de Foz do Iguacu</h2>
+        <p class="section-sub reveal reveal-delay-2">Nascemos aqui, construimos a tecnologia durante <strong>2 anos e meio</strong> junto com sindicos da cidade, baseados nas necessidades reais de cada condominio.</p>
+        <p class="section-sub reveal reveal-delay-3" style="margin-top:16px">Somos a <strong>unica empresa</strong> com tecnologia registrada, plano validado pelo <strong>SECOVI-PR</strong> e operacao 100% propria. Criada por pessoas de Foz, com sindicos de Foz.</p>
+        <div class="about-stats reveal reveal-delay-4">
+          <div class="about-stat"><strong>2,5 anos</strong><span>de desenvolvimento</span></div>
+          <div class="about-stat"><strong>100%</strong><span>tecnologia propria</span></div>
+          <div class="about-stat"><strong>SECOVI</strong><span>parceiro oficial</span></div>
+          <div class="about-stat"><strong>Foz</strong><span>feita por quem vive aqui</span></div>
+        </div>
+      </div>
+      <div class="about-visual reveal reveal-delay-2">
+        <img src="img/panel-1.webp" alt="Painel EXA no elevador">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFICIOS -->
+<section class="section" id="beneficios">
+  <div class="container">
+    <p class="section-label reveal">Beneficios para o condominio</p>
+    <h2 class="section-title reveal reveal-delay-1">Zero custo. Maximo valor.</h2>
+    <p class="section-sub reveal reveal-delay-2">Tudo que o seu condominio ganha ao ter uma tela EXA no elevador:</p>
+    <div class="benefits-grid">
+      <div class="benefit-card reveal">
+        <div class="benefit-icon">&#128226;</div>
+        <h4>Comunicacao moderna</h4>
+        <p>Avisos do condominio na tela digital. Sem papeis, sem WhatsApp perdido. Informacao onde todos veem.</p>
+      </div>
+      <div class="benefit-card reveal reveal-delay-1">
+        <div class="benefit-icon">&#9729;&#65039;</div>
+        <h4>Informacao util</h4>
+        <p>Clima, cambio, noticias locais e alertas em tempo real. O elevador vira um painel de utilidade.</p>
+      </div>
+      <div class="benefit-card reveal reveal-delay-2">
+        <div class="benefit-icon">&#128200;</div>
+        <h4>Valorizacao do predio</h4>
+        <p>Tecnologia e estetica que elevam o padrao do condominio. Modernidade percebida por moradores e visitantes.</p>
+      </div>
+      <div class="benefit-card reveal reveal-delay-3">
+        <div class="benefit-icon">&#128176;</div>
+        <h4>Custo zero</h4>
+        <p>Instalacao, manutencao, operacao e conteudo — tudo por conta da EXA. O condominio nao gasta nada.</p>
+      </div>
+      <div class="benefit-card reveal reveal-delay-4">
+        <div class="benefit-icon">&#128181;</div>
+        <h4>Possibilidade de receita</h4>
+        <p>Participacao financeira para o condominio. Um novo canal de receita sem esforco.</p>
+      </div>
+      <div class="benefit-card reveal reveal-delay-5">
+        <div class="benefit-icon">&#127760;</div>
+        <h4>Ecossistema de marketing</h4>
+        <p>Divulgacao do condominio na rede EXA e visibilidade para moradores em toda a cidade.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="section" id="como-funciona">
+  <div class="container">
+    <p class="section-label reveal">Como funciona</p>
+    <h2 class="section-title reveal reveal-delay-1">Simples, rapido e sem burocracia</h2>
+    <p class="section-sub reveal reveal-delay-2">Da aprovacao a tela funcionando em poucos dias:</p>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>Sindico aprova a instalacao</h4>
+          <p>Na maioria dos casos, o proprio sindico ja pode aprovar. Sem assembleia, sem demora.</p>
+        </div>
+      </div>
+      <div class="step reveal reveal-delay-1">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h4>Vistoria tecnica gratuita</h4>
+          <p>Nossa equipe avalia o elevador e define o melhor posicionamento para a tela.</p>
+        </div>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>Instalacao profissional</h4>
+          <p>Equipe propria instala em poucas horas, sem obras e sem interferencia na rotina do predio.</p>
+        </div>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h4>Conteudo inteligente automatico</h4>
+          <p>Avisos do condominio, clima, noticias e publicidade curada aparecem automaticamente.</p>
+        </div>
+      </div>
+      <div class="step reveal reveal-delay-4">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h4>Acesso ao portal do sindico</h4>
+          <p>Envie comunicados, avisos e informacoes direto para a tela do elevador pelo celular.</p>
+        </div>
+      </div>
+    </div>
+    <div class="step-note reveal">
+      <strong>Sobre assembleia:</strong> Em alguns condominios, o regimento interno pode exigir aprovacao em assembleia. Nesses casos, a EXA apoia em todo o processo com materiais e apresentacao.
+    </div>
+  </div>
+</section>
+
+<!-- NUMEROS -->
+<section class="section" id="numeros">
+  <div class="container">
+    <p class="section-label reveal">Credibilidade</p>
+    <h2 class="section-title reveal reveal-delay-1">Numeros que comprovam</h2>
+    <div class="numbers-grid">
+      <div class="number-card reveal">
+        <span class="value">50+</span>
+        <span class="label">Edificios conectados</span>
+      </div>
+      <div class="number-card reveal reveal-delay-1">
+        <span class="value">24+</span>
+        <span class="label">Pontos instalados</span>
+      </div>
+      <div class="number-card reveal reveal-delay-2">
+        <span class="value">91%</span>
+        <span class="label">Aprovacao dos moradores</span>
+      </div>
+      <div class="number-card reveal reveal-delay-3">
+        <span class="value">23mil+</span>
+        <span class="label">Pessoas alcancadas</span>
+      </div>
+      <div class="number-card reveal reveal-delay-4">
+        <span class="value">77</span>
+        <span class="label">Predios na fila</span>
+      </div>
+      <div class="number-card reveal reveal-delay-5">
+        <span class="value">SECOVI</span>
+        <span class="label">Parceiro oficial PR</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:48px" class="reveal">
+      <img src="img/secovi-logo.webp" alt="SECOVI-PR" style="height:50px;filter:brightness(1.2)">
+      <span style="color:var(--text-muted);font-size:0.9rem">Validado pelo Sindicato da Habitacao do Parana</span>
+    </div>
+  </div>
+</section>
+
+<!-- URGENCIA -->
+<section class="section urgency" id="urgencia">
+  <div class="container urgency-content">
+    <p class="section-label reveal">Vagas limitadas</p>
+    <h2 class="section-title reveal reveal-delay-1">Estamos na primeira fase de expansao</h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto">Foz do Iguacu e a primeira cidade. Prioridade para quem entra agora.</p>
+    <div class="urgency-items">
+      <div class="urgency-item reveal">77 predios ja estao na fila de instalacao</div>
+      <div class="urgency-item reveal reveal-delay-1">Empresa solida: 2,5 anos de construcao antes de escalar</div>
+      <div class="urgency-item reveal reveal-delay-2">Expansao para outras cidades ja planejada</div>
+      <div class="urgency-item reveal reveal-delay-3">Garanta prioridade para o seu condominio</div>
+    </div>
+  </div>
+</section>
+
+<!-- PREDIOS ATIVOS (API) -->
+<section class="section" id="predios">
+  <div class="container">
+    <p class="section-label reveal">Rede ativa</p>
+    <h2 class="section-title reveal reveal-delay-1">Predios que ja tem EXA</h2>
+    <p class="section-sub reveal reveal-delay-2">Cada predio e um ponto de midia ativo, alcancando moradores diariamente.</p>
+    <div class="buildings-grid" id="buildings-grid">
+      <!-- Filled by JS -->
+    </div>
+    <!-- Fallback if API fails -->
+    <div class="buildings-fallback" id="buildings-fallback" style="display:none">
+      <div class="building-card"><img src="img/panel-2.webp" alt="Edificio"><div class="info"><h5>Rede EXA</h5><span>Foz do Iguacu, PR</span></div></div>
+      <div class="building-card"><img src="img/panel-3.webp" alt="Edificio"><div class="info"><h5>Rede EXA</h5><span>Foz do Iguacu, PR</span></div></div>
+      <div class="building-card"><img src="img/panel-4.webp" alt="Edificio"><div class="info"><h5>Rede EXA</h5><span>Foz do Iguacu, PR</span></div></div>
+      <div class="building-card"><img src="img/panel-5.webp" alt="Edificio"><div class="info"><h5>Rede EXA</h5><span>Foz do Iguacu, PR</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- GALERIA PAINEIS -->
+<section class="section" id="galeria">
+  <div class="container">
+    <p class="section-label reveal">Experiencia visual</p>
+    <h2 class="section-title reveal reveal-delay-1">Veja a EXA funcionando</h2>
+    <p class="section-sub reveal reveal-delay-2">Telas de alta resolucao com curadoria estetica integrada a arquitetura de cada predio.</p>
+    <div class="panels-gallery reveal reveal-delay-3">
+      <img src="img/panel-elevator.webp" alt="Painel EXA no elevador" loading="lazy">
+      <img src="img/panel-1.webp" alt="Tela EXA com anuncio" loading="lazy">
+      <img src="img/panel-2.webp" alt="Tela EXA clima" loading="lazy">
+      <img src="img/panel-3.webp" alt="Tela EXA comunicado" loading="lazy">
+      <img src="img/panel-4.webp" alt="Tela EXA informacoes" loading="lazy">
+      <img src="img/panel-5.webp" alt="Tela EXA noticias" loading="lazy">
+      <img src="img/panel-6.webp" alt="Tela EXA publicidade" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- EQUIPE -->
+<section class="section" id="equipe">
+  <div class="container">
+    <p class="section-label reveal">Quem esta por tras</p>
+    <h2 class="section-title reveal reveal-delay-1">Nossa equipe</h2>
+    <p class="section-sub reveal reveal-delay-2">Somos de Foz. Conhecemos cada predio e cada sindico.</p>
+    <div class="team-grid">
+      <div class="team-member reveal">
+        <img src="img/jeferson.webp" alt="Jeferson Encina" loading="lazy">
+        <h5>Jeferson Encina</h5>
+        <span>Diretor Geral</span>
+      </div>
+      <div class="team-member reveal reveal-delay-1">
+        <img src="img/jonathan.webp" alt="Jonathan Veronese" loading="lazy">
+        <h5>Jonathan Veronese</h5>
+        <span>Diretor Financeiro</span>
+      </div>
+      <div class="team-member reveal reveal-delay-2">
+        <img src="img/blenda.webp" alt="Blenda Dal Moro" loading="lazy">
+        <h5>Blenda Dal Moro</h5>
+        <span>Diretora de Operacoes</span>
+      </div>
+      <div class="team-member reveal reveal-delay-3">
+        <img src="img/jennifer.webp" alt="Jeniffer Aireliza" loading="lazy">
+        <h5>Jeniffer Aireliza</h5>
+        <span>Head Comercial</span>
+      </div>
+      <div class="team-member reveal reveal-delay-4">
+        <img src="img/joao.webp" alt="Joao Tuminski" loading="lazy">
+        <h5>Joao Tuminski</h5>
+        <span>Head Tecnologia</span>
+      </div>
+      <div class="team-member reveal reveal-delay-5">
+        <img src="img/alencar.webp" alt="Alencar de Lima" loading="lazy">
+        <h5>Alencar de Lima</h5>
+        <span>Tecnico</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="container">
+    <p class="section-label reveal">Perguntas frequentes</p>
+    <h2 class="section-title reveal reveal-delay-1">Duvidas?</h2>
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <div class="faq-q">Tem custo para o condominio?</div>
+        <div class="faq-a">Zero. Instalacao, manutencao, operacao e conteudo sao 100% por conta da EXA. O condominio nao gasta nada.</div>
+      </div>
+      <div class="faq-item reveal reveal-delay-1">
+        <div class="faq-q">Precisa de assembleia?</div>
+        <div class="faq-a">Na maioria dos predios, o proprio sindico pode aprovar diretamente. Em alguns regimentos internos, pode ser necessaria assembleia — e a EXA apoia com materiais e apresentacao para os moradores.</div>
+      </div>
+      <div class="faq-item reveal reveal-delay-2">
+        <div class="faq-q">Quem controla o conteudo da tela?</div>
+        <div class="faq-a">A EXA faz a curadoria do conteudo (noticias, clima, publicidade aprovada). O sindico tambem tem acesso ao portal para enviar avisos e comunicados do condominio.</div>
+      </div>
+      <div class="faq-item reveal reveal-delay-3">
+        <div class="faq-q">O condominio ganha algo financeiramente?</div>
+        <div class="faq-a">Sim. Ha possibilidade de participacao na receita gerada pela publicidade, alem de toda a comunicacao gratuita e valorizacao do predio.</div>
+      </div>
+      <div class="faq-item reveal reveal-delay-4">
+        <div class="faq-q">E se eu quiser remover a tela?</div>
+        <div class="faq-a">Sem multa, sem burocracia. A EXA remove a tela e o elevador volta ao estado original.</div>
+      </div>
+      <div class="faq-item reveal reveal-delay-5">
+        <div class="faq-q">Quanto tempo leva a instalacao?</div>
+        <div class="faq-a">Apos a aprovacao, fazemos a vistoria e instalamos em poucos dias. A instalacao em si leva poucas horas, sem obras e sem sujeira.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="section cta-final" id="contato">
+  <div class="container">
+    <p class="section-label reveal">Vamos conversar?</p>
+    <h2 class="reveal reveal-delay-1">Instale a EXA no seu predio</h2>
+    <p class="reveal reveal-delay-2">Entre em contato e descubra como transformar o elevador do seu condominio em um ambiente inteligente — sem custo, sem complicacao.</p>
+    <div class="reveal reveal-delay-3">
+      <a href="https://wa.me/5545991415856?text=Ol%C3%A1!%20Sou%20s%C3%ADndico%20e%20tenho%20interesse%20em%20instalar%20a%20EXA%20no%20meu%20pr%C3%A9dio." class="btn-primary" target="_blank" style="font-size:1.2rem;padding:20px 48px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.61.609l4.458-1.496A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.24 0-4.326-.66-6.08-1.796l-.436-.29-2.647.888.889-2.647-.29-.437A9.958 9.958 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Quero instalar no meu predio
+      </a>
+    </div>
+    <div class="cta-channels reveal reveal-delay-4" style="margin-top:40px">
+      <div class="cta-channel">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        <span>www.examidia.com.br</span>
+      </div>
+      <div class="cta-channel">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        <span>@examidia</span>
+      </div>
+      <div class="cta-channel">
+        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        <span>contato@examidia.com.br</span>
+      </div>
+      <div class="cta-channel">
+        <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        <span>(45) 99141-5856</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>EXA Midia &copy; 2025 &mdash; Todos os direitos reservados. INDEXA LTDA &mdash; CNPJ 38.142.638/0001-30</p>
+  <p style="margin-top:6px">Foz do Iguacu, PR, Brasil</p>
+</footer>
+
+<script>
+// Scroll Reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// FAQ Toggle
+document.querySelectorAll('.faq-q').forEach(q => {
+  q.addEventListener('click', () => {
+    const item = q.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+// Load buildings from API
+async function loadBuildings() {
+  const grid = document.getElementById('buildings-grid');
+  const fallback = document.getElementById('buildings-fallback');
+  try {
+    const res = await fetch('https://hcdogmbaizrewpizwehg.supabase.co/functions/v1/catalogo-predios');
+    const data = await res.json();
+    const ativos = data.predios.filter(p => p.statusGroup === 'ativo' && p.fotoUrl);
+    if (ativos.length === 0) throw new Error('No buildings');
+
+    grid.innerHTML = ativos.slice(0, 12).map(p => `
+      <div class="building-card">
+        <img src="${p.fotoUrl}" alt="${p.nome}" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <div class="info">
+          <h5>${p.nome}</h5>
+          <span>${p.bairro || 'Foz do Iguacu'}${p.unidades ? ' &middot; ' + p.unidades + ' unidades' : ''}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    grid.style.display = 'none';
+    fallback.style.display = 'grid';
+  }
+}
+
+loadBuildings();
+
+// Nav hide/show on scroll
+let lastScroll = 0;
+const nav = document.querySelector('.nav');
+window.addEventListener('scroll', () => {
+  const curr = window.pageYOffset;
+  nav.style.transform = curr > lastScroll && curr > 100 ? 'translateY(-100%)' : 'translateY(0)';
+  lastScroll = curr;
+}, { passive: true });
+</script>
+</body>
+</html>

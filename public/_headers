@@ -64,6 +64,10 @@
   Content-Security-Policy: frame-ancestors *;
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
+# Midiakit Sindicos — static page
+/midiakit-sindicos/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
 # Proposta CellShop — CSP aberto para CDNs externos (GSAP, Lenis, Google Fonts)
 /proposta-jorbel/*
   Content-Security-Policy: default-src 'self' https://*.supabase.co; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://via.placeholder.com; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors *;
