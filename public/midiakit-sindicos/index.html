@@ -895,22 +895,34 @@ async function loadBuildings() {
     const ativos = data.predios.filter(p => p.statusGroup === 'ativo');
     if (ativos.length === 0) throw new Error('No buildings');
 
-    const withPhoto = ativos.filter(p => p.fotoUrl);
-    const toShow = withPhoto.length > 0 ? withPhoto : ativos;
+    // Agrupar por nome base (remove número final: "Cheverny 2" -> "Cheverny")
+    const baseName = (nome) => nome.replace(/\s+\d+$/, '').trim();
+    const grouped = {};
+    ativos.forEach(p => {
+      const key = baseName(p.nome);
+      if (!grouped[key]) {
+        grouped[key] = { ...p, nome: key, telas: 1, unidades: p.unidades || 0 };
+      } else {
+        grouped[key].telas++;
+        grouped[key].unidades += (p.unidades || 0);
+        if (!grouped[key].fotoUrl && p.fotoUrl) grouped[key].fotoUrl = p.fotoUrl;
+      }
+    });
+    const buildings = Object.values(grouped);
 
-    grid.innerHTML = toShow.slice(0, 12).map(p => `
+    grid.innerHTML = buildings.map(b => `
       <div class="building-card">
-        ${p.fotoUrl ? `<img src="${p.fotoUrl}" alt="${p.nome}" loading="lazy" onerror="this.style.display='none'">` : ''}
+        ${b.fotoUrl ? `<img src="${b.fotoUrl}" alt="${b.nome}" loading="lazy" onerror="this.style.display='none'">` : ''}
         <div class="info">
-          <h5>${p.nome}</h5>
-          <span>${p.bairro || 'Foz do Iguaçu'}${p.unidades ? ' &middot; ' + p.unidades + ' unidades' : ''}</span>
-          <span class="badge">Ativo</span>
+          <h5>${b.nome}</h5>
+          <span>${b.bairro || 'Foz do Iguaçu'}${b.unidades ? ' &middot; ' + b.unidades + ' unidades' : ''}</span>
+          <span class="badge">${b.telas} tela${b.telas > 1 ? 's' : ''}</span>
         </div>
       </div>
     `).join('');
 
     if (counter) {
-      counter.innerHTML = `<strong>${ativos.length}</strong> edifícios ativos na rede EXA`;
+      counter.innerHTML = `<strong>${buildings.length}</strong> edifícios ativos na rede EXA`;
     }
   } catch (e) {
     grid.style.display = 'none';
