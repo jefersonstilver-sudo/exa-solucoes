@@ -889,7 +889,7 @@ async function loadBuildings() {
   const fallback = document.getElementById('buildings-fallback');
   const counter = document.getElementById('building-counter');
   try {
-    const res = await fetch('https://hcdogmbaizrewpizwehg.supabase.co/functions/v1/catalogo-predios');
+    const res = await fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/catalogo-predios');
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
     const ativos = data.predios.filter(p => p.statusGroup === 'ativo');
