@@ -19,7 +19,7 @@ import PageTransitionLoader from '@/components/loading/PageTransitionLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { hasLaunchTimePassed, MAINTENANCE_MODE } from '@/config/comingSoonConfig';
 import ComingSoonPage from '@/pages/ComingSoonPage';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { usePageTransition } from '@/hooks/usePageTransition';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTracker';
