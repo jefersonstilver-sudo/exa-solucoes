@@ -459,7 +459,7 @@ body::before{
 <section class="hero" id="inicio">
   <div class="hero-video">
     <video autoplay muted loop playsinline>
-      <source src="img/hero-video.mp4" type="video/mp4">
+      <source src="img/video-promo.mp4" type="video/mp4">
     </video>
   </div>
   <div class="hero-content">
@@ -497,7 +497,7 @@ body::before{
       </div>
       <div class="about-visual reveal-left">
         <video autoplay muted loop playsinline style="width:100%;border-radius:var(--radius)">
-          <source src="img/promo-video.mp4" type="video/mp4">
+          <source src="img/video-troca.mp4" type="video/mp4">
         </video>
       </div>
     </div>
@@ -666,10 +666,37 @@ body::before{
   </div>
 </section>
 
-<!-- VÍDEOS / GALERIA -->
+<!-- VÍDEOS -->
+<section class="section" id="videos">
+  <div class="container">
+    <p class="section-label reveal">Veja na prática</p>
+    <h2 class="section-title reveal reveal-delay-1">Como funciona no <span>dia a dia</span></h2>
+    <p class="section-sub reveal reveal-delay-2">Assista como o síndico interage com a plataforma e como a tela transforma o elevador.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px;max-width:700px;margin-left:auto;margin-right:auto">
+      <div class="reveal" style="position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);aspect-ratio:9/16">
+        <video controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover">
+          <source src="img/video-promo.mp4" type="video/mp4">
+        </video>
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(to top,rgba(7,7,11,0.9),transparent);pointer-events:none">
+          <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Pare de colar papel no elevador</span>
+        </div>
+      </div>
+      <div class="reveal reveal-delay-1" style="position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);aspect-ratio:9/16">
+        <video controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover">
+          <source src="img/video-troca.mp4" type="video/mp4">
+        </video>
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(to top,rgba(7,7,11,0.9),transparent);pointer-events:none">
+          <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Síndico enviando comunicado via WhatsApp</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GALERIA -->
 <section class="section" id="galeria">
   <div class="container">
-    <p class="section-label reveal">Veja funcionando</p>
+    <p class="section-label reveal">Fotos reais</p>
     <h2 class="section-title reveal reveal-delay-1">A EXA no <span>elevador</span></h2>
     <p class="section-sub reveal reveal-delay-2">Telas de alta resolução com curadoria estética integrada à arquitetura de cada prédio.</p>
     <div class="panels-gallery reveal reveal-delay-3">
