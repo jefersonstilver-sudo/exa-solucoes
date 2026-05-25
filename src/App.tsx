@@ -1,5 +1,11 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// Redireciona para uma página estática em public/ (bypass do SPA router)
+function StaticRedirect({ to }: { to: string }) {
+  useEffect(() => { window.location.replace(to); }, [to]);
+  return null;
+}
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -589,6 +595,12 @@ const AppContent = () => {
 
           {/* Catálogo público de prédios da rede */}
           <Route path="/catalogo" element={<Suspense fallback={<GlobalLoadingPage />}><Catalogo /></Suspense>} />
+
+          {/* Páginas estáticas em public/ — redireciona para o HTML direto */}
+          <Route path="/midiakit-sindicos" element={<StaticRedirect to="/midiakit-sindicos/index.html" />} />
+          <Route path="/midiakit-sindicos/*" element={<StaticRedirect to="/midiakit-sindicos/index.html" />} />
+          <Route path="/proposta-jorbel" element={<StaticRedirect to="/proposta-jorbel/index.html" />} />
+          <Route path="/proposta-jorbel/*" element={<StaticRedirect to="/proposta-jorbel/index.html" />} />
 
           {/* Rota catch-all para páginas não encontradas */}
           <Route path="*" element={<Suspense fallback={<GlobalLoadingPage />}><NaoEncontrado /></Suspense>} />
