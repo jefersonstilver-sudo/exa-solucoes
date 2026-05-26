@@ -168,14 +168,16 @@ serve(async (req) => {
     });
 
     // 5. Preparar metadados
-    // IMPORTANTE: Extrair nome do arquivo do Storage URL (não o nome dado pelo usuário)
-    const storageUrl = pedidoVideo.videos.url;
-    const storageFileName = storageUrl.split('/').pop() || pedidoVideo.videos.nome;
-    const videoTitle = storageFileName.replace(/\.[^/.]+$/, ''); // Remove extensão
+    // IMPORTANTE: usar o TÍTULO cadastrado pelo usuário (videos.nome), NÃO o nome do arquivo no Storage.
+    // Mantém consistência com update-video-schedule-aws e update-video-master-aws.
+    const videoTitle = (pedidoVideo.videos.nome || '').replace(/\.[^/.]+$/, '').trim();
+    if (!videoTitle) {
+      throw new Error('Título do vídeo (videos.nome) está vazio - não é possível enviar para API externa');
+    }
 
-    console.log('📝 [UPLOAD_EXTERNAL_API] Nome do arquivo extraído:', {
+    console.log('📝 [UPLOAD_EXTERNAL_API] Título do vídeo:', {
       nome_usuario: pedidoVideo.videos.nome,
-      nome_storage: storageFileName,
+      storage_url: pedidoVideo.videos.url,
       titulo_enviado: videoTitle
     });
 
