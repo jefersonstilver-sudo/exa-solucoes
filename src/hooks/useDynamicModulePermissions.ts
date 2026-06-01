@@ -18,6 +18,7 @@ export const MODULE_KEYS = {
   contatos_kanban: 'contatos_kanban',
   crm_site: 'crm_site',
   crm_chat: 'crm_chat',
+  crm_evolution: 'crm_evolution',
   
   // === VENDAS ===
   vendas: 'vendas',
