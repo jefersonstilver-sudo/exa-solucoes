@@ -62,6 +62,7 @@ const PontuacaoConfigPage = lazy(() => import('@/pages/admin/contatos/PontuacaoC
 const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'));
 const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsPage'));
 const CRMHubPage = lazy(() => import('@/pages/admin/crm/CRMHubPage'));
+const CRMEvolutionPage = lazy(() => import('@/pages/admin/crm/CRMEvolutionPage'));
 
 // Lazy import para Vendas (FASE 2)
 const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
