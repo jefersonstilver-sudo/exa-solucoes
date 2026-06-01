@@ -78,6 +78,7 @@ export const MODULE_ROUTES: Record<string, { path: string; label: string }> = {
   crm_hub: { path: '/admin/crm-hub', label: 'CRM Hub' },
   crm_site: { path: '/admin/crm', label: 'CRM Site' },
   crm_chat: { path: '/admin/crm-chat', label: 'CRM Chat' },
+  crm_evolution: { path: '/admin/crm-evolution', label: 'CRM Evolution' },
   vendas: { path: '/admin/pedidos', label: 'Vendas' },
   juridico: { path: '/admin/juridico', label: 'Jurídico' },
   assinaturas: { path: '/admin/assinaturas', label: 'Assinaturas' },
