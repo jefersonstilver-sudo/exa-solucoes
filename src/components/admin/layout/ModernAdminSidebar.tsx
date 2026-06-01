@@ -188,6 +188,12 @@ export function ModernAdminSidebar() {
           href: buildPath('contatos-kanban'),
           icon: LayoutGrid,
           moduleKey: MODULE_KEYS.contatos_kanban
+        },
+        {
+          title: 'CRM Evolution',
+          href: buildPath('crm-evolution'),
+          icon: MessageCircle,
+          moduleKey: MODULE_KEYS.crm_evolution
         }
       ]
     },
