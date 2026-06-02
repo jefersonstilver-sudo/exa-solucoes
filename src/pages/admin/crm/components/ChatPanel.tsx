@@ -410,12 +410,3 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
 };
 
 export default ChatPanel;
-            </>
-          )}
-        </section>
-      </div>
-    </div>
-  );
-};
-
-export default ChatPanel;
