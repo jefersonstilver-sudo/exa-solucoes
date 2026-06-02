@@ -7,6 +7,7 @@ import {
   CheckCheck,
   Check,
   Inbox,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,8 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
 
   const [messages, setMessages] = useState<EvoMessage[]>([]);
   const [msgsLoading, setMsgsLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -127,8 +130,94 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     return () => clearInterval(t);
   }, [active, loadMessages]);
 
+  // -------- Export full history --------
+  const handleExportAll = async () => {
+    if (!instance || chats.length === 0 || exporting) return;
+    setExporting(true);
+    setExportProgress({ done: 0, total: chats.length });
 
+    const lines: string[] = [];
+    const header =
+      `Histórico de Conversas — ${collaborator.collaborator_name}\n` +
+      `Instância: ${instance}\n` +
+      `Telefone: ${collaborator.collaborator_phone ?? '—'}\n` +
+      `Exportado em: ${new Date().toLocaleString('pt-BR')}\n` +
+      `Total de conversas: ${chats.length}\n` +
+      `${'='.repeat(70)}\n\n`;
+    lines.push(header);
 
+    try {
+      for (let i = 0; i < chats.length; i++) {
+        const chat = chats[i];
+        try {
+          const res = await callEvolution(
+            `/chat/findMessages/${encodeURIComponent(instance)}`,
+            'POST',
+            {
+              where: { key: { remoteJid: chat.remoteJid } },
+              limit: 500,
+              page: 1,
+            },
+          );
+          const records: any[] =
+            res.data?.messages?.records ??
+            res.data?.records ??
+            (Array.isArray(res.data) ? res.data : []);
+          const msgs = records
+            .map(normalizeMessage)
+            .filter((m): m is EvoMessage => Boolean(m))
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+          lines.push(
+            `\n--- Conversa: ${chat.name} (${jidToNumber(chat.remoteJid)})${
+              chat.isGroup ? ' [GRUPO]' : ''
+            } ---\n`,
+          );
+          if (msgs.length === 0) {
+            lines.push('(sem mensagens)\n');
+          } else {
+            for (const m of msgs) {
+              const when = new Date(m.timestamp).toLocaleString('pt-BR');
+              const who = m.fromMe ? collaborator.collaborator_name : chat.name;
+              const text = (m.text || '[mídia]').replace(/\n/g, ' ');
+              lines.push(`[${when}] ${who}: ${text}\n`);
+            }
+          }
+        } catch (e) {
+          lines.push(
+            `\n--- Conversa: ${chat.name} (${jidToNumber(chat.remoteJid)}) ---\n` +
+              `(falha ao buscar mensagens: ${(e as Error).message})\n`,
+          );
+        }
+        setExportProgress({ done: i + 1, total: chats.length });
+      }
+
+      // Trigger download
+      const blob = new Blob([lines.join('')], {
+        type: 'text/plain;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = collaborator.collaborator_name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/gi, '_')
+        .toLowerCase();
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `historico_${safeName}_${stamp}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Histórico exportado');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao exportar histórico');
+    } finally {
+      setExporting(false);
+      setExportProgress(null);
+    }
+  };
 
   const filteredChats = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -159,16 +248,33 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         <div className="text-sm">
           Conversas de <strong>{collaborator.collaborator_name}</strong>
         </div>
-        <button
-          onClick={() => {
-            loadChats();
-            if (active) loadMessages(active);
-          }}
-          className="ml-auto flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 rounded-full px-2.5 py-1 transition"
-        >
-          <RefreshCw className={cn('w-3 h-3', chatsLoading && 'animate-spin')} />
-          Atualizar
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={handleExportAll}
+            disabled={exporting || chats.length === 0}
+            title="Baixar todo o histórico como TXT para análise por IA"
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed rounded-full px-2.5 py-1 transition"
+          >
+            {exporting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Download className="w-3 h-3" />
+            )}
+            {exporting && exportProgress
+              ? `${exportProgress.done}/${exportProgress.total}`
+              : 'Baixar histórico'}
+          </button>
+          <button
+            onClick={() => {
+              loadChats();
+              if (active) loadMessages(active);
+            }}
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 rounded-full px-2.5 py-1 transition"
+          >
+            <RefreshCw className={cn('w-3 h-3', chatsLoading && 'animate-spin')} />
+            Atualizar
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] h-[560px]">
@@ -354,12 +460,6 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                 )}
               </div>
 
-              {/* Read-only notice (LGPD: visualização apenas) */}
-              <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
-                <p className="text-[11px] text-gray-500">
-                  Visualização apenas — envio de mensagens desabilitado
-                </p>
-              </div>
             </>
           )}
         </section>
