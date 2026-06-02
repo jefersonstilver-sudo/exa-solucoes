@@ -1,8 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { MessageCircle, Settings2 } from 'lucide-react';
+import { MessageCircle, Settings2, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+
+type TestState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: unknown }
+  | { status: 'error'; message: string };
 
 const CRMEvolutionPage: React.FC = () => {
+  const [test, setTest] = useState<TestState>({ status: 'idle' });
+
+  const callEvolution = async (
+    path: string,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+    body?: unknown,
+  ) => {
+    const { data, error } = await supabase.functions.invoke('evolution-proxy', {
+      body: { path, method, body },
+    });
+    if (error) throw new Error(error.message);
+    return data as { status: number; data: unknown };
+  };
+
+  const handleTest = async () => {
+    setTest({ status: 'loading' });
+    try {
+      const res = await callEvolution('/instance/fetchInstances', 'GET');
+      if (res.status >= 200 && res.status < 300) {
+        setTest({ status: 'success', data: res.data });
+      } else {
+        setTest({
+          status: 'error',
+          message: `Evolution respondeu HTTP ${res.status}: ${JSON.stringify(res.data)}`,
+        });
+      }
+    } catch (e: any) {
+      setTest({ status: 'error', message: e?.message ?? 'Erro desconhecido' });
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -31,21 +70,61 @@ const CRMEvolutionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Empty state */}
         <div className="p-6 md:p-10">
-          <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
-              <Settings2 className="w-8 h-8 text-gray-400" />
+          <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm p-10">
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
+                <Settings2 className="w-8 h-8 text-gray-400" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                Conexão segura configurada
+              </h2>
+              <p className="text-gray-500 leading-relaxed max-w-md">
+                A URL e a API key da Evolution estão armazenadas como secrets no
+                servidor. Todas as chamadas passam pela edge function{' '}
+                <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                  evolution-proxy
+                </span>{' '}
+                com validação de JWT e role.
+              </p>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Aguardando configuração
-            </h2>
-            <p className="text-gray-500 leading-relaxed">
-              Esta página está pronta para receber a integração com a{' '}
-              <span className="font-medium text-gray-700">Evolution API</span>.
-              Configure o servidor e a chave de API para começar a visualizar as
-              conversas dos seus colaboradores em tempo real.
-            </p>
+
+            <div className="flex flex-col items-center gap-4">
+              <Button
+                onClick={handleTest}
+                disabled={test.status === 'loading'}
+                className="bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
+              >
+                {test.status === 'loading' && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Testar conexão com Evolution API
+              </Button>
+
+              {test.status === 'success' && (
+                <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                  <div className="flex items-center gap-2 text-emerald-700 font-medium mb-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Conexão estabelecida
+                  </div>
+                  <pre className="text-xs text-emerald-900/80 overflow-auto max-h-64">
+                    {JSON.stringify(test.data, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {test.status === 'error' && (
+                <div className="w-full rounded-xl border border-red-200 bg-red-50 p-4">
+                  <div className="flex items-center gap-2 text-red-700 font-medium mb-1">
+                    <AlertTriangle className="w-4 h-4" />
+                    Falha ao conectar
+                  </div>
+                  <p className="text-xs text-red-900/80 break-all">
+                    {test.message}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
