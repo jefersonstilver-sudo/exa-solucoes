@@ -206,22 +206,14 @@ const CRMEvolutionPage: React.FC = () => {
                   <CollaboratorCard
                     collaborator={c}
                     onUpdated={load}
-                    selected={selectedId === c.id}
-                    onSelect={() => setSelectedId(c.id)}
+                    onSelect={() =>
+                      navigate(`${basePath}/crm-evolution/conversas/${c.id}`)
+                    }
                   />
                 </div>
               ))}
             </div>
           )}
-
-          {selectedId && (() => {
-            const sel = collaborators.find((c) => c.id === selectedId);
-            return sel ? (
-              <div className="mt-6">
-                <ChatPanel collaborator={sel} />
-              </div>
-            ) : null;
-          })()}
         </div>
       </div>
 
