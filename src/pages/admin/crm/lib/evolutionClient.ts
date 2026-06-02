@@ -84,15 +84,15 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
   const fromMe: boolean = Boolean(raw?.key?.fromMe ?? raw?.fromMe);
   const msg = raw?.message ?? {};
   const text: string =
-    msg.conversation ??
-    msg.extendedTextMessage?.text ??
-    msg.imageMessage?.caption ??
-    msg.videoMessage?.caption ??
+    msg.conversation ||
+    msg.extendedTextMessage?.text ||
+    msg.imageMessage?.caption ||
+    msg.videoMessage?.caption ||
     (msg.imageMessage ? '📷 Foto' : '') ||
     (msg.videoMessage ? '🎥 Vídeo' : '') ||
     (msg.audioMessage ? '🎵 Áudio' : '') ||
     (msg.documentMessage ? '📄 Documento' : '') ||
-    raw?.text ??
+    raw?.text ||
     '';
   const ts = Number(raw?.messageTimestamp ?? raw?.timestamp ?? 0);
   const tsMs = ts > 1e12 ? ts : ts * 1000;
