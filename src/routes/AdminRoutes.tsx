@@ -305,6 +305,13 @@ const AdminRoutes = () => {
           </Suspense>
         </ProtectedModuleRoute>
       } />
+      <Route path="crm-evolution/conversas/:id" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.crm_evolution}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando conversas..." />}>
+            <CRMConversationsPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
       <Route path="escalacoes" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.escalacoes}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Escalações..." />}>
