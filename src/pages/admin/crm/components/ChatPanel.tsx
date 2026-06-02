@@ -130,8 +130,94 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     return () => clearInterval(t);
   }, [active, loadMessages]);
 
+  // -------- Export full history --------
+  const handleExportAll = async () => {
+    if (!instance || chats.length === 0 || exporting) return;
+    setExporting(true);
+    setExportProgress({ done: 0, total: chats.length });
 
+    const lines: string[] = [];
+    const header =
+      `Histórico de Conversas — ${collaborator.collaborator_name}\n` +
+      `Instância: ${instance}\n` +
+      `Telefone: ${collaborator.collaborator_phone ?? '—'}\n` +
+      `Exportado em: ${new Date().toLocaleString('pt-BR')}\n` +
+      `Total de conversas: ${chats.length}\n` +
+      `${'='.repeat(70)}\n\n`;
+    lines.push(header);
 
+    try {
+      for (let i = 0; i < chats.length; i++) {
+        const chat = chats[i];
+        try {
+          const res = await callEvolution(
+            `/chat/findMessages/${encodeURIComponent(instance)}`,
+            'POST',
+            {
+              where: { key: { remoteJid: chat.remoteJid } },
+              limit: 500,
+              page: 1,
+            },
+          );
+          const records: any[] =
+            res.data?.messages?.records ??
+            res.data?.records ??
+            (Array.isArray(res.data) ? res.data : []);
+          const msgs = records
+            .map(normalizeMessage)
+            .filter((m): m is EvoMessage => Boolean(m))
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+          lines.push(
+            `\n--- Conversa: ${chat.name} (${jidToNumber(chat.remoteJid)})${
+              chat.isGroup ? ' [GRUPO]' : ''
+            } ---\n`,
+          );
+          if (msgs.length === 0) {
+            lines.push('(sem mensagens)\n');
+          } else {
+            for (const m of msgs) {
+              const when = new Date(m.timestamp).toLocaleString('pt-BR');
+              const who = m.fromMe ? collaborator.collaborator_name : chat.name;
+              const text = (m.text || '[mídia]').replace(/\n/g, ' ');
+              lines.push(`[${when}] ${who}: ${text}\n`);
+            }
+          }
+        } catch (e) {
+          lines.push(
+            `\n--- Conversa: ${chat.name} (${jidToNumber(chat.remoteJid)}) ---\n` +
+              `(falha ao buscar mensagens: ${(e as Error).message})\n`,
+          );
+        }
+        setExportProgress({ done: i + 1, total: chats.length });
+      }
+
+      // Trigger download
+      const blob = new Blob([lines.join('')], {
+        type: 'text/plain;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = collaborator.collaborator_name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/gi, '_')
+        .toLowerCase();
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `historico_${safeName}_${stamp}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Histórico exportado');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao exportar histórico');
+    } finally {
+      setExporting(false);
+      setExportProgress(null);
+    }
+  };
 
   const filteredChats = useMemo(() => {
     const q = search.trim().toLowerCase();
