@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AddCollaboratorDialog } from './components/AddCollaboratorDialog';
 import { CollaboratorCard, type CollaboratorRow } from './components/CollaboratorCard';
+import { ChatPanel } from './components/ChatPanel';
 import { toast } from 'sonner';
 
 const callEvolution = async (
