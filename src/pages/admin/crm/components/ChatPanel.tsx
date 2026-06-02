@@ -127,46 +127,8 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     return () => clearInterval(t);
   }, [active, loadMessages]);
 
-  // -------- Send text --------
-  const handleSend = async () => {
-    const text = draft.trim();
-    if (!text || !active || !instance) return;
-    setSending(true);
-    const optimistic: EvoMessage = {
-      id: `tmp-${Date.now()}`,
-      fromMe: true,
-      text,
-      timestamp: Date.now(),
-      status: 'PENDING',
-    };
-    setMessages((prev) => [...prev, optimistic]);
-    setDraft('');
-    setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, 30);
-    try {
-      await callEvolution(
-        `/message/sendText/${encodeURIComponent(instance)}`,
-        'POST',
-        {
-          number: jidToNumber(active.remoteJid),
-          text,
-        },
-      );
-      // Refresh shortly after to sync server-side IDs/status
-      setTimeout(() => loadMessages(active, true), 1500);
-      setTimeout(() => loadChats(true), 1800);
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Falha ao enviar');
-      // remove optimistic
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-    } finally {
-      setSending(false);
-    }
-  };
+
+
 
   const filteredChats = useMemo(() => {
     const q = search.trim().toLowerCase();
