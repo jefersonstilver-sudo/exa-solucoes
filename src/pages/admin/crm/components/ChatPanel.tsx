@@ -354,12 +354,6 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                 )}
               </div>
 
-              {/* Read-only notice (LGPD: visualização apenas) */}
-              <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
-                <p className="text-[11px] text-gray-500">
-                  Visualização apenas — envio de mensagens desabilitado
-                </p>
-              </div>
             </>
           )}
         </section>
