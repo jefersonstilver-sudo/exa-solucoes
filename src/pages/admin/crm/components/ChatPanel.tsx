@@ -278,21 +278,16 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                       )}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {c.name}
-                      </p>
-                      <span className="text-[10px] text-gray-400 flex-shrink-0">
+                  <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {c.name}
+                    </p>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-[10px] text-gray-400">
                         {formatChatTime(c.lastMessageTime)}
                       </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <p className="text-xs text-gray-500 truncate">
-                        {c.lastMessageText || '—'}
-                      </p>
                       {c.unreadCount > 0 && (
-                        <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#9C1E1E] text-white text-[10px] font-semibold flex items-center justify-center">
+                        <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#9C1E1E] text-white text-[10px] font-semibold flex items-center justify-center">
                           {c.unreadCount}
                         </span>
                       )}
