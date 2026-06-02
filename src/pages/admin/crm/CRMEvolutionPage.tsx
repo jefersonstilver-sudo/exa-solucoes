@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AddCollaboratorDialog } from './components/AddCollaboratorDialog';
 import { CollaboratorCard, type CollaboratorRow } from './components/CollaboratorCard';
-import { ChatPanel } from './components/ChatPanel';
 import { toast } from 'sonner';
 
 const callEvolution = async (
@@ -21,11 +21,16 @@ const callEvolution = async (
 };
 
 const CRMEvolutionPage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/super_admin')
+    ? '/super_admin'
+    : '/admin';
+
   const [addOpen, setAddOpen] = useState(false);
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -201,22 +206,14 @@ const CRMEvolutionPage: React.FC = () => {
                   <CollaboratorCard
                     collaborator={c}
                     onUpdated={load}
-                    selected={selectedId === c.id}
-                    onSelect={() => setSelectedId(c.id)}
+                    onSelect={() =>
+                      navigate(`${basePath}/crm-evolution/conversas/${c.id}`)
+                    }
                   />
                 </div>
               ))}
             </div>
           )}
-
-          {selectedId && (() => {
-            const sel = collaborators.find((c) => c.id === selectedId);
-            return sel ? (
-              <div className="mt-6">
-                <ChatPanel collaborator={sel} />
-              </div>
-            ) : null;
-          })()}
         </div>
       </div>
 

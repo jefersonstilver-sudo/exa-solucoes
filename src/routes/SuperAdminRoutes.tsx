@@ -63,6 +63,7 @@ const BloqueiosPage = lazy(() => import('@/pages/admin/contatos/BloqueiosPage'))
 const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsPage'));
 const CRMHubPage = lazy(() => import('@/pages/admin/crm/CRMHubPage'));
 const CRMEvolutionPage = lazy(() => import('@/pages/admin/crm/CRMEvolutionPage'));
+const CRMConversationsPage = lazy(() => import('@/pages/admin/crm/CRMConversationsPage'));
 
 // Lazy import para Vendas (FASE 2)
 const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
@@ -157,6 +158,11 @@ const SuperAdminRoutes = () => {
       <Route path="crm-evolution" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando CRM Evolution..." />}>
           <CRMEvolutionPage />
+        </Suspense>
+      } />
+      <Route path="crm-evolution/conversas/:id" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando conversas..." />}>
+          <CRMConversationsPage />
         </Suspense>
       } />
       <Route path="escalacoes" element={

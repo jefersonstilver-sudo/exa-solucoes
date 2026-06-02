@@ -123,6 +123,7 @@ const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis'
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 const CRMClients = lazy(() => import('@/pages/admin/CRMClients'));
 const CRMEvolutionPage = lazy(() => import('@/pages/admin/crm/CRMEvolutionPage'));
+const CRMConversationsPage = lazy(() => import('@/pages/admin/crm/CRMConversationsPage'));
 
 const AdminRoutes = () => {
   return (
@@ -301,6 +302,13 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.crm_evolution}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando CRM Evolution..." />}>
             <CRMEvolutionPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="crm-evolution/conversas/:id" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.crm_evolution}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando conversas..." />}>
+            <CRMConversationsPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />
