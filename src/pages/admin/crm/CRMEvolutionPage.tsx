@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { MessageCircle, Settings2, Loader2, CheckCircle2, AlertTriangle, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { AddCollaboratorDialog } from './components/AddCollaboratorDialog';
 
 type TestState =
   | { status: 'idle' }
@@ -12,6 +13,7 @@ type TestState =
 
 const CRMEvolutionPage: React.FC = () => {
   const [test, setTest] = useState<TestState>({ status: 'idle' });
+  const [addOpen, setAddOpen] = useState(false);
 
   const callEvolution = async (
     path: string,
