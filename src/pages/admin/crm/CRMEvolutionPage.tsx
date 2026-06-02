@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { MessageCircle, Settings2, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { MessageCircle, Settings2, Loader2, CheckCircle2, AlertTriangle, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 
