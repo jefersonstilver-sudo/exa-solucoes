@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AddCollaboratorDialog } from './components/AddCollaboratorDialog';
 import { CollaboratorCard, type CollaboratorRow } from './components/CollaboratorCard';
-import { ChatPanel } from './components/ChatPanel';
 import { toast } from 'sonner';
 
 const callEvolution = async (
