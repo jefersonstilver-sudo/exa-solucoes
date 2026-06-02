@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
-  Send,
   Loader2,
   RefreshCw,
   Users as UsersIcon,
@@ -38,8 +37,6 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
 
   const [messages, setMessages] = useState<EvoMessage[]>([]);
   const [msgsLoading, setMsgsLoading] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -130,46 +127,8 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     return () => clearInterval(t);
   }, [active, loadMessages]);
 
-  // -------- Send text --------
-  const handleSend = async () => {
-    const text = draft.trim();
-    if (!text || !active || !instance) return;
-    setSending(true);
-    const optimistic: EvoMessage = {
-      id: `tmp-${Date.now()}`,
-      fromMe: true,
-      text,
-      timestamp: Date.now(),
-      status: 'PENDING',
-    };
-    setMessages((prev) => [...prev, optimistic]);
-    setDraft('');
-    setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, 30);
-    try {
-      await callEvolution(
-        `/message/sendText/${encodeURIComponent(instance)}`,
-        'POST',
-        {
-          number: jidToNumber(active.remoteJid),
-          text,
-        },
-      );
-      // Refresh shortly after to sync server-side IDs/status
-      setTimeout(() => loadMessages(active, true), 1500);
-      setTimeout(() => loadChats(true), 1800);
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Falha ao enviar');
-      // remove optimistic
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-    } finally {
-      setSending(false);
-    }
-  };
+
+
 
   const filteredChats = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -278,21 +237,16 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                       )}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {c.name}
-                      </p>
-                      <span className="text-[10px] text-gray-400 flex-shrink-0">
+                  <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {c.name}
+                    </p>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-[10px] text-gray-400">
                         {formatChatTime(c.lastMessageTime)}
                       </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <p className="text-xs text-gray-500 truncate">
-                        {c.lastMessageText || '—'}
-                      </p>
                       {c.unreadCount > 0 && (
-                        <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#9C1E1E] text-white text-[10px] font-semibold flex items-center justify-center">
+                        <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#9C1E1E] text-white text-[10px] font-semibold flex items-center justify-center">
                           {c.unreadCount}
                         </span>
                       )}
@@ -400,33 +354,11 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                 )}
               </div>
 
-              {/* Composer */}
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white border-t border-gray-200">
-                <input
-                  type="text"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Digite uma mensagem..."
-                  disabled={sending}
-                  className="flex-1 px-3 py-2 text-sm rounded-full bg-gray-100 border-0 focus:outline-none focus:ring-2 focus:ring-[#9C1E1E]/30 placeholder:text-gray-400 disabled:opacity-60"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={sending || !draft.trim()}
-                  className="w-10 h-10 rounded-full bg-[#9C1E1E] hover:bg-[#7D1818] disabled:opacity-50 disabled:cursor-not-allowed text-white flex items-center justify-center transition-colors"
-                >
-                  {sending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </button>
+              {/* Read-only notice (LGPD: visualização apenas) */}
+              <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
+                <p className="text-[11px] text-gray-500">
+                  Visualização apenas — envio de mensagens desabilitado
+                </p>
               </div>
             </>
           )}
