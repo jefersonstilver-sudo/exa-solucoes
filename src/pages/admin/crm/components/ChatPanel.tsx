@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
-  Send,
   Loader2,
   RefreshCw,
   Users as UsersIcon,
