@@ -248,16 +248,33 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         <div className="text-sm">
           Conversas de <strong>{collaborator.collaborator_name}</strong>
         </div>
-        <button
-          onClick={() => {
-            loadChats();
-            if (active) loadMessages(active);
-          }}
-          className="ml-auto flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 rounded-full px-2.5 py-1 transition"
-        >
-          <RefreshCw className={cn('w-3 h-3', chatsLoading && 'animate-spin')} />
-          Atualizar
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={handleExportAll}
+            disabled={exporting || chats.length === 0}
+            title="Baixar todo o histórico como TXT para análise por IA"
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed rounded-full px-2.5 py-1 transition"
+          >
+            {exporting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Download className="w-3 h-3" />
+            )}
+            {exporting && exportProgress
+              ? `${exportProgress.done}/${exportProgress.total}`
+              : 'Baixar histórico'}
+          </button>
+          <button
+            onClick={() => {
+              loadChats();
+              if (active) loadMessages(active);
+            }}
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 rounded-full px-2.5 py-1 transition"
+          >
+            <RefreshCw className={cn('w-3 h-3', chatsLoading && 'animate-spin')} />
+            Atualizar
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] h-[560px]">
