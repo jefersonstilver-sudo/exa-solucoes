@@ -25,6 +25,7 @@ const CRMEvolutionPage: React.FC = () => {
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
