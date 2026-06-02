@@ -1,59 +1,50 @@
-# Ativar proposta estática em /proposta-jorbel/
+## Integração segura com Evolution API
 
-## Diagnóstico
+### Arquitetura (resumo)
 
-Os arquivos já estão em `public/proposta-jorbel/` e são servidos corretamente quando acessados pelo caminho completo:
-
-- `GET /proposta-jorbel/index.html` → 200 (arquivo estático correto)
-- `GET /proposta-jorbel/style.css` → 200
-- `GET /proposta-jorbel/script.js` → 200
-- `GET /proposta-jorbel/` (com barra final, sem `index.html`) → 200, **mas devolve o `index.html` do React** (SPA fallback)
-
-Ou seja: o problema **não** é o React Router interceptando — é que o request de "diretório" (`/proposta-jorbel/`) não casa com nenhum arquivo, então tanto o Vite dev quanto o hosting do Lovable caem no SPA fallback (`index.html` do app). Por consequência, o navegador carrega o HTML errado, e os pedidos relativos a `style.css`/`script.js` partem da raiz do React e dão 404.
-
-A solução é garantir que `/proposta-jorbel/` (e `/proposta-jorbel` sem barra) resolva para `/proposta-jorbel/index.html` em todos os ambientes.
-
-## Mudanças
-
-### 1. `vite.config.ts` — middleware no dev server
-
-Adicionar um pequeno plugin que, antes do SPA fallback, reescreve requests de diretório para o `index.html` estático:
-
-- Se `req.url` for `/proposta-jorbel` ou `/proposta-jorbel/` → seta `req.url = '/proposta-jorbel/index.html'` e segue para o middleware de assets do Vite.
-- Não afeta nenhuma outra rota.
-
-Isso resolve o preview no Lovable (que roda o dev server).
-
-### 2. `src/routes/index.tsx` — rota de fallback p/ produção
-
-No hosting de produção (e em qualquer caso onde o SPA fallback rode antes do rewrite), adicionar uma rota React que faça redirect hard para o arquivo estático:
-
-```tsx
-<Route
-  path="/proposta-jorbel"
-  element={<Navigate replace to="/proposta-jorbel/index.html" />}
-/>
-<Route
-  path="/proposta-jorbel/"
-  element={<Navigate replace to="/proposta-jorbel/index.html" />}
-/>
+```
+Browser (admin) ──JWT──> Edge Function `evolution-proxy` ──API Key──> http://54.233.76.73:8080
+                              │
+                              ├─ valida JWT do Supabase
+                              ├─ valida que user tem role super_admin/admin
+                              └─ lê EVOLUTION_API_URL + EVOLUTION_API_KEY de Deno.env
 ```
 
-Como `Navigate` do React Router só muda a URL no client, e queremos sair do React e bater no arquivo estático de fato, na verdade usaremos um componente minúsculo que faz `window.location.replace('/proposta-jorbel/index.html')` no `useEffect` (mais um `<noscript>` com `<meta http-equiv="refresh">` por garantia). Isso garante que o navegador faça um novo GET, agora para o caminho do arquivo, que retorna 200 com o HTML estático correto.
+Nenhuma URL, key ou endpoint da Evolution fica no bundle do frontend. O frontend só conhece o nome da edge function.
 
-Nenhuma outra rota, layout, UI ou comportamento existente é alterado.
+### Passos
 
-### 3. (Sem mudanças em) `public/_headers`
+**1. Secrets (via tool `add_secret`, nunca em `.env`)**
+- `EVOLUTION_API_URL` = `http://54.233.76.73:8080`
+- `EVOLUTION_API_KEY` = `429683C4C977415CAAFCCE10F7D57E11`
 
-A entrada `/proposta-jorbel/*` já existe com CSP aberto para CDNs externos (GSAP/Lenis/Google Fonts), então cobre os assets da proposta automaticamente assim que a URL final aponta para o arquivo estático.
+**2. Edge Function `supabase/functions/evolution-proxy/index.ts`**
+- CORS headers padrão (OPTIONS handler).
+- Lê `Authorization: Bearer <jwt>` do request → `supabase.auth.getUser(jwt)` com client anon. Se inválido → 401.
+- Verifica role do usuário via `has_role(user.id, 'super_admin')` OR `'admin'`. Se não → 403.
+- Body esperado: `{ path: string, method?: 'GET'|'POST'|'PUT'|'DELETE', body?: any }`.
+- Validação com Zod: `path` precisa começar com `/`, sem `..`, sem hosts externos (whitelist de prefixos: `/instance`, `/message`, `/chat`, `/group`, `/webhook`).
+- Faz `fetch(EVOLUTION_API_URL + path, { method, headers: { apikey: EVOLUTION_API_KEY, 'Content-Type': 'application/json' }, body })`.
+- Repassa status + JSON da Evolution de volta. Loga erros sem vazar a key.
+- Rate limit simples em memória por user_id (ex: 30 req / 10s) para mitigar abuso.
 
-## Validação
+**3. Frontend — `CRMEvolutionPage.tsx`**
+- Adiciona helper `callEvolution(path, method, body)` que chama:
+  ```ts
+  supabase.functions.invoke('evolution-proxy', { body: { path, method, body } })
+  ```
+- Por enquanto: botão "Testar conexão" que chama `/instance/fetchInstances` e mostra status/erro. Nada de listagem real ainda — o CRM completo vem depois conforme o usuário pediu.
 
-Após a implementação, no preview:
+**4. Segurança adicional**
+- `verify_jwt = true` no `config.toml` para a função (Supabase rejeita chamadas sem JWT antes mesmo de entrar no código).
+- Whitelist de paths + método.
+- Tamanho máx de body (ex: 100KB).
+- Logs sem secrets.
+- Nenhum log do payload bruto de mensagens (LGPD).
 
-1. `GET /proposta-jorbel` → redireciona para `/proposta-jorbel/index.html`
-2. `GET /proposta-jorbel/` → idem
-3. `GET /proposta-jorbel/index.html` → HTML estático da proposta (já funciona)
-4. `style.css` e `script.js` carregam 200 e a proposta renderiza com fontes/animações.
+### O que NÃO vai mudar
+- Nenhuma alteração em outras páginas, rotas, sidebar (a entrada CRM Evolution já existe).
+- Sem polling, sem realtime, sem webhook ainda — vamos fazer numa próxima etapa quando você definir o servidor de webhook.
 
-Vou abrir `/proposta-jorbel/` no preview para confirmar visualmente.
+### Próximo passo após aprovação
+Quando você aprovar, vou: pedir os 2 secrets, criar a edge function e atualizar a página CRM com o botão de teste de conexão.
