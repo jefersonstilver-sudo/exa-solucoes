@@ -18,6 +18,9 @@ verify_jwt = false
 [functions.qrcode-logs-proxy]
 verify_jwt = false
 
+[functions.evolution-proxy]
+verify_jwt = true
+
 [api]
 enabled = true
 port = 54321
