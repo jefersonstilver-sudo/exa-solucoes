@@ -140,6 +140,8 @@ const CRMEvolutionPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AddCollaboratorDialog open={addOpen} onOpenChange={setAddOpen} />
     </>
   );
 };
