@@ -6831,6 +6831,60 @@ export type Database = {
           },
         ]
       }
+      evolution_instances: {
+        Row: {
+          collaborator_name: string
+          collaborator_phone: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          instance_id: string | null
+          instance_name: string
+          instance_token: string | null
+          last_connected_at: string | null
+          metadata: Json
+          owner_jid: string | null
+          profile_name: string | null
+          profile_picture_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          collaborator_name: string
+          collaborator_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name: string
+          instance_token?: string | null
+          last_connected_at?: string | null
+          metadata?: Json
+          owner_jid?: string | null
+          profile_name?: string | null
+          profile_picture_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          collaborator_name?: string
+          collaborator_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name?: string
+          instance_token?: string | null
+          last_connected_at?: string | null
+          metadata?: Json
+          owner_jid?: string | null
+          profile_name?: string | null
+          profile_picture_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exa_alerts_config: {
         Row: {
           config_key: string
