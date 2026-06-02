@@ -123,6 +123,7 @@ const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis'
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 const CRMClients = lazy(() => import('@/pages/admin/CRMClients'));
 const CRMEvolutionPage = lazy(() => import('@/pages/admin/crm/CRMEvolutionPage'));
+const CRMConversationsPage = lazy(() => import('@/pages/admin/crm/CRMConversationsPage'));
 
 const AdminRoutes = () => {
   return (
