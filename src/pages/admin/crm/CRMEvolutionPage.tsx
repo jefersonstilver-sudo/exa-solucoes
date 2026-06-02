@@ -72,7 +72,7 @@ const CRMEvolutionPage: React.FC = () => {
               </div>
             </div>
             <Button
-              onClick={() => {}}
+              onClick={() => setAddOpen(true)}
               className="bg-[#9C1E1E] hover:bg-[#7D1818] text-white flex-shrink-0"
             >
               <UserPlus className="w-4 h-4 mr-2" />
