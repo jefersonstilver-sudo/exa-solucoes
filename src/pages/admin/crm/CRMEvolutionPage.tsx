@@ -198,11 +198,25 @@ const CRMEvolutionPage: React.FC = () => {
             <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1 snap-x snap-mandatory [scrollbar-width:thin]">
               {collaborators.map((c) => (
                 <div key={c.id} className="snap-start">
-                  <CollaboratorCard collaborator={c} onUpdated={load} />
+                  <CollaboratorCard
+                    collaborator={c}
+                    onUpdated={load}
+                    selected={selectedId === c.id}
+                    onSelect={() => setSelectedId(c.id)}
+                  />
                 </div>
               ))}
             </div>
           )}
+
+          {selectedId && (() => {
+            const sel = collaborators.find((c) => c.id === selectedId);
+            return sel ? (
+              <div className="mt-6">
+                <ChatPanel collaborator={sel} />
+              </div>
+            ) : null;
+          })()}
         </div>
       </div>
 
