@@ -37,8 +37,6 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
 
   const [messages, setMessages] = useState<EvoMessage[]>([]);
   const [msgsLoading, setMsgsLoading] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
