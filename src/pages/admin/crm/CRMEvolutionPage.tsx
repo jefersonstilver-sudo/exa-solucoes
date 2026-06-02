@@ -1,28 +1,122 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { MessageCircle, UserPlus, Users } from 'lucide-react';
+import { MessageCircle, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AddCollaboratorDialog } from './components/AddCollaboratorDialog';
 import { CollaboratorCard, type CollaboratorRow } from './components/CollaboratorCard';
+import { toast } from 'sonner';
+
+const callEvolution = async (
+  path: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  body?: unknown,
+) => {
+  const { data, error } = await supabase.functions.invoke('evolution-proxy', {
+    body: { path, method, body },
+  });
+  if (error) throw new Error(error.message);
+  return data as { status: number; data: any };
+};
 
 const CRMEvolutionPage: React.FC = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from('evolution_instances')
-      .select('id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status')
+      .select(
+        'id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status, instance_name',
+      )
       .order('created_at', { ascending: false });
     if (!error && data) setCollaborators(data as CollaboratorRow[]);
     setLoading(false);
   };
 
+  const syncFromEvolution = async (silent = false) => {
+    setSyncing(true);
+    try {
+      const res = await callEvolution('/instance/fetchInstances', 'GET');
+      const list: any[] = Array.isArray(res.data) ? res.data : [];
+
+      // Map by instance name for quick lookup
+      const byName = new Map<string, any>();
+      for (const item of list) {
+        const name =
+          item?.name ?? item?.instanceName ?? item?.instance?.instanceName;
+        if (name) byName.set(name, item);
+      }
+
+      // Get current DB rows (need instance_name to match)
+      const { data: rows } = await (supabase as any)
+        .from('evolution_instances')
+        .select('id, instance_name, profile_picture_url, profile_name, status, owner_jid');
+
+      let updated = 0;
+      for (const row of (rows ?? []) as any[]) {
+        const remote = byName.get(row.instance_name);
+        if (!remote) continue;
+
+        const pic =
+          remote.profilePicUrl ??
+          remote.profilePictureUrl ??
+          remote.instance?.profilePictureUrl ??
+          null;
+        const pname =
+          remote.profileName ?? remote.instance?.profileName ?? null;
+        const owner =
+          remote.ownerJid ?? remote.owner ?? remote.instance?.owner ?? null;
+        const connectionStatus =
+          remote.connectionStatus ?? remote.instance?.state ?? null;
+        const status =
+          connectionStatus === 'open'
+            ? 'connected'
+            : connectionStatus === 'close'
+              ? 'disconnected'
+              : row.status;
+
+        const patch: Record<string, unknown> = {};
+        if (pic && pic !== row.profile_picture_url) patch.profile_picture_url = pic;
+        if (pname && pname !== row.profile_name) patch.profile_name = pname;
+        if (owner && owner !== row.owner_jid) patch.owner_jid = owner;
+        if (status && status !== row.status) {
+          patch.status = status;
+          if (status === 'connected') patch.last_connected_at = new Date().toISOString();
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await (supabase as any)
+            .from('evolution_instances')
+            .update(patch)
+            .eq('id', row.id);
+          updated++;
+        }
+      }
+
+      await load();
+      if (!silent) {
+        if (updated > 0) toast.success(`${updated} colaborador(es) sincronizado(s)`);
+        else toast.info('Tudo já está em dia');
+      }
+    } catch (e: any) {
+      if (!silent) toast.error(e?.message ?? 'Falha ao sincronizar');
+      console.error('[CRMEvolution] sync error', e);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   useEffect(() => {
-    load();
+    (async () => {
+      await load();
+      // Auto-sync silently on first mount to refresh profile pics
+      syncFromEvolution(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -67,6 +161,16 @@ const CRMEvolutionPage: React.FC = () => {
             <Users className="w-4 h-4 text-gray-500" />
             <h2 className="text-sm font-semibold text-gray-700">Colaboradores</h2>
             <span className="text-xs text-gray-400">({collaborators.length})</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => syncFromEvolution(false)}
+              disabled={syncing}
+              className="ml-auto h-7 px-2 text-xs text-gray-600"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+              Sincronizar
+            </Button>
           </div>
 
           {loading ? (
@@ -103,7 +207,11 @@ const CRMEvolutionPage: React.FC = () => {
       <AddCollaboratorDialog
         open={addOpen}
         onOpenChange={setAddOpen}
-        onCreated={load}
+        onCreated={() => {
+          load();
+          // Re-sync shortly after to grab profile pic once WhatsApp pushes it
+          setTimeout(() => syncFromEvolution(true), 4000);
+        }}
       />
     </>
   );
