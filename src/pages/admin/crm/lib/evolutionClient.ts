@@ -47,15 +47,15 @@ export const normalizeChat = (raw: any): EvoChat | null => {
   // Last message preview
   const lm = raw?.lastMessage ?? raw?.last_message ?? null;
   const lastMessageText: string =
-    lm?.message?.conversation ??
-    lm?.message?.extendedTextMessage?.text ??
-    lm?.message?.imageMessage?.caption ??
-    lm?.message?.videoMessage?.caption ??
+    lm?.message?.conversation ||
+    lm?.message?.extendedTextMessage?.text ||
+    lm?.message?.imageMessage?.caption ||
+    lm?.message?.videoMessage?.caption ||
     (lm?.message?.imageMessage ? '📷 Foto' : '') ||
     (lm?.message?.videoMessage ? '🎥 Vídeo' : '') ||
     (lm?.message?.audioMessage ? '🎵 Áudio' : '') ||
     (lm?.message?.documentMessage ? '📄 Documento' : '') ||
-    raw?.lastMessagePreview ??
+    raw?.lastMessagePreview ||
     '';
 
   const ts: number = Number(
