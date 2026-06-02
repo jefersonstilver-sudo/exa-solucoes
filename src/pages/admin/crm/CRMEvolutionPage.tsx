@@ -21,11 +21,16 @@ const callEvolution = async (
 };
 
 const CRMEvolutionPage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/super_admin')
+    ? '/super_admin'
+    : '/admin';
+
   const [addOpen, setAddOpen] = useState(false);
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
