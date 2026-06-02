@@ -160,6 +160,11 @@ const SuperAdminRoutes = () => {
           <CRMEvolutionPage />
         </Suspense>
       } />
+      <Route path="crm-evolution/conversas/:id" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando conversas..." />}>
+          <CRMConversationsPage />
+        </Suspense>
+      } />
       <Route path="escalacoes" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Escalações..." />}>
           <EscalacoesComerciais />
