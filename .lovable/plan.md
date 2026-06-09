@@ -1,106 +1,127 @@
-# Fase 1 — Inst. "Notificações EXA" + Migração Total Z-API → Evolution
+## Diagnóstico confirmado
 
-## Objetivo
-Criar 1 instância Evolution dedicada exclusivamente às **notificações automáticas** do sistema (painéis offline, 2FA, agendamentos, propostas, etc.), gerenciável tanto pela página **XAlerts** quanto pelo **CRM Evolution**, e desligar 100% do Z-API sem perder nenhuma função.
+Do I know what the issue is? Sim.
 
----
+O problema não é a instância Evolution estar desconectada. Ela está conectada. O problema é que a migração ficou parcial e alguns fluxos ainda estão usando regras antigas da Z-API ou enviando telefone em formato incompatível com a Evolution.
 
-## 1. Banco — flag de inst. de notificação + renomeação de logs
+### Causas encontradas
 
-Migration única:
-- `ALTER TABLE evolution_instances ADD COLUMN is_notifications boolean NOT NULL DEFAULT false;`
-- Índice parcial único: só pode existir 1 inst. com `is_notifications=true`.
-- `ALTER TABLE zapi_logs RENAME TO evolution_logs;` (mantém colunas; novo campo opcional `instance_id` text).
-- Compatibilidade: criar VIEW `zapi_logs` apontando para `evolution_logs` durante período de transição (depois removida).
+1. **Confirmação de agenda falhou por telefone sem DDI**
+   - O log real de `zapi-send-message` mostra a confirmação do agendamento tentando enviar para `45998090000`.
+   - A Evolution respondeu `exists:false` porque esperava `5545998090000`.
+   - O lembrete chegou porque outro fluxo já estava usando telefone com `55`, mas a confirmação de criação não estava.
 
----
+2. **Validação de WhatsApp/cadastro/2FA ainda chama Z-API direto**
+   - `send-user-whatsapp-code` ainda busca `agents.zapi_config` e chama `https://api.z-api.io/.../send-text` diretamente.
+   - `send-exa-verification-code` também chama Z-API direto.
+   - Isso afeta: conta nova, validação de telefone, troca de WhatsApp, 2FA e validações internas antigas.
 
-## 2. XAlerts (`/super_admin/exa-alerts`) — novo card "Canal de Notificações"
+3. **Alguns fluxos de agenda ainda têm fallback invertido**
+   - `task-notify-change` e `task-notify-cancelled` ainda preferem Z-API quando existe `zapi_config` no agente `exa_alert`.
+   - Como o agente ainda tem configuração antiga no banco, esses fluxos continuam bypassando Evolution.
 
-Componente novo `NotificationsChannelCard.tsx` adicionado ao topo da página:
-- Mostra status da inst. `is_notifications=true` em **tempo real** (badge: 🟢 Conectado / 🟡 QR pendente / 🔴 Desconectado / ⚫ Inexistente).
-- Botões:
-  - **Criar instância "Notificações EXA"** (se não existir) → cria via `evolution-proxy` (`/instance/create`) e marca `is_notifications=true`.
-  - **Ver QR Code** (se status ≠ conectado) → modal com QR fetched de `/instance/connect/{instanceName}` + auto-refresh 30s.
-  - **Abrir conversa** → navega para `/super_admin/crm-evolution/conversas/{id}` da inst. (reusa UI já existente).
-  - **Reconectar** → força logout + novo QR.
-- Atualização realtime via Supabase channel sobre `evolution_instances`.
+4. **Alertas importantes ainda não passaram pelo roteador Evolution**
+   - Foram encontrados envios diretos para Z-API em funções como:
+     - painéis offline (`monitor-panels`)
+     - propostas (`notify-proposal-event`, `check-expired-proposals`, `send-proposal-whatsapp`)
+     - escalonamentos (`notify-escalation`, `resend-escalation`)
+     - alertas comerciais/financeiros/vendedores
+     - cortesia/códigos/relatórios
+   - Nem todos precisam ser migrados da mesma forma, porque Sofia/Eduardo/CRM legado ainda podem depender de Z-API. O foco será migrar tudo que usa `agentKey/key = exa_alert`.
 
----
+## Plano de correção
 
-## 3. CRM Evolution (`/super_admin/crm-evolution`) — gestão completa
+### 1. Blindar o roteador central `zapi-send-message`
 
-Em `CollaboratorCard.tsx` (ou novo `InstanceMenu`):
-- Ícone status realtime (mesmo padrão da XAlerts).
-- Menu de ações (kebab):
-  - **Reconectar** → modal com novo QR (gera novo via `/instance/connect`).
-  - **Logout** → desloga sem apagar.
-  - **Apagar instância** → modal de confirmação dupla com checkbox "Apagar também o histórico de conversas/mensagens deste banco". Executa `/instance/delete` na Evolution + `DELETE` em cascata em `conversations`/`messages`/`evolution_instances` se checkbox marcado, senão só remove da Evolution e da tabela `evolution_instances`.
-- Bloqueio: instância com `is_notifications=true` exige confirmação extra ("Esta é a instância de notificações automáticas — apagá-la interrompe alertas") e quando reconectada mantém a flag.
+- Adicionar normalização obrigatória de telefone no próprio edge function:
+  - `45998090000` → `5545998090000`
+  - `+55...` → `55...`
+  - números já internacionais válidos permanecem como estão
+  - evitar erro com DDDs brasileiros que parecem código internacional, como `54`, `55` ou `56`, tratando primeiro números locais de 10/11 dígitos como Brasil.
+- Usar essa normalização para Evolution e Z-API legado.
+- Melhorar o log de falha para sempre registrar o telefone original e o telefone normalizado.
+- Manter deduplicação, split de mensagem, registro em `evolution_logs` e persistência no CRM.
 
----
+### 2. Corrigir confirmação de agenda
 
-## 4. Edge Functions — migração total
+- Ajustar `task-notify-created` para enviar sempre o telefone normalizado via `zapi-send-message`.
+- Garantir que `task_read_receipts` use o mesmo número normalizado.
+- Validar com o caso real que falhou: telefone `45998090000` precisa sair como `5545998090000`.
 
-### 4.1 Substituições (rename + reescrita interna usando Evolution)
-| Z-API atual | Nova função / destino |
-|---|---|
-| `zapi-send-message` | `evolution-send-message` — mesmo payload `{to, message, agentKey?}`. Resolve inst. por `agentKey`; se `agentKey === "notifications"` ou ausente, usa inst. `is_notifications=true`. |
-| `zapi-send-media` | `evolution-send-media` |
-| `zapi-webhook` | `evolution-webhook` (recebe `messages.upsert`, `connection.update`, `qrcode.updated`) |
-| `zapi-button-webhook` | `evolution-button-webhook` (botões interativos) |
-| `configure-zapi-webhook` | `configure-evolution-webhook` (chama `/webhook/set/{instance}` no Evolution) |
-| `check-zapi-status` | `check-evolution-status` |
-| `monitor-zapi-connections` | `monitor-evolution-connections` |
-| `fetch-zapi-history` / `zapi-import-history` | `fetch-evolution-history` / `evolution-import-history` |
-| `force-sync-zapi-conversation` | `force-sync-evolution-conversation` |
+### 3. Migrar validação de WhatsApp/cadastro/2FA para Evolution
 
-### 4.2 Shim de compatibilidade
-As 45+ funções que chamam `supabase.functions.invoke('zapi-send-message', …)` **não** serão todas reescritas individualmente. Estratégia:
-- Reescrever **apenas o corpo** de `zapi-send-message` e `zapi-send-media` para internamente chamar Evolution. Mesmo contrato de entrada/saída.
-- Atualizar `exa-messaging-proxy` (ponto central) para usar Evolution diretamente.
-- Após validação, busca-e-substitui dos nomes nas demais funções (`zapi-send-message` → `evolution-send-message`) em lote.
+- Em `send-user-whatsapp-code`:
+  - preservar rate limit
+  - preservar criação do código em `exa_alerts_verification_codes`
+  - substituir chamada direta Z-API por chamada ao `zapi-send-message` com `agentKey: 'exa_alert'`
+  - preservar respostas esperadas pelo frontend.
+- Em `send-exa-verification-code`:
+  - manter rate limit e gravação do código
+  - substituir Z-API direto por `zapi-send-message`
+  - manter compatibilidade com telas antigas de EXA Alerts/2FA.
+- Não alterar `verify-user-whatsapp-code`, pois ele só valida código no banco e não envia WhatsApp.
 
-### 4.3 Funções a remover ao fim
-`zapi-send-message`, `zapi-send-media`, `zapi-webhook`, `zapi-button-webhook`, `configure-zapi-webhook`, `check-zapi-status`, `monitor-zapi-connections`, `fetch-zapi-history`, `zapi-import-history`, `force-sync-zapi-conversation` (após todos os callers migrados).
+### 4. Remover bypass de Z-API nos fluxos de agenda
 
-### 4.4 Funções que devem migrar (mapeadas hoje)
-Painéis offline (`monitor-panels`), 2FA (`send-exa-verification-code`, `send-user-whatsapp-code`), agenda (`task-notify-*`, `task-reminder-scheduler`, `task-daily-report`, `task-follow-up-*`, `process-schedule-intent`), propostas (`notify-proposal-event`, `send-proposal-whatsapp`, `check-expired-proposals`, `notify-seller-proposal-accepted`, `notify-seller-payment-confirmed`, `convert-proposal-to-order`, `create-cortesia-proposal`, `request-cortesia-code`), comercial (`daily-commercial-alerts`, `notify-escalation`, `resend-escalation`, `notify-curriculum-received`), CRM (`generate-ai-response`, `conversation-follow-up`, `route-message`, `send-typing-indicator`, `replay-message`, `sync-*`), financeiro (`notify-upcoming-pix`, `monitor-delivery-status`), relatórios (`relatorio-operacional-generate`, `relatorio-var-send`). **Nenhuma perde função** — todas continuam enviando WhatsApp, agora via Evolution.
+- Em `task-notify-change` e `task-notify-cancelled`, remover a preferência por fetch direto Z-API.
+- Enviar sempre por `zapi-send-message` quando for `exa_alert`.
+- Preservar textos, recipients e logs existentes.
 
----
+### 5. Migrar alertas automáticos críticos do EXA Alert
 
-## 5. Frontend — substituir UI Z-API
+- Substituir chamadas diretas Z-API por `zapi-send-message` em funções de alerta do `exa_alert`, começando por:
+  - `monitor-panels` para painéis offline
+  - `notify-proposal-event` para propostas enviadas/visualizadas/aceitas/expiradas
+  - funções de vendedor/pagamento/proposta aceita
+  - alertas comerciais diários
+  - currículo recebido
+  - cortesia e relatórios automáticos que usam `exa_alert`
+- Não mexer em funções cujo objetivo é administrar ou importar histórico da Z-API legado, como `fetch-zapi-history`, `sync-whatsapp-chats`, `zapi-import-history`, `configure-zapi-webhook`, `check-zapi-status`, salvo se forem usadas diretamente pelo EXA Alert de notificações.
 
-- `ZAPICredentialsModal.tsx` → `EvolutionCredentialsModal.tsx` (ou removido, pois Evolution gerencia via QR).
-- `ZApiDiagnostics.tsx` → `EvolutionDiagnostics.tsx`.
-- `MediaInputBar.tsx`, `MessageComposer.tsx`, `ConfigAlertModal.tsx` → trocar `invoke('zapi-send-message')` por `invoke('evolution-send-message')`.
-- `ZAPIDisconnectAlert.tsx` → escuta novo `alert_type='evolution_disconnected'` (mantém UX).
+### 6. Tratar botões e painéis offline sem perder funcionalidade
 
----
+- Para mensagens com botões, adicionar suporte no roteador central para Evolution usando endpoint Evolution:
+  - `/message/sendButtons/{instance}`
+- Converter botões antigos da Z-API (`buttonActions`) para o formato Evolution (`buttons`).
+- Para painéis offline, preservar:
+  - mensagem do painel offline
+  - botões de confirmação
+  - IDs usados para rastrear quem confirmou
+  - histórico em `panel_offline_alerts_history`
+- Se a Evolution responder que o envio de botão não é suportado por aquela instância, fallback controlado para texto com opções numeradas, sem perder o alerta.
 
-## 6. Secrets
+### 7. Migrar mídia quando usada pelo EXA Alert
 
-Reutilizar `EVOLUTION_API_URL` + `EVOLUTION_API_KEY` (já existem). Nenhum secret novo necessário. **Não** apagar `ZAPI_*` ainda — manter até validação completa, deletar ao fim.
+- Atualizar `zapi-send-media` para também rotear `agentKey: 'exa_alert'` pela Evolution:
+  - `/message/sendMedia/{instance}`
+  - payload com `number`, `mediatype`, `media`, `caption`, `fileName` quando aplicável.
+- Manter Z-API legado para Sofia/Eduardo/CRM que ainda dependem dela.
 
----
+### 8. Auditoria final 0–100%
 
-## 7. Ordem de execução
-1. Migration (flag + rename logs + view compat).
-2. Edge functions `evolution-send-message`, `evolution-send-media`, `evolution-webhook`, `configure-evolution-webhook`, `check-evolution-status`, `monitor-evolution-connections`.
-3. Reescrever internamente `zapi-send-message`/`zapi-send-media` como shim → Evolution (zero downtime).
-4. Card XAlerts + gestão CRM Evolution (UI).
-5. Migrar nomes de invoke em todas as funções (busca-substituição).
-6. Atualizar componentes frontend que invocam zapi-*.
-7. Remover funções zapi-* obsoletas + view `zapi_logs` + secrets Z-API.
+- Rodar nova busca por chamadas diretas `api.z-api.io`.
+- Classificar cada uso restante como:
+  - **mantido propositalmente**: Z-API legado Sofia/Eduardo/importação/webhook/status
+  - **migrado**: qualquer envio operacional do `exa_alert`
+- Adicionar comentários curtos apenas onde necessário para evitar regressão.
 
----
+### 9. Deploy e validação
 
-## Risco e mitigação
-- **Risco**: 45+ funções dependem do nome `zapi-send-message`. **Mitigação**: shim mantém o nome durante migração; nenhuma função quebra.
-- **Risco**: webhook Z-API ainda recebendo callbacks até desligar no painel Z-API. **Mitigação**: `zapi-webhook` permanece ativo até confirmação; depois deletado.
-- **Risco**: instância de notificação perder QR após deploy. **Mitigação**: criação inicial manual via XAlerts (1 clique) gera QR; só você escaneia uma vez.
+- Deploy das edge functions alteradas.
+- Validar com testes reais controlados:
+  - envio simples via `zapi-send-message` para número sem `55`
+  - confirmação de agenda criada
+  - código de cadastro/validação WhatsApp
+  - código 2FA
+  - alerta de painel offline em modo teste, se disponível
+- Conferir `evolution_logs` depois dos testes para garantir `status = sent` e provider Evolution.
 
----
+## O que não será alterado
 
-## Pré-requisito antes do build
-Confirmar: **qual número de WhatsApp** será usado para a inst. "Notificações EXA"? (o número que hoje envia via Z-API ou um novo dedicado?)
+- Não vou mexer na UI, layout ou fluxo visual.
+- Não vou remover Z-API de Sofia/Eduardo/CRM legado onde ainda for necessário.
+- Não vou alterar regras de negócio de agenda, propostas, painéis ou cadastro; apenas o transporte WhatsApp e normalização de telefone.
+
+<presentation-actions>
+<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
+</presentation-actions>

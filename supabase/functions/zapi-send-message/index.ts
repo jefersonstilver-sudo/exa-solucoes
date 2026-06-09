@@ -7,9 +7,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Normaliza telefone brasileiro para o formato que Evolution e Z-API esperam.
+ * Exemplos:
+ *   "45998090000"     -> "5545998090000"
+ *   "5545998090000"   -> "5545998090000"
+ *   "+55 45 99809..." -> "5545998090000"
+ *   "554598090000"    -> "554598090000" (já internacional)
+ * Mantém intactos números que já parecem ter outro DDI válido (595/54/598/56/1).
+ */
+function normalizePhoneBR(input: string): string {
+  const digits = String(input || '').replace(/\D/g, '');
+  if (!digits) return digits;
+  // 10 ou 11 dígitos = local BR sem DDI -> prefixa 55
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  // 12/13 dígitos começando com 55 = BR já internacional
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith('55')) return digits;
+  // Outros DDIs latam/US (mantém)
+  if (/^(595|598|54|56|1)/.test(digits)) return digits;
+  // Fallback: se tem 8-9 dígitos puros, não dá pra adivinhar -> retorna como está
+  return digits;
+}
+
 serve(async (req) => {
   // 🔍 INICIO DA FUNÇÃO
-  console.log('[ZAPI-SEND] 🚀 Function started - Version: 2025-11-28T04:38:00Z');
+  console.log('[ZAPI-SEND] 🚀 Function started - Version: 2026-06-09T20:55:00Z');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
