@@ -1,0 +1,1 @@
+ALTER VIEW public.zapi_logs SET (security_invoker = true);
