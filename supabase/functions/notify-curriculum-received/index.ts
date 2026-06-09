@@ -35,34 +35,6 @@ serve(async (req) => {
       );
     }
 
-    // Get Z-API credentials from EXA Alerts agent
-    const { data: exaAgent } = await supabase
-      .from('agents')
-      .select('zapi_config')
-      .eq('key', 'exa_alert')
-      .single();
-
-    if (!exaAgent?.zapi_config) {
-      console.error('EXA Alerts agent not configured');
-      return new Response(
-        JSON.stringify({ success: false, message: 'EXA Alerts não configurado' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const zapiConfig = exaAgent.zapi_config as any;
-    const instanceId = zapiConfig.instance_id;
-    const token = zapiConfig.token;
-    const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-
-    if (!instanceId || !token) {
-      console.error('Z-API credentials not found');
-      return new Response(
-        JSON.stringify({ success: false, message: 'Credenciais Z-API não encontradas' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Build notification message
     const receivedDate = receivedAt ? new Date(receivedAt) : new Date();
     const formattedDate = receivedDate.toLocaleDateString('pt-BR', {
@@ -77,115 +49,64 @@ serve(async (req) => {
     const analysis = hrAnalysis || {};
 
     let message = `📄 *NOVO CURRÍCULO RECEBIDO*\n\n`;
-    
-    // Candidate info
     message += `👤 *Candidato:* ${candidate.nome || fromName || 'Não identificado'}\n`;
     if (candidate.telefone) message += `📱 *Telefone:* ${candidate.telefone}\n`;
     message += `📧 *Email:* ${candidate.email || fromEmail}\n`;
     if (candidate.cidade) message += `📍 *Cidade:* ${candidate.cidade}\n`;
-    
     message += `\n`;
-    
-    // Professional info
     if (candidate.formacao) message += `🎓 *Formação:* ${candidate.formacao}\n`;
     if (candidate.experiencia_anos) message += `⏱️ *Experiência:* ${candidate.experiencia_anos} anos\n`;
     if (candidate.ultimo_cargo) message += `💼 *Último cargo:* ${candidate.ultimo_cargo}\n`;
     if (candidate.ultima_empresa) message += `🏢 *Última empresa:* ${candidate.ultima_empresa}\n`;
     if (candidate.pretensao_salarial) message += `💰 *Pretensão:* ${candidate.pretensao_salarial}\n`;
     if (candidate.disponibilidade) message += `📅 *Disponibilidade:* ${candidate.disponibilidade}\n`;
-    
-    // Skills
     if (candidate.habilidades && candidate.habilidades.length > 0) {
       message += `\n🛠️ *Habilidades:* ${candidate.habilidades.slice(0, 5).join(', ')}\n`;
     }
-    
     message += `\n`;
-    
-    // HR Analysis
-    message += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    message += `📊 *ANÁLISE DE RH*\n`;
-    message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    
-    if (analysis.resumo) {
-      message += `📝 *Resumo:*\n${analysis.resumo}\n\n`;
-    }
-    
-    if (analysis.pontos_fortes && analysis.pontos_fortes.length > 0) {
+    message += `━━━━━━━━━━━━━━━━━━━━━\n📊 *ANÁLISE DE RH*\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    if (analysis.resumo) message += `📝 *Resumo:*\n${analysis.resumo}\n\n`;
+    if (analysis.pontos_fortes?.length) {
       message += `✅ *Pontos Fortes:*\n`;
-      analysis.pontos_fortes.slice(0, 4).forEach((ponto: string) => {
-        message += `  • ${ponto}\n`;
-      });
+      analysis.pontos_fortes.slice(0, 4).forEach((p: string) => { message += `  • ${p}\n`; });
       message += `\n`;
     }
-    
-    if (analysis.areas_desenvolvimento && analysis.areas_desenvolvimento.length > 0) {
+    if (analysis.areas_desenvolvimento?.length) {
       message += `📈 *Áreas de Desenvolvimento:*\n`;
-      analysis.areas_desenvolvimento.slice(0, 3).forEach((area: string) => {
-        message += `  • ${area}\n`;
-      });
+      analysis.areas_desenvolvimento.slice(0, 3).forEach((a: string) => { message += `  • ${a}\n`; });
       message += `\n`;
     }
-    
-    if (analysis.adequacao_areas && analysis.adequacao_areas.length > 0) {
+    if (analysis.adequacao_areas?.length) {
       message += `🎯 *Adequado para:* ${analysis.adequacao_areas.join(', ')}\n`;
     }
-    
     if (analysis.recomendacao) {
-      const recomEmoji = analysis.recomendacao === 'Recomendado' ? '👍' : 
-                         analysis.recomendacao === 'Não Recomendado' ? '👎' : '🤔';
+      const recomEmoji = analysis.recomendacao === 'Recomendado' ? '👍'
+        : analysis.recomendacao === 'Não Recomendado' ? '👎' : '🤔';
       message += `\n${recomEmoji} *Recomendação:* ${analysis.recomendacao}`;
-      if (analysis.nota_geral) {
-        message += ` (${analysis.nota_geral}/10)`;
-      }
+      if (analysis.nota_geral) message += ` (${analysis.nota_geral}/10)`;
       message += `\n`;
     }
-    
-    message += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
-    message += `📬 *Recebido:* ${formattedDate}\n`;
-    message += `📌 *Assunto:* ${subject || 'Sem assunto'}`;
+    message += `\n━━━━━━━━━━━━━━━━━━━━━\n📬 *Recebido:* ${formattedDate}\n📌 *Assunto:* ${subject || 'Sem assunto'}`;
 
-    // Send to each recipient
+    // Send to each recipient via Evolution shim
     let successCount = 0;
     const errors: string[] = [];
 
     for (const recipient of recipients) {
       try {
-        const phone = recipient.recipient_phone.replace(/\D/g, '');
-        
-        const zapiResponse = await fetch(
-          `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Client-Token': clientToken || '',
-            },
-            body: JSON.stringify({
-              phone: phone,
-              message: message,
-            }),
-          }
-        );
-
-        const zapiResult = await zapiResponse.json();
-        console.log(`Z-API response for ${phone}:`, zapiResult);
-
-        if (zapiResult.zapiId || zapiResult.messageId) {
+        const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+          body: { agentKey: 'exa_alert', phone: recipient.recipient_phone, message, skipSplit: true },
+        });
+        if (sendError || (sendData && (sendData as any).error)) {
+          errors.push(`${recipient.recipient_phone}: ${sendError?.message || (sendData as any).error}`);
+        } else {
           successCount++;
-          
-          // Update log with alert sent
           await supabase
             .from('email_processing_log')
-            .update({
-              alert_sent: true,
-              alert_sent_at: new Date().toISOString(),
-            })
+            .update({ alert_sent: true, alert_sent_at: new Date().toISOString() })
             .eq('message_id', messageId);
-        } else {
-          errors.push(`${phone}: ${JSON.stringify(zapiResult)}`);
         }
-
-      } catch (e) {
+      } catch (e: any) {
         console.error(`Error sending to ${recipient.recipient_phone}:`, e);
         errors.push(`${recipient.recipient_phone}: ${e.message}`);
       }
