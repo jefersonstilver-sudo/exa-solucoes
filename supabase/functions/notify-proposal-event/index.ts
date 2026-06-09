@@ -167,76 +167,25 @@ serve(async (req) => {
 
     console.log(`📤 Sending notification to ${recipients.length} recipients`);
 
-    // Fetch Z-API credentials from agents table (exa_alert agent)
-    const { data: exaAlertAgent, error: agentError } = await supabase
-      .from('agents')
-      .select('zapi_config')
-      .eq('key', 'exa_alert')
-      .single();
-
-    if (agentError || !exaAlertAgent?.zapi_config) {
-      console.error('❌ EXA Alert agent Z-API config not found:', agentError);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Z-API not configured for EXA Alert agent' 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const zapiConfig = exaAlertAgent.zapi_config as { instance_id?: string; token?: string };
-    const ZAPI_INSTANCE_ID = zapiConfig.instance_id;
-    const ZAPI_TOKEN = zapiConfig.token;
-    const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
-
-    if (!ZAPI_INSTANCE_ID || !ZAPI_TOKEN) {
-      console.error('❌ Z-API instance_id or token missing in agent config');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Z-API credentials incomplete' 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log(`🔑 Z-API credentials loaded from exa_alert agent`);
+    console.log(`📤 Sending notification via Evolution shim to ${recipients.length} recipients`);
 
     let notificationsSent = 0;
-
     for (const recipient of recipients) {
       if (recipient.receive_whatsapp && recipient.phone) {
         try {
-          // Format phone number with international support
-          const cleanPhone = recipient.phone.replace(/\D/g, '');
-          // Check if number already has country code (starts with valid codes)
-          const hasCountryCode = /^(55|595|54|598|56|1)/.test(cleanPhone);
-          const formattedPhone = hasCountryCode ? cleanPhone : `55${cleanPhone}`;
-
-          // Send via Z-API
-          if (ZAPI_INSTANCE_ID && ZAPI_TOKEN) {
-            const zapiUrl = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
-            
-            const zapiResponse = await fetch(zapiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Client-Token': ZAPI_CLIENT_TOKEN || '',
-              },
-              body: JSON.stringify({
-                phone: formattedPhone,
-                message: message,
-              }),
-            });
-
-            if (zapiResponse.ok) {
-              console.log(`✅ WhatsApp sent to ${recipient.name} (${formattedPhone})`);
-              notificationsSent++;
-            } else {
-              const errorText = await zapiResponse.text();
-              console.error(`❌ Failed to send WhatsApp to ${recipient.name}:`, errorText);
-            }
+          const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+            body: {
+              agentKey: 'exa_alert',
+              phone: recipient.phone,
+              message,
+              skipSplit: true,
+            },
+          });
+          if (!sendError) {
+            console.log(`✅ WhatsApp sent to ${recipient.name}`);
+            notificationsSent++;
+          } else {
+            console.error(`❌ Failed to send WhatsApp to ${recipient.name}:`, sendError);
           }
         } catch (err) {
           console.error(`❌ Error sending to ${recipient.name}:`, err);
