@@ -430,17 +430,18 @@ serve(async (req) => {
       await supabase.from('messages').insert({
         conversation_id: conversation.id,
         agent_key: agentKey,
-        provider: 'zapi',
+        provider: useEvolution ? 'evolution' : 'zapi',
         direction: 'outbound',
         from_role: 'agent',
-        body: message, // Mensagem completa
+        body: message,
         is_automated: true,
         raw_payload: { 
-          zapi_message_id: zapiResult.messageId,
+          zapi_message_id: messageId,
           sent_at: new Date().toISOString(),
           media_url: mediaUrl || null,
           sentInChunks: messageChunks.length > 1,
-          totalChunks: messageChunks.length
+          totalChunks: messageChunks.length,
+          provider: useEvolution ? 'evolution' : 'zapi'
         }
       });
       
@@ -449,20 +450,20 @@ serve(async (req) => {
       console.warn('[ZAPI-SEND] ⚠️ No conversation found for phone:', phone);
     }
 
-    // Log no agent_logs também
+    // Log no agent_logs
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
       event_type: 'message_sent',
       metadata: {
         phone,
-        messageId: zapiResult.messageId,
-        provider: 'zapi'
+        messageId,
+        provider: useEvolution ? 'evolution' : 'zapi'
       }
     });
 
     return new Response(JSON.stringify({ 
       success: true,
-      messageId: zapiResult.messageId,
+      messageId,
       zapiResponse: zapiResult
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
