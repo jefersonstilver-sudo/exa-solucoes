@@ -319,11 +319,12 @@ export const CollaboratorCard: React.FC<Props> = ({
             />
             <div className="flex-1">
               <Label htmlFor="purge-history" className="text-sm font-medium cursor-pointer">
-                Apagar também o histórico de conversas e mensagens
+                Também sinalizar histórico para limpeza futura
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Por padrão, mantemos o histórico salvo no banco para auditoria. Marque
-                para remover tudo de forma irreversível.
+                O histórico de conversas/mensagens fica preservado no banco para
+                auditoria. Esta opção apenas marca a intenção; remoção definitiva
+                requer ação manual posterior.
               </p>
             </div>
           </div>
