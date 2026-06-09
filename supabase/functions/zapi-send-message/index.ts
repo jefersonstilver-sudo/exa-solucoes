@@ -41,43 +41,84 @@ serve(async (req) => {
       });
     }
 
-    // Buscar configuração do agente
-    const { data: agent, error: agentError } = await supabase
-      .from('agents')
-      .select('*')
-      .eq('key', agentKey)
-      .eq('whatsapp_provider', 'zapi')
-      .single();
+    // 🔄 EVOLUTION SHIM: notifications (agentKey='exa_alert') route via connected Evolution instance.
+    // Keeps the entire pipeline (dedup, split, logs, messages persist) — only swaps the transport.
+    const useEvolution = agentKey === 'exa_alert';
+    let evolutionInstanceName: string | null = null;
+    let evolutionApiUrl: string | null = null;
+    let evolutionApiKey: string | null = null;
+    let zapiConfig: any = null;
+    let zapiClientToken: string | null = null;
 
-    if (agentError || !agent) {
-      console.error('[ZAPI-SEND] Agent not found:', agentKey);
-      return new Response(JSON.stringify({ error: 'Agent not configured for Z-API' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    if (useEvolution) {
+      const { data: evoInst, error: evoErr } = await supabase
+        .from('evolution_instances')
+        .select('instance_name, status')
+        .eq('is_notifications', true)
+        .maybeSingle();
 
-    const zapiConfig = agent.zapi_config;
-    if (!zapiConfig?.instance_id || !zapiConfig?.token) {
-      console.error('[ZAPI-SEND] Invalid Z-API config for agent:', agentKey);
-      return new Response(JSON.stringify({ error: 'Invalid Z-API configuration' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+      if (evoErr || !evoInst) {
+        console.error('[ZAPI-SEND] ❌ No Evolution notifications instance found', evoErr);
+        return new Response(JSON.stringify({ error: 'Evolution notifications instance not configured' }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (evoInst.status !== 'connected') {
+        console.error('[ZAPI-SEND] ❌ Evolution notifications instance status:', evoInst.status);
+        return new Response(JSON.stringify({ error: `Evolution instance not connected: ${evoInst.status}` }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
-    // Buscar Client Token do Z-API
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-    
-    console.log('[ZAPI-SEND] 🔍 DEBUG - Client Token present:', !!zapiClientToken);
-    console.log('[ZAPI-SEND] 🔍 DEBUG - Client Token length:', zapiClientToken?.length || 0);
-    
-    if (!zapiClientToken) {
-      console.error('[ZAPI-SEND] ❌ ZAPI_CLIENT_TOKEN not configured in environment');
-      return new Response(JSON.stringify({ error: 'Z-API Client Token not configured in secrets' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      evolutionInstanceName = evoInst.instance_name;
+      evolutionApiUrl = (Deno.env.get('EVOLUTION_API_URL') || '').replace(/\/+$/, '');
+      evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY') || '';
+
+      if (!evolutionApiUrl || !evolutionApiKey) {
+        console.error('[ZAPI-SEND] ❌ EVOLUTION_API_URL/EVOLUTION_API_KEY missing');
+        return new Response(JSON.stringify({ error: 'Evolution API not configured' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log('[ZAPI-SEND] 🔄 Routing via Evolution instance:', evolutionInstanceName);
+    } else {
+      // Buscar configuração do agente (Z-API legado)
+      const { data: agent, error: agentError } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('key', agentKey)
+        .eq('whatsapp_provider', 'zapi')
+        .single();
+
+      if (agentError || !agent) {
+        console.error('[ZAPI-SEND] Agent not found:', agentKey);
+        return new Response(JSON.stringify({ error: 'Agent not configured for Z-API' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      zapiConfig = agent.zapi_config;
+      if (!zapiConfig?.instance_id || !zapiConfig?.token) {
+        console.error('[ZAPI-SEND] Invalid Z-API config for agent:', agentKey);
+        return new Response(JSON.stringify({ error: 'Invalid Z-API configuration' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN') || null;
+      if (!zapiClientToken) {
+        console.error('[ZAPI-SEND] ❌ ZAPI_CLIENT_TOKEN not configured');
+        return new Response(JSON.stringify({ error: 'Z-API Client Token not configured in secrets' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // 🛡️ VERIFICAR DUPLICAÇÃO - evitar envios duplicados (cache + DB)
@@ -243,39 +284,37 @@ serve(async (req) => {
       return chunks.filter(c => c.trim().length > 0);
     };
 
-    // 🛡️ ENVIAR COM RETRY (blindagem contra desconexão)
-    const sendWithRetry = async (url: string, body: any, retries = 3): Promise<any> => {
+
+
+
+    // 🛡️ ENVIAR COM RETRY (blindagem contra desconexão) — suporta Z-API e Evolution
+    const sendWithRetry = async (url: string, body: any, headers: Record<string, string>, retries = 3): Promise<any> => {
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
 
           const response = await fetch(url, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Client-Token': zapiClientToken,
-            },
+            headers: { 'Content-Type': 'application/json', ...headers },
             body: JSON.stringify(body),
             signal: controller.signal
           });
 
           clearTimeout(timeoutId);
-          const result = await response.json();
+          const text = await response.text();
+          let result: any = text;
+          try { result = text ? JSON.parse(text) : {}; } catch { /* keep text */ }
 
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${JSON.stringify(result)}`);
+            throw new Error(`HTTP ${response.status}: ${typeof result === 'string' ? result : JSON.stringify(result)}`);
           }
-
           return result;
         } catch (error) {
-          console.error(`[ZAPI-SEND] ⚠️ Attempt ${attempt}/${retries} failed:`, error.message);
-          
+          console.error(`[ZAPI-SEND] ⚠️ Attempt ${attempt}/${retries} failed:`, (error as Error).message);
           if (attempt === retries) {
-            throw new Error(`Failed after ${retries} attempts: ${error.message}`);
+            throw new Error(`Failed after ${retries} attempts: ${(error as Error).message}`);
           }
-          
-          // Esperar antes de tentar novamente (backoff exponencial)
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
       }
@@ -283,79 +322,64 @@ serve(async (req) => {
 
     // Se skipSplit = true, não quebrar a mensagem (útil para relatórios com links)
     const messageChunks = skipSplit ? [message] : splitMessage(message);
-    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'message chunks with retry protection', skipSplit ? '(skipSplit enabled)' : '');
+    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'chunks via', useEvolution ? 'EVOLUTION' : 'Z-API', skipSplit ? '(skipSplit)' : '');
 
-    // Enviar cada chunk com delay (simular digitação humana)
-    const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+    // Build transport-specific URL + headers + payload
+    const sendUrl = useEvolution
+      ? `${evolutionApiUrl}/message/sendText/${evolutionInstanceName}`
+      : `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+    const sendHeaders: Record<string, string> = useEvolution
+      ? { apikey: evolutionApiKey! }
+      : { 'Client-Token': zapiClientToken! };
+
     const results = [];
-
     for (let i = 0; i < messageChunks.length; i++) {
       const chunk = messageChunks[i];
-      
+      const cleanPhone = phone.replace(/\D/g, '');
+      const payload = useEvolution
+        ? { number: cleanPhone, text: chunk }
+        : { phone: cleanPhone, message: chunk };
+
       console.log('[ZAPI-SEND] 📤 Chunk', i + 1, '/', messageChunks.length, ':', {
-        agent: agentKey,
-        phone,
-        preview: chunk.substring(0, 50) + '...',
-        length: chunk.length,
-        timestamp: new Date().toISOString()
+        provider: useEvolution ? 'evolution' : 'zapi',
+        agent: agentKey, phone: cleanPhone,
+        preview: chunk.substring(0, 50) + '...', length: chunk.length,
       });
 
       try {
-        const chunkResult = await sendWithRetry(sendUrl, {
-          phone: phone.replace(/\D/g, ''),
-          message: chunk
-        });
-
+        const chunkResult = await sendWithRetry(sendUrl, payload, sendHeaders);
         results.push(chunkResult);
-        console.log('[ZAPI-SEND] ✅ Chunk', i + 1, 'sent successfully');
-
-        // Delay entre mensagens (exceto última)
+        console.log('[ZAPI-SEND] ✅ Chunk', i + 1, 'sent');
         if (i < messageChunks.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 800));
         }
       } catch (error) {
-        console.error('[ZAPI-SEND] ❌ Failed to send chunk', i + 1, ':', error.message);
-        
-        // Log falha
-        await supabase.from('zapi_logs').insert({
-          agent_key: agentKey,
-          direction: 'outbound',
-          phone_number: phone,
-          message_text: chunk,
-          status: 'failed',
-          error_message: error.message,
-          metadata: { error: error.message, chunkIndex: i, totalChunks: messageChunks.length }
+        console.error('[ZAPI-SEND] ❌ Failed chunk', i + 1, ':', (error as Error).message);
+        await supabase.from('evolution_logs').insert({
+          agent_key: agentKey, direction: 'outbound', phone_number: phone,
+          message_text: chunk, status: 'failed', error_message: (error as Error).message,
+          metadata: { error: (error as Error).message, chunkIndex: i, totalChunks: messageChunks.length, provider: useEvolution ? 'evolution' : 'zapi' }
         });
-        
-        throw error; // Propagar erro para catch principal
+        throw error;
       }
     }
 
-    const zapiResult = results[results.length - 1]; // Último resultado para messageId
+    const zapiResult = results[results.length - 1];
+    // Normalize messageId across providers
+    const messageId = useEvolution
+      ? (zapiResult?.key?.id ?? zapiResult?.messageId ?? null)
+      : (zapiResult?.messageId ?? null);
 
-    console.log('[ZAPI-SEND] ✅ All chunks sent successfully:', {
-      totalChunks: messageChunks.length,
-      lastMessageId: zapiResult.messageId,
-      phone,
-      agent: agentKey,
-      timestamp: new Date().toISOString()
+    console.log('[ZAPI-SEND] ✅ All chunks sent:', { totalChunks: messageChunks.length, messageId, phone, agent: agentKey });
+
+    // Log sucesso
+    await supabase.from('evolution_logs').insert({
+      agent_key: agentKey, direction: 'outbound', phone_number: phone,
+      message_text: message, media_url: mediaUrl || null, status: 'sent',
+      zapi_message_id: messageId,
+      metadata: { response: zapiResult, totalChunks: messageChunks.length, allResults: results, provider: useEvolution ? 'evolution' : 'zapi' }
     });
 
-    // Log sucesso com informação de chunks
-    await supabase.from('zapi_logs').insert({
-      agent_key: agentKey,
-      direction: 'outbound',
-      phone_number: phone,
-      message_text: message, // Mensagem completa
-      media_url: mediaUrl || null,
-      status: 'sent',
-      zapi_message_id: zapiResult.messageId || null,
-      metadata: { 
-        response: zapiResult,
-        totalChunks: messageChunks.length,
-        allResults: results
-      }
-    });
 
     // ✅ FASE 1: SALVAR EM MESSAGES PARA APARECER NO CRM
     console.log('[ZAPI-SEND] 💾 Saving outbound message to messages table...');
@@ -406,17 +430,18 @@ serve(async (req) => {
       await supabase.from('messages').insert({
         conversation_id: conversation.id,
         agent_key: agentKey,
-        provider: 'zapi',
+        provider: useEvolution ? 'evolution' : 'zapi',
         direction: 'outbound',
         from_role: 'agent',
-        body: message, // Mensagem completa
+        body: message,
         is_automated: true,
         raw_payload: { 
-          zapi_message_id: zapiResult.messageId,
+          zapi_message_id: messageId,
           sent_at: new Date().toISOString(),
           media_url: mediaUrl || null,
           sentInChunks: messageChunks.length > 1,
-          totalChunks: messageChunks.length
+          totalChunks: messageChunks.length,
+          provider: useEvolution ? 'evolution' : 'zapi'
         }
       });
       
@@ -425,20 +450,20 @@ serve(async (req) => {
       console.warn('[ZAPI-SEND] ⚠️ No conversation found for phone:', phone);
     }
 
-    // Log no agent_logs também
+    // Log no agent_logs
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
       event_type: 'message_sent',
       metadata: {
         phone,
-        messageId: zapiResult.messageId,
-        provider: 'zapi'
+        messageId,
+        provider: useEvolution ? 'evolution' : 'zapi'
       }
     });
 
     return new Response(JSON.stringify({ 
       success: true,
-      messageId: zapiResult.messageId,
+      messageId,
       zapiResponse: zapiResult
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
