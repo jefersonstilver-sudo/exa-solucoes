@@ -37,7 +37,7 @@ const CRMEvolutionPage: React.FC = () => {
     const { data, error } = await (supabase as any)
       .from('evolution_instances')
       .select(
-        'id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status, instance_name',
+        'id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status, instance_name, is_notifications',
       )
       .order('created_at', { ascending: false });
     if (!error && data) setCollaborators(data as CollaboratorRow[]);
