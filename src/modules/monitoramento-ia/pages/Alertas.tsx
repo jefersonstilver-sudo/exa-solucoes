@@ -146,10 +146,11 @@ export const AlertasPage = () => {
         transition={{ delay: 0.2 }}
         className="space-y-4 md:space-y-6"
       >
+        {/* Canal WhatsApp dedicado a notificações automáticas (Evolution) */}
+        <NotificationsChannelCard />
+
         {/* CEO Alert Card (Special) */}
         <AlertaCEOCard />
-
-        {/* Proposals Alert Card */}
         <AlertaPropostasCard />
 
         {/* Panel Offline Alert Card */}
