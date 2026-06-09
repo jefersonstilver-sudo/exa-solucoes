@@ -19,7 +19,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.evolution-proxy]
-verify_jwt = true
+verify_jwt = false
 
 [api]
 enabled = true
