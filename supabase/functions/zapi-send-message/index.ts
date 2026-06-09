@@ -357,14 +357,14 @@ serve(async (req) => {
     const results = [];
     for (let i = 0; i < messageChunks.length; i++) {
       const chunk = messageChunks[i];
-      const cleanPhone = phone.replace(/\D/g, '');
+      const cleanPhone = normalizePhoneBR(phone);
       const payload = useEvolution
         ? { number: cleanPhone, text: chunk }
         : { phone: cleanPhone, message: chunk };
 
       console.log('[ZAPI-SEND] 📤 Chunk', i + 1, '/', messageChunks.length, ':', {
         provider: useEvolution ? 'evolution' : 'zapi',
-        agent: agentKey, phone: cleanPhone,
+        agent: agentKey, phone_in: phone, phone_normalized: cleanPhone,
         preview: chunk.substring(0, 50) + '...', length: chunk.length,
       });
 
