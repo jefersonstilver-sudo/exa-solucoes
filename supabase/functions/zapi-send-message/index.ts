@@ -284,43 +284,8 @@ serve(async (req) => {
       return chunks.filter(c => c.trim().length > 0);
     };
 
-    // 🛡️ ENVIAR COM RETRY (blindagem contra desconexão)
-    const sendWithRetry = async (url: string, body: any, retries = 3): Promise<any> => {
-      for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Client-Token': zapiClientToken,
-            },
-            body: JSON.stringify(body),
-            signal: controller.signal
-          });
 
-          clearTimeout(timeoutId);
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${JSON.stringify(result)}`);
-          }
-
-          return result;
-        } catch (error) {
-          console.error(`[ZAPI-SEND] ⚠️ Attempt ${attempt}/${retries} failed:`, error.message);
-          
-          if (attempt === retries) {
-            throw new Error(`Failed after ${retries} attempts: ${error.message}`);
-          }
-          
-          // Esperar antes de tentar novamente (backoff exponencial)
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
-      }
-    };
 
     // 🛡️ ENVIAR COM RETRY (blindagem contra desconexão) — suporta Z-API e Evolution
     const sendWithRetry = async (url: string, body: any, headers: Record<string, string>, retries = 3): Promise<any> => {
