@@ -41,43 +41,84 @@ serve(async (req) => {
       });
     }
 
-    // Buscar configuração do agente
-    const { data: agent, error: agentError } = await supabase
-      .from('agents')
-      .select('*')
-      .eq('key', agentKey)
-      .eq('whatsapp_provider', 'zapi')
-      .single();
+    // 🔄 EVOLUTION SHIM: notifications (agentKey='exa_alert') route via connected Evolution instance.
+    // Keeps the entire pipeline (dedup, split, logs, messages persist) — only swaps the transport.
+    const useEvolution = agentKey === 'exa_alert';
+    let evolutionInstanceName: string | null = null;
+    let evolutionApiUrl: string | null = null;
+    let evolutionApiKey: string | null = null;
+    let zapiConfig: any = null;
+    let zapiClientToken: string | null = null;
 
-    if (agentError || !agent) {
-      console.error('[ZAPI-SEND] Agent not found:', agentKey);
-      return new Response(JSON.stringify({ error: 'Agent not configured for Z-API' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    if (useEvolution) {
+      const { data: evoInst, error: evoErr } = await supabase
+        .from('evolution_instances')
+        .select('instance_name, status')
+        .eq('is_notifications', true)
+        .maybeSingle();
 
-    const zapiConfig = agent.zapi_config;
-    if (!zapiConfig?.instance_id || !zapiConfig?.token) {
-      console.error('[ZAPI-SEND] Invalid Z-API config for agent:', agentKey);
-      return new Response(JSON.stringify({ error: 'Invalid Z-API configuration' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+      if (evoErr || !evoInst) {
+        console.error('[ZAPI-SEND] ❌ No Evolution notifications instance found', evoErr);
+        return new Response(JSON.stringify({ error: 'Evolution notifications instance not configured' }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (evoInst.status !== 'connected') {
+        console.error('[ZAPI-SEND] ❌ Evolution notifications instance status:', evoInst.status);
+        return new Response(JSON.stringify({ error: `Evolution instance not connected: ${evoInst.status}` }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
-    // Buscar Client Token do Z-API
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-    
-    console.log('[ZAPI-SEND] 🔍 DEBUG - Client Token present:', !!zapiClientToken);
-    console.log('[ZAPI-SEND] 🔍 DEBUG - Client Token length:', zapiClientToken?.length || 0);
-    
-    if (!zapiClientToken) {
-      console.error('[ZAPI-SEND] ❌ ZAPI_CLIENT_TOKEN not configured in environment');
-      return new Response(JSON.stringify({ error: 'Z-API Client Token not configured in secrets' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      evolutionInstanceName = evoInst.instance_name;
+      evolutionApiUrl = (Deno.env.get('EVOLUTION_API_URL') || '').replace(/\/+$/, '');
+      evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY') || '';
+
+      if (!evolutionApiUrl || !evolutionApiKey) {
+        console.error('[ZAPI-SEND] ❌ EVOLUTION_API_URL/EVOLUTION_API_KEY missing');
+        return new Response(JSON.stringify({ error: 'Evolution API not configured' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log('[ZAPI-SEND] 🔄 Routing via Evolution instance:', evolutionInstanceName);
+    } else {
+      // Buscar configuração do agente (Z-API legado)
+      const { data: agent, error: agentError } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('key', agentKey)
+        .eq('whatsapp_provider', 'zapi')
+        .single();
+
+      if (agentError || !agent) {
+        console.error('[ZAPI-SEND] Agent not found:', agentKey);
+        return new Response(JSON.stringify({ error: 'Agent not configured for Z-API' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      zapiConfig = agent.zapi_config;
+      if (!zapiConfig?.instance_id || !zapiConfig?.token) {
+        console.error('[ZAPI-SEND] Invalid Z-API config for agent:', agentKey);
+        return new Response(JSON.stringify({ error: 'Invalid Z-API configuration' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN') || null;
+      if (!zapiClientToken) {
+        console.error('[ZAPI-SEND] ❌ ZAPI_CLIENT_TOKEN not configured');
+        return new Response(JSON.stringify({ error: 'Z-API Client Token not configured in secrets' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // 🛡️ VERIFICAR DUPLICAÇÃO - evitar envios duplicados (cache + DB)
