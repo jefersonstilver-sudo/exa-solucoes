@@ -238,102 +238,38 @@ serve(async (req) => {
       label,
     });
 
-    // Get Z-API config for exa_alert agent
-    const { data: agent } = await supabase
-      .from('agents')
-      .select('zapi_config')
-      .eq('key', 'exa_alert')
-      .single();
-
-    const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-
     let sent = 0;
     for (const contact of contacts) {
       if (!contact.telefone) continue;
 
-      const formattedPhone = contact.telefone.startsWith('55') 
-        ? contact.telefone 
+      const formattedPhone = contact.telefone.startsWith('55')
+        ? contact.telefone
         : `55${contact.telefone}`;
 
       try {
-        // Try sending with button first (for confirmation)
-        if (zapiConfig?.instance_id && zapiConfig?.token) {
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-          if (zapiClientToken) headers['Client-Token'] = zapiClientToken;
+        // Route through zapi-send-message shim → Evolution API (Notificações EXA)
+        const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+          body: {
+            agentKey: 'exa_alert',
+            phone: contact.telefone,
+            message,
+            skipSplit: true,
+          },
+        });
 
-          // Step 1: Send text message first (guaranteed)
-          const textUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-          const textResponse = await fetch(textUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ phone: formattedPhone, message })
-          });
+        if (sendError) {
+          console.error(`[TASK-NOTIFY] ❌ Failed to send to ${contact.nome}:`, sendError);
+        } else {
+          sent++;
+          console.log(`[TASK-NOTIFY] ✅ Sent to ${contact.nome} via Evolution`);
 
-          if (textResponse.ok) {
-            sent++;
-            console.log(`[TASK-NOTIFY] ✅ Text sent to ${contact.nome}`);
-
-            // Step 2: Try sending confirmation button (bonus, may fail)
-            try {
-              const buttonUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`;
-              const buttonId = `task_ack:${task_id}:${formattedPhone}`;
-              
-              await fetch(buttonUrl, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                  phone: formattedPhone,
-                  message: "👆 Confirme o recebimento:",
-                  buttonActions: [
-                    { id: buttonId, type: 'REPLY', label: '✅ Confirmar recebimento' }
-                  ],
-                  footer: 'Clique para confirmar'
-                })
-              });
-              console.log(`[TASK-NOTIFY] ✅ Button also sent to ${contact.nome}`);
-            } catch (btnErr) {
-              console.log(`[TASK-NOTIFY] ⚠️ Button failed for ${contact.nome}, text was sent`);
-            }
-          } else {
-            console.error(`[TASK-NOTIFY] ❌ Failed to send text to ${contact.nome}`);
-          }
-
-          // Register receipt - always use real task_id
           await supabase.from('task_read_receipts').insert({
             task_id: task_id,
             contact_phone: formattedPhone,
             contact_name: contact.nome,
             status: 'sent',
-            sent_at: new Date().toISOString()
+            sent_at: new Date().toISOString(),
           });
-
-        } else {
-          // Fallback: use zapi-send-message function
-          const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-            body: {
-              agentKey: 'exa_alert',
-              phone: contact.telefone,
-              message,
-              skipSplit: true
-            }
-          });
-
-          if (sendError) {
-            console.error(`[TASK-NOTIFY] ❌ Failed to send to ${contact.nome}:`, sendError);
-          } else {
-            sent++;
-            console.log(`[TASK-NOTIFY] ✅ Sent to ${contact.nome}`);
-
-            // Register receipt - always use real task_id
-            await supabase.from('task_read_receipts').insert({
-              task_id: task_id,
-              contact_phone: contact.telefone.startsWith('55') ? contact.telefone : `55${contact.telefone}`,
-              contact_name: contact.nome,
-              status: 'sent',
-              sent_at: new Date().toISOString()
-            });
-          }
         }
       } catch (err) {
         console.error(`[TASK-NOTIFY] ❌ Error sending to ${contact.nome}:`, err);
