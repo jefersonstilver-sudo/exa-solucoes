@@ -53,37 +53,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Buscar configuração Z-API do banco de dados
-    console.log('🔍 [SEND-USER-CODE] Buscando configuração Z-API do agente exa_alert...');
-    const { data: agentData, error: agentError } = await supabase
-      .from('agents')
-      .select('zapi_config')
-      .eq('key', 'exa_alert')
-      .single();
-
-    if (agentError || !agentData) {
-      console.error('❌ [SEND-USER-CODE] Erro ao buscar configuração do agente:', agentError);
-      return new Response(
-        JSON.stringify({ error: 'Configuração Z-API não encontrada' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const zapiConfig = agentData.zapi_config as any;
-    const instanceId = zapiConfig?.instance_id;
-    const instanceToken = zapiConfig?.token;
-    const clientToken = zapiConfig?.client_token;
-
-    if (!instanceId || !instanceToken || !clientToken) {
-      console.error('❌ [SEND-USER-CODE] Configuração Z-API incompleta:', { instanceId: !!instanceId, instanceToken: !!instanceToken, clientToken: !!clientToken });
-      return new Response(
-        JSON.stringify({ error: 'Configuração Z-API incompleta' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('✅ [SEND-USER-CODE] Configuração Z-API carregada com sucesso');
-
     // Rate limiting: verificar tentativas recentes (últimos 5 minutos)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     
@@ -93,7 +62,6 @@ Deno.serve(async (req) => {
       .eq('telefone', telefone)
       .gte('created_at', fiveMinutesAgo);
 
-    // Se tiver userId, filtrar por ele; senão, filtrar por sessionId
     if (userId) {
       rateLimitQuery = rateLimitQuery.eq('user_id', userId);
     } else if (sessionId) {
@@ -141,7 +109,7 @@ Deno.serve(async (req) => {
     }
 
     // Inserir código no banco
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     const insertData: any = {
       telefone,
       codigo,
@@ -149,13 +117,8 @@ Deno.serve(async (req) => {
       expires_at: expiresAt.toISOString(),
       verificado: false
     };
-
-    // Adicionar userId ou sessionId dependendo do caso
-    if (userId) {
-      insertData.user_id = userId;
-    } else if (sessionId) {
-      insertData.session_id = sessionId;
-    }
+    if (userId) insertData.user_id = userId;
+    else if (sessionId) insertData.session_id = sessionId;
 
     const { error: insertError } = await supabase
       .from('exa_alerts_verification_codes')
@@ -166,31 +129,27 @@ Deno.serve(async (req) => {
       throw insertError;
     }
 
-    // Enviar via Z-API
-    const phoneFormatted = telefone.replace(/\D/g, '');
-    const zapiUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/send-text`;
-
-    console.log('📤 [SEND-USER-CODE] Enviando código via Z-API para:', phoneFormatted.substring(0, 8) + '****');
-
-    const zapiResponse = await fetch(zapiUrl, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Client-Token': clientToken
-      },
-      body: JSON.stringify({
-        phone: phoneFormatted,
+    // 🔄 Enviar via roteador zapi-send-message → Evolution (Notificações EXA)
+    console.log('📤 [SEND-USER-CODE] Enviando código via shim Evolution para:', telefone.substring(0, 8) + '****');
+    const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+      body: {
+        agentKey: 'exa_alert',
+        phone: telefone,
         message: mensagem,
-      }),
+        skipSplit: true,
+      },
     });
 
-    if (!zapiResponse.ok) {
-      const errorText = await zapiResponse.text();
-      console.error('❌ [SEND-USER-CODE] Erro ao enviar via Z-API:', errorText);
-      throw new Error(`Erro ao enviar código via WhatsApp: ${errorText}`);
+    if (sendError) {
+      console.error('❌ [SEND-USER-CODE] Erro do shim Evolution:', sendError);
+      throw new Error(`Erro ao enviar código via WhatsApp: ${sendError.message || sendError}`);
+    }
+    if (sendData && typeof sendData === 'object' && (sendData as any).error) {
+      console.error('❌ [SEND-USER-CODE] Shim retornou erro:', (sendData as any).error);
+      throw new Error(`Erro ao enviar código via WhatsApp: ${(sendData as any).error}`);
     }
 
-    console.log('✅ [SEND-USER-CODE] Código enviado com sucesso');
+    console.log('✅ [SEND-USER-CODE] Código enviado com sucesso via Evolution');
 
     return new Response(
       JSON.stringify({ 
