@@ -1,18 +1,29 @@
 import React, { useState } from 'react';
-import { Pencil, Loader2 } from 'lucide-react';
+import { Pencil, Loader2, MoreVertical, RefreshCw, LogOut, Trash2, QrCode, Bell } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useEvolutionInstanceActions } from '../lib/useEvolutionInstanceActions';
+import { InstanceQRDialog } from './InstanceQRDialog';
 
 export interface CollaboratorRow {
   id: string;
@@ -22,6 +33,7 @@ export interface CollaboratorRow {
   profile_name: string | null;
   status: string;
   instance_name?: string;
+  is_notifications?: boolean;
 }
 
 interface Props {
@@ -44,9 +56,14 @@ export const CollaboratorCard: React.FC<Props> = ({
   onSelect,
 }) => {
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [purgeHistory, setPurgeHistory] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
   const [name, setName] = useState(collaborator.collaborator_name);
   const [phone, setPhone] = useState(collaborator.collaborator_phone ?? '');
   const [saving, setSaving] = useState(false);
+  const { logout, deleteInstance, busy } = useEvolutionInstanceActions();
 
   const initials = collaborator.collaborator_name
     .split(' ')
@@ -54,6 +71,11 @@ export const CollaboratorCard: React.FC<Props> = ({
     .slice(0, 2)
     .join('')
     .toUpperCase();
+
+  const isNotif = !!collaborator.is_notifications;
+  const requireTypedConfirm = isNotif
+    ? confirmText.trim().toUpperCase() === 'APAGAR'
+    : true;
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -76,6 +98,34 @@ export const CollaboratorCard: React.FC<Props> = ({
     toast.success('Colaborador atualizado');
     setEditOpen(false);
     onUpdated();
+  };
+
+  const handleDelete = async () => {
+    if (!collaborator.instance_name) {
+      toast.error('Instância sem nome — apague manualmente');
+      return;
+    }
+    try {
+      await deleteInstance(collaborator.instance_name, collaborator.id, {
+        purgeLocalHistory: purgeHistory,
+      });
+      setDeleteOpen(false);
+      setConfirmText('');
+      setPurgeHistory(false);
+      onUpdated();
+    } catch {
+      /* toast já dado no hook */
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!collaborator.instance_name) return;
+    try {
+      await logout(collaborator.instance_name, collaborator.id);
+      onUpdated();
+    } catch {
+      /* */
+    }
   };
 
   return (
@@ -117,6 +167,14 @@ export const CollaboratorCard: React.FC<Props> = ({
             )}
             title={collaborator.status}
           />
+          {isNotif && (
+            <span
+              className="absolute bottom-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#7D1818]/90 text-white text-[10px] font-semibold shadow-sm"
+              title="Instância de notificações automáticas"
+            >
+              <Bell className="w-2.5 h-2.5" /> Notif.
+            </span>
+          )}
           <button
             type="button"
             onClick={(e) => {
@@ -128,6 +186,46 @@ export const CollaboratorCard: React.FC<Props> = ({
           >
             <Pencil className="w-3.5 h-3.5 text-gray-700" />
           </button>
+          <div
+            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Ações da instância"
+                  className="w-7 h-7 rounded-full bg-white/95 shadow-sm flex items-center justify-center hover:bg-white"
+                >
+                  <MoreVertical className="w-3.5 h-3.5 text-gray-700" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  onClick={() => setQrOpen(true)}
+                  disabled={!collaborator.instance_name}
+                >
+                  <QrCode className="w-3.5 h-3.5 mr-2" />
+                  Reconectar (QR)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={busy || !collaborator.instance_name}
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-2" />
+                  Desconectar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setDeleteOpen(true)}
+                  className="text-red-600 focus:text-red-700"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Apagar instância
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <div className="px-3 py-2.5">
           <p className="text-sm font-semibold text-gray-900 truncate">
@@ -182,6 +280,80 @@ export const CollaboratorCard: React.FC<Props> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-700 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" /> Apagar instância
+            </DialogTitle>
+            <DialogDescription>
+              Esta ação remove a instância <strong>{collaborator.collaborator_name}</strong>{' '}
+              do servidor Evolution e do banco. Não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isNotif && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-900">
+              <strong>⚠️ Atenção:</strong> esta é a instância dedicada de{' '}
+              <strong>notificações automáticas</strong> do sistema (painéis offline, 2FA,
+              agendamentos, propostas, etc.). Apagá-la interrompe todos esses alertas
+              até que seja recriada e reconectada via XAlerts.
+              <div className="mt-2">
+                Para confirmar, digite <code className="font-mono font-semibold">APAGAR</code>:
+                <Input
+                  className="mt-2"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder="APAGAR"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-start gap-2 p-3 rounded-lg border border-gray-200 bg-gray-50">
+            <Checkbox
+              id="purge-history"
+              checked={purgeHistory}
+              onCheckedChange={(v) => setPurgeHistory(!!v)}
+            />
+            <div className="flex-1">
+              <Label htmlFor="purge-history" className="text-sm font-medium cursor-pointer">
+                Apagar também o histórico de conversas e mensagens
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Por padrão, mantemos o histórico salvo no banco para auditoria. Marque
+                para remover tudo de forma irreversível.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={busy || !requireTypedConfirm}
+            >
+              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Apagar definitivamente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {collaborator.instance_name && (
+        <InstanceQRDialog
+          open={qrOpen}
+          onOpenChange={setQrOpen}
+          instanceName={collaborator.instance_name}
+          rowId={collaborator.id}
+          title={`Reconectar ${collaborator.collaborator_name}`}
+          onConnected={onUpdated}
+        />
+      )}
     </>
   );
 };
