@@ -126,17 +126,10 @@ export const useEvolutionInstanceActions = () => {
         } catch (e) {
           console.warn('[Evolution] delete remote failed', e);
         }
-        // 3) Purge local (opcional)
-        if (options.purgeLocalHistory) {
-          await (supabase as any)
-            .from('messages')
-            .delete()
-            .eq('instance_id', rowId);
-          await (supabase as any)
-            .from('conversations')
-            .delete()
-            .eq('instance_id', rowId);
-        }
+        // 3) Purge local (opcional) — conversas/mensagens não têm vínculo direto
+        // com a instância no schema atual, então a flag é informativa.
+        // Mantemos o histórico salvo para auditoria.
+        void options.purgeLocalHistory;
         // 4) Remove a linha da instância
         const { error: delErr } = await (supabase as any)
           .from('evolution_instances')
