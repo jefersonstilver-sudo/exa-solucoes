@@ -10,6 +10,7 @@ import { AlertaContratosPropostasConfig } from '../components/exa-alerts/AlertaC
 import { RelatorioOperacionalCard } from '../components/exa-alerts/RelatorioOperacionalCard';
 import { AlertCard } from '../components/exa-alerts/AlertCard';
 import { AddAlertDialog } from '../components/exa-alerts/AddAlertDialog';
+import { NotificationsChannelCard } from '../components/exa-alerts/NotificationsChannelCard';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AlertRule {
