@@ -6841,6 +6841,7 @@ export type Database = {
           instance_id: string | null
           instance_name: string
           instance_token: string | null
+          is_notifications: boolean
           last_connected_at: string | null
           metadata: Json
           owner_jid: string | null
@@ -6858,6 +6859,7 @@ export type Database = {
           instance_id?: string | null
           instance_name: string
           instance_token?: string | null
+          is_notifications?: boolean
           last_connected_at?: string | null
           metadata?: Json
           owner_jid?: string | null
@@ -6875,6 +6877,7 @@ export type Database = {
           instance_id?: string | null
           instance_name?: string
           instance_token?: string | null
+          is_notifications?: boolean
           last_connected_at?: string | null
           metadata?: Json
           owner_jid?: string | null
@@ -6882,6 +6885,57 @@ export type Database = {
           profile_picture_url?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      evolution_logs: {
+        Row: {
+          agent_key: string
+          created_at: string | null
+          direction: string
+          error_message: string | null
+          id: string
+          instance_id: string | null
+          is_read: boolean | null
+          media_url: string | null
+          message_text: string | null
+          metadata: Json | null
+          phone_number: string
+          read_at: string | null
+          status: string
+          zapi_message_id: string | null
+        }
+        Insert: {
+          agent_key: string
+          created_at?: string | null
+          direction: string
+          error_message?: string | null
+          id?: string
+          instance_id?: string | null
+          is_read?: boolean | null
+          media_url?: string | null
+          message_text?: string | null
+          metadata?: Json | null
+          phone_number: string
+          read_at?: string | null
+          status?: string
+          zapi_message_id?: string | null
+        }
+        Update: {
+          agent_key?: string
+          created_at?: string | null
+          direction?: string
+          error_message?: string | null
+          id?: string
+          instance_id?: string | null
+          is_read?: boolean | null
+          media_url?: string | null
+          message_text?: string | null
+          metadata?: Json | null
+          phone_number?: string
+          read_at?: string | null
+          status?: string
+          zapi_message_id?: string | null
         }
         Relationships: []
       }
@@ -15346,54 +15400,6 @@ export type Database = {
         }
         Relationships: []
       }
-      zapi_logs: {
-        Row: {
-          agent_key: string
-          created_at: string | null
-          direction: string
-          error_message: string | null
-          id: string
-          is_read: boolean | null
-          media_url: string | null
-          message_text: string | null
-          metadata: Json | null
-          phone_number: string
-          read_at: string | null
-          status: string
-          zapi_message_id: string | null
-        }
-        Insert: {
-          agent_key: string
-          created_at?: string | null
-          direction: string
-          error_message?: string | null
-          id?: string
-          is_read?: boolean | null
-          media_url?: string | null
-          message_text?: string | null
-          metadata?: Json | null
-          phone_number: string
-          read_at?: string | null
-          status?: string
-          zapi_message_id?: string | null
-        }
-        Update: {
-          agent_key?: string
-          created_at?: string | null
-          direction?: string
-          error_message?: string | null
-          id?: string
-          is_read?: boolean | null
-          media_url?: string | null
-          message_text?: string | null
-          metadata?: Json | null
-          phone_number?: string
-          read_at?: string | null
-          status?: string
-          zapi_message_id?: string | null
-        }
-        Relationships: []
-      }
       zoho_email_config: {
         Row: {
           access_token: string | null
@@ -15493,6 +15499,57 @@ export type Database = {
           tipo: string | null
           valor: number | null
           valor_liquido: number | null
+        }
+        Relationships: []
+      }
+      zapi_logs: {
+        Row: {
+          agent_key: string | null
+          created_at: string | null
+          direction: string | null
+          error_message: string | null
+          id: string | null
+          instance_id: string | null
+          is_read: boolean | null
+          media_url: string | null
+          message_text: string | null
+          metadata: Json | null
+          phone_number: string | null
+          read_at: string | null
+          status: string | null
+          zapi_message_id: string | null
+        }
+        Insert: {
+          agent_key?: string | null
+          created_at?: string | null
+          direction?: string | null
+          error_message?: string | null
+          id?: string | null
+          instance_id?: string | null
+          is_read?: boolean | null
+          media_url?: string | null
+          message_text?: string | null
+          metadata?: Json | null
+          phone_number?: string | null
+          read_at?: string | null
+          status?: string | null
+          zapi_message_id?: string | null
+        }
+        Update: {
+          agent_key?: string | null
+          created_at?: string | null
+          direction?: string | null
+          error_message?: string | null
+          id?: string | null
+          instance_id?: string | null
+          is_read?: boolean | null
+          media_url?: string | null
+          message_text?: string | null
+          metadata?: Json | null
+          phone_number?: string | null
+          read_at?: string | null
+          status?: string | null
+          zapi_message_id?: string | null
         }
         Relationships: []
       }
