@@ -99,10 +99,7 @@ serve(async (req) => {
 
     // ========== 1. SEND EXA ALERT (WHATSAPP) TO SELLER ==========
     if (sellerPhone) {
-      console.log('📱 Enviando EXA Alert de pagamento para vendedor:', sellerPhone);
-
-      const cleanPhone = sellerPhone.replace(/\D/g, '');
-      const formattedPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      console.log('📱 Enviando EXA Alert de pagamento para vendedor via Evolution:', sellerPhone);
 
       const whatsappMessage = `💰 *PAGAMENTO CONFIRMADO!*
 
@@ -121,35 +118,10 @@ O cliente *${proposal.client_name}* realizou o pagamento.
 _EXA Mídia - Vendas_`;
 
       try {
-        const { data: agent } = await supabase
-          .from('agents')
-          .select('zapi_config')
-          .eq('key', 'exa_alertas')
-          .single();
-
-        if (agent?.zapi_config) {
-          const zapiConfig = agent.zapi_config as { instance_id?: string; token?: string };
-          const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-
-          if (zapiConfig.instance_id && zapiConfig.token && zapiClientToken) {
-            const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-
-            const zapiResponse = await fetch(zapiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Client-Token': zapiClientToken,
-              },
-              body: JSON.stringify({
-                phone: formattedPhone,
-                message: whatsappMessage,
-              }),
-            });
-
-            const zapiResult = await zapiResponse.json();
-            console.log('📱 Resposta Z-API:', zapiResult);
-          }
-        }
+        const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+          body: { agentKey: 'exa_alert', phone: sellerPhone, message: whatsappMessage, skipSplit: true },
+        });
+        if (sendError) console.error('❌ Shim Evolution erro:', sendError);
       } catch (whatsappErr) {
         console.error('❌ Exceção ao enviar WhatsApp:', whatsappErr);
       }

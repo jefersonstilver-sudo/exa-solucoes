@@ -102,58 +102,26 @@ serve(async (req) => {
     }
     message += `\nEste evento foi cancelado.`;
 
-    // Get Z-API config
-    const { data: agent } = await supabase
-      .from('agents')
-      .select('zapi_config')
-      .eq('key', 'exa_alert')
-      .single();
-
-    const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-
     let sent = 0;
     for (const contact of contacts) {
       if (!contact.telefone) continue;
 
-      const formattedPhone = contact.telefone.startsWith('55')
-        ? contact.telefone
-        : `55${contact.telefone}`;
-
       try {
-        if (zapiConfig?.instance_id && zapiConfig?.token) {
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-          if (zapiClientToken) headers['Client-Token'] = zapiClientToken;
-
-          const textUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-          const textResponse = await fetch(textUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ phone: formattedPhone, message })
-          });
-
-          if (textResponse.ok) {
-            sent++;
-            console.log(`[TASK-CANCEL] ✅ Sent to ${contact.nome}`);
-          } else {
-            console.error(`[TASK-CANCEL] ❌ Failed for ${contact.nome}`);
+        // 🔄 Sempre roteia via shim Evolution (Notificações EXA)
+        const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+          body: {
+            agentKey: 'exa_alert',
+            phone: contact.telefone,
+            message,
+            skipSplit: true
           }
+        });
+
+        if (sendError) {
+          console.error(`[TASK-CANCEL] ❌ Failed for ${contact.nome}:`, sendError);
         } else {
-          const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-            body: {
-              agentKey: 'exa_alert',
-              phone: contact.telefone,
-              message,
-              skipSplit: true
-            }
-          });
-
-          if (sendError) {
-            console.error(`[TASK-CANCEL] ❌ Failed for ${contact.nome}:`, sendError);
-          } else {
-            sent++;
-            console.log(`[TASK-CANCEL] ✅ Sent to ${contact.nome}`);
-          }
+          sent++;
+          console.log(`[TASK-CANCEL] ✅ Sent to ${contact.nome}`);
         }
       } catch (err) {
         console.error(`[TASK-CANCEL] ❌ Error for ${contact.nome}:`, err);

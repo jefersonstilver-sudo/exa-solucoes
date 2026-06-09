@@ -180,34 +180,17 @@ serve(async (req) => {
     let sent = 0;
     for (const contact of contacts) {
       if (!contact.telefone) continue;
-      const formattedPhone = contact.telefone.startsWith('55') ? contact.telefone : `55${contact.telefone}`;
 
       try {
-        if (zapiConfig?.instance_id && zapiConfig?.token) {
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-          if (zapiClientToken) headers['Client-Token'] = zapiClientToken;
-
-          const textUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-          const resp = await fetch(textUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ phone: formattedPhone, message })
-          });
-
-          if (resp.ok) {
-            sent++;
-            console.log(`[TASK-CHANGE] ✅ Sent to ${contact.nome}`);
-          } else {
-            console.error(`[TASK-CHANGE] ❌ Failed for ${contact.nome}`);
-          }
+        // 🔄 Sempre roteia via shim Evolution (Notificações EXA)
+        const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+          body: { agentKey: 'exa_alert', phone: contact.telefone, message, skipSplit: true }
+        });
+        if (!sendError) {
+          sent++;
+          console.log(`[TASK-CHANGE] ✅ Sent to ${contact.nome}`);
         } else {
-          const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-            body: { agentKey: 'exa_alert', phone: contact.telefone, message, skipSplit: true }
-          });
-          if (!sendError) {
-            sent++;
-            console.log(`[TASK-CHANGE] ✅ Sent to ${contact.nome}`);
-          }
+          console.error(`[TASK-CHANGE] ❌ Failed for ${contact.nome}:`, sendError);
         }
       } catch (err) {
         console.error(`[TASK-CHANGE] ❌ Error for ${contact.nome}:`, err);

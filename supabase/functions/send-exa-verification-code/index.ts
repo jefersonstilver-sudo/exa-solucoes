@@ -91,85 +91,28 @@ serve(async (req) => {
       throw insertError;
     }
 
-    console.log('Verification code saved, now sending via Z-API...');
+    console.log('Verification code saved, now sending via Evolution shim...');
 
-    // Get Z-API config from agents table (assuming there's an EXA agent configured)
-    const { data: agentData, error: agentError } = await supabase
-      .from('agents')
-      .select('zapi_config')
-      .eq('key', 'exa_alert')
-      .single();
-
-    if (agentError || !agentData?.zapi_config) {
-      console.error('Z-API configuration not found for EXA Alerts');
-      throw new Error('Configuração Z-API não encontrada');
-    }
-
-    const zapiConfig = agentData.zapi_config as {
-      instance_id?: string;
-      token?: string;
-      client_token?: string;
-    };
-
-    const instanceId = zapiConfig.instance_id;
-    const instanceToken = zapiConfig.token;
-    const clientToken = zapiConfig.client_token;
-
-    console.log('Z-API config loaded:', {
-      instanceId,
-      token: instanceToken,
-      clientToken,
-      fullConfig: zapiConfig
-    });
-
-    if (!instanceId || !instanceToken || !clientToken) {
-      console.error('Missing Z-API credentials:', {
-        hasInstanceId: !!instanceId,
-        hasInstanceToken: !!instanceToken,
-        hasClientToken: !!clientToken,
-        config: zapiConfig
-      });
-      throw new Error('Z-API credentials missing');
-    }
-
-    // Format phone number (remove non-digits)
-    const cleanPhone = telefone.replace(/\D/g, '');
-
-    // Send WhatsApp message via Z-API
-    const zapiUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/send-text`;
-    console.log('🚀 Sending to Z-API:', { 
-      url: zapiUrl, 
-      phone: cleanPhone,
-      instanceId,
-      token: instanceToken?.substring(0, 10) + '...',
-      clientToken: clientToken?.substring(0, 10) + '...'
-    });
-
-    const zapiResponse = await fetch(zapiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Client-Token': clientToken,
-      },
-      body: JSON.stringify({
-        phone: cleanPhone,
+    // 🔄 Enviar via roteador zapi-send-message → Evolution (Notificações EXA)
+    const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+      body: {
+        agentKey: 'exa_alert',
+        phone: telefone,
         message: `🔐 *Código de Verificação EXA Alerts*\n\nSeu código de verificação é:\n\n*${codigo}*\n\nEste código expira em 5 minutos.\n\n⚠️ Não compartilhe este código com ninguém.`,
-      }),
+        skipSplit: true,
+      },
     });
 
-    console.log('Z-API response status:', zapiResponse.status);
-    const responseText = await zapiResponse.text();
-    console.log('Z-API response body:', responseText);
-
-    if (!zapiResponse.ok) {
-      console.error('Z-API error response:', {
-        status: zapiResponse.status,
-        body: responseText
-      });
+    if (sendError) {
+      console.error('❌ [SEND-EXA-CODE] Shim error:', sendError);
+      throw new Error('Erro ao enviar mensagem via WhatsApp');
+    }
+    if (sendData && typeof sendData === 'object' && (sendData as any).error) {
+      console.error('❌ [SEND-EXA-CODE] Shim returned error:', (sendData as any).error);
       throw new Error('Erro ao enviar mensagem via WhatsApp');
     }
 
-    console.log('✅ Verification code sent successfully via WhatsApp');
+    console.log('✅ Verification code sent successfully via Evolution');
 
     return new Response(
       JSON.stringify({ 

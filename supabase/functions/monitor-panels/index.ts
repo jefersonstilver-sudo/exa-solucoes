@@ -271,50 +271,31 @@ Deno.serve(async (req) => {
       .eq('ativo', true)
       .order('ordem', { ascending: true });
 
-    // Helper to send WhatsApp
+    // Helper to send WhatsApp — agora SEMPRE via shim Evolution (Notificações EXA)
     const sendWhatsApp = async (phone: string, message: string, withButtons: boolean = false, deviceId?: string): Promise<{ success: boolean; messageId?: string }> => {
       try {
-        let formattedPhone = phone.replace(/\D/g, '');
-        if (!formattedPhone.startsWith('55') && formattedPhone.length === 11) {
-          formattedPhone = '55' + formattedPhone;
-        }
-
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (zapiClientToken) headers['Client-Token'] = zapiClientToken;
-        else if (zapiConfig.client_token) headers['Client-Token'] = zapiConfig.client_token;
-
+        let finalMessage = message;
         if (withButtons && confirmButtons && confirmButtons.length > 0) {
-          const buttonActions = confirmButtons.map((btn) => ({
-            id: deviceId ? `${btn.id}:${deviceId}` : btn.id,
-            type: 'REPLY',
-            label: `${btn.emoji || '✅'} ${btn.label}`
-          }));
-
-          const response = await fetch(
-            `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`,
-            {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({ phone: formattedPhone, message, buttonActions, footer: 'Clique para confirmar' })
-            }
-          );
-
-          const result = await response.json();
-          if (result.error) {
-            console.error('❌ [MONITOR] Z-API button error:', result.error);
-            return { success: false };
-          }
-          return { success: true, messageId: result.messageId };
+          // Evolution Baileys: fallback para texto com opções (botões reply não são confiáveis em todas as instâncias)
+          const opts = confirmButtons
+            .map((btn, idx) => `${idx + 1}. ${btn.emoji || '✅'} ${btn.label}`)
+            .join('\n');
+          finalMessage = `${message}\n\n*Responda com o número da opção:*\n${opts}`;
         }
 
-        const response = await fetch(
-          `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`,
-          { method: 'POST', headers, body: JSON.stringify({ phone: formattedPhone, message }) }
-        );
+        const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+          body: { agentKey: 'exa_alert', phone, message: finalMessage, skipSplit: true },
+        });
 
-        const result = await response.json();
-        if (result.error) return { success: false };
-        return { success: true, messageId: result.messageId };
+        if (sendError) {
+          console.error('❌ [MONITOR] Shim Evolution error:', sendError);
+          return { success: false };
+        }
+        if (sendData && typeof sendData === 'object' && (sendData as any).error) {
+          console.error('❌ [MONITOR] Shim returned error:', (sendData as any).error);
+          return { success: false };
+        }
+        return { success: true, messageId: (sendData as any)?.messageId };
       } catch (err) {
         console.error('❌ [MONITOR] Erro ao enviar WhatsApp:', err);
         return { success: false };
