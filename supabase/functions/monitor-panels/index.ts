@@ -274,18 +274,18 @@ Deno.serve(async (req) => {
     // Helper to send WhatsApp — agora SEMPRE via shim Evolution (Notificações EXA)
     const sendWhatsApp = async (phone: string, message: string, withButtons: boolean = false, deviceId?: string): Promise<{ success: boolean; messageId?: string }> => {
       try {
-        let finalMessage = message;
+        const body: Record<string, unknown> = {
+          agentKey: 'exa_alert', phone, message, skipSplit: true,
+        };
         if (withButtons && confirmButtons && confirmButtons.length > 0) {
-          // Evolution Baileys: fallback para texto com opções (botões reply não são confiáveis em todas as instâncias)
-          const opts = confirmButtons
-            .map((btn, idx) => `${idx + 1}. ${btn.emoji || '✅'} ${btn.label}`)
-            .join('\n');
-          finalMessage = `${message}\n\n*Responda com o número da opção:*\n${opts}`;
+          body.buttons = confirmButtons.slice(0, 3).map((btn: any, idx: number) => ({
+            id: btn.action_key ?? `opt_${idx + 1}`,
+            label: `${btn.emoji || ''} ${btn.label}`.trim(),
+          }));
+          body.footer = 'Toque em um botão para responder';
         }
 
-        const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-          body: { agentKey: 'exa_alert', phone, message: finalMessage, skipSplit: true },
-        });
+        const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', { body });
 
         if (sendError) {
           console.error('❌ [MONITOR] Shim Evolution error:', sendError);
