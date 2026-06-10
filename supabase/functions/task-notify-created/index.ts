@@ -297,13 +297,13 @@ serve(async (req) => {
         // Resolver criador da tarefa (para vincular `criado_por` na fila)
         const { data: taskRow } = await supabase
           .from('tasks')
-          .select('criada_por')
+          .select('created_by')
           .eq('id', task_id)
           .maybeSingle();
 
         await supabase.from('task_notification_queue').insert({
           task_id,
-          criado_por: taskRow?.criada_por || null,
+          criado_por: taskRow?.created_by || null,
           status: 'sent_to_creator',
           sent_at: new Date().toISOString(),
         });
