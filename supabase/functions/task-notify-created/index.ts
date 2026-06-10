@@ -254,6 +254,12 @@ serve(async (req) => {
             phone: contact.telefone,
             message,
             skipSplit: true,
+            buttons: [
+              { id: 'task_confirm', label: '✅ Confirmar' },
+              { id: 'task_reschedule', label: '🔄 Remarcar' },
+              { id: 'task_cancel', label: '❌ Cancelar' },
+            ],
+            footer: 'Toque em um botão para responder',
           },
         });
 
