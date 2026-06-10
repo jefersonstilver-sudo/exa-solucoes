@@ -46,7 +46,10 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('[ZAPI-SEND] 📥 Request received:', Object.keys(requestBody));
     
-    const { agentKey, phone, message, mediaUrl, skipSplit } = requestBody;
+    const { agentKey, phone, message, mediaUrl, skipSplit, buttons, footer, title } = requestBody as {
+      agentKey: string; phone: string; message: string; mediaUrl?: string; skipSplit?: boolean;
+      buttons?: Array<{ id: string; label: string }>; footer?: string; title?: string;
+    };
 
     // 🔍 DEBUG: Log explícito do parâmetro skipSplit
     console.log('[ZAPI-SEND] 🔍 DEBUG - Request body:', { 
