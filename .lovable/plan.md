@@ -1,66 +1,90 @@
-## Análise final antes de implementar
+## Diagnóstico confirmado
 
-### O que está acontecendo
+O problema atual não é mais envio pela Z-API. O envio já está saindo pela Evolution, mas as respostas não estão sendo processadas.
 
-1. **Ainda existe registro real de envio nativo com botão**
-   - Em `evolution_logs`, encontrei uma mensagem recente da tarefa `teste 5` com:
-     - `provider = evolution`
-     - `send_mode = buttons`
-     - horário: `2026-06-10 15:22:52 UTC`
-   - Esse é exatamente o tipo de envio que gera no celular: `Aguardando mensagem. Essa ação pode levar alguns instantes.`
+Pontos encontrados:
 
-2. **A mensagem mais nova da tarefa `teste 8` já saiu como texto numerado**
-   - Em `evolution_logs`, a tarefa `teste 8` saiu com:
-     - `send_mode = text_numbered`
-     - texto normal com `1. Confirmar`, `2. Remarcar`, `3. Cancelar`
-   - Então parte da correção anterior funcionou, mas ainda há mensagens antigas/nativas já entregues no WhatsApp que continuarão aparecendo como “aguardando”. Essas mensagens não podem ser corrigidas depois de enviadas.
-
-3. **Ainda há caminhos no código que enviam botões nativos fora do roteador corrigido**
-   - `process-schedule-intent` ainda usa `send-button-list` em várias etapas do agendamento por WhatsApp.
-   - `notify-escalation` ainda envia `send-button-actions` como “bônus” depois do texto.
-   - `resend-escalation` também envia `send-button-actions` como “bônus”.
-   - `check-expired-proposals` ainda tenta `send-button-list` antes de cair para texto.
-   - Esses pontos podem continuar criando mensagens quebradas no mobile.
-
-4. **O roteador `zapi-send-message` ainda mantém uma porta para botão nativo**
-   - Existe `forceNativeButtons: true`.
-   - Não encontrei chamadas atuais usando esse flag, mas por segurança ele deve ser removido/desativado de vez para produção.
-
-5. **O problema da resposta `1/2/3` é outro, separado da renderização**
-   - A mensagem pede para responder `1/2/3`, mas a tabela `task_notification_queue` está vazia.
-   - `task-follow-up-response` só processa resposta se existir uma notificação ativa nessa tabela.
-   - `task-notify-created` envia a mensagem e grava `task_read_receipts`, mas não cria a fila de resposta.
-   - Resultado: o usuário responde `1`, mas o sistema não tem contexto ativo para saber qual tarefa confirmar/remarcar/cancelar.
+- O alerta do print saiu pela Evolution como texto numerado, não como botão nativo.
+- A mensagem ainda mostra o rodapé antigo: “Toque em um botão para responder”. Isso está errado para o novo modo por número.
+- Quando você responde `3`, não existe hoje um handler de texto para alertas de painel offline.
+- O handler atual só sabe bloquear notificações quando chega resposta de botão nativo, mas agora os botões foram transformados em texto numerado.
+- O webhook existente é legado (`zapi-webhook`) e espera formato Z-API. A Evolution envia outro formato (`event`, `instance`, `data.key.remoteJid`, `data.message.conversation`, etc.). Mesmo que a Evolution chame esse endpoint, ele não entende corretamente a mensagem.
+- Não encontrei logs recentes de entrada no webhook quando você respondeu `3`, então também precisamos garantir o webhook inbound da instância Evolution de notificações.
 
 ## Plano de correção
 
-### 1. Bloquear botões nativos definitivamente
-- Remover/desativar o caminho `sendButtons` de `zapi-send-message`, inclusive `forceNativeButtons`.
-- Toda mensagem com `buttons` deve sempre virar texto numerado.
-- Ajustar o texto final para não dizer “toque em um botão”, e sim “responda com o número”.
+### 1. Criar/ajustar entrada inbound da Evolution
 
-### 2. Remover envios diretos de botão dos fluxos restantes
-- Em `process-schedule-intent`, trocar `send-button-list` por texto numerado.
-- Em `notify-escalation`, remover o envio “bônus” de `send-button-actions`; manter somente o texto com instruções `OK`, `ATENDI`, `DEPOIS`.
-- Em `resend-escalation`, remover o envio “bônus” de `send-button-actions`.
-- Em `check-expired-proposals`, trocar `send-button-list` por texto com opções escritas.
+Implementar um endpoint específico para receber eventos da Evolution, entendendo o formato real:
 
-### 3. Corrigir fila de respostas da tarefa criada
-- Em `task-notify-created`, após envio da “Nova Tarefa agendada”, criar/atualizar uma linha em `task_notification_queue` para o `task_id`.
-- Isso permitirá que `1`, `2`, `3`, `SIM`, `NAO`, data, horário e justificativa tenham contexto.
+```text
+Evolution messages.upsert
+→ extrair telefone do data.key.remoteJid
+→ ignorar fromMe=true
+→ extrair texto de data.message.conversation / extendedTextMessage.text
+→ processar respostas 1, 2, 3
+```
 
-### 4. Melhorar a identificação da tarefa pela resposta
-- Em `task-follow-up-response`, procurar primeiro o telefone em `task_read_receipts.contact_phone`.
-- Usar o `task_id` do receipt mais recente para localizar a fila correta.
-- Só depois cair no fallback por usuário/criador.
+Esse endpoint vai ser focado nas notificações EXA Alerts, sem alterar tela, CRM ou outros fluxos.
 
-### 5. Garantir resposta sempre visível
-- Se a pessoa responder `1/2/3` e não houver tarefa pendente, o sistema deve enviar uma mensagem explicando que não encontrou tarefa ativa para aquele número.
-- Se encontrar, deve responder imediatamente com a próxima etapa: confirmar, pedir data ou pedir justificativa.
+### 2. Processar `1`, `2`, `3` para alerta de painel offline
 
-### 6. Validar com teste real
-- Criar tarefa nova.
-- Confirmar que não aparece mais “Aguardando mensagem”.
-- Responder `1` e verificar retorno imediato.
-- Responder `SIM` e verificar confirmação/comprovante.
-- Testar também `2` e `3` em nova tarefa.
+Adicionar lógica de texto para o alerta offline:
+
+- `1` = registrar “Já estou verificando”
+- `2` = registrar “Visualizei” e pausar alertas por 3 horas, mantendo a lógica que já existia no handler de botão
+- `3` = registrar “Interromper Notificações” e bloquear notificações daquele painel específico até ele voltar online
+
+A identificação do painel será feita pelo alerta mais recente enviado para aquele telefone em `panel_offline_alerts_history.destinatarios_notificados`, assim a resposta `3` será vinculada ao Royal Legacy 3 no caso do print.
+
+### 3. Enviar confirmação de volta pela Evolution
+
+Após processar a resposta, enviar uma mensagem de confirmação visível pelo mesmo roteador atual de notificações (`zapi-send-message`, que hoje é o shim que envia via Evolution para `exa_alert`).
+
+Exemplo esperado para `3`:
+
+```text
+🛑 Notificações interrompidas
+
+📍 Royal Legacy 3
+✅ Você não receberá mais alertas deste painel enquanto ele estiver offline.
+🔔 Os alertas voltam automaticamente quando o painel ficar online novamente.
+```
+
+### 4. Remover texto enganoso “toque em botão”
+
+No envio do `monitor-panels`, trocar o rodapé para algo compatível com texto:
+
+```text
+Responda com 1, 2 ou 3
+```
+
+E garantir que `zapi-send-message` não acrescente instruções conflitantes.
+
+### 5. Corrigir referência dos botões no monitoramento
+
+Hoje o `monitor-panels` tenta usar `btn.action_key`, mas a tabela real `panel_offline_alert_buttons` não tem essa coluna. Vou ajustar para usar o `id` real do botão, mantendo compatibilidade com o handler antigo e evitando mapeamentos quebrados.
+
+### 6. Garantir webhook da instância Evolution
+
+Depois do endpoint existir, configurar/testar a instância Evolution de notificações (`is_notifications=true`) para enviar eventos `messages.upsert` para o endpoint correto.
+
+Isso não muda a interface; é só a conexão de entrada da API.
+
+### 7. Validação
+
+Validar com um teste controlado:
+
+- enviar/responder um alerta offline de teste
+- responder `1` e confirmar que grava confirmação e responde no WhatsApp
+- responder `2` e confirmar pausa temporária
+- responder `3` e confirmar que grava `notifications_paused_until = indefinite` no painel correto
+- confirmar que novos ciclos do `monitor-panels` não enviam mais alerta para esse painel enquanto ele estiver offline
+
+## Arquivos previstos
+
+- `supabase/functions/evolution-webhook/index.ts` ou extensão segura do webhook existente
+- `supabase/functions/monitor-panels/index.ts`
+- possivelmente `supabase/functions/zapi-send-message/index.ts` apenas para ajustar rodapé/instrução conflitante
+
+Sem alterações de UI.
