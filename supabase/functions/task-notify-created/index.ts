@@ -248,10 +248,11 @@ serve(async (req) => {
 
       try {
         // Route through zapi-send-message shim → Evolution API (Notificações EXA)
+        // zapi-send-message converte `buttons` em texto numerado automaticamente.
         const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
           body: {
             agentKey: 'exa_alert',
-            phone: contact.telefone,
+            phone: formattedPhone,
             message,
             skipSplit: true,
             buttons: [
@@ -259,7 +260,7 @@ serve(async (req) => {
               { id: 'task_reschedule', label: '🔄 Remarcar' },
               { id: 'task_cancel', label: '❌ Cancelar' },
             ],
-            footer: 'Toque em um botão para responder',
+            footer: 'Responda com o número (1, 2 ou 3).',
           },
         });
 
@@ -281,6 +282,39 @@ serve(async (req) => {
         console.error(`[TASK-NOTIFY] ❌ Error sending to ${contact.nome}:`, err);
       }
     }
+
+    // Criar entrada na fila de respostas para que o usuário possa responder
+    // com 1/2/3/SIM/NAO e o task-follow-up-response saber qual tarefa é.
+    try {
+      const { data: existingQueue } = await supabase
+        .from('task_notification_queue')
+        .select('id')
+        .eq('task_id', task_id)
+        .neq('status', 'resolved')
+        .maybeSingle();
+
+      if (!existingQueue) {
+        // Resolver criador da tarefa (para vincular `criado_por` na fila)
+        const { data: taskRow } = await supabase
+          .from('tasks')
+          .select('criada_por')
+          .eq('id', task_id)
+          .maybeSingle();
+
+        await supabase.from('task_notification_queue').insert({
+          task_id,
+          criado_por: taskRow?.criada_por || null,
+          status: 'sent_to_creator',
+          sent_at: new Date().toISOString(),
+        });
+        console.log('[TASK-NOTIFY] 🗂️ task_notification_queue criado para task:', task_id);
+      } else {
+        console.log('[TASK-NOTIFY] ℹ️ task_notification_queue já existia para task:', task_id);
+      }
+    } catch (queueErr) {
+      console.error('[TASK-NOTIFY] ⚠️ Falha ao criar task_notification_queue:', queueErr);
+    }
+
 
     // Log
     await supabase.from('agent_logs').insert({
