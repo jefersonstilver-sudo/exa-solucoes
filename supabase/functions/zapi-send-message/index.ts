@@ -46,7 +46,10 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('[ZAPI-SEND] 📥 Request received:', Object.keys(requestBody));
     
-    const { agentKey, phone, message, mediaUrl, skipSplit } = requestBody;
+    const { agentKey, phone, message, mediaUrl, skipSplit, buttons, footer, title } = requestBody as {
+      agentKey: string; phone: string; message: string; mediaUrl?: string; skipSplit?: boolean;
+      buttons?: Array<{ id: string; label: string }>; footer?: string; title?: string;
+    };
 
     // 🔍 DEBUG: Log explícito do parâmetro skipSplit
     console.log('[ZAPI-SEND] 🔍 DEBUG - Request body:', { 
@@ -342,9 +345,65 @@ serve(async (req) => {
       }
     };
 
+    // ============= BUTTONS via Evolution (Baileys) =============
+    // Quando há buttons no payload e estamos via Evolution, tenta sendButtons.
+    // Se falhar, cai automaticamente em sendText com lista numerada.
+    const hasButtons = Array.isArray(buttons) && buttons.length > 0 && useEvolution;
+    let buttonSendMode: 'buttons' | 'text_fallback' | null = null;
+    let buttonResult: any = null;
+    let buttonError: string | null = null;
+
+    if (hasButtons) {
+      const cleanPhone = normalizePhoneBR(phone);
+      const trimmedButtons = buttons!.slice(0, 3);
+      const btnUrl = `${evolutionApiUrl}/message/sendButtons/${evolutionInstanceName}`;
+      const btnPayload = {
+        number: cleanPhone,
+        title: title || undefined,
+        description: message,
+        footer: footer || undefined,
+        buttons: trimmedButtons.map((b) => ({
+          type: 'reply',
+          displayText: b.label,
+          id: b.id,
+        })),
+      };
+      console.log('[ZAPI-SEND] 🔘 Trying sendButtons via Evolution:', { count: trimmedButtons.length, phone: cleanPhone });
+      try {
+        buttonResult = await sendWithRetry(btnUrl, btnPayload, { apikey: evolutionApiKey! }, 1);
+        buttonSendMode = 'buttons';
+        console.log('[ZAPI-SEND] ✅ sendButtons OK');
+      } catch (err) {
+        buttonError = (err as Error).message;
+        console.warn('[ZAPI-SEND] ⚠️ sendButtons failed, falling back to text:', buttonError);
+        buttonSendMode = 'text_fallback';
+      }
+
+      if (buttonSendMode === 'buttons') {
+        const messageId = buttonResult?.key?.id ?? buttonResult?.messageId ?? null;
+        await supabase.from('evolution_logs').insert({
+          agent_key: agentKey, direction: 'outbound', phone_number: phone,
+          message_text: message, status: 'sent',
+          zapi_message_id: messageId,
+          metadata: { response: buttonResult, provider: 'evolution', send_mode: 'buttons', buttons: trimmedButtons },
+        });
+        return new Response(JSON.stringify({ success: true, messageId, sendMode: 'buttons' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // fallback: anexar lista numerada à message
+      const numbered = trimmedButtons.map((b, i) => `${i + 1}. ${b.label}`).join('\n');
+      // mutate local var via reassignment of messageChunks below; rebuild message
+      (requestBody as any).message = `${message}\n\n*Responda com o número da opção:*\n${numbered}${footer ? `\n\n${footer}` : ''}`;
+    }
+
+    const effectiveMessage = hasButtons && buttonSendMode === 'text_fallback'
+      ? (requestBody as any).message
+      : message;
+
     // Se skipSplit = true, não quebrar a mensagem (útil para relatórios com links)
-    const messageChunks = skipSplit ? [message] : splitMessage(message);
-    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'chunks via', useEvolution ? 'EVOLUTION' : 'Z-API', skipSplit ? '(skipSplit)' : '');
+    const messageChunks = (skipSplit || hasButtons) ? [effectiveMessage] : splitMessage(effectiveMessage);
+    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'chunks via', useEvolution ? 'EVOLUTION' : 'Z-API', skipSplit ? '(skipSplit)' : '', buttonSendMode === 'text_fallback' ? '(button fallback)' : '');
 
     // Build transport-specific URL + headers + payload
     const sendUrl = useEvolution
@@ -399,7 +458,7 @@ serve(async (req) => {
       agent_key: agentKey, direction: 'outbound', phone_number: phone,
       message_text: message, media_url: mediaUrl || null, status: 'sent',
       zapi_message_id: messageId,
-      metadata: { response: zapiResult, totalChunks: messageChunks.length, allResults: results, provider: useEvolution ? 'evolution' : 'zapi' }
+      metadata: { response: zapiResult, totalChunks: messageChunks.length, allResults: results, provider: useEvolution ? 'evolution' : 'zapi', send_mode: buttonSendMode ?? 'text', button_error: buttonError ?? undefined }
     });
 
 
