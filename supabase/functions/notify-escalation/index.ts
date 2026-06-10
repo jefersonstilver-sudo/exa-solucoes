@@ -240,38 +240,8 @@ serve(async (req) => {
         if (textResponse.ok) {
           notifiedCount++;
           console.log(`[NOTIFY-ESCALATION] ✅ TEXT sent successfully to ${vendedor.nome}`);
-          
-          // ✅ PASSO 2: TENTAR enviar BOTÕES como mensagem SEPARADA (pode falhar, tudo bem)
-          try {
-            const buttonJaRespondi = `escalacao_respondida_${escalacao.id}`;
-            const buttonVouResponder = `escalacao_depois_${escalacao.id}`;
-            
-            console.log(`[NOTIFY-ESCALATION] 🔘 Attempting BUTTONS for ${vendedor.nome}...`);
-            
-            const buttonResponse = await fetch(buttonUrl, {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Client-Token': zapiClientToken
-              },
-              body: JSON.stringify({
-                phone: vendedorPhone,
-                message: "👆 Ou clique em um botão:",
-                buttonActions: [
-                  { id: buttonJaRespondi, label: "✅ Já respondi" },
-                  { id: buttonVouResponder, label: "⏰ Vou responder depois" }
-                ]
-              })
-            });
-
-            if (buttonResponse.ok) {
-              console.log(`[NOTIFY-ESCALATION] ✅ BUTTONS also sent to ${vendedor.nome} (bonus!)`);
-            } else {
-              console.log(`[NOTIFY-ESCALATION] ⚠️ Buttons failed for ${vendedor.nome}, but text was already sent`);
-            }
-          } catch (buttonError) {
-            console.log(`[NOTIFY-ESCALATION] ⚠️ Button attempt failed for ${vendedor.nome}, text was sent:`, buttonError);
-          }
+          // ⚠️ Botões nativos via Evolution/Baileys quebram no WhatsApp moderno
+          // ("Aguardando mensagem"). Mantemos somente o texto com instruções.
         } else {
           console.error(`[NOTIFY-ESCALATION] ❌ Failed to send text to ${vendedor.nome}:`, textResult);
         }
@@ -279,6 +249,7 @@ serve(async (req) => {
         console.error(`[NOTIFY-ESCALATION] ❌ Error sending to ${vendedor.nome}:`, error);
       }
     }
+
 
     // 6. Log
     await supabase.from('agent_logs').insert({
