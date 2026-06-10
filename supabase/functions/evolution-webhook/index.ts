@@ -176,7 +176,26 @@ Deno.serve(async (req) => {
 
     console.log("[EVO-WEBHOOK] ▶ from", phone, "(jid:", remoteJid, "name:", senderName, ") text:", trimmed.slice(0, 60));
 
-    // =============== ROUTE 1: respostas a alertas de painel offline (1/2/3) ===============
+    // =============== ROUTE 1 (PRIORITÁRIA): respostas a tarefas ===============
+    // Tarefas são tentadas primeiro porque o usuário responde 1/2/3 a um compromisso
+    // específico; só se NÃO houver fila ativa de tarefa caímos no painel offline.
+    try {
+      const { data: taskRes, error: taskErr } = await supabase.functions.invoke("task-follow-up-response", {
+        body: { phone, message: trimmed, sender_name: senderName },
+      });
+      if (taskErr) {
+        console.error("[EVO-WEBHOOK] task-follow-up-response returned error:", taskErr);
+      } else if (taskRes?.handled) {
+        console.log("[EVO-WEBHOOK] ✅ handled by task-follow-up-response:", taskRes.action || taskRes.processed);
+        return json(200, { handled: true, processed: "task_followup", result: taskRes });
+      } else {
+        console.log("[EVO-WEBHOOK] task-follow-up-response NOT handled:", taskRes?.reason);
+      }
+    } catch (e) {
+      console.warn("[EVO-WEBHOOK] task-follow-up-response exception:", (e as Error).message);
+    }
+
+    // =============== ROUTE 2: respostas a alertas de painel offline (1/2/3) ===============
     const isMenu13 = /^[123]$/.test(trimmed);
     if (isMenu13) {
       const tail = phone.slice(-8);
@@ -212,7 +231,6 @@ Deno.serve(async (req) => {
         const deviceName = device?.name || "Painel";
         const metadata = (device?.metadata as any) || {};
 
-        // Mapeia opção -> ação
         const optionMap: Record<string, { label: string; emoji: string; action: "verify" | "pause_3h" | "pause_indefinite" }> = {
           "1": { label: "Já estou verificando", emoji: "🔧", action: "verify" },
           "2": { label: "Visualizei", emoji: "👁️", action: "pause_3h" },
@@ -220,7 +238,6 @@ Deno.serve(async (req) => {
         };
         const chosen = optionMap[trimmed];
 
-        // Aplica pausa se necessário
         if (chosen.action === "pause_3h" || chosen.action === "pause_indefinite") {
           const pausedUntil = chosen.action === "pause_indefinite"
             ? "indefinite"
@@ -240,14 +257,12 @@ Deno.serve(async (req) => {
             .eq("id", deviceId);
         }
 
-        // Resolve UUID do botão correspondente para FK
         const { data: btnRow } = await supabase
           .from("panel_offline_alert_buttons")
           .select("id, label")
           .ilike("label", `%${chosen.label}%`)
           .maybeSingle();
 
-        // Registra confirmação
         await supabase.from("panel_offline_alert_confirmations").insert({
           alert_history_id: matched.id,
           device_id: deviceId,
@@ -262,29 +277,14 @@ Deno.serve(async (req) => {
           incident_number: matched.incident_number || null,
         });
 
-        // Mensagem de confirmação
         const nowBr = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
         let ack = "";
         if (chosen.action === "verify") {
-          ack =
-            `✅ *Confirmação registrada*\n\n` +
-            `👤 ${senderName}\n` +
-            `📍 ${deviceName}\n` +
-            `🔧 Já estou verificando\n` +
-            `⏰ ${nowBr}`;
+          ack = `✅ *Confirmação registrada*\n\n👤 ${senderName}\n📍 ${deviceName}\n🔧 Já estou verificando\n⏰ ${nowBr}`;
         } else if (chosen.action === "pause_3h") {
-          ack =
-            `👁️ *Visualizei registrado*\n\n` +
-            `📍 ${deviceName}\n` +
-            `⏸️ Notificações pausadas por *3 horas*\n` +
-            `⏰ ${nowBr}`;
+          ack = `👁️ *Visualizei registrado*\n\n📍 ${deviceName}\n⏸️ Notificações pausadas por *3 horas*\n⏰ ${nowBr}`;
         } else {
-          ack =
-            `🛑 *Notificações interrompidas*\n\n` +
-            `📍 ${deviceName}\n` +
-            `✅ Você não receberá mais alertas deste painel enquanto ele estiver offline.\n` +
-            `🔔 Os alertas voltam automaticamente quando o painel ficar online novamente.\n` +
-            `⏰ ${nowBr}`;
+          ack = `🛑 *Notificações interrompidas*\n\n📍 ${deviceName}\n✅ Você não receberá mais alertas deste painel enquanto ele estiver offline.\n🔔 Os alertas voltam automaticamente quando o painel ficar online novamente.\n⏰ ${nowBr}`;
         }
         await sendReply(supabase, phone, ack);
 
@@ -295,23 +295,10 @@ Deno.serve(async (req) => {
           device_id: deviceId,
         });
       }
-      
-      console.log("[EVO-WEBHOOK] No panel alert matched for '1/2/3', proceeding to task routes.");
+
+      console.log("[EVO-WEBHOOK] No panel alert matched and no task queue active — silently ignoring 1/2/3.");
     }
 
-    // =============== ROUTE 2: respostas a tarefas (1/2/3/SIM/NAO/datas) ===============
-    try {
-      const { data: taskRes, error: taskErr } = await supabase.functions.invoke("task-follow-up-response", {
-        body: { phone, message: trimmed },
-      });
-      if (taskErr) {
-        console.error("[EVO-WEBHOOK] task-follow-up-response returned error:", taskErr);
-      } else if (taskRes?.handled) {
-        return json(200, { handled: true, processed: "task_followup", result: taskRes });
-      }
-    } catch (e) {
-      console.warn("[EVO-WEBHOOK] task-follow-up-response exception:", (e as Error).message);
-    }
 
     // =============== ROUTE 3: task ack textual (confirmação manual) ===============
     if (trimmed === "✅ Confirmar recebimento" || upper.includes("CONFIRMAR RECEBIMENTO")) {
