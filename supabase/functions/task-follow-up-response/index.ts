@@ -511,20 +511,80 @@ serve(async (req) => {
     }
 
     // ========== HANDLE MENU CHOICES (1, 2, 3) — with M-03 lock ==========
+    // 1 = ✅ Confirmar (visualização do compromisso). Marca receipt como 'read'
+    //     e atualiza a tela de Confirmações na UI. NÃO conclui a tarefa.
     if (msgTrimmed === '1') {
+      // Marca o recibo deste contato como lido
+      let updatedReceiptId: string | null = null;
+      try {
+        let receiptQuery = supabase
+          .from('task_read_receipts')
+          .select('id, contact_phone, contact_name, status')
+          .eq('task_id', task.id)
+          .order('sent_at', { ascending: false });
+
+        const orFilter = phoneVariants.map(p => `contact_phone.ilike.%${p.slice(-8)}%`).join(',');
+        const { data: candidates } = await receiptQuery.or(orFilter).limit(5);
+
+        let chosen = (candidates || [])[0];
+        if (!chosen && matchedReceipt && matchedReceipt.task_id === task.id) {
+          chosen = matchedReceipt;
+        }
+        if (!chosen) {
+          // último recurso: por nome do remetente, se vier
+          const { data: byName } = await supabase
+            .from('task_read_receipts')
+            .select('id, contact_phone, contact_name, status')
+            .eq('task_id', task.id)
+            .ilike('contact_name', `%${respondentName}%`)
+            .limit(1)
+            .maybeSingle();
+          if (byName) chosen = byName;
+        }
+
+        if (chosen) {
+          await supabase
+            .from('task_read_receipts')
+            .update({ status: 'read', read_at: new Date().toISOString() })
+            .eq('id', chosen.id);
+          updatedReceiptId = chosen.id;
+        }
+      } catch (e) {
+        console.warn('[TASK-RESPONSE] confirm receipt update failed:', (e as Error).message);
+      }
+
+      // Mantém a fila ativa (não resolve) para permitir 2/3 depois,
+      // mas limpa qualquer ação pendente residual.
       await supabase.from('task_notification_queue').update({
-        pending_action: 'concluir',
-        awaiting_confirmation: true,
-        locked_by: phone,
-        locked_at: new Date().toISOString(),
+        pending_action: null,
+        awaiting_confirmation: false,
+        locked_by: null,
+        locked_at: null,
       }).eq('id', activeNotif.id);
 
-      await sendReply(`Tem certeza que a tarefa *"${task.titulo}"* foi concluída?\n\nResponda *SIM* para confirmar.`);
+      await supabase.from('agent_logs').insert({
+        agent_key: 'exa_alert',
+        event_type: 'task_visualization_confirmed',
+        metadata: {
+          task_id: task.id,
+          titulo: task.titulo,
+          confirmed_by: phone,
+          confirmed_by_name: respondentName,
+          receipt_id: updatedReceiptId,
+          timestamp: new Date().toISOString(),
+        },
+      });
 
-      return new Response(JSON.stringify({ handled: true, action: 'concluir_requested' }), {
+      const nowBr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      await sendReply(
+        `✅ *Confirmação registrada*\n\n📋 *${task.titulo}*\n👤 ${respondentName}\n⏰ ${nowBr}\n\n_Se precisar, ainda pode responder *2* para remarcar ou *3* para cancelar._`,
+      );
+
+      return new Response(JSON.stringify({ handled: true, action: 'visualization_confirmed', receipt_id: updatedReceiptId }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
 
     if (msgTrimmed === '2') {
       await supabase.from('task_notification_queue').update({
