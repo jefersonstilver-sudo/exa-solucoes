@@ -36,11 +36,12 @@ function extractText(message: any): string {
 
 async function sendReply(supabase: any, phone: string, message: string) {
   try {
-    await supabase.functions.invoke("zapi-send-message", {
+    const { error } = await supabase.functions.invoke("zapi-send-message", {
       body: { agentKey: "exa_alert", phone, message, skipSplit: true },
     });
+    if (error) console.error("[EVO-WEBHOOK] sendReply error in data:", error);
   } catch (e) {
-    console.error("[EVO-WEBHOOK] sendReply error:", (e as Error).message);
+    console.error("[EVO-WEBHOOK] sendReply exception:", (e as Error).message);
   }
 }
 
@@ -154,105 +155,90 @@ Deno.serve(async (req) => {
 
       if (matched && matched.painel_id) {
         const deviceId = matched.painel_id as string;
-
-      const deviceId = matched.painel_id as string;
-      const { data: device } = await supabase
-        .from("devices")
-        .select("id, name, metadata")
-        .eq("id", deviceId)
-        .single();
-
-      const deviceName = device?.name || "Painel";
-      const metadata = (device?.metadata as any) || {};
-
-      // Mapeia opção -> ação
-      const optionMap: Record<string, { label: string; emoji: string; action: "verify" | "pause_3h" | "pause_indefinite" }> = {
-        "1": { label: "Já estou verificando", emoji: "🔧", action: "verify" },
-        "2": { label: "Visualizei", emoji: "👁️", action: "pause_3h" },
-        "3": { label: "Interromper Notificações", emoji: "🛑", action: "pause_indefinite" },
-      };
-      const chosen = optionMap[trimmed];
-
-      // Aplica pausa se necessário
-      if (chosen.action === "pause_3h" || chosen.action === "pause_indefinite") {
-        const pausedUntil = chosen.action === "pause_indefinite"
-          ? "indefinite"
-          : new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
-
-        await supabase
+        const { data: device } = await supabase
           .from("devices")
-          .update({
-            metadata: {
-              ...metadata,
-              notifications_paused_until: pausedUntil,
-              paused_by: phone,
-              paused_by_name: senderName,
-              paused_at: new Date().toISOString(),
-            },
-          })
-          .eq("id", deviceId);
-      }
+          .select("id, name, metadata")
+          .eq("id", deviceId)
+          .single();
 
-      // Resolve UUID do botão correspondente para FK
-      const { data: btnRow } = await supabase
-        .from("panel_offline_alert_buttons")
-        .select("id, label")
-        .ilike("label", `%${chosen.label}%`)
-        .maybeSingle();
+        const deviceName = device?.name || "Painel";
+        const metadata = (device?.metadata as any) || {};
 
-      // Registra confirmação
-      await supabase.from("panel_offline_alert_confirmations").insert({
-        alert_history_id: matched.id,
-        device_id: deviceId,
-        device_name: deviceName,
-        recipient_phone: phone,
-        recipient_name: senderName,
-        button_id: btnRow?.id || null,
-        button_label: `${chosen.emoji} ${chosen.label}`,
-        raw_webhook: payload,
-        alert_number: matched.alert_number || null,
-        incident_id: matched.incident_id || null,
-        incident_number: matched.incident_number || null,
-      });
+        // Mapeia opção -> ação
+        const optionMap: Record<string, { label: string; emoji: string; action: "verify" | "pause_3h" | "pause_indefinite" }> = {
+          "1": { label: "Já estou verificando", emoji: "🔧", action: "verify" },
+          "2": { label: "Visualizei", emoji: "👁️", action: "pause_3h" },
+          "3": { label: "Interromper Notificações", emoji: "🛑", action: "pause_indefinite" },
+        };
+        const chosen = optionMap[trimmed];
 
-      // Mensagem de confirmação
-      const nowBr = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      let ack = "";
-      if (chosen.action === "verify") {
-        ack =
-          `✅ *Confirmação registrada*\n\n` +
-          `👤 ${senderName}\n` +
-          `📍 ${deviceName}\n` +
-          `🔧 Já estou verificando\n` +
-          `⏰ ${nowBr}`;
-      } else if (chosen.action === "pause_3h") {
-        ack =
-          `👁️ *Visualizei registrado*\n\n` +
-          `📍 ${deviceName}\n` +
-          `⏸️ Notificações pausadas por *3 horas*\n` +
-          `⏰ ${nowBr}`;
-      } else {
-        ack =
-          `🛑 *Notificações interrompidas*\n\n` +
-          `📍 ${deviceName}\n` +
-          `✅ Você não receberá mais alertas deste painel enquanto ele estiver offline.\n` +
-          `🔔 Os alertas voltam automaticamente quando o painel ficar online novamente.\n` +
-          `⏰ ${nowBr}`;
-      }
-      await sendReply(supabase, phone, ack);
+        // Aplica pausa se necessário
+        if (chosen.action === "pause_3h" || chosen.action === "pause_indefinite") {
+          const pausedUntil = chosen.action === "pause_indefinite"
+            ? "indefinite"
+            : new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
 
-      return json(200, {
-        handled: true,
-        processed: "panel_alert_text_response",
-        option: trimmed,
-        device_id: deviceId,
-      });
-    }
+          await supabase
+            .from("devices")
+            .update({
+              metadata: {
+                ...metadata,
+                notifications_paused_until: pausedUntil,
+                paused_by: phone,
+                paused_by_name: senderName,
+                paused_at: new Date().toISOString(),
+              },
+            })
+            .eq("id", deviceId);
+        }
 
-    // =============== ROUTE 2: respostas a tarefas (1/2/3/SIM/NAO/datas) ===============
-    try {
-      const { data: taskRes } = await supabase.functions.invoke("task-follow-up-response", {
+        // Resolve UUID do botão correspondente para FK
+        const { data: btnRow } = await supabase
+          .from("panel_offline_alert_buttons")
+          .select("id, label")
+          .ilike("label", `%${chosen.label}%`)
+          .maybeSingle();
+
+        // Registra confirmação
+        await supabase.from("panel_offline_alert_confirmations").insert({
+          alert_history_id: matched.id,
+          device_id: deviceId,
+          device_name: deviceName,
+          recipient_phone: phone,
+          recipient_name: senderName,
+          button_id: btnRow?.id || null,
+          button_label: `${chosen.emoji} ${chosen.label}`,
+          raw_webhook: payload,
+          alert_number: matched.alert_number || null,
+          incident_id: matched.incident_id || null,
+          incident_number: matched.incident_number || null,
         });
+
+        // Mensagem de confirmação
+        const nowBr = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        let ack = "";
+        if (chosen.action === "verify") {
+          ack =
+            `✅ *Confirmação registrada*\n\n` +
+            `👤 ${senderName}\n` +
+            `📍 ${deviceName}\n` +
+            `🔧 Já estou verificando\n` +
+            `⏰ ${nowBr}`;
+        } else if (chosen.action === "pause_3h") {
+          ack =
+            `👁️ *Visualizei registrado*\n\n` +
+            `📍 ${deviceName}\n` +
+            `⏸️ Notificações pausadas por *3 horas*\n` +
+            `⏰ ${nowBr}`;
+        } else {
+          ack =
+            `🛑 *Notificações interrompidas*\n\n` +
+            `📍 ${deviceName}\n` +
+            `✅ Você não receberá mais alertas deste painel enquanto ele estiver offline.\n` +
+            `🔔 Os alertas voltam automaticamente quando o painel ficar online novamente.\n` +
+            `⏰ ${nowBr}`;
+        }
+        await sendReply(supabase, phone, ack);
 
         return json(200, {
           handled: true,
@@ -261,11 +247,22 @@ Deno.serve(async (req) => {
           device_id: deviceId,
         });
       }
-      if (taskRes?.handled) {
+      
+      console.log("[EVO-WEBHOOK] No panel alert matched for '1/2/3', proceeding to task routes.");
+    }
+
+    // =============== ROUTE 2: respostas a tarefas (1/2/3/SIM/NAO/datas) ===============
+    try {
+      const { data: taskRes, error: taskErr } = await supabase.functions.invoke("task-follow-up-response", {
+        body: { phone, message: trimmed },
+      });
+      if (taskErr) {
+        console.error("[EVO-WEBHOOK] task-follow-up-response returned error:", taskErr);
+      } else if (taskRes?.handled) {
         return json(200, { handled: true, processed: "task_followup", result: taskRes });
       }
     } catch (e) {
-      console.warn("[EVO-WEBHOOK] task-follow-up-response failed:", (e as Error).message);
+      console.warn("[EVO-WEBHOOK] task-follow-up-response exception:", (e as Error).message);
     }
 
     // =============== ROUTE 3: task ack textual (confirmação manual) ===============
@@ -290,7 +287,7 @@ Deno.serve(async (req) => {
 
     return json(200, { handled: false, reason: "no_route_matched" });
   } catch (err) {
-    console.error("[EVO-WEBHOOK] error:", (err as Error).message);
+    console.error("[EVO-WEBHOOK] global error:", (err as Error).message);
     return json(500, { error: (err as Error).message });
   }
 });
