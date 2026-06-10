@@ -345,15 +345,17 @@ serve(async (req) => {
       }
     };
 
-    // ============= BUTTONS via Evolution (Baileys) =============
-    // Quando há buttons no payload e estamos via Evolution, tenta sendButtons.
-    // Se falhar, cai automaticamente em sendText com lista numerada.
-    const hasButtons = Array.isArray(buttons) && buttons.length > 0 && useEvolution;
-    let buttonSendMode: 'buttons' | 'text_fallback' | null = null;
-    let buttonResult: any = null;
+    // ============= BUTTONS -> TEXTO NUMERADO =============
+    // Evolution/Baileys sendButtons retorna 200 OK mas o WhatsApp moderno (multi-device)
+    // não decodifica o buttonsMessage legado e fica em "Aguardando mensagem".
+    // Por isso convertemos buttons em lista numerada de texto por padrão.
+    // Para re-testar botões nativos, passar forceNativeButtons:true no body.
+    const forceNativeButtons = (requestBody as any).forceNativeButtons === true;
+    const hasButtons = Array.isArray(buttons) && buttons.length > 0;
+    let buttonSendMode: 'buttons' | 'text_numbered' | null = null;
     let buttonError: string | null = null;
 
-    if (hasButtons) {
+    if (hasButtons && useEvolution && forceNativeButtons) {
       const cleanPhone = normalizePhoneBR(phone);
       const trimmedButtons = buttons!.slice(0, 3);
       const btnUrl = `${evolutionApiUrl}/message/sendButtons/${evolutionInstanceName}`;
@@ -362,24 +364,10 @@ serve(async (req) => {
         title: title || undefined,
         description: message,
         footer: footer || undefined,
-        buttons: trimmedButtons.map((b) => ({
-          type: 'reply',
-          displayText: b.label,
-          id: b.id,
-        })),
+        buttons: trimmedButtons.map((b) => ({ type: 'reply', displayText: b.label, id: b.id })),
       };
-      console.log('[ZAPI-SEND] 🔘 Trying sendButtons via Evolution:', { count: trimmedButtons.length, phone: cleanPhone });
       try {
-        buttonResult = await sendWithRetry(btnUrl, btnPayload, { apikey: evolutionApiKey! }, 1);
-        buttonSendMode = 'buttons';
-        console.log('[ZAPI-SEND] ✅ sendButtons OK');
-      } catch (err) {
-        buttonError = (err as Error).message;
-        console.warn('[ZAPI-SEND] ⚠️ sendButtons failed, falling back to text:', buttonError);
-        buttonSendMode = 'text_fallback';
-      }
-
-      if (buttonSendMode === 'buttons') {
+        const buttonResult = await sendWithRetry(btnUrl, btnPayload, { apikey: evolutionApiKey! }, 1);
         const messageId = buttonResult?.key?.id ?? buttonResult?.messageId ?? null;
         await supabase.from('evolution_logs').insert({
           agent_key: agentKey, direction: 'outbound', phone_number: phone,
@@ -390,20 +378,24 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: true, messageId, sendMode: 'buttons' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      } catch (err) {
+        buttonError = (err as Error).message;
+        console.warn('[ZAPI-SEND] ⚠️ forceNativeButtons failed, falling back to text:', buttonError);
       }
-      // fallback: anexar lista numerada à message
-      const numbered = trimmedButtons.map((b, i) => `${i + 1}. ${b.label}`).join('\n');
-      // mutate local var via reassignment of messageChunks below; rebuild message
-      (requestBody as any).message = `${message}\n\n*Responda com o número da opção:*\n${numbered}${footer ? `\n\n${footer}` : ''}`;
     }
 
-    const effectiveMessage = hasButtons && buttonSendMode === 'text_fallback'
-      ? (requestBody as any).message
-      : message;
+    let effectiveMessage = message;
+    if (hasButtons) {
+      const trimmedButtons = buttons!.slice(0, 3);
+      const numbered = trimmedButtons.map((b, i) => `${i + 1}. ${b.label}`).join('\n');
+      effectiveMessage = `${message}\n\n*Responda com o número da opção:*\n${numbered}${footer ? `\n\n_${footer}_` : ''}`;
+      buttonSendMode = 'text_numbered';
+    }
 
-    // Se skipSplit = true, não quebrar a mensagem (útil para relatórios com links)
+    // Se skipSplit = true OU temos buttons numerados, não quebrar
     const messageChunks = (skipSplit || hasButtons) ? [effectiveMessage] : splitMessage(effectiveMessage);
-    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'chunks via', useEvolution ? 'EVOLUTION' : 'Z-API', skipSplit ? '(skipSplit)' : '', buttonSendMode === 'text_fallback' ? '(button fallback)' : '');
+    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'chunks via', useEvolution ? 'EVOLUTION' : 'Z-API', skipSplit ? '(skipSplit)' : '', buttonSendMode === 'text_numbered' ? '(text_numbered)' : '');
+
 
     // Build transport-specific URL + headers + payload
     const sendUrl = useEvolution
