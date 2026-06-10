@@ -184,7 +184,7 @@ serve(async (req) => {
     // Get task info
     const { data: task } = await supabase
       .from('tasks')
-      .select('id, titulo, data_prevista, criada_por, status, descricao, local_evento, link_reuniao, horario_inicio, horario_limite')
+      .select('id, titulo, data_prevista, created_by, status, descricao, local_evento, link_reuniao, horario_inicio, horario_limite')
       .eq('id', activeNotif.task_id)
       .single();
 
@@ -206,11 +206,11 @@ serve(async (req) => {
 
     // Helper: notify creator when a responsável takes action
     const notifyCreatorOfAction = async (actionDesc: string, respondentPhone: string) => {
-      if (!task.criada_por) return;
+      if (!task.created_by) return;
       const { data: creator } = await supabase
         .from('users')
         .select('telefone, nome')
-        .eq('id', task.criada_por)
+        .eq('id', task.created_by)
         .single();
       
       if (!creator?.telefone) return;
