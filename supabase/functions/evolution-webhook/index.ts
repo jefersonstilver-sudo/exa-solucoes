@@ -152,14 +152,8 @@ Deno.serve(async (req) => {
         if (matched) break;
       }
 
-      if (!matched || !matched.painel_id) {
-        await sendReply(
-          supabase,
-          phone,
-          "ℹ️ Não encontrei um alerta de painel recente vinculado a este número.\n\nSe acabou de receber um alerta, aguarde alguns segundos e tente novamente.",
-        );
-        return json(200, { handled: false, reason: "no_matching_panel_alert" });
-      }
+      if (matched && matched.painel_id) {
+        const deviceId = matched.painel_id as string;
 
       const deviceId = matched.painel_id as string;
       const { data: device } = await supabase
@@ -258,8 +252,15 @@ Deno.serve(async (req) => {
     // =============== ROUTE 2: respostas a tarefas (1/2/3/SIM/NAO/datas) ===============
     try {
       const { data: taskRes } = await supabase.functions.invoke("task-follow-up-response", {
-        body: { phone, message: trimmed },
-      });
+        });
+
+        return json(200, {
+          handled: true,
+          processed: "panel_alert_text_response",
+          option: trimmed,
+          device_id: deviceId,
+        });
+      }
       if (taskRes?.handled) {
         return json(200, { handled: true, processed: "task_followup", result: taskRes });
       }
