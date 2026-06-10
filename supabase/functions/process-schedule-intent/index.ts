@@ -67,26 +67,21 @@ serve(async (req) => {
       });
     };
 
-    // Helper to send button message
+    // Helper: envia texto numerado (botões nativos via Baileys quebram no WhatsApp moderno).
+    // Mantém o nome `sendButtons` para minimizar mudanças nos callers.
     const sendButtons = async (text: string, buttons: { id: string; label: string }[]) => {
-      await fetch(`${zapiUrl}/send-button-list`, {
+      const numbered = buttons.map((b, i) => `${i + 1}. ${b.label}`).join('\n');
+      const fullText = `${text}\n\n*Responda apenas com o número:*\n${numbered}`;
+      await fetch(`${zapiUrl}/send-text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Client-Token': zapiClientToken
         },
-        body: JSON.stringify({
-          phone,
-          message: text,
-          buttonList: {
-            buttons: buttons.map(b => ({
-              id: b.id,
-              label: b.label
-            }))
-          }
-        })
+        body: JSON.stringify({ phone, message: fullText })
       });
     };
+
 
     // Get contact info by phone
     const { data: contactInfo } = await supabase

@@ -191,7 +191,7 @@ serve(async (req) => {
               { id: 'task_reschedule', label: '🔄 Remarcar' },
               { id: 'task_cancel', label: '❌ Cancelar' },
             ],
-            footer: 'Toque em um botão para responder',
+            footer: 'Responda com o número (1, 2 ou 3).',
           }
         });
         if (!sendError) {

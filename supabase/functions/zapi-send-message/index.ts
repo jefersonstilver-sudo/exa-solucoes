@@ -345,50 +345,20 @@ serve(async (req) => {
       }
     };
 
-    // ============= BUTTONS -> TEXTO NUMERADO =============
-    // Evolution/Baileys sendButtons retorna 200 OK mas o WhatsApp moderno (multi-device)
-    // não decodifica o buttonsMessage legado e fica em "Aguardando mensagem".
-    // Por isso convertemos buttons em lista numerada de texto por padrão.
-    // Para re-testar botões nativos, passar forceNativeButtons:true no body.
-    const forceNativeButtons = (requestBody as any).forceNativeButtons === true;
+    // ============= BUTTONS -> TEXTO NUMERADO (ÚNICO CAMINHO) =============
+    // Botões nativos via Evolution/Baileys quebram no WhatsApp moderno (mostra
+    // "Aguardando mensagem. Essa ação pode levar alguns instantes"). Por isso,
+    // toda chamada que envia `buttons` é convertida automaticamente em texto
+    // numerado, sem exceção. Não existe mais flag para forçar botão nativo.
     const hasButtons = Array.isArray(buttons) && buttons.length > 0;
-    let buttonSendMode: 'buttons' | 'text_numbered' | null = null;
-    let buttonError: string | null = null;
-
-    if (hasButtons && useEvolution && forceNativeButtons) {
-      const cleanPhone = normalizePhoneBR(phone);
-      const trimmedButtons = buttons!.slice(0, 3);
-      const btnUrl = `${evolutionApiUrl}/message/sendButtons/${evolutionInstanceName}`;
-      const btnPayload = {
-        number: cleanPhone,
-        title: title || undefined,
-        description: message,
-        footer: footer || undefined,
-        buttons: trimmedButtons.map((b) => ({ type: 'reply', displayText: b.label, id: b.id })),
-      };
-      try {
-        const buttonResult = await sendWithRetry(btnUrl, btnPayload, { apikey: evolutionApiKey! }, 1);
-        const messageId = buttonResult?.key?.id ?? buttonResult?.messageId ?? null;
-        await supabase.from('evolution_logs').insert({
-          agent_key: agentKey, direction: 'outbound', phone_number: phone,
-          message_text: message, status: 'sent',
-          zapi_message_id: messageId,
-          metadata: { response: buttonResult, provider: 'evolution', send_mode: 'buttons', buttons: trimmedButtons },
-        });
-        return new Response(JSON.stringify({ success: true, messageId, sendMode: 'buttons' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (err) {
-        buttonError = (err as Error).message;
-        console.warn('[ZAPI-SEND] ⚠️ forceNativeButtons failed, falling back to text:', buttonError);
-      }
-    }
+    let buttonSendMode: 'text_numbered' | null = null;
+    const buttonError: string | null = null;
 
     let effectiveMessage = message;
     if (hasButtons) {
       const trimmedButtons = buttons!.slice(0, 3);
       const numbered = trimmedButtons.map((b, i) => `${i + 1}. ${b.label}`).join('\n');
-      effectiveMessage = `${message}\n\n*Responda com o número da opção:*\n${numbered}${footer ? `\n\n_${footer}_` : ''}`;
+      effectiveMessage = `${message}\n\n*Responda apenas com o número da opção:*\n${numbered}${footer ? `\n\n_${footer}_` : ''}`;
       buttonSendMode = 'text_numbered';
     }
 

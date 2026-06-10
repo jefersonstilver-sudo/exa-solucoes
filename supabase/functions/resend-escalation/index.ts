@@ -166,39 +166,12 @@ serve(async (req) => {
         if (textResponse.ok) {
           successCount++;
           console.log(`[RESEND-ESCALATION] ✅ TEXT sent to ${vendedor.nome}`);
-          
-          // ✅ PASSO 2: TENTAR botões como bônus
-          try {
-            const buttonJaRespondi = `escalacao_respondida_${escalacao.id}`;
-            const buttonVouResponder = `escalacao_depois_${escalacao.id}`;
-            
-            const buttonResponse = await fetch(buttonUrl, {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Client-Token': zapiClientToken
-              },
-              body: JSON.stringify({
-                phone: vendedorPhone,
-                message: "👆 Ou clique em um botão:",
-                buttonActions: [
-                  { id: buttonJaRespondi, label: "✅ Já respondi" },
-                  { id: buttonVouResponder, label: "⏰ Vou responder depois" }
-                ]
-              })
-            });
-
-            if (buttonResponse.ok) {
-              console.log(`[RESEND-ESCALATION] ✅ BUTTONS also sent to ${vendedor.nome}`);
-            } else {
-              console.log(`[RESEND-ESCALATION] ⚠️ Buttons failed for ${vendedor.nome}, text was sent`);
-            }
-          } catch (buttonError) {
-            console.log(`[RESEND-ESCALATION] ⚠️ Button attempt failed, text was sent`);
-          }
+          // ⚠️ Botões nativos via Evolution/Baileys quebram no WhatsApp moderno
+          // ("Aguardando mensagem"). Mantemos somente o texto com instruções.
         } else {
           errors.push(`Falha ao enviar para ${vendedor.nome}`);
         }
+
       } catch (err) {
         console.error(`[RESEND-ESCALATION] ❌ Erro ao enviar para ${vendedor.nome}:`, err);
         errors.push(`Erro ao enviar para ${vendedor.nome}: ${err.message}`);
