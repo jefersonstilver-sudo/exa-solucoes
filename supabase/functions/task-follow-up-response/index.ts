@@ -29,17 +29,53 @@ serve(async (req) => {
     const msgTrimmed = message.trim().toUpperCase();
     console.log(`[TASK-RESPONSE] 📥 From ${phone}: "${msgTrimmed}"`);
 
+    const phoneDigits = phone.replace(/\D/g, '');
+    const phoneTail = phoneDigits.slice(-8);
+    const phoneVariants = Array.from(new Set([
+      phoneDigits,
+      phoneDigits.startsWith('55') ? phoneDigits.slice(2) : `55${phoneDigits}`,
+      phone,
+    ].filter(Boolean)));
+
     // Find active notification for this phone
-    // 1. Check by creator phone
+    let activeNotif: any = null;
+
+    // 0. PRIORIDADE: procurar via task_read_receipts (telefone que recebeu a tarefa)
+    try {
+      const orFilter = phoneVariants.map(p => `contact_phone.ilike.%${p.slice(-8)}%`).join(',');
+      const { data: receipts } = await supabase
+        .from('task_read_receipts')
+        .select('task_id, contact_phone, sent_at')
+        .or(orFilter)
+        .order('sent_at', { ascending: false })
+        .limit(5);
+
+      if (receipts && receipts.length > 0) {
+        const taskIds = receipts.map((r: any) => r.task_id).filter(Boolean);
+        if (taskIds.length > 0) {
+          const { data: notif } = await supabase
+            .from('task_notification_queue')
+            .select('*')
+            .in('task_id', taskIds)
+            .neq('status', 'resolved')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (notif) activeNotif = notif;
+        }
+      }
+    } catch (recErr) {
+      console.warn('[TASK-RESPONSE] ⚠️ Receipts lookup failed:', (recErr as Error).message);
+    }
+
+    // 1. Fallback: por criador (telefone do usuário)
     const { data: creatorUser } = await supabase
       .from('users')
       .select('id, telefone, nome')
-      .ilike('telefone', `%${phone.slice(-8)}%`)
+      .ilike('telefone', `%${phoneTail}%`)
       .maybeSingle();
 
-    let activeNotif = null;
-
-    if (creatorUser) {
+    if (!activeNotif && creatorUser) {
       const { data: notif } = await supabase
         .from('task_notification_queue')
         .select('*')
@@ -48,11 +84,10 @@ serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      
       if (notif) activeNotif = notif;
     }
 
-    // 2. Check by responsável
+    // 2. Fallback: por responsável
     if (!activeNotif && creatorUser) {
       const { data: responsavelTasks } = await supabase
         .from('task_responsaveis')
@@ -69,30 +104,35 @@ serve(async (req) => {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-
         if (notif) activeNotif = notif;
       }
     }
 
-    // 3. Fallback: check escalation contacts
-    if (!activeNotif) {
-      const { data: notifs } = await supabase
-        .from('task_notification_queue')
-        .select('*')
-        .in('status', ['sent_to_creator', 'escalated'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (notifs) activeNotif = notifs;
-    }
-
     if (!activeNotif) {
       console.log('[TASK-RESPONSE] ⚠️ No active notification found for phone:', phone);
+
+      // Se a pessoa respondeu 1/2/3/SIM/NAO, devolver uma resposta clara
+      const isMenu = ['1', '2', '3', 'SIM', 'S', 'NAO', 'NÃO', 'N'].includes(msgTrimmed);
+      if (isMenu) {
+        try {
+          await supabase.functions.invoke('zapi-send-message', {
+            body: {
+              agentKey: 'exa_alert',
+              phone,
+              message: `ℹ️ Não encontrei uma tarefa pendente vinculada a este número.\n\nSe você acabou de receber uma nova tarefa, aguarde alguns segundos e responda novamente.`,
+              skipSplit: true,
+            },
+          });
+        } catch (_e) {
+          // silencioso
+        }
+      }
+
       return new Response(JSON.stringify({ handled: false, reason: 'no_active_notification' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
 
     // ========== M-03: LOCK CHECK ==========
     // For menu choices (1/2/3), check concurrency lock before processing
