@@ -278,11 +278,11 @@ Deno.serve(async (req) => {
           agentKey: 'exa_alert', phone, message, skipSplit: true,
         };
         if (withButtons && confirmButtons && confirmButtons.length > 0) {
-          body.buttons = confirmButtons.slice(0, 3).map((btn: any, idx: number) => ({
-            id: btn.action_key ?? `opt_${idx + 1}`,
+          body.buttons = confirmButtons.slice(0, 3).map((btn: any) => ({
+            id: btn.id,
             label: `${btn.emoji || ''} ${btn.label}`.trim(),
           }));
-          body.footer = 'Toque em um botão para responder';
+          body.footer = 'Responda apenas com 1, 2 ou 3';
         }
 
         const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', { body });
