@@ -458,7 +458,7 @@ serve(async (req) => {
       agent_key: agentKey, direction: 'outbound', phone_number: phone,
       message_text: message, media_url: mediaUrl || null, status: 'sent',
       zapi_message_id: messageId,
-      metadata: { response: zapiResult, totalChunks: messageChunks.length, allResults: results, provider: useEvolution ? 'evolution' : 'zapi' }
+      metadata: { response: zapiResult, totalChunks: messageChunks.length, allResults: results, provider: useEvolution ? 'evolution' : 'zapi', send_mode: buttonSendMode ?? 'text', button_error: buttonError ?? undefined }
     });
 
 
