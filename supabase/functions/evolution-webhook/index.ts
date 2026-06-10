@@ -116,8 +116,12 @@ Deno.serve(async (req) => {
     const fromMe = key.fromMe === true || data.fromMe === true;
     if (fromMe) return json(200, { skipped: true, reason: "fromMe" });
 
-    const phone = extractPhone(key.remoteJid, data.sender || payload.sender);
-    if (!phone) return json(200, { skipped: true, reason: "no_phone" });
+    const remoteJid: string = String(key.remoteJid || "");
+    const isLid = remoteJid.includes("@lid");
+    // Tenta campos alternativos da Evolution antes de cair no @lid
+    let phone = extractPhone(
+      key.remoteJidAlt || key.senderPn || key.participantPn || (!isLid ? remoteJid : "") || data.sender || payload.sender,
+    );
 
     const text = extractText(data.message);
     if (!text) return json(200, { skipped: true, reason: "no_text" });
@@ -126,7 +130,51 @@ Deno.serve(async (req) => {
     const upper = trimmed.toUpperCase();
     const senderName = data.pushName || payload.pushName || "Desconhecido";
 
-    console.log("[EVO-WEBHOOK] ▶ from", phone, "text:", trimmed.slice(0, 60));
+    // Se telefone ainda parece inválido (LID ou muito curto), resolve por pushName
+    const looksInvalid = !phone || phone.length < 10 || phone.length > 15 || /^[0-9]{14,}$/.test(phone) && phone.startsWith("23");
+    if (looksInvalid && senderName && senderName !== "Desconhecido") {
+      // 1) task_read_receipts.contact_name (cobre quem foi notificado)
+      const { data: receiptByName } = await supabase
+        .from("task_read_receipts")
+        .select("contact_phone")
+        .ilike("contact_name", `%${senderName}%`)
+        .not("contact_phone", "is", null)
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (receiptByName?.contact_phone) {
+        phone = String(receiptByName.contact_phone).replace(/\D/g, "");
+        console.log("[EVO-WEBHOOK] 🔁 @lid -> phone via task_read_receipts:", phone);
+      } else {
+        const { data: dir } = await supabase
+          .from("exa_alerts_directors")
+          .select("telefone")
+          .ilike("nome", `%${senderName}%`)
+          .eq("ativo", true)
+          .limit(1)
+          .maybeSingle();
+        if (dir?.telefone) {
+          phone = String(dir.telefone).replace(/\D/g, "");
+          console.log("[EVO-WEBHOOK] 🔁 @lid -> phone via exa_alerts_directors:", phone);
+        } else {
+          const { data: u } = await supabase
+            .from("users")
+            .select("telefone")
+            .ilike("nome", `%${senderName}%`)
+            .not("telefone", "is", null)
+            .limit(1)
+            .maybeSingle();
+          if (u?.telefone) {
+            phone = String(u.telefone).replace(/\D/g, "");
+            console.log("[EVO-WEBHOOK] 🔁 @lid -> phone via users:", phone);
+          }
+        }
+      }
+    }
+
+    if (!phone) return json(200, { skipped: true, reason: "no_phone" });
+
+    console.log("[EVO-WEBHOOK] ▶ from", phone, "(jid:", remoteJid, "name:", senderName, ") text:", trimmed.slice(0, 60));
 
     // =============== ROUTE 1: respostas a alertas de painel offline (1/2/3) ===============
     const isMenu13 = /^[123]$/.test(trimmed);
