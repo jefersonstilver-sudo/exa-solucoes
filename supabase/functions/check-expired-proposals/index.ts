@@ -157,7 +157,7 @@ serve(async (req) => {
         `⚠️ *Ação necessária:* Envie nova proposta ou marque como resolvido!\n\n` +
         `👨‍💼 Vendedor: ${proposal.seller_name || 'N/A'}`;
 
-      // Enviar para cada destinatário com botões
+      // Enviar para cada destinatário (texto simples — botões nativos quebram no WhatsApp moderno)
       for (const recipient of recipients) {
         if (!recipient.receive_whatsapp || !recipient.phone) continue;
 
@@ -166,65 +166,32 @@ serve(async (req) => {
           const hasCountryCode = /^(55|595|54|598|56|1)/.test(cleanPhone);
           const formattedPhone = hasCountryCode ? cleanPhone : `55${cleanPhone}`;
 
-          // Enviar mensagem com botões interativos via Z-API
-          const zapiUrl = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-button-list`;
-          
-          const buttonPayload = {
-            phone: formattedPhone,
-            message: message,
-            buttonList: {
-              buttons: [
-                {
-                  id: `proposal_mute_${proposal.id}_ja_enviei`,
-                  label: '✅ Já enviei nova proposta'
-                },
-                {
-                  id: `proposal_mute_${proposal.id}_descartado`,
-                  label: '❌ Descartar cliente'
-                }
-              ]
-            }
-          };
-
-          const zapiResponse = await fetch(zapiUrl, {
+          const simpleUrl = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
+          const fullMessage = `${message}\n\n📲 *Responda apenas com o número:*\n1. ✅ Já enviei nova proposta\n2. ❌ Descartar cliente`;
+          const simpleResponse = await fetch(simpleUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Client-Token': ZAPI_CLIENT_TOKEN || '',
             },
-            body: JSON.stringify(buttonPayload),
+            body: JSON.stringify({
+              phone: formattedPhone,
+              message: fullMessage,
+            }),
           });
 
-          if (zapiResponse.ok) {
+          if (simpleResponse.ok) {
             console.log(`✅ Reminder ${reminderCount} sent to ${recipient.name} (${formattedPhone})`);
             remindersSent++;
           } else {
-            // Se botões falharem, enviar mensagem simples
-            const simpleUrl = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
-            const simpleResponse = await fetch(simpleUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Client-Token': ZAPI_CLIENT_TOKEN || '',
-              },
-              body: JSON.stringify({
-                phone: formattedPhone,
-                message: message + `\n\n📲 Responda:\n"JA ENVIEI" - para parar lembretes\n"DESCARTAR" - para descartar cliente`,
-              }),
-            });
-
-            if (simpleResponse.ok) {
-              console.log(`✅ Simple reminder sent to ${recipient.name}`);
-              remindersSent++;
-            } else {
-              const errorText = await simpleResponse.text();
-              console.error(`❌ Failed to send reminder to ${recipient.name}:`, errorText);
-            }
+            const errorText = await simpleResponse.text();
+            console.error(`❌ Failed to send reminder to ${recipient.name}:`, errorText);
           }
         } catch (sendError) {
           console.error(`❌ Error sending to ${recipient.name}:`, sendError);
         }
       }
+
 
       // Atualizar/inserir configurações de notificação
       const { error: upsertError } = await supabase
