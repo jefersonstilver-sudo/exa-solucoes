@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil, Package, RefreshCw, DollarSign } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink, Calendar, Globe, Users, Rocket, Lock, Pencil, Package, RefreshCw, DollarSign, MapPin } from 'lucide-react';
+import ProposalMapDialog from '@/components/admin/proposals/ProposalMapDialog';
 import LogoTicker from '@/components/exa/LogoTicker';
 import { format, addDays, addMonths, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -144,6 +145,7 @@ const PropostaPublicaPage = () => {
   const [isExpired, setIsExpired] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   
@@ -2111,14 +2113,28 @@ const PropostaPublicaPage = () => {
         {buildings.length > 0 && (
           <Card className="p-3 sm:p-4 bg-slate-50/80 border-slate-200">
             <div className="flex items-center justify-between gap-2 mb-4">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-[#9C1E1E]" />
-                <h3 className="text-sm font-semibold text-slate-700">Locais Contratados</h3>
+              <div className="flex items-center gap-2 min-w-0">
+                <Building2 className="h-4 w-4 text-[#9C1E1E] flex-shrink-0" />
+                <h3 className="text-sm font-semibold text-slate-700 truncate">Locais Contratados</h3>
               </div>
-              <Badge variant="secondary" className="text-xs">
-                {displayBuildingsCount} {displayBuildingsCount === 1 ? 'local' : 'locais'}
-              </Badge>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMapDialogOpen(true)}
+                  title="Visualizar prédios no mapa"
+                  className="gap-1.5 rounded-full border-slate-200 bg-white/90 backdrop-blur hover:bg-white hover:border-slate-300 hover:shadow-md transition-all text-slate-700 font-medium h-8 px-2.5 sm:px-3"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-xs">Mapa</span>
+                </Button>
+                <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                  {displayBuildingsCount} {displayBuildingsCount === 1 ? 'local' : 'locais'}
+                </Badge>
+              </div>
             </div>
+
 
             {/* Grid visual de prédios com fotos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[420px] overflow-y-auto pr-1">
@@ -2143,6 +2159,22 @@ const PropostaPublicaPage = () => {
             )}
           </Card>
         )}
+
+        {/* Mapa fullscreen dos prédios desta proposta */}
+        <ProposalMapDialog
+          open={mapDialogOpen}
+          onOpenChange={setMapDialogOpen}
+          buildings={buildings.map((b: any) => ({
+            id: b.building_id || b.id,
+            nome: b.nome || b.building_name || 'Prédio',
+            endereco: b.endereco || '',
+            bairro: b.bairro || '',
+            latitude: b.latitude,
+            longitude: b.longitude,
+          })) as any}
+          title="Locais Contratados"
+        />
+
 
         {/* Módulo do Produto Escolhido - Imagem Âncora */}
         <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
