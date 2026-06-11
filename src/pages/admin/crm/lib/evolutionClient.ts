@@ -212,10 +212,11 @@ export const fetchMediaDataUrl = async (
   if (!instance || !rawMessage) return null;
   try {
     const convertToMp4 = Boolean(opts.convertToMp4);
+    const messagePayload = compactMediaMessage(rawMessage);
     const res = await callEvolution(
       `/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`,
       'POST',
-      { message: rawMessage, convertToMp4 },
+      { message: messagePayload, convertToMp4 },
     );
     const d = res.data ?? {};
     console.log('[evolutionClient] media response keys:', Object.keys(d), 'mimetype:', d?.mimetype, 'convertToMp4:', convertToMp4);
@@ -228,8 +229,17 @@ export const fetchMediaDataUrl = async (
       const comma = base64.indexOf(',');
       base64 = base64.slice(comma + 1);
     }
+    const sourceMsg = unwrapWhatsAppMessage(rawMessage?.message ?? rawMessage);
     const reportedMime: string =
-      d.mimetype ?? d.mediaType ?? d.mime ?? 'application/octet-stream';
+      d.mimetype ??
+      d.mimeType ??
+      d.mime ??
+      sourceMsg?.documentMessage?.mimetype ??
+      sourceMsg?.imageMessage?.mimetype ??
+      sourceMsg?.videoMessage?.mimetype ??
+      sourceMsg?.audioMessage?.mimetype ??
+      sourceMsg?.stickerMessage?.mimetype ??
+      'application/octet-stream';
     // Strip codec params (e.g. "audio/ogg; codecs=opus") for Blob/<video> compatibility
     const mimetype = reportedMime.split(';')[0].trim();
 
