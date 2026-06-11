@@ -12,28 +12,42 @@ serve(async (req) => {
   }
 
   try {
-    const { audioUrl, language = 'pt', prompt = 'Áudio de WhatsApp' } = await req.json();
+    const { audioUrl, audioBase64, mimeType, language = 'pt', prompt = 'Áudio de WhatsApp' } = await req.json();
 
-    if (!audioUrl) {
-      throw new Error('audioUrl is required');
+    if (!audioUrl && !audioBase64) {
+      throw new Error('audioUrl or audioBase64 is required');
     }
-
-    console.log('[TRANSCRIBE-AUDIO] 🎤 Starting transcription:', { audioUrl, language, prompt });
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    // Download audio from Z-API
-    console.log('[TRANSCRIBE-AUDIO] ⬇️ Downloading audio...');
-    const audioResponse = await fetch(audioUrl);
-    if (!audioResponse.ok) {
-      throw new Error(`Failed to download audio: ${audioResponse.status}`);
-    }
+    let audioBlob: Blob;
+    let fileName = 'audio.ogg';
 
-    const audioBlob = await audioResponse.blob();
-    console.log('[TRANSCRIBE-AUDIO] ✅ Audio downloaded:', audioBlob.size, 'bytes');
+    if (audioBase64) {
+      console.log('[TRANSCRIBE-AUDIO] 📦 Decoding base64 audio...');
+      const b64 = audioBase64.includes(',') ? audioBase64.split(',')[1] : audioBase64;
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const mt = mimeType || 'audio/ogg';
+      audioBlob = new Blob([bytes], { type: mt });
+      if (mt.includes('mp3') || mt.includes('mpeg')) fileName = 'audio.mp3';
+      else if (mt.includes('mp4') || mt.includes('m4a')) fileName = 'audio.m4a';
+      else if (mt.includes('wav')) fileName = 'audio.wav';
+      else if (mt.includes('webm')) fileName = 'audio.webm';
+      console.log('[TRANSCRIBE-AUDIO] ✅ Audio decoded:', audioBlob.size, 'bytes');
+    } else {
+      console.log('[TRANSCRIBE-AUDIO] ⬇️ Downloading audio from URL...');
+      const audioResponse = await fetch(audioUrl);
+      if (!audioResponse.ok) {
+        throw new Error(`Failed to download audio: ${audioResponse.status}`);
+      }
+      audioBlob = await audioResponse.blob();
+      console.log('[TRANSCRIBE-AUDIO] ✅ Audio downloaded:', audioBlob.size, 'bytes');
+    }
 
     // Validate file size (max 25MB for Whisper)
     if (audioBlob.size > 25 * 1024 * 1024) {
@@ -42,7 +56,7 @@ serve(async (req) => {
 
     // Prepare form data for Whisper API
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.ogg');
+    formData.append('file', audioBlob, fileName);
     formData.append('model', 'whisper-1');
     formData.append('language', language);
     if (prompt) {
