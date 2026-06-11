@@ -145,6 +145,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   const distance = getBuildingDistance();
 
   const handleAddToCart = async () => {
+    if (isProposalMode) return; // no-op no modo proposta
     if (inCartLocal || isAdding) return;
 
     const targetCart: any = cart || (window as any).__simpleCart;
