@@ -23,12 +23,19 @@ export interface EvoChat {
   isGroup: boolean;
 }
 
+export type EvoMediaType = 'image' | 'video' | 'audio' | 'sticker' | 'document';
+
 export interface EvoMessage {
   id: string;
   fromMe: boolean;
   text: string;
   timestamp: number; // ms
   status?: string;
+  mediaType?: EvoMediaType;
+  mediaMime?: string;
+  mediaFileName?: string;
+  directUrl?: string;
+  raw?: any; // original payload for media base64 fetch
 }
 
 export const normalizeChat = (raw: any): EvoChat | null => {
