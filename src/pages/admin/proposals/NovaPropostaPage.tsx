@@ -4574,6 +4574,12 @@ Parcelas:
         previewClientDocLabel={getDocumentLabel()}
         previewClientDocValue={clientData.document || getDocumentPlaceholder()}
       />
+
+      <ProposalMapDialog
+        open={mapDialogOpen}
+        onOpenChange={setMapDialogOpen}
+        buildings={selectedBuildingsData as any}
+      />
     </div>;
 };
 export default NovaPropostaPage;
