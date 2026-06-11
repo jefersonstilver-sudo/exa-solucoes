@@ -90,15 +90,44 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
   if (!id) return null;
   const fromMe: boolean = Boolean(raw?.key?.fromMe ?? raw?.fromMe);
   const msg = raw?.message ?? {};
+
+  let mediaType: EvoMediaType | undefined;
+  let mediaMime: string | undefined;
+  let mediaFileName: string | undefined;
+  let directUrl: string | undefined;
+  let caption = '';
+
+  if (msg.imageMessage) {
+    mediaType = 'image';
+    mediaMime = msg.imageMessage.mimetype;
+    directUrl = msg.imageMessage.url;
+    caption = msg.imageMessage.caption || '';
+  } else if (msg.stickerMessage) {
+    mediaType = 'sticker';
+    mediaMime = msg.stickerMessage.mimetype;
+    directUrl = msg.stickerMessage.url;
+  } else if (msg.videoMessage) {
+    mediaType = 'video';
+    mediaMime = msg.videoMessage.mimetype;
+    directUrl = msg.videoMessage.url;
+    caption = msg.videoMessage.caption || '';
+  } else if (msg.audioMessage) {
+    mediaType = 'audio';
+    mediaMime = msg.audioMessage.mimetype;
+    directUrl = msg.audioMessage.url;
+  } else if (msg.documentMessage || msg.documentWithCaptionMessage) {
+    const dm = msg.documentMessage || msg.documentWithCaptionMessage?.message?.documentMessage;
+    mediaType = 'document';
+    mediaMime = dm?.mimetype;
+    mediaFileName = dm?.fileName;
+    directUrl = dm?.url;
+    caption = dm?.caption || '';
+  }
+
   const text: string =
     msg.conversation ||
     msg.extendedTextMessage?.text ||
-    msg.imageMessage?.caption ||
-    msg.videoMessage?.caption ||
-    (msg.imageMessage ? '📷 Foto' : '') ||
-    (msg.videoMessage ? '🎥 Vídeo' : '') ||
-    (msg.audioMessage ? '🎵 Áudio' : '') ||
-    (msg.documentMessage ? '📄 Documento' : '') ||
+    caption ||
     raw?.text ||
     '';
   const ts = Number(raw?.messageTimestamp ?? raw?.timestamp ?? 0);
@@ -109,7 +138,71 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
     text: String(text ?? ''),
     timestamp: tsMs,
     status: raw?.status,
+    mediaType,
+    mediaMime,
+    mediaFileName,
+    directUrl,
+    raw,
   };
+};
+
+// Fetch media as base64 data URL via Evolution API
+export const fetchMediaDataUrl = async (
+  instance: string,
+  rawMessage: any,
+): Promise<string | null> => {
+  if (!instance || !rawMessage) return null;
+  try {
+    const res = await callEvolution(
+      `/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`,
+      'POST',
+      { message: rawMessage, convertToMp4: false },
+    );
+    const d = res.data ?? {};
+    const base64: string | undefined = d.base64 ?? d.media ?? d.data;
+    const mimetype: string | undefined =
+      d.mimetype ?? d.mediaType ?? d.mime ?? 'application/octet-stream';
+    if (!base64) return null;
+    if (base64.startsWith('data:')) return base64;
+    return `data:${mimetype};base64,${base64}`;
+  } catch (e) {
+    console.error('[evolutionClient] fetchMediaDataUrl error', e);
+    return null;
+  }
+};
+
+// Fetch contacts list to enrich chat display names
+export const fetchContacts = async (
+  instance: string,
+): Promise<Map<string, { name: string; pic: string | null }>> => {
+  const map = new Map<string, { name: string; pic: string | null }>();
+  if (!instance) return map;
+  try {
+    const res = await callEvolution(
+      `/chat/findContacts/${encodeURIComponent(instance)}`,
+      'POST',
+      {},
+    );
+    const list: any[] = Array.isArray(res.data) ? res.data : [];
+    for (const c of list) {
+      const jid: string | undefined =
+        c?.remoteJid ?? c?.id ?? c?.jid ?? c?.key?.remoteJid;
+      if (!jid) continue;
+      const name: string =
+        c?.pushName ||
+        c?.name ||
+        c?.verifiedName ||
+        c?.notify ||
+        c?.profileName ||
+        c?.shortName ||
+        '';
+      const pic = c?.profilePicUrl ?? c?.profilePictureUrl ?? null;
+      if (name || pic) map.set(jid, { name: String(name || ''), pic });
+    }
+  } catch (e) {
+    console.warn('[evolutionClient] fetchContacts failed', e);
+  }
+  return map;
 };
 
 export const formatChatTime = (ms: number): string => {
