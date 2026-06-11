@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Download, FileText, Play, Pause, AlertCircle, Languages } from 'lucide-react';
+import { Loader2, Download, FileText, Play, AlertCircle, Languages } from 'lucide-react';
 import { fetchMediaDataUrl, type EvoMessage } from '../lib/evolutionClient';
 import { cn } from '@/lib/utils';
 import { getFFmpeg, safeUnlink } from '@/components/video-trimmer/ffmpegSingleton';
@@ -20,7 +20,6 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
   const [videoFixing, setVideoFixing] = useState(false);
   const [videoFixFailed, setVideoFixFailed] = useState(false);
   const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker');
-  const [playing, setPlaying] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [transcribing, setTranscribing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -103,14 +102,6 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  };
-
-  const togglePlay = () => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (playing) a.pause();
-    else a.play();
-    setPlaying(!playing);
   };
 
   const fixVideoForBrowser = async () => {
@@ -261,7 +252,7 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
               playsInline
               preload="metadata"
               controlsList="nodownload"
-              className="max-w-[280px] rounded-lg bg-black"
+              className="crm-message-video max-w-[280px] rounded-lg bg-black"
               onError={(e) => {
                 const v = e.currentTarget;
                 console.error('[MessageMedia] video error', {
