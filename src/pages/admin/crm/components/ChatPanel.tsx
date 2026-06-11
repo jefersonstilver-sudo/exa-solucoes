@@ -44,6 +44,21 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messageContentRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
+
+  const handleMessagesScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = distanceFromBottom < 120;
+  }, []);
 
   const initials = (name: string) =>
     name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -134,10 +149,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         setPage(1);
         setHasMore(list.length >= PAGE_SIZE);
         setTimeout(() => {
-          scrollRef.current?.scrollTo({
-            top: scrollRef.current.scrollHeight,
-            behavior: silent ? 'auto' : 'smooth',
-          });
+          scrollMessagesToBottom(silent ? 'auto' : 'smooth');
         }, 50);
       } catch (e: any) {
         if (!silent) toast.error(e?.message ?? 'Falha ao carregar mensagens');
@@ -145,7 +157,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         setMsgsLoading(false);
       }
     },
-    [instance, fetchPage],
+    [instance, fetchPage, scrollMessagesToBottom],
   );
 
   const loadOlder = useCallback(async () => {
