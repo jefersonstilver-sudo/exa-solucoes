@@ -630,7 +630,7 @@ const NovaPropostaPage = () => {
         setIsCustomPayment(false);
       }
 
-      if (existingProposal.is_custom_days && !hydratedManualCash) {
+      if (existingProposal.is_custom_days) {
         setIsCustomDays(true);
         setCustomDays(existingProposal.custom_days || 15);
         if ((existingProposal as any).custom_days_start_date) {
@@ -972,16 +972,16 @@ const NovaPropostaPage = () => {
           total_panels: totalPanels,
           total_impressions_month: totalImpressionsAdjusted,
           // Período e pagamento
-          duration_months: manualCashDraft ? (durationMonths > 0 ? durationMonths : 1) : isCustomDays ? 0 : durationMonths,
+          duration_months: isCustomDays ? 0 : manualCashDraft ? (durationMonths > 0 ? durationMonths : 1) : durationMonths,
           fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : fidelMonthlyDraft,
-          cash_total_value: modalidadeProposta === 'permuta' ? 0 : cashTotalDraft,
+          cash_total_value: cashTotalDraft,
           cash_value_manual: manualCashDraft,
           discount_percent: manualCashDraft ? 0 : discountPercent,
-          payment_type: manualCashDraft ? 'standard' : isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
-          is_custom_days: manualCashDraft ? false : isCustomDays,
-          custom_days: manualCashDraft ? null : isCustomDays ? customDays : null,
-          custom_days_start_date: !manualCashDraft && isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
-          custom_days_end_date: !manualCashDraft && isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
+          payment_type: isCustomDays ? 'days' : manualCashDraft ? 'standard' : isCustomPayment ? 'custom' : 'standard',
+          is_custom_days: isCustomDays,
+          custom_days: isCustomDays ? customDays : null,
+          custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+          custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
           custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
             installment: idx + 1,
             due_date: formatDateForInput(p.dueDate),
