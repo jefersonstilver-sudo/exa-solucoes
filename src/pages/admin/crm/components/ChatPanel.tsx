@@ -55,15 +55,27 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
       if (!silent) setChatsLoading(true);
       setChatsError(null);
       try {
-        const res = await callEvolution(
-          `/chat/findChats/${encodeURIComponent(instance)}`,
-          'POST',
-          {},
-        );
-        const list: any[] = Array.isArray(res.data) ? res.data : [];
+        const [chatsRes, contactsMap] = await Promise.all([
+          callEvolution(
+            `/chat/findChats/${encodeURIComponent(instance)}`,
+            'POST',
+            {},
+          ),
+          fetchContacts(instance),
+        ]);
+        const list: any[] = Array.isArray(chatsRes.data) ? chatsRes.data : [];
         const normalized = list
           .map(normalizeChat)
           .filter((c): c is EvoChat => Boolean(c))
+          .map((c) => {
+            const enrich = contactsMap.get(c.remoteJid);
+            const looksLikeNumber = !c.name || /^\d+$/.test(c.name) || c.name === c.remoteJid.split('@')[0];
+            return {
+              ...c,
+              name: looksLikeNumber && enrich?.name ? enrich.name : c.name,
+              profilePicUrl: c.profilePicUrl || enrich?.pic || null,
+            };
+          })
           .sort((a, b) => b.lastMessageTime - a.lastMessageTime);
         setChats(normalized);
         if (!active && normalized.length > 0) setActive(normalized[0]);
