@@ -14,7 +14,6 @@ interface Props {
 
 export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => {
   const { mediaType, mediaFileName, mediaMime, raw } = message;
-  const cleanMime = mediaMime?.split(';')[0].trim().toLowerCase();
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
