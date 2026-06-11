@@ -44,7 +44,8 @@ import {
   CalendarDays,
   Lock,
   Timer,
-  User as UserIcon
+  User as UserIcon,
+  QrCode
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
