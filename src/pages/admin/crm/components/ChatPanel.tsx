@@ -96,31 +96,43 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
   }, [loadChats]);
 
   // -------- Load messages of active chat + polling --------
+  const PAGE_SIZE = 200;
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchPage = useCallback(
+    async (chat: EvoChat, pageNum: number) => {
+      const res = await callEvolution(
+        `/chat/findMessages/${encodeURIComponent(instance)}`,
+        'POST',
+        {
+          where: { key: { remoteJid: chat.remoteJid } },
+          limit: PAGE_SIZE,
+          page: pageNum,
+        },
+      );
+      const records: any[] =
+        res.data?.messages?.records ??
+        res.data?.records ??
+        (Array.isArray(res.data) ? res.data : []);
+      return records
+        .map(normalizeMessage)
+        .filter((m): m is EvoMessage => Boolean(m));
+    },
+    [instance],
+  );
+
   const loadMessages = useCallback(
     async (chat: EvoChat, silent = false) => {
       if (!instance || !chat) return;
       if (!silent) setMsgsLoading(true);
       try {
-        const res = await callEvolution(
-          `/chat/findMessages/${encodeURIComponent(instance)}`,
-          'POST',
-          {
-            where: { key: { remoteJid: chat.remoteJid } },
-            // common pagination knobs across Evolution forks
-            limit: 50,
-            page: 1,
-          },
-        );
-        // Evolution may return { messages: { records: [...] } } or array
-        const records: any[] =
-          res.data?.messages?.records ??
-          res.data?.records ??
-          (Array.isArray(res.data) ? res.data : []);
-        const normalized = records
-          .map(normalizeMessage)
-          .filter((m): m is EvoMessage => Boolean(m))
-          .sort((a, b) => a.timestamp - b.timestamp);
-        setMessages(normalized);
+        const list = await fetchPage(chat, 1);
+        const sorted = list.sort((a, b) => a.timestamp - b.timestamp);
+        setMessages(sorted);
+        setPage(1);
+        setHasMore(list.length >= PAGE_SIZE);
         setTimeout(() => {
           scrollRef.current?.scrollTo({
             top: scrollRef.current.scrollHeight,
@@ -133,12 +145,47 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         setMsgsLoading(false);
       }
     },
-    [instance],
+    [instance, fetchPage],
   );
+
+  const loadOlder = useCallback(async () => {
+    if (!active || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const el = scrollRef.current;
+    const prevHeight = el?.scrollHeight ?? 0;
+    try {
+      const next = page + 1;
+      const list = await fetchPage(active, next);
+      if (list.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setMessages((prev) => {
+        const seen = new Set(prev.map((m) => m.id));
+        const merged = [...list.filter((m) => !seen.has(m.id)), ...prev];
+        return merged.sort((a, b) => a.timestamp - b.timestamp);
+      });
+      setPage(next);
+      if (list.length < PAGE_SIZE) setHasMore(false);
+      // Preserve scroll position after prepending older messages
+      setTimeout(() => {
+        if (el) {
+          const newHeight = el.scrollHeight;
+          el.scrollTop = newHeight - prevHeight;
+        }
+      }, 30);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Falha ao carregar mensagens antigas');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [active, fetchPage, hasMore, loadingMore, page]);
 
   useEffect(() => {
     if (!active) return;
     setMessages([]);
+    setPage(1);
+    setHasMore(true);
     loadMessages(active);
     const t = setInterval(() => loadMessages(active, true), POLL_MESSAGES_MS);
     return () => clearInterval(t);
