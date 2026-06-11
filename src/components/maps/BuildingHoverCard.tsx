@@ -27,14 +27,17 @@ interface BuildingHoverCardProps {
   children: React.ReactNode;
   side?: CardSide;
   businessLocation?: { lat: number; lng: number } | null;
+  mode?: 'store' | 'proposal';
 }
 
 const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   building,
   children,
   side,
-  businessLocation
+  businessLocation,
+  mode = 'store'
 }) => {
+  const isProposalMode = mode === 'proposal';
   const [isAdding, setIsAdding] = useState(false);
   const [dynamicSide, setDynamicSide] = useState<CardSide>(side || 'top');
   const [inCartLocal, setInCartLocal] = useState(false);
