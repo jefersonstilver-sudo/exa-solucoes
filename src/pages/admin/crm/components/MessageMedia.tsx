@@ -32,8 +32,16 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     if (!dataUrl) { setOpen(true); toast.info('Carregando áudio...'); return; }
     setTranscribing(true);
     try {
+      const resp = await fetch(dataUrl);
+      const blob = await resp.blob();
+      const base64: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
       const { data, error: err } = await supabase.functions.invoke('transcribe-audio', {
-        body: { audioUrl: dataUrl, language: 'pt', prompt: 'Áudio de WhatsApp' },
+        body: { audioBase64: base64, mimeType: blob.type || mediaMime || 'audio/ogg', language: 'pt', prompt: 'Áudio de WhatsApp' },
       });
       if (err) throw err;
       if (!data?.text) throw new Error('Sem texto');
