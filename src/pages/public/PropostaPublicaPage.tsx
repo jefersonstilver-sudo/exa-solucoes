@@ -145,6 +145,7 @@ const PropostaPublicaPage = () => {
   const [isExpired, setIsExpired] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   
