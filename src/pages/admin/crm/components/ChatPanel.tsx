@@ -291,6 +291,35 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     );
   }, [chats, search]);
 
+  const renderLinkedText = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+    const nodes: React.ReactNode[] = [];
+    let lastIndex = 0;
+    for (const match of text.matchAll(urlRegex)) {
+      const rawUrl = match[0];
+      const start = match.index ?? 0;
+      const trailing = rawUrl.match(/[),.;:!?]+$/)?.[0] ?? '';
+      const cleanUrl = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
+      if (start > lastIndex) nodes.push(text.slice(lastIndex, start));
+      nodes.push(
+        <a
+          key={`${start}-${cleanUrl}`}
+          href={cleanUrl.startsWith('www.') ? `https://${cleanUrl}` : cleanUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="font-medium underline underline-offset-2 break-all"
+        >
+          {cleanUrl}
+        </a>,
+      );
+      if (trailing) nodes.push(trailing);
+      lastIndex = start + rawUrl.length;
+    }
+    if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+    return nodes.length ? nodes : text;
+  };
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       {/* Owner bar */}
@@ -518,7 +547,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                         )}
                         {m.text && (
                           <p className="leading-relaxed whitespace-pre-wrap break-words">
-                            {m.text}
+                            {renderLinkedText(m.text)}
                           </p>
                         )}
                         {!m.text && !m.mediaType && (

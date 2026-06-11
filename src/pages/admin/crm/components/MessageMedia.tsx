@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => {
-  const { mediaType, mediaFileName, mediaMime, directUrl, raw } = message;
+  const { mediaType, mediaFileName, mediaMime, raw } = message;
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -50,15 +50,25 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
       'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
       'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav',
       'application/pdf': 'pdf',
+      'application/msword': 'doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+      'application/vnd.ms-excel': 'xls',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+      'application/vnd.ms-powerpoint': 'ppt',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+      'text/plain': 'txt',
+      'text/csv': 'csv',
     };
     return map[m] || m.split('/')[1] || 'bin';
   };
+
+  const safeFileName = mediaFileName || `whatsapp-${message.id}.${extFromMime(mediaMime)}`;
 
   const downloadFile = () => {
     if (!dataUrl) return;
     const a = document.createElement('a');
     a.href = dataUrl;
-    a.download = mediaFileName || `whatsapp-${message.id}.${extFromMime(mediaMime)}`;
+    a.download = safeFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -247,22 +257,28 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
   return (
     <div className="mb-1.5">
       {dataUrl ? (
-        <a
-          href={dataUrl}
-          download={mediaFileName || 'arquivo'}
-          className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15 hover:bg-white/25' : 'bg-black/5 hover:bg-black/10')}
-        >
+        <div className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15' : 'bg-black/5')}>
           <FileText className="w-4 h-4" />
-          <span className="truncate max-w-[180px]">{mediaFileName || 'Documento'}</span>
-          <Download className="w-3.5 h-3.5 ml-1 opacity-70" />
-        </a>
+          <a
+            href={dataUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="truncate max-w-[180px] hover:underline"
+            title="Abrir arquivo"
+          >
+            {safeFileName}
+          </a>
+          <button type="button" onClick={downloadFile} title="Baixar arquivo" className="ml-1 opacity-70 hover:opacity-100">
+            <Download className="w-3.5 h-3.5" />
+          </button>
+        </div>
       ) : (
         <button
           onClick={() => setOpen(true)}
           className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15 hover:bg-white/25' : 'bg-black/5 hover:bg-black/10')}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-          <span className="truncate max-w-[180px]">{mediaFileName || 'Documento'}</span>
+          <span className="truncate max-w-[180px]">{safeFileName}</span>
           {!loading && <Download className="w-3.5 h-3.5 ml-1 opacity-70" />}
         </button>
       )}
