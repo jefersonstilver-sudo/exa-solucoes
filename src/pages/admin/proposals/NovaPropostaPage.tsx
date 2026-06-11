@@ -1868,6 +1868,8 @@ Parcelas:
         is_manual: !!(b as any).is_manual
       }));
 
+      const isManualCashDraft = overwriteCashValue && !isCustomPayment && modalidadeProposta !== 'permuta';
+
       const draftData = {
         status: 'rascunho' as const,
         // Cliente
@@ -1888,14 +1890,14 @@ Parcelas:
         total_panels: totalPanels,
         total_impressions_month: totalImpressionsAdjusted,
         // Período e pagamento - NOMES CORRETOS
-        duration_months: isCustomDays ? 0 : durationMonths,
+        duration_months: isManualCashDraft ? (durationMonths > 0 ? durationMonths : 1) : isCustomDays ? 0 : durationMonths,
         fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : (parseFloat(fidelValue) || 0),
-        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isCustomPayment ? customTotal : cashTotal),
-        cash_value_manual: overwriteCashValue && !isCustomPayment && !isCustomDays && modalidadeProposta !== 'permuta',
-        discount_percent: discountPercent,
-        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
-        is_custom_days: isCustomDays,
-        custom_days: isCustomDays ? customDays : null,
+        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isManualCashDraft ? parseFloat(cashValue) || 0 : isCustomPayment ? customTotal : cashTotal),
+        cash_value_manual: isManualCashDraft,
+        discount_percent: isManualCashDraft ? 0 : discountPercent,
+        payment_type: isManualCashDraft ? 'standard' : isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        is_custom_days: isManualCashDraft ? false : isCustomDays,
+        custom_days: isManualCashDraft ? null : isCustomDays ? customDays : null,
         custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
           installment: idx + 1,
           due_date: formatDateForInput(p.dueDate),
