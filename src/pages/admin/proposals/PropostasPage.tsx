@@ -40,6 +40,7 @@ interface Proposal {
   total_impressions_month: number;
   fidel_monthly_value: number;
   cash_total_value: number;
+  cash_value_manual?: boolean | null;
   discount_percent: number;
   duration_months: number;
   status: string;
@@ -1223,11 +1224,11 @@ const PropostasPage = () => {
                             <span className="font-semibold text-foreground">
                               {proposal.is_custom_days 
                                 ? formatCurrency(proposal.custom_installments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || proposal.cash_total_value || 0)
-                                : proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
+                                : proposal.cash_value_manual || proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
                                   ? formatCurrency(proposal.cash_total_value)
                                   : formatCurrency(proposal.fidel_monthly_value)
                               }
-                              {!proposal.is_custom_days && proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
+                              {!proposal.is_custom_days && !proposal.cash_value_manual && proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
                                 <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
                               )}
                             </span>
@@ -1240,6 +1241,10 @@ const PropostasPage = () => {
                           {proposal.payment_type === 'custom' && proposal.custom_installments?.length ? (
                             <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1 py-0 border-0">
                               {proposal.custom_installments.length}x parcelas
+                            </Badge>
+                          ) : proposal.cash_value_manual ? (
+                            <Badge className="bg-red-50 text-[#9C1E1E] text-[10px] px-1 py-0 border-0">
+                              À vista
                             </Badge>
                           ) : (
                             <span className="text-xs text-muted-foreground">

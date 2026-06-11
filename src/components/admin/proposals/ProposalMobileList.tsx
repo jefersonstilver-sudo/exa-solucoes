@@ -15,6 +15,7 @@ interface Proposal {
   total_panels: number;
   fidel_monthly_value: number;
   cash_total_value: number;
+  cash_value_manual?: boolean | null;
   duration_months: number;
   status: string;
   created_at: string;

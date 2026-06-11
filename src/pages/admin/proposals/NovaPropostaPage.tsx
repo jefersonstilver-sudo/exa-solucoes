@@ -605,19 +605,17 @@ const NovaPropostaPage = () => {
       setFidelValue(String(existingProposal.fidel_monthly_value || ''));
 
       // Re-hidratar toggle "Valor à Vista Manual"
-      {
-        const savedCash = Number(existingProposal.cash_total_value || 0);
-        const savedMonthly = Number(existingProposal.fidel_monthly_value || 0);
-        const savedDuration = Number(existingProposal.duration_months || 0);
-        const savedDiscount = Number(existingProposal.discount_percent || 0);
-        const expectedCash = savedMonthly * savedDuration * (1 - savedDiscount / 100);
-        const flag = (existingProposal as any).cash_value_manual;
-        const isManual = typeof flag === 'boolean'
-          ? flag
-          : (savedCash > 0 && Math.abs(savedCash - expectedCash) > 1);
-        setOverwriteCashValue(isManual);
-        setCashValue(isManual ? String(savedCash || '') : '');
-      }
+      const savedCash = Number(existingProposal.cash_total_value || 0);
+      const savedMonthly = Number(existingProposal.fidel_monthly_value || 0);
+      const savedDuration = Number(existingProposal.duration_months || 0);
+      const savedDiscount = Number(existingProposal.discount_percent || 0);
+      const expectedCash = savedMonthly * savedDuration * (1 - savedDiscount / 100);
+      const flag = (existingProposal as any).cash_value_manual;
+      const hydratedManualCash = typeof flag === 'boolean'
+        ? flag
+        : (savedCash > 0 && Math.abs(savedCash - expectedCash) > 1);
+      setOverwriteCashValue(hydratedManualCash);
+      setCashValue(hydratedManualCash ? String(savedCash || '') : '');
       
       if (existingProposal.payment_type === 'custom' && existingProposal.custom_installments) {
         setIsCustomPayment(true);
@@ -632,7 +630,7 @@ const NovaPropostaPage = () => {
         setIsCustomPayment(false);
       }
 
-      if (existingProposal.is_custom_days) {
+      if (existingProposal.is_custom_days && !hydratedManualCash) {
         setIsCustomDays(true);
         setCustomDays(existingProposal.custom_days || 15);
         if ((existingProposal as any).custom_days_start_date) {
@@ -948,9 +946,12 @@ const NovaPropostaPage = () => {
 
         // Valor mensal efetivo para o rascunho
         const fidelMonthlyDraft = parseFloat(fidelValue) || 0;
+        const manualCashDraft = overwriteCashValue && !isCustomPayment && modalidadeProposta !== 'permuta';
         const cashTotalDraft = modalidadeProposta === 'permuta' 
           ? 0 
-          : fidelMonthlyDraft * durationMonths * (1 - discountPercent / 100);
+          : manualCashDraft
+            ? parseFloat(cashValue) || 0
+            : fidelMonthlyDraft * durationMonths * (1 - discountPercent / 100);
         
         const draftData = {
           status: 'rascunho',
@@ -971,15 +972,16 @@ const NovaPropostaPage = () => {
           total_panels: totalPanels,
           total_impressions_month: totalImpressionsAdjusted,
           // Período e pagamento
-          duration_months: isCustomDays ? 0 : durationMonths,
+          duration_months: manualCashDraft ? (durationMonths > 0 ? durationMonths : 1) : isCustomDays ? 0 : durationMonths,
           fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : fidelMonthlyDraft,
           cash_total_value: modalidadeProposta === 'permuta' ? 0 : cashTotalDraft,
-          discount_percent: discountPercent,
-          payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
-          is_custom_days: isCustomDays,
-          custom_days: isCustomDays ? customDays : null,
-          custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
-          custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
+          cash_value_manual: manualCashDraft,
+          discount_percent: manualCashDraft ? 0 : discountPercent,
+          payment_type: manualCashDraft ? 'standard' : isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+          is_custom_days: manualCashDraft ? false : isCustomDays,
+          custom_days: manualCashDraft ? null : isCustomDays ? customDays : null,
+          custom_days_start_date: !manualCashDraft && isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+          custom_days_end_date: !manualCashDraft && isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
           custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
             installment: idx + 1,
             due_date: formatDateForInput(p.dueDate),
@@ -1055,6 +1057,7 @@ const NovaPropostaPage = () => {
     clientData.country, clientData.document, clientData.address,
     clientData.latitude, clientData.longitude,
     selectedBuildings, selectedBuildingsData, durationMonths, fidelValue, discountPercent,
+    overwriteCashValue, cashValue,
     modalidadeProposta, itensPermuta, valorTotalPermuta, ocultarValoresPublico,
     descricaoContrapartida, metodoPagamentoAlternativo, valorReferenciaMonetaria, tituloProposta,
     quantidadePosicoes, tipoProduto, isCustomDays, customDays, isEditMode, draftId, isSavingDraft,
@@ -1556,6 +1559,8 @@ Parcelas:
       
       const fullName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
       
+      const isManualCashProposal = overwriteCashValue && !isCustomPayment && modalidadeProposta !== 'permuta';
+
       // Dados comuns para criar ou atualizar
       const proposalData = {
         client_name: fullName,
@@ -1570,16 +1575,16 @@ Parcelas:
         total_panels: totalPanels,
         total_impressions_month: totalImpressionsAdjusted,
         quantidade_posicoes: quantidadePosicoes,
-        fidel_monthly_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
-        cash_total_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal,
-        cash_value_manual: overwriteCashValue && !isCustomPayment && !isCustomDays && modalidadeProposta !== 'permuta',
-        discount_percent: isCustomDays ? -10 : discountPercent,
-        duration_months: isCustomDays ? 0 : durationMonths,
+        fidel_monthly_value: isManualCashProposal ? fidelMonthly : isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
+        cash_total_value: isManualCashProposal ? parseFloat(cashValue) || 0 : isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal,
+        cash_value_manual: isManualCashProposal,
+        discount_percent: isManualCashProposal ? 0 : isCustomDays ? -10 : discountPercent,
+        duration_months: isManualCashProposal ? (durationMonths > 0 ? durationMonths : 1) : isCustomDays ? 0 : durationMonths,
         created_by: selectedSellerId || user?.id,
         seller_name: selectedSeller?.nome || currentUser?.nome || selectedSeller?.email || 'Vendedor',
         seller_phone: selectedSeller?.telefone || currentUser?.telefone || null,
         seller_email: selectedSeller?.email || currentUser?.email || null,
-        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        payment_type: isManualCashProposal ? 'standard' : isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
         tipo_produto: tipoProduto,
         client_address: clientData.address || null,
         client_latitude: clientData.latitude || null,
@@ -1592,10 +1597,10 @@ Parcelas:
         cobranca_futura: cobrancaFutura,
         data_inicio_cobranca: null,
         exigir_contrato: exigirContrato,
-        custom_days: isCustomDays ? customDays : null,
-        is_custom_days: isCustomDays,
-        custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
-        custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
+        custom_days: isManualCashProposal ? null : isCustomDays ? customDays : null,
+        is_custom_days: isManualCashProposal ? false : isCustomDays,
+        custom_days_start_date: !isManualCashProposal && isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+        custom_days_end_date: !isManualCashProposal && isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
         cc_emails: ccEmails.length > 0 ? ccEmails : null,
         venda_futura: vendaFutura,
         predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
@@ -1863,6 +1868,8 @@ Parcelas:
         is_manual: !!(b as any).is_manual
       }));
 
+      const isManualCashDraft = overwriteCashValue && !isCustomPayment && modalidadeProposta !== 'permuta';
+
       const draftData = {
         status: 'rascunho' as const,
         // Cliente
@@ -1883,14 +1890,14 @@ Parcelas:
         total_panels: totalPanels,
         total_impressions_month: totalImpressionsAdjusted,
         // Período e pagamento - NOMES CORRETOS
-        duration_months: isCustomDays ? 0 : durationMonths,
+        duration_months: isManualCashDraft ? (durationMonths > 0 ? durationMonths : 1) : isCustomDays ? 0 : durationMonths,
         fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : (parseFloat(fidelValue) || 0),
-        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isCustomPayment ? customTotal : cashTotal),
-        cash_value_manual: overwriteCashValue && !isCustomPayment && !isCustomDays && modalidadeProposta !== 'permuta',
-        discount_percent: discountPercent,
-        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
-        is_custom_days: isCustomDays,
-        custom_days: isCustomDays ? customDays : null,
+        cash_total_value: modalidadeProposta === 'permuta' ? 0 : (isManualCashDraft ? parseFloat(cashValue) || 0 : isCustomPayment ? customTotal : cashTotal),
+        cash_value_manual: isManualCashDraft,
+        discount_percent: isManualCashDraft ? 0 : discountPercent,
+        payment_type: isManualCashDraft ? 'standard' : isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        is_custom_days: isManualCashDraft ? false : isCustomDays,
+        custom_days: isManualCashDraft ? null : isCustomDays ? customDays : null,
         custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
           installment: idx + 1,
           due_date: formatDateForInput(p.dueDate),
@@ -3258,6 +3265,11 @@ Parcelas:
               <div className="flex items-center gap-3 mb-3">
                 <Switch checked={overwriteCashValue} onCheckedChange={(checked) => {
                   setOverwriteCashValue(checked);
+                  if (checked) {
+                    setIsCustomDays(false);
+                    setIsCustomPayment(false);
+                    if (durationMonths <= 0) setDurationMonths(1);
+                  }
                   if (checked && !cashValue) {
                     const suggested = fidelTotal * (1 - discountPercent / 100);
                     if (suggested > 0) setCashValue(suggested.toFixed(2));

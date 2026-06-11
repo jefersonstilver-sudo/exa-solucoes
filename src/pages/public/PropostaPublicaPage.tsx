@@ -53,6 +53,7 @@ interface Proposal {
   quantidade_posicoes?: number;
   fidel_monthly_value: number;
   cash_total_value: number;
+  cash_value_manual?: boolean | null;
   discount_percent: number;
   duration_months: number;
   is_custom_days?: boolean | null;
@@ -150,6 +151,8 @@ const PropostaPublicaPage = () => {
   const [diaVencimento, setDiaVencimento] = useState<5 | 10 | 15>(10);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
+  const isManualCashProposal = Boolean((proposal as any)?.cash_value_manual);
+  const effectiveSelectedPlan = isManualCashProposal ? 'avista' : selectedPlan;
   
   // Cortesia states
   const [isCortesia, setIsCortesia] = useState(false);
@@ -601,7 +604,7 @@ const PropostaPublicaPage = () => {
         proposal_id: proposal.id,
         action: 'aceita',
         details: { 
-          selected_plan: selectedPlan,
+          selected_plan: effectiveSelectedPlan,
           timestamp: new Date().toISOString()
         }
       });
@@ -611,7 +614,7 @@ const PropostaPublicaPage = () => {
         body: {
           proposalId: proposal.id,
           eventType: 'proposal_accepted',
-          metadata: { selectedPlan }
+          metadata: { selectedPlan: effectiveSelectedPlan }
         }
       }).then(() => {
         console.log('🔔 Notificação EXA Alerts enviada (proposal_accepted)');
@@ -628,7 +631,7 @@ const PropostaPublicaPage = () => {
           body: {
             proposalId: proposal.id,
             clientEmail: proposal.client_email,
-            selectedPlan
+            selectedPlan: effectiveSelectedPlan
           }
         }).then(() => {
           console.log('✅ Email de aceitação enviado');
@@ -903,7 +906,7 @@ const PropostaPublicaPage = () => {
       console.log('💳 Pagamento personalizado - 1ª parcela:', paymentValue);
     } else {
       // Pagamento padrão
-      paymentValue = selectedPlan === 'avista' 
+      paymentValue = effectiveSelectedPlan === 'avista' 
         ? proposal.cash_total_value 
         : proposal.fidel_monthly_value * proposal.duration_months;
     }
@@ -924,7 +927,7 @@ const PropostaPublicaPage = () => {
         body: {
           proposalId: proposal.id,
           paymentMethod,
-          selectedPlan: isCustomPayment ? 'custom' : selectedPlan,
+          selectedPlan: isCustomPayment ? 'custom' : effectiveSelectedPlan,
           clientEmail: emailToUse,
           diaVencimento: paymentMethod === 'boleto' ? diaVencimento : undefined,
           isCustomPayment,
@@ -1028,7 +1031,7 @@ const PropostaPublicaPage = () => {
         body: {
           proposalId: proposal?.id,
           clientEmail: email,
-          selectedPlan: isCustom ? 'custom' : selectedPlan,
+          selectedPlan: isCustom ? 'custom' : effectiveSelectedPlan,
           paymentMethod: payment?.method,
           paymentData: payment,
           // Custom payment fields
@@ -1368,7 +1371,7 @@ const PropostaPublicaPage = () => {
               </Card>
 
               {/* Cartão de Crédito Recorrente Option */}
-              <Card 
+              {!isManualCashProposal && <Card 
                 className={`p-4 cursor-pointer transition-all border-2 ${
                   paymentMethod === 'cartao_recorrente' 
                     ? 'border-purple-500 bg-purple-50' 
@@ -1411,7 +1414,7 @@ const PropostaPublicaPage = () => {
                     </div>
                   </div>
                 )}
-              </Card>
+              </Card>}
 
               {/* Generate Payment Button - Dynamic based on selection */}
               <Button
@@ -1687,6 +1690,7 @@ const PropostaPublicaPage = () => {
   const displayCashValue = proposal.cash_total_value + exclusivityExtraValue;
   const displayFidelMonthly = proposal.fidel_monthly_value * exclusivityMultiplier;
   const displayFidelTotal = displayFidelMonthly * proposal.duration_months;
+  const showFidelityOption = !isManualCashProposal && !proposal.is_custom_days;
   
   // Economia total À Vista
   const totalSavingsAvista = baseTotalValue > 0 
@@ -2198,6 +2202,7 @@ const PropostaPublicaPage = () => {
             fidelidadeComExclusividade={proposal.fidel_monthly_value * (1 + (proposal.exclusividade_percentual || 35) / 100)}
             percentualExtra={proposal.exclusividade_percentual || 35}
             durationMonths={proposal.duration_months}
+            cashOnly={isManualCashProposal}
             escolhido={clienteEscolheuExclusividade}
             onChoose={setClienteEscolheuExclusividade}
           />
@@ -2343,7 +2348,7 @@ const PropostaPublicaPage = () => {
                 {/* Plano À Vista - Compact Mobile */}
                 <Card 
                   className={`p-2.5 sm:p-3 cursor-pointer transition-all rounded-xl ${
-                    selectedPlan === 'avista' 
+                    effectiveSelectedPlan === 'avista' 
                       ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50/80 to-white shadow-md' 
                       : 'border border-gray-200 hover:border-gray-300 bg-white'
                   }`}
@@ -2352,9 +2357,9 @@ const PropostaPublicaPage = () => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        selectedPlan === 'avista' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
+                        effectiveSelectedPlan === 'avista' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
                       }`}>
-                        {selectedPlan === 'avista' && <Check className="h-2.5 w-2.5 text-white" />}
+                        {effectiveSelectedPlan === 'avista' && <Check className="h-2.5 w-2.5 text-white" />}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -2363,14 +2368,14 @@ const PropostaPublicaPage = () => {
                           </span>
                           <span className="font-semibold text-xs">PIX À Vista</span>
                         </div>
-                        <p className="text-[9px] text-muted-foreground">Pagamento único • 10% OFF</p>
+                        <p className="text-[9px] text-muted-foreground">Pagamento único{isManualCashProposal ? '' : ' • 10% OFF'}</p>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-sm sm:text-base font-bold text-[#9C1E1E]">
                         {displayCashValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </div>
-                      {!proposal.is_custom_days && proposal.duration_months > 0 && (
+                      {!isManualCashProposal && !proposal.is_custom_days && proposal.duration_months > 0 && (
                         <p className="text-[8px] sm:text-[9px] text-muted-foreground">
                           {(displayCashValue / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                         </p>
@@ -2380,10 +2385,10 @@ const PropostaPublicaPage = () => {
                 </Card>
 
                 {/* Plano Fidelidade - Compact Mobile */}
-                {!proposal.is_custom_days && (
+                {showFidelityOption && (
                   <Card 
                     className={`p-2.5 sm:p-3 cursor-pointer transition-all rounded-xl ${
-                      selectedPlan === 'fidelidade' 
+                      effectiveSelectedPlan === 'fidelidade' 
                         ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50/80 to-white shadow-md' 
                         : 'border border-gray-200 hover:border-gray-300 bg-white'
                     }`}
@@ -2392,9 +2397,9 @@ const PropostaPublicaPage = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                          selectedPlan === 'fidelidade' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
+                          effectiveSelectedPlan === 'fidelidade' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
                         }`}>
-                          {selectedPlan === 'fidelidade' && <Check className="h-2.5 w-2.5 text-white" />}
+                          {effectiveSelectedPlan === 'fidelidade' && <Check className="h-2.5 w-2.5 text-white" />}
                         </div>
                         <div className="min-w-0">
                           <span className="font-semibold text-xs">Plano Fidelidade</span>
@@ -2419,7 +2424,7 @@ const PropostaPublicaPage = () => {
         )}
 
         {/* Resumo de Valores por Local - Só aparece para propostas monetárias */}
-        {!isCortesia && proposal.modalidade_proposta !== 'permuta' && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
+        {!isCortesia && !isManualCashProposal && proposal.modalidade_proposta !== 'permuta' && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {/* Fidelidade */}
             <Card className="p-2 sm:p-3 bg-white border-slate-200 space-y-1">

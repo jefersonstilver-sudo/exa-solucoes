@@ -10,6 +10,7 @@ interface ExclusivityChoiceCardProps {
   fidelidadeComExclusividade: number;
   percentualExtra: number;
   durationMonths: number;
+  cashOnly?: boolean;
   escolhido: boolean;
   onChoose: (escolheuExclusividade: boolean) => void;
 }
@@ -65,6 +66,7 @@ export function ExclusivityChoiceCard({
   fidelidadeComExclusividade,
   percentualExtra,
   durationMonths,
+  cashOnly = false,
   escolhido,
   onChoose,
 }: ExclusivityChoiceCardProps) {
@@ -109,14 +111,16 @@ export function ExclusivityChoiceCard({
           </div>
 
           <div className="space-y-2">
+            {!cashOnly && (
+              <div>
+                <p className="text-[10px] text-slate-400 uppercase">Fidelidade</p>
+                <p className="text-lg font-bold text-slate-700">
+                  {formatCurrency(fidelidadeNormal)}<span className="text-xs font-normal text-slate-400">/mês</span>
+                </p>
+              </div>
+            )}
             <div>
-              <p className="text-[10px] text-slate-400 uppercase">Fidelidade</p>
-              <p className="text-lg font-bold text-slate-700">
-                {formatCurrency(fidelidadeNormal)}<span className="text-xs font-normal text-slate-400">/mês</span>
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase">À Vista ({durationMonths}x)</p>
+              <p className="text-[10px] text-slate-400 uppercase">À Vista{cashOnly ? '' : ` (${durationMonths}x)`}</p>
               <p className="text-sm font-semibold text-slate-600">
                 {formatCurrency(valorNormal)}
               </p>
@@ -161,14 +165,16 @@ export function ExclusivityChoiceCard({
           </div>
 
           <div className="space-y-2">
+            {!cashOnly && (
+              <div>
+                <p className="text-[10px] text-[#9C1E1E]/60 uppercase">Fidelidade</p>
+                <p className="text-lg font-bold text-[#9C1E1E]">
+                  {formatCurrency(fidelidadeComExclusividade)}<span className="text-xs font-normal text-[#9C1E1E]/60">/mês</span>
+                </p>
+              </div>
+            )}
             <div>
-              <p className="text-[10px] text-[#9C1E1E]/60 uppercase">Fidelidade</p>
-              <p className="text-lg font-bold text-[#9C1E1E]">
-                {formatCurrency(fidelidadeComExclusividade)}<span className="text-xs font-normal text-[#9C1E1E]/60">/mês</span>
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-[#9C1E1E]/60 uppercase">À Vista ({durationMonths}x)</p>
+              <p className="text-[10px] text-[#9C1E1E]/60 uppercase">À Vista{cashOnly ? '' : ` (${durationMonths}x)`}</p>
               <p className="text-sm font-semibold text-[#7D1818]">
                 {formatCurrency(valorComExclusividade)}
               </p>
