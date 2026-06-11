@@ -46,6 +46,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
 
   // Keep local inCart in sync (works even when rendered outside provider)
   const computeInCart = useCallback(() => {
+    if (isProposalMode) return true; // sempre "incluído" no modo proposta
     try {
       const c: any = cart || (window as any).__simpleCart;
       if (c?.isItemInCart) {
@@ -59,17 +60,18 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
     } catch {
       return false;
     }
-  }, [cart, building.id]);
+  }, [cart, building.id, isProposalMode]);
 
   React.useEffect(() => {
     setInCartLocal(computeInCart());
   }, [computeInCart]);
 
   React.useEffect(() => {
+    if (isProposalMode) return; // não escuta carrinho
     const handler = () => setInCartLocal(computeInCart());
     window.addEventListener('cart:updated' as any, handler);
     return () => window.removeEventListener('cart:updated' as any, handler);
-  }, [computeInCart]);
+  }, [computeInCart, isProposalMode]);
 
   // Smart positioning when hover card opens
   const handleOpenChange = useCallback((open: boolean) => {
