@@ -55,16 +55,9 @@ const unwrapWhatsAppMessage = (message: any): any => {
 
 const stripHeavyMediaFields = (media: any) => {
   if (!media || typeof media !== 'object') return media;
-  const {
-    jpegThumbnail,
-    contextInfo,
-    scansSidecar,
-    firstScanSidecar,
-    firstScanLength,
-    midQualityFileSha256,
-    waveform,
-    ...rest
-  } = media;
+  const rest = { ...media };
+  ['jpegThumbnail', 'contextInfo', 'scansSidecar', 'firstScanSidecar', 'firstScanLength', 'midQualityFileSha256', 'waveform']
+    .forEach((key) => delete rest[key]);
   return rest;
 };
 

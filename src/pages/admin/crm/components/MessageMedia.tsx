@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => {
-  const { mediaType, mediaFileName, mediaMime, directUrl, raw } = message;
+  const { mediaType, mediaFileName, mediaMime, raw } = message;
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
