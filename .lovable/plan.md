@@ -1,93 +1,59 @@
-## Objetivo
+## Diagnóstico
 
-Criar uma nova área administrativa (Super Admin), logo abaixo de **Pedidos**, chamada **Scans de QR Code**, que mostra **TODOS** os scans rastreados, em tempo real, de **todos os clientes / pedidos / vídeos / prédios** do sistema — sem perder nenhum scan.
+Após inspecionar o código:
 
----
+- **Rota está registrada** em `src/routes/SuperAdminRoutes.tsx` (linha 280): `<Route path="usuarios" element={<UsersPage />} />`. Montagem correta em `/super_admin/*` (App.tsx) → resolve em `/super_admin/usuarios`.
+- **Sidebar aponta corretamente** em `src/components/admin/layout/ModernAdminSidebar.tsx` (linha 401-405): `href: buildPath('usuarios')` com `useAdminBasePath` retornando `/super_admin` para `super_admin` → `/super_admin/usuarios`. NavLink usa `to={item.href}` sem `preventDefault`.
+- **Componente existe** (`src/pages/admin/UsersPage.tsx`, default export) e importa hooks/diálogos que existem (`useUserStats.tsx`, `UserConsoleDialog`, `CreateUserDialog`, etc.).
+- **Permissão não bloqueia**: `super_admin` é tratado como CEO em `useDynamicModulePermissions` e tem `hasModuleAccess` sempre `true`. Não há `ProtectedModuleRoute` envolvendo a rota.
+- **Não existe `<Navigate>` ou `navigate()` que redirecione `/super_admin/usuarios` → `/super_admin`** em nenhum lugar do código.
 
-## Como os scans existem hoje (análise)
+A tela "Carregando página…" com logo é o `PageTransitionLoader` global (`usePageTransition`), que aparece em qualquer troca de rota. Ele esconde, durante ~500 ms, qualquer crash de render do componente filho.
 
-1. A API externa AWS (`http://18.228.252.149:8000/qrcode/logs/{cliente_ids}`) é a **única fonte de verdade** dos scans. A tabela `public.qr_codes` só guarda `total_scans` agregado (hoje está zerada) e **não** registra cada scan.
-2. Já existe a edge function **`qrcode-logs-proxy`** que faz proxy para essa API aceitando `cliente_ids` separados por vírgula + filtro `titulo`.
-3. O `cliente_id` (cid) é derivado do UUID do prédio: `building.id.replace(/-/g,'').substring(0,4)` (4 chars hex). **Risco já documentado em memória:** colisão de CIDs entre prédios — um cid pode pertencer a vários prédios.
-4. Só são "QR rastreáveis" os vídeos cujo `pedido_videos.qr_config.enabled = true`.
-5. A API devolve `data_hora` em horário local de Brasília mas rotulado como UTC — usar o helper `parseScanDate` já existente em `QrCodesRastreaveis.tsx`.
-6. Já existe uma versão **por cliente** em `src/pages/advertiser/QrCodesRastreaveis.tsx`. A nova página é a **versão global do admin**.
+A hipótese mais forte (consistente com URL voltar a `/super_admin` e nenhum erro visível) é: **o `UsersPage` lança um erro durante render/effect** (ex.: RPC `get_users_with_last_access` ausente/sem permissão, hook `useUserStats` falhando, sub-componente quebrado). Esse erro é capturado por um `ErrorBoundary` ancestral (ou pelo Suspense em volta de `SuperAdminPage` em App.tsx) que descarta a árvore e remonta — caindo no `index` route (`Dashboard`) sem mudar a URL visualmente percebida pelo usuário, antes do `PageTransitionLoader` sumir.
 
----
+## O que será feito
 
-## Entregáveis
+Mudanças escopadas APENAS à rota `/super_admin/usuarios`. Nenhum outro item de menu, helper de navegação, `App.tsx`, `SuperAdminPage`, `PageTransitionLoader` ou `useDynamicModulePermissions` será alterado.
 
-### 1. Nova rota e item de menu
-- Rota: `/super_admin/qr-scans` em `src/routes/SuperAdminRoutes.tsx` (logo após `pedidos/:id`).
-- Item no sidebar `ModernAdminSidebar.tsx` **logo abaixo de "Pedidos"**, usando ícone `QrCode`, `moduleKey: MODULE_KEYS.pedidos` (ou novo módulo `qr_scans` se preferirmos governar o acesso separadamente).
-- Mesmo item adicionado em `MobileMoreMenu.tsx`.
+### 1. Isolar a rota num ErrorBoundary visível
 
-### 2. Edge function — `qrcode-logs-proxy` (ampliar, sem quebrar)
-- Aceitar `cliente_ids` em **lote grande** (centenas de CIDs). Para não estourar limite de URL da API externa:
-  - Particionar a lista em chunks de ~50 CIDs no servidor.
-  - Disparar fetches em paralelo (Promise.all com concorrência limitada, ex: 5).
-  - Unir e deduplicar (por `cliente_id + titulo + data_hora + link`).
-- Preservar o comportamento atual quando chamado pelo advertiser (`titulo` continua opcional, retorno no mesmo shape).
+Em `src/routes/SuperAdminRoutes.tsx`, substituir:
 
-### 3. Página `src/pages/admin/QrScansAdminPage.tsx`
-
-**Carga de metadados (Supabase, apenas leitura):**
-- `buildings` → id, nome, bairro, cidade, foto → mapear cid (com lista de prédios por cid para resolver colisões).
-- `pedido_videos` com `qr_config.enabled = true` + join `videos` + `pedidos` (client_id, data_inicio, data_fim, status, lista_predios, nome_pedido) + `users` (nome/email do cliente).
-- Construir índices: por cid, por título de vídeo, por pedido, por cliente.
-
-**Carga de scans:**
-- Coletar TODOS os cids de prédios que aparecem em pedidos com vídeo rastreável.
-- Chamar `qrcode-logs-proxy` (única chamada — o chunking fica na função).
-- Resolver cada scan a: prédio(s) (lista, por causa de colisão), vídeo (match por `titulo` ↔ `videos.nome`), pedido, cliente.
-- Marcar scans **não-resolvidos** ("órfãos") em uma aba separada — assim **nenhum scan é descartado**.
-
-**UI (padrão EXA Premium — glassmorphism, paleta vermelho/slate, sem verde):**
-- Header com KPIs: Total de scans, Hoje, 7d, 30d, Prédios com scan, Vídeos com scan, Clientes ativos.
-- Filtros: período (date range), cliente, prédio, vídeo (título), cid, status (resolvido / órfão).
-- Busca textual livre (cliente, prédio, vídeo, link, cid).
-- Tabelas/aba:
-  - **Todos os scans** (lista completa, paginação client-side + virtualização se >500): data/hora, cliente, prédio(s), vídeo, cid, link, "há X tempo".
-  - **Por cliente** (ranking).
-  - **Por prédio** (ranking + mapa opcional futuro).
-  - **Por vídeo** (ranking).
-  - **Órfãos** (scans cujo cid/titulo não bate com nada — para auditoria).
-- Gráfico de linha de scans por dia (últimos 30/90 dias) usando lib já presente no projeto.
-- Exportar **CSV** de qualquer aba (download via `/mnt`-style blob no browser).
-- Auto-refresh a cada 60s (respeitando a regra do projeto de polling ≥60s).
-
-### 4. Permissão
-- Acessível apenas a `super_admin` (e admin via `MODULE_KEYS.pedidos` ou novo módulo).
-- Sem alterações no UI/funcionalidades existentes — só **adições**.
-
----
-
-## Garantia de "nenhum scan perdido"
-
-- Sempre montar a lista de cids a partir de **TODOS os prédios** referenciados por qualquer `pedido_videos.qr_config.enabled=true`, independentemente do status do pedido (ativo, finalizado, cancelado).
-- Chunking no servidor evita perda por limite de URL.
-- Scans sem match (cid colidido ou título divergente) vão para a aba **Órfãos**, nunca descartados.
-- A coluna `cliente_id` do scan + lista de prédios por cid é exibida, evidenciando colisões.
-
----
-
-## Detalhes técnicos
-
-```text
-src/
-  pages/admin/QrScansAdminPage.tsx            (nova)
-  routes/SuperAdminRoutes.tsx                 (adicionar rota /qr-scans)
-  components/admin/layout/ModernAdminSidebar.tsx  (item abaixo de Pedidos)
-  components/admin/layout/MobileMoreMenu.tsx  (item correspondente)
-supabase/functions/qrcode-logs-proxy/index.ts (ampliar chunking, manter contrato)
+```tsx
+<Route path="usuarios" element={<UsersPage />} />
 ```
 
-Reaproveitar de `src/pages/advertiser/QrCodesRastreaveis.tsx`: helpers `deriveClienteId`, `parseScanDate`, `formatDateBR`, `timeAgo`. Extraí-los para `src/utils/qrScans.ts` para reuso (sem alterar a página do advertiser além do import).
+por:
 
----
+```tsx
+<Route
+  path="usuarios"
+  element={
+    <ErrorBoundary>
+      <UsersPage />
+    </ErrorBoundary>
+  }
+/>
+```
 
-## Fora do escopo (para confirmar depois, se desejar)
+Usa o `src/components/ui/ErrorBoundary.tsx` que já existe e mostra a mensagem de erro + stack na tela (em vez de bubble + redirect silencioso).
 
-- Persistir scans num `qr_code_scans` no Supabase (snapshot histórico independente da AWS) — útil se a API externa cair. Posso planejar como Fase 2.
-- Geolocalização real do scan (a API atual não expõe IP/coords).
-- Substituir o esquema de cid de 4 chars por algo sem colisão — mudança contratual com a AWS (memória já registra o débito).
+### 2. Reforçar tratamento dentro de `UsersPage.tsx`
+
+- Adicionar `console.error` detalhado quando `fetchUsers()` falhar (já existe `toast.error`, mas sem log estruturado).
+- Adicionar estado `loadError: string | null`. Quando setado, renderizar um card vermelho com o erro e botão "Tentar novamente", **sem** redirecionar.
+- Estado de loading explícito: skeleton/spinner enquanto `loading || loadingStats`.
+- Estado vazio explícito quando `users.length === 0` após carregar: card "Nenhum usuário encontrado" com botão "Atualizar".
+- Envolver chamadas a `useUserStats`/RPC com try/catch e logs prefixados `[UsersPage]` para diagnóstico no console.
+
+### 3. Verificação pós-correção
+
+- Recarregar `/super_admin`, clicar em "Usuários".
+- Cenário A (RPC ok): URL muda para `/super_admin/usuarios`, lista renderiza, ou estado vazio aparece.
+- Cenário B (RPC falha): URL muda para `/super_admin/usuarios`, mensagem de erro visível na tela + log no console com causa raiz — sem voltar ao Dashboard.
+
+### Fora de escopo
+
+- Não alterar `App.tsx`, `SuperAdminPage`, `usePageTransition`, `ModernAdminSidebar`, `useAdminBasePath`, `useDynamicModulePermissions`, nem outras rotas.
+- Não mexer em RLS/RPC do Supabase nesta task (se o RPC estiver com permissão errada, o erro ficará visível e tratamos em task separada).
