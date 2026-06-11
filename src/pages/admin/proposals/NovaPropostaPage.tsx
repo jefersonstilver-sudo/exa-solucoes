@@ -3187,12 +3187,13 @@ Parcelas:
                     setFidelValue(e.target.value);
                     setFidelValueManuallyEdited(true);
                   }} 
-                  className="pl-10 h-12 text-base" 
+                  disabled={overwriteCashValue}
+                  className={`pl-10 h-12 text-base ${overwriteCashValue ? 'opacity-60 bg-gray-100 cursor-not-allowed' : ''}`}
                 />
               </div>
               
               {/* Alerta se valor editado manualmente difere do sugerido */}
-              {fidelValueManuallyEdited && valorSugeridoMensal > 0 && 
+              {!overwriteCashValue && fidelValueManuallyEdited && valorSugeridoMensal > 0 && 
                Math.abs(parseFloat(fidelValue || '0') - valorSugeridoMensal) > 1 && (
                 <div className="flex items-center gap-2 p-2 mt-1 bg-amber-50 border border-amber-200 rounded-lg">
                   <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
@@ -3212,28 +3213,39 @@ Parcelas:
                 </div>
               )}
               
-              {fidelMonthly > 0 && <p className="text-xs text-muted-foreground mt-1">
+              {fidelMonthly > 0 && <p className={`text-xs text-muted-foreground mt-1 ${overwriteCashValue ? 'opacity-60' : ''}`}>
                   Total: {formatCurrency(fidelTotal)} em {durationMonths}x de {formatCurrency(fidelMonthly)}
                 </p>}
             </div>}
 
           {/* Desconto PIX à Vista - Somente para pagamento padrão e NÃO permuta */}
-          {!isCustomPayment && modalidadeProposta !== 'permuta' && <div className="mb-4">
+          {!isCustomPayment && modalidadeProposta !== 'permuta' && <div className={`mb-4 ${overwriteCashValue ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-xs">Desconto PIX à Vista</Label>
                 <span className="text-sm font-medium text-primary">{discountPercent}% OFF</span>
               </div>
-              <Slider value={[discountPercent]} onValueChange={value => setDiscountPercent(value[0])} min={0} max={25} step={1} className="w-full" />
+              <Slider value={[discountPercent]} onValueChange={value => setDiscountPercent(value[0])} min={0} max={25} step={1} className="w-full" disabled={overwriteCashValue} />
               <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                 <span>0%</span>
                 <span>25%</span>
               </div>
+              {overwriteCashValue && (
+                <p className="text-[10px] text-muted-foreground mt-1 italic">
+                  Desconto desativado — valor à vista definido manualmente
+                </p>
+              )}
             </div>}
 
           {/* Sobrescrever valor à vista - Somente para pagamento padrão e NÃO permuta */}
           {!isCustomPayment && modalidadeProposta !== 'permuta' && <>
               <div className="flex items-center gap-3 mb-3">
-                <Switch checked={overwriteCashValue} onCheckedChange={setOverwriteCashValue} />
+                <Switch checked={overwriteCashValue} onCheckedChange={(checked) => {
+                  setOverwriteCashValue(checked);
+                  if (checked && !cashValue) {
+                    const suggested = fidelTotal * (1 - discountPercent / 100);
+                    if (suggested > 0) setCashValue(suggested.toFixed(2));
+                  }
+                }} />
                 <Label className="text-xs">Definir valor à vista manualmente</Label>
               </div>
 
@@ -3241,8 +3253,11 @@ Parcelas:
                   <Label className="text-xs">Valor Total à Vista</Label>
                   <div className="relative mt-1">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                    <Input type="number" placeholder="0,00" value={cashValue} onChange={e => setCashValue(e.target.value)} className="pl-10 h-12 text-base" />
+                    <Input type="number" placeholder="0,00" value={cashValue} onChange={e => setCashValue(e.target.value)} autoFocus className="pl-10 h-12 text-base border-primary focus-visible:ring-primary" />
                   </div>
+                  <p className="text-[10px] text-muted-foreground mt-1 italic">
+                    Esse valor substitui o cálculo automático
+                  </p>
                 </div>}
             </>}
 
