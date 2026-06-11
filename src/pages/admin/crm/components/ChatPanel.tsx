@@ -161,18 +161,17 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         const list = await fetchPage(chat, 1);
         const sorted = list.sort((a, b) => a.timestamp - b.timestamp);
         setMessages(sorted);
+        setMessageLayoutVersion((v) => v + 1);
         setPage(1);
         setHasMore(list.length >= PAGE_SIZE);
-        setTimeout(() => {
-          scrollMessagesToBottom(silent ? 'auto' : 'smooth');
-        }, 50);
+        refreshMessagesLayout(silent ? 'auto' : 'smooth');
       } catch (e: any) {
         if (!silent) toast.error(e?.message ?? 'Falha ao carregar mensagens');
       } finally {
         setMsgsLoading(false);
       }
     },
-    [instance, fetchPage, scrollMessagesToBottom],
+    [instance, fetchPage, refreshMessagesLayout],
   );
 
   const loadOlder = useCallback(async () => {
@@ -192,6 +191,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         const merged = [...list.filter((m) => !seen.has(m.id)), ...prev];
         return merged.sort((a, b) => a.timestamp - b.timestamp);
       });
+      setMessageLayoutVersion((v) => v + 1);
       setPage(next);
       if (list.length < PAGE_SIZE) setHasMore(false);
       // Preserve scroll position after prepending older messages
