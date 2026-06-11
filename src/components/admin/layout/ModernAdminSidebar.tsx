@@ -236,6 +236,13 @@ export function ModernAdminSidebar() {
           badgeTooltip: 'Pedidos aguardando envio de vídeo'
         },
         {
+          title: 'Scans QR Code',
+          href: buildPath('qr-scans'),
+          icon: QrCode,
+          moduleKey: MODULE_KEYS.pedidos,
+          badgeTooltip: 'Todos os scans rastreados de QR Code'
+        },
+        {
           title: 'Jurídico',
           href: buildPath('juridico'),
           icon: Scale,
