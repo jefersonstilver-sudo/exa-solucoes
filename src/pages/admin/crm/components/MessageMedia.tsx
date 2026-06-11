@@ -23,14 +23,36 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     if (!open || dataUrl || requested.current) return;
     requested.current = true;
     setLoading(true);
-    fetchMediaDataUrl(instance, raw)
+    fetchMediaDataUrl(instance, raw, { convertToMp4: mediaType === 'video' })
       .then((url) => {
         if (url) setDataUrl(url);
         else setError(true);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [open, dataUrl, instance, raw]);
+  }, [open, dataUrl, instance, raw, mediaType]);
+
+  const extFromMime = (mime?: string) => {
+    if (!mime) return 'bin';
+    const m = mime.split(';')[0].trim();
+    const map: Record<string, string> = {
+      'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+      'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
+      'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav',
+      'application/pdf': 'pdf',
+    };
+    return map[m] || m.split('/')[1] || 'bin';
+  };
+
+  const downloadFile = () => {
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = mediaFileName || `whatsapp-${message.id}.${extFromMime(mediaMime)}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   const togglePlay = () => {
     const a = audioRef.current;
