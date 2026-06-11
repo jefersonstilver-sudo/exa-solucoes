@@ -212,6 +212,9 @@ const NovaPropostaPage = () => {
   // Estado para preview da proposta
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // Estado para mapa fullscreen dos prédios selecionados
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
+
   // Estado para título da proposta
   const [tituloProposta, setTituloProposta] = useState('');
 
