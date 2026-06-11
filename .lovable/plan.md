@@ -1,73 +1,56 @@
-## Diagnóstico (causa real)
+## Plano de correção
 
-O save **está enviando** o `cash_total_value` correto para o banco (linha 1559 — `cashTotal = overwriteCashValue ? parseFloat(cashValue) : fidelTotal*(1-discount/100)`).
+A causa real é que o botão “valor à vista manual” ainda está sendo tratado como um ajuste dentro da lógica mensal/fidelidade. Na proposta atual aberta, o banco está salvo como `payment_type = days`, `duration_months = 0`, `cash_value_manual = false` e `cash_total_value = 3882.67`, por isso a pública, a lista e os cards continuam lendo o valor antigo.
 
-O problema acontece **depois do save**, quando o formulário re-hidrata a proposta editada:
+## O que vou corrigir
 
-1. Em `NovaPropostaPage.tsx` (linhas 602-605), a hidratação só restaura:
-   - `duration_months`
-   - `discount_percent`
-   - `fidel_monthly_value`
-   
-2. **Nunca** restaura `overwriteCashValue` nem `cashValue`.
+1. **Criar uma regra única para “proposta à vista manual”**
+   - Quando o botão de valor à vista manual estiver ativo, a proposta será considerada uma proposta à vista.
+   - O valor principal da proposta passa a ser `cash_total_value`.
+   - Não será tratado como fidelidade mensal.
+   - Não será tratado como período em dias.
+   - O desconto/slider não recalcula por cima do valor manual.
 
-3. Como `overwriteCashValue` volta a `false`, o `cashTotal` derivado (linha 1157) recalcula a partir do `fidelTotal*(1-discount/100)` — sobrescrevendo visualmente o valor manual salvo no banco e fazendo parecer que "voltou o valor antigo".
+2. **Corrigir todos os salvamentos da proposta**
+   - Salvamento principal.
+   - Salvamento manual de rascunho.
+   - Autosave/debounce de rascunho, que hoje ainda recalcula o valor antigo e pode sobrescrever o valor manual.
 
-4. Se o usuário salvar novamente sem ativar o toggle, o `cash_total_value` calculado pisa o valor manual que estava no banco. Daí a percepção de "não salvou".
+3. **Persistir a intenção correta no banco**
+   - Gravar `cash_value_manual = true` quando o botão estiver ativo.
+   - Gravar `cash_total_value` exatamente com o valor digitado.
+   - Manter `payment_type` compatível com os fluxos existentes, sem quebrar propostas customizadas, permuta ou período em dias.
+   - Se necessário, ajustar a proposta atual afetada para sair do estado incorreto (`days`, `duration_months = 0`, `cash_value_manual = false`).
 
-Conclusão: o save funciona, mas a UI perde a marcação de "manual", recalcula em cima e regrava por cima na próxima edição.
+4. **Corrigir a reabertura/edição**
+   - Ao abrir uma proposta com valor à vista manual, o botão volta ativo.
+   - O campo manual volta preenchido.
+   - O valor mensal/fidelidade fica visualmente desativado.
+   - O sistema não recalcula automaticamente para o valor antigo.
 
-## Solução
+5. **Corrigir a página pública**
+   - Quando `cash_value_manual = true`, exibir somente a lógica de à vista como valor principal.
+   - Não mostrar equivalência mensal como se fosse fidelidade.
+   - Não deixar o card de fidelidade competir com o valor manual.
+   - O pagamento gerado deve usar o valor manual salvo em `cash_total_value`.
 
-### 1. Marcar persistentemente que o valor é manual
+6. **Corrigir lista interna e cards mobile**
+   - Cards/lista de propostas passam a mostrar o valor à vista manual como valor principal.
+   - Remover `/mês` quando a proposta for valor manual à vista.
+   - Exibir um indicador simples de “À vista” para esse caso.
 
-Adicionar coluna booleana `cash_value_manual` em `proposals` (default `false`). Fonte da verdade explícita — não depende de comparar floats.
+## Arquivos que serão ajustados
 
-```sql
-ALTER TABLE public.proposals
-  ADD COLUMN IF NOT EXISTS cash_value_manual boolean NOT NULL DEFAULT false;
-```
-
-(sem novos GRANTs — a tabela já existe e mantém suas policies)
-
-### 2. Gravar a flag no save (NovaPropostaPage.tsx)
-
-Nos dois objetos de save (`proposalData` ~linha 1559 e `draftData` ~linha 1872), adicionar:
-
-```ts
-cash_value_manual: overwriteCashValue && !isCustomPayment && !isCustomDays && modalidadeProposta !== 'permuta',
-cash_total_value: ... // mantém como está; já usa cashTotal corretamente
-```
-
-### 3. Re-hidratar o toggle ao abrir em modo edição (linhas 602-605)
-
-Logo após `setFidelValue(...)`, adicionar:
-
-```ts
-const isManual = Boolean((existingProposal as any).cash_value_manual);
-setOverwriteCashValue(isManual);
-if (isManual) {
-  setCashValue(String(existingProposal.cash_total_value ?? ''));
-} else {
-  setCashValue('');
-}
-```
-
-Fallback (compat retroativa para propostas antigas sem a flag): se `cash_value_manual` for `null/undefined` mas existir divergência > R$ 1 entre `cash_total_value` e `fidel_monthly_value * duration_months * (1 - discount_percent/100)`, ativar `overwriteCashValue=true` com o valor salvo.
-
-### 4. Não tocar em mais nada
-
-- Cálculos de `cashTotal`, `fidelTotal`, slider PIX, parcelas custom, permuta, contratos: **inalterados**.
-- UI do toggle, input destacado e desativação do mensal/slider (já implementados): **inalterados**.
-- Página de detalhes (`PropostaDetalhesPage`) já lê `cash_total_value` direto — continua correta.
+- `src/pages/admin/proposals/NovaPropostaPage.tsx`
+- `src/pages/public/PropostaPublicaPage.tsx`
+- `src/pages/admin/proposals/PropostasPage.tsx`
+- `src/components/admin/proposals/ProposalMobileCard.tsx`
+- Possível atualização pontual da proposta atual no banco, apenas para corrigir o registro que ficou salvo com a lógica errada.
 
 ## Resultado esperado
 
-- Ao salvar com toggle manual ativo: a flag e o valor são persistidos.
-- Ao reabrir a proposta para edição: o toggle volta ativado, o campo manual aparece preenchido com o valor salvo, o mensal e o slider PIX ficam cinzas (como já fazem), e o `cashTotal` exibido = valor manual salvo.
-- Ao salvar de novo sem mexer: o valor manual é mantido (não é mais sobrescrito pelo cálculo automático).
-
-## Arquivos afetados
-
-- `supabase/migrations/<novo>.sql` — adicionar coluna `cash_value_manual`.
-- `src/pages/admin/proposals/NovaPropostaPage.tsx` — hidratação (linha ~605), `proposalData` (linha ~1559), `draftData` (linha ~1872).
+- Digitou R$ 7 mil e poucos no valor à vista manual, salvou: esse valor fica salvo de verdade.
+- Ao abrir de novo, continua R$ 7 mil e poucos.
+- Na proposta pública aparece R$ 7 mil e poucos.
+- No card/lista interna aparece R$ 7 mil e poucos como à vista, não como mensalidade.
+- Nenhuma lógica de fidelidade mensal sobrescreve esse valor enquanto o botão estiver ativo.
