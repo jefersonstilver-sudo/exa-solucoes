@@ -14,14 +14,12 @@ interface Props {
 
 export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => {
   const { mediaType, mediaFileName, mediaMime, raw } = message;
-  const cleanMime = mediaMime?.split(';')[0].trim().toLowerCase();
-  const isPdf = cleanMime === 'application/pdf' || mediaFileName?.toLowerCase().endsWith('.pdf');
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [videoFixing, setVideoFixing] = useState(false);
   const [videoFixFailed, setVideoFixFailed] = useState(false);
-  const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker' || isPdf);
+  const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker');
   const [transcript, setTranscript] = useState<string | null>(null);
   const [transcribing, setTranscribing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -293,46 +291,41 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     );
   }
 
-  // document
+  // document — simple download button
+  const handleDocClick = async () => {
+    if (dataUrl) { downloadFile(); return; }
+    if (loading) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const url = await fetchMediaDataUrl(instance, raw);
+      if (!url) { setError(true); return; }
+      setDataUrl(url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="mb-1.5">
-      {dataUrl ? (
-        <div className="space-y-2">
-          <div className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15' : 'bg-black/5')}>
-            <FileText className="w-4 h-4 flex-shrink-0" />
-            <a
-              href={dataUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="truncate max-w-[220px] hover:underline"
-              title="Abrir arquivo"
-            >
-              {safeFileName}
-            </a>
-            <button type="button" onClick={downloadFile} title="Baixar arquivo" className="ml-1 opacity-70 hover:opacity-100 flex-shrink-0">
-              <Download className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          {isPdf && (
-            <iframe
-              src={dataUrl}
-              title={safeFileName}
-              className="w-[520px] max-w-full h-[360px] rounded-lg border border-black/10 bg-white"
-            />
-          )}
-        </div>
-      ) : (
-        <button
-          onClick={() => setOpen(true)}
-          className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15 hover:bg-white/25' : 'bg-black/5 hover:bg-black/10')}
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-          <span className="truncate max-w-[180px]">{safeFileName}</span>
-          {!loading && <Download className="w-3.5 h-3.5 ml-1 opacity-70" />}
-        </button>
-      )}
+      <button
+        onClick={handleDocClick}
+        disabled={loading}
+        className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15 hover:bg-white/25' : 'bg-black/5 hover:bg-black/10')}
+      >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+        <span className="truncate max-w-[200px]">{safeFileName}</span>
+        {!loading && <Download className="w-3.5 h-3.5 ml-1 opacity-70" />}
+      </button>
       {error && <div className="text-[11px] text-red-500 mt-1">Falha ao baixar</div>}
-      {mediaMime && <div className="text-[10px] opacity-60 mt-0.5">{mediaMime}</div>}
     </div>
   );
 };
