@@ -135,6 +135,37 @@ const UsersPage = () => {
       (u.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Estado de erro - visível, sem redirecionar
+  if (loadError && !loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <Card className="max-w-lg w-full p-6 border-red-200 bg-red-50">
+          <div className="flex items-start gap-3">
+            <Shield className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-red-900 mb-1">Não foi possível carregar usuários</h2>
+              <p className="text-sm text-red-800 mb-4 break-words">{loadError}</p>
+              <Button onClick={handleRefresh} size="sm" className="bg-red-600 hover:bg-red-700 text-white">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Estado de carregamento inicial
+  if (loading && users.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="w-8 h-8 text-[hsl(var(--exa-red))] animate-spin" />
+        <p className="text-sm text-muted-foreground">Carregando usuários...</p>
+      </div>
+    );
+  }
+
   // Mobile View - Apple-style Glassmorphism
   if (isMobile) {
     return (
