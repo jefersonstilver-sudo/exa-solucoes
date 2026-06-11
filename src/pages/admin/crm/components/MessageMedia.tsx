@@ -223,7 +223,8 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
                   src: v.currentSrc,
                   mime: mediaMime,
                 });
-                void fixVideoForBrowser();
+                if (videoFixAttempted.current) setVideoFixFailed(true);
+                else void fixVideoForBrowser();
               }}
             />
             <button
