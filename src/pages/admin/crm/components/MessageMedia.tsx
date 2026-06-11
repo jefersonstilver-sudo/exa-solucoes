@@ -197,37 +197,36 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     return (
       <div className="mb-1.5 flex flex-col gap-1">
         <div className={cn('flex items-center gap-2 rounded-full px-2.5 py-1.5', fromMe ? 'bg-white/15' : 'bg-black/5')}>
-          <button
-            onClick={() => {
-              if (!dataUrl) setOpen(true);
-              else togglePlay();
-            }}
-            className={cn('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0', fromMe ? 'bg-white/25 hover:bg-white/35' : 'bg-black/10 hover:bg-black/20')}
-          >
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          </button>
-          {dataUrl && (
-            <audio
-              ref={audioRef}
-              src={dataUrl}
-              onEnded={() => setPlaying(false)}
-              onPause={() => setPlaying(false)}
-              onPlay={() => setPlaying(true)}
-              controls
-              className="h-7 max-w-[200px]"
-            />
+          {!dataUrl ? (
+            <button
+              onClick={() => setOpen(true)}
+              disabled={loading}
+              title="Baixar áudio"
+              className={cn('flex items-center gap-2 rounded-full px-2 py-1 text-[11px]', fromMe ? 'bg-white/25 hover:bg-white/35' : 'bg-black/10 hover:bg-black/20')}
+            >
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              <span>{loading ? 'Carregando...' : 'Áudio'}</span>
+            </button>
+          ) : (
+            <>
+              <audio
+                ref={audioRef}
+                src={dataUrl}
+                controls
+                className="h-8 max-w-[220px]"
+              />
+              <button
+                type="button"
+                onClick={transcribeAudio}
+                disabled={transcribing || !!transcript}
+                title={transcript ? 'Já transcrito' : 'Transcrever áudio'}
+                className={cn('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40', fromMe ? 'bg-white/25 hover:bg-white/35' : 'bg-black/10 hover:bg-black/20')}
+              >
+                {transcribing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
+              </button>
+            </>
           )}
-          {!dataUrl && <span className="text-[11px] opacity-80">Áudio</span>}
           {error && <AlertCircle className="w-3.5 h-3.5 text-red-400" />}
-          <button
-            type="button"
-            onClick={transcribeAudio}
-            disabled={transcribing || !!transcript}
-            title={transcript ? 'Já transcrito' : 'Transcrever áudio'}
-            className={cn('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40', fromMe ? 'bg-white/25 hover:bg-white/35' : 'bg-black/10 hover:bg-black/20')}
-          >
-            {transcribing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
-          </button>
         </div>
         {transcript && (
           <div className={cn('text-[12px] leading-snug rounded-lg px-2.5 py-1.5 max-w-[280px] whitespace-pre-wrap', fromMe ? 'bg-white/10' : 'bg-black/5')}>
