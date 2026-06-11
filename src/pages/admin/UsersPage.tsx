@@ -38,6 +38,7 @@ const UsersPage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('team');
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -47,29 +48,29 @@ const UsersPage = () => {
   const { stats, loading: loadingStats, refetch: refetchStats } = useUserStats();
 
   const fetchUsers = async () => {
+    console.log('[UsersPage] fetchUsers iniciado');
     try {
       setLoading(true);
-      
-      const { data, error, status } = await supabase
-        .rpc('get_users_with_last_access');
+      setLoadError(null);
+
+      const { data, error } = await supabase.rpc('get_users_with_last_access');
 
       if (error) {
-        if (error.code === 'PGRST301' || error.message.includes('permission denied')) {
-          toast.error('Sem permissão para visualizar usuários.');
-        } else {
-          toast.error('Erro ao carregar usuários: ' + error.message);
-        }
+        console.error('[UsersPage] Erro RPC get_users_with_last_access:', error);
+        const msg = error.code === 'PGRST301' || (error.message || '').includes('permission denied')
+          ? 'Sem permissão para visualizar usuários.'
+          : `Erro ao carregar usuários: ${error.message}`;
+        setLoadError(msg);
+        toast.error(msg);
+        setUsers([]);
         return;
       }
 
-      if (!data || data.length === 0) {
-        toast.warning('Nenhum usuário encontrado');
-      } else {
-        toast.success(`${data.length} usuários carregados`);
-      }
-
-      setUsers(data || []);
+      console.log('[UsersPage] usuários carregados:', data?.length ?? 0);
+      setUsers((data as any) || []);
     } catch (error: any) {
+      console.error('[UsersPage] Erro crítico em fetchUsers:', error);
+      setLoadError(error?.message || 'Erro crítico ao carregar usuários');
       toast.error('Erro crítico ao carregar usuários');
     } finally {
       setLoading(false);
@@ -133,6 +134,37 @@ const UsersPage = () => {
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Estado de erro - visível, sem redirecionar
+  if (loadError && !loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <Card className="max-w-lg w-full p-6 border-red-200 bg-red-50">
+          <div className="flex items-start gap-3">
+            <Shield className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-red-900 mb-1">Não foi possível carregar usuários</h2>
+              <p className="text-sm text-red-800 mb-4 break-words">{loadError}</p>
+              <Button onClick={handleRefresh} size="sm" className="bg-red-600 hover:bg-red-700 text-white">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Estado de carregamento inicial
+  if (loading && users.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="w-8 h-8 text-[hsl(var(--exa-red))] animate-spin" />
+        <p className="text-sm text-muted-foreground">Carregando usuários...</p>
+      </div>
+    );
+  }
 
   // Mobile View - Apple-style Glassmorphism
   if (isMobile) {
