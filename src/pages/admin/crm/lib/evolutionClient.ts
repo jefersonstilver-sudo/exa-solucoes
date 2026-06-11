@@ -150,13 +150,14 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
 export const fetchMediaDataUrl = async (
   instance: string,
   rawMessage: any,
+  opts: { convertToMp4?: boolean } = {},
 ): Promise<string | null> => {
   if (!instance || !rawMessage) return null;
   try {
     const res = await callEvolution(
       `/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`,
       'POST',
-      { message: rawMessage, convertToMp4: false },
+      { message: rawMessage, convertToMp4: Boolean(opts.convertToMp4) },
     );
     const d = res.data ?? {};
     const base64: string | undefined = d.base64 ?? d.media ?? d.data;

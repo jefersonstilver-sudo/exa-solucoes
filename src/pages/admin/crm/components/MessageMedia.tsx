@@ -23,14 +23,36 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     if (!open || dataUrl || requested.current) return;
     requested.current = true;
     setLoading(true);
-    fetchMediaDataUrl(instance, raw)
+    fetchMediaDataUrl(instance, raw, { convertToMp4: mediaType === 'video' })
       .then((url) => {
         if (url) setDataUrl(url);
         else setError(true);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [open, dataUrl, instance, raw]);
+  }, [open, dataUrl, instance, raw, mediaType]);
+
+  const extFromMime = (mime?: string) => {
+    if (!mime) return 'bin';
+    const m = mime.split(';')[0].trim();
+    const map: Record<string, string> = {
+      'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+      'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
+      'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav',
+      'application/pdf': 'pdf',
+    };
+    return map[m] || m.split('/')[1] || 'bin';
+  };
+
+  const downloadFile = () => {
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = mediaFileName || `whatsapp-${message.id}.${extFromMime(mediaMime)}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   const togglePlay = () => {
     const a = audioRef.current;
@@ -45,7 +67,7 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
   if (mediaType === 'image' || mediaType === 'sticker') {
     const sizeClass = mediaType === 'sticker' ? 'w-32 h-32 object-contain' : 'max-w-[260px] max-h-[320px] object-cover';
     return (
-      <div className="mb-1.5">
+      <div className="mb-1.5 relative inline-block group">
         {loading && (
           <div className={cn('flex items-center justify-center bg-black/5 rounded-lg', mediaType === 'sticker' ? 'w-32 h-32' : 'w-[220px] h-[160px]')}>
             <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
@@ -57,12 +79,22 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
           </div>
         )}
         {dataUrl && !loading && (
-          <img
-            src={dataUrl}
-            alt={message.text || 'Imagem'}
-            className={cn('rounded-lg cursor-pointer', sizeClass)}
-            onClick={() => window.open(dataUrl, '_blank')}
-          />
+          <>
+            <img
+              src={dataUrl}
+              alt={message.text || 'Imagem'}
+              className={cn('rounded-lg cursor-pointer', sizeClass)}
+              onClick={() => window.open(dataUrl, '_blank')}
+            />
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); downloadFile(); }}
+              title="Baixar"
+              className="absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </>
         )}
       </div>
     );
@@ -92,6 +124,16 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
           />
         )}
         {!dataUrl && <span className="text-[11px] opacity-80">Áudio</span>}
+        {dataUrl && (
+          <button
+            type="button"
+            onClick={downloadFile}
+            title="Baixar áudio"
+            className={cn('w-6 h-6 rounded-full flex items-center justify-center', fromMe ? 'bg-white/20 hover:bg-white/30' : 'bg-black/10 hover:bg-black/20')}
+          >
+            <Download className="w-3 h-3" />
+          </button>
+        )}
         {error && <AlertCircle className="w-3.5 h-3.5 text-red-400" />}
       </div>
     );
@@ -112,9 +154,27 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           </div>
         ) : dataUrl ? (
-          <video src={dataUrl} controls className="max-w-[280px] rounded-lg" />
+          <div className="relative inline-block group">
+            <video
+              key={dataUrl}
+              src={dataUrl}
+              controls
+              playsInline
+              preload="metadata"
+              controlsList="nodownload"
+              className="max-w-[280px] rounded-lg bg-black"
+            />
+            <button
+              type="button"
+              onClick={downloadFile}
+              title="Baixar vídeo"
+              className="absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         ) : (
-          <div className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> Falha</div>
+          <div className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> Falha ao carregar vídeo</div>
         )}
       </div>
     );
