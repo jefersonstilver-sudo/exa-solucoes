@@ -77,11 +77,14 @@ const ProposalMapDialog: React.FC<ProposalMapDialogProps> = ({
                 selectedLocation={null}
                 autoFitAllBuildings
                 enableClustering
+                scrollwheel
                 gestureHandling="greedy"
                 defaultZoom={13}
                 hideDefaultControls={false}
                 requirePreciseGeocode={false}
+                hoverCardMode="proposal"
               />
+
             )}
           </div>
 
