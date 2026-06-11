@@ -203,6 +203,18 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     return () => clearInterval(t);
   }, [active, loadMessages]);
 
+  useEffect(() => {
+    const content = messageContentRef.current;
+    if (!content) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (stickToBottomRef.current) requestAnimationFrame(() => scrollMessagesToBottom('auto'));
+    });
+    resizeObserver.observe(content);
+
+    return () => resizeObserver.disconnect();
+  }, [messages.length, scrollMessagesToBottom]);
+
   // -------- Export full history --------
   const handleExportAll = async () => {
     if (!instance || chats.length === 0 || exporting) return;
@@ -502,6 +514,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
               {/* Messages */}
               <div
                 ref={scrollRef}
+                onScroll={handleMessagesScroll}
                 className="flex-1 overflow-y-auto p-4 space-y-2"
                 style={{
                   backgroundImage:
