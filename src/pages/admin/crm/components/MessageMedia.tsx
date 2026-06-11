@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Download, FileText, Play, Pause, AlertCircle } from 'lucide-react';
 import { fetchMediaDataUrl, type EvoMessage } from '../lib/evolutionClient';
 import { cn } from '@/lib/utils';
+import { getFFmpeg, safeUnlink } from '@/components/video-trimmer/ffmpegSingleton';
 
 interface Props {
   instance: string;
@@ -14,9 +15,12 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [videoFixing, setVideoFixing] = useState(false);
+  const [videoFixFailed, setVideoFixFailed] = useState(false);
   const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker');
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoFixAttempted = useRef(false);
   const requested = useRef(false);
 
   useEffect(() => {
@@ -66,6 +70,48 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     if (playing) a.pause();
     else a.play();
     setPlaying(!playing);
+  };
+
+  const fixVideoForBrowser = async () => {
+    if (!dataUrl || videoFixAttempted.current || videoFixing) return;
+    videoFixAttempted.current = true;
+    setVideoFixing(true);
+    setVideoFixFailed(false);
+    const inputName = `whatsapp-${message.id}.mp4`;
+    const outputName = `whatsapp-${message.id}-browser.mp4`;
+    try {
+      const [{ fetchFile }, ffmpeg] = await Promise.all([
+        import('@ffmpeg/util'),
+        getFFmpeg(),
+      ]);
+      await ffmpeg.writeFile(inputName, await fetchFile(dataUrl));
+      await ffmpeg.exec([
+        '-i', inputName,
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '24',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        outputName,
+      ]);
+      const data = await ffmpeg.readFile(outputName) as Uint8Array;
+      if (!data || data.length < 1024) throw new Error('Arquivo convertido vazio');
+      const blob = new Blob([data.buffer as ArrayBuffer], { type: 'video/mp4' });
+      setDataUrl(URL.createObjectURL(blob));
+    } catch (err) {
+      console.error('[MessageMedia] video browser transcode failed', err);
+      setVideoFixFailed(true);
+    } finally {
+      setVideoFixing(false);
+      try {
+        const ffmpeg = await getFFmpeg();
+        await safeUnlink(ffmpeg, inputName);
+        await safeUnlink(ffmpeg, outputName);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
   };
 
   if (!mediaType) return null;
