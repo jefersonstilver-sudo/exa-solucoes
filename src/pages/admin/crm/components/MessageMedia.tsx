@@ -169,6 +169,15 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
               preload="metadata"
               controlsList="nodownload"
               className="max-w-[280px] rounded-lg bg-black"
+              onError={(e) => {
+                const v = e.currentTarget;
+                console.error('[MessageMedia] video error', {
+                  code: v.error?.code,
+                  message: v.error?.message,
+                  src: v.currentSrc,
+                  mime: mediaMime,
+                });
+              }}
             />
             <button
               type="button"
@@ -178,6 +187,9 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
             >
               <Download className="w-4 h-4" />
             </button>
+            <div className="text-[10px] opacity-60 mt-1">
+              Se não tocar aqui, baixe e abra em outro player. WhatsApp usa codecs que nem todo navegador suporta.
+            </div>
           </div>
         ) : (
           <div className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> Falha ao carregar vídeo</div>

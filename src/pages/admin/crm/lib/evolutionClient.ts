@@ -147,8 +147,7 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
 };
 
 // Fetch media as playable URL (blob:) via Evolution API.
-// For video, we force MP4 conversion and return a blob URL with mime video/mp4
-// so the browser can actually play it (large data: URLs fail to play in Chrome).
+// Returns blob URL with whatever mimetype the API reports (after optional MP4 conversion).
 export const fetchMediaDataUrl = async (
   instance: string,
   rawMessage: any,
@@ -163,27 +162,32 @@ export const fetchMediaDataUrl = async (
       { message: rawMessage, convertToMp4 },
     );
     const d = res.data ?? {};
+    console.log('[evolutionClient] media response keys:', Object.keys(d), 'mimetype:', d?.mimetype, 'convertToMp4:', convertToMp4);
     let base64: string | undefined = d.base64 ?? d.media ?? d.data;
-    if (!base64) return null;
+    if (!base64) {
+      console.warn('[evolutionClient] no base64 in response', d);
+      return null;
+    }
     if (base64.startsWith('data:')) {
       const comma = base64.indexOf(',');
       base64 = base64.slice(comma + 1);
     }
-    let mimetype: string =
+    const reportedMime: string =
       d.mimetype ?? d.mediaType ?? d.mime ?? 'application/octet-stream';
-    // When MP4 conversion is requested, the returned mimetype is often the
-    // original (e.g. video/3gpp). Force video/mp4 so <video> can play it.
-    if (convertToMp4) mimetype = 'video/mp4';
+    // Strip codec params (e.g. "audio/ogg; codecs=opus") for Blob/<video> compatibility
+    const mimetype = reportedMime.split(';')[0].trim();
 
-    // Decode base64 → Blob → object URL (much more reliable for media playback)
     try {
       const bin = atob(base64);
       const len = bin.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
       const blob = new Blob([bytes], { type: mimetype });
-      return URL.createObjectURL(blob);
-    } catch {
+      const url = URL.createObjectURL(blob);
+      console.log('[evolutionClient] blob created:', { mimetype, size: blob.size, url });
+      return url;
+    } catch (decodeErr) {
+      console.error('[evolutionClient] base64 decode failed', decodeErr);
       return `data:${mimetype};base64,${base64}`;
     }
   } catch (e) {
