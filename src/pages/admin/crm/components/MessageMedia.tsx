@@ -223,6 +223,7 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
                   src: v.currentSrc,
                   mime: mediaMime,
                 });
+                void fixVideoForBrowser();
               }}
             />
             <button
@@ -233,9 +234,16 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
             >
               <Download className="w-4 h-4" />
             </button>
-            <div className="text-[10px] opacity-60 mt-1">
-              Se não tocar aqui, baixe e abra em outro player. WhatsApp usa codecs que nem todo navegador suporta.
-            </div>
+            {videoFixing && (
+              <div className="mt-1 flex items-center gap-1.5 text-[10px] opacity-70">
+                <Loader2 className="w-3 h-3 animate-spin" /> Preparando vídeo para tocar no navegador...
+              </div>
+            )}
+            {videoFixFailed && (
+              <div className="text-[10px] opacity-60 mt-1">
+                Se não tocar aqui, baixe e abra em outro player. WhatsApp usa codecs que nem todo navegador suporta.
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> Falha ao carregar vídeo</div>
