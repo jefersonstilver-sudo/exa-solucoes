@@ -43,6 +43,7 @@ import { BusinessSegmentSelector } from '@/components/ui/business-segment-select
 import { ItensPermutaEditor } from '@/components/admin/proposals/ItensPermutaEditor';
 import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
 import { ClientLogoPreview } from '@/components/admin/proposals/ClientLogoPreview';
+import ProposalMapDialog from '@/components/admin/proposals/ProposalMapDialog';
 
 interface Building {
   id: string;
