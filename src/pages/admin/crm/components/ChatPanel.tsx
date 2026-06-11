@@ -545,9 +545,11 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                         </div>
                       </div>
                     </div>
-                  ))
+                    ))}
+                  </>
                 )}
               </div>
+
 
             </>
           )}
