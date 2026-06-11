@@ -1690,6 +1690,7 @@ const PropostaPublicaPage = () => {
   const displayCashValue = proposal.cash_total_value + exclusivityExtraValue;
   const displayFidelMonthly = proposal.fidel_monthly_value * exclusivityMultiplier;
   const displayFidelTotal = displayFidelMonthly * proposal.duration_months;
+  const showFidelityOption = !isManualCashProposal && !proposal.is_custom_days;
   
   // Economia total À Vista
   const totalSavingsAvista = baseTotalValue > 0 
@@ -2346,7 +2347,7 @@ const PropostaPublicaPage = () => {
                 {/* Plano À Vista - Compact Mobile */}
                 <Card 
                   className={`p-2.5 sm:p-3 cursor-pointer transition-all rounded-xl ${
-                    selectedPlan === 'avista' 
+                    effectiveSelectedPlan === 'avista' 
                       ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50/80 to-white shadow-md' 
                       : 'border border-gray-200 hover:border-gray-300 bg-white'
                   }`}
@@ -2355,9 +2356,9 @@ const PropostaPublicaPage = () => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        selectedPlan === 'avista' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
+                        effectiveSelectedPlan === 'avista' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
                       }`}>
-                        {selectedPlan === 'avista' && <Check className="h-2.5 w-2.5 text-white" />}
+                        {effectiveSelectedPlan === 'avista' && <Check className="h-2.5 w-2.5 text-white" />}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -2366,14 +2367,14 @@ const PropostaPublicaPage = () => {
                           </span>
                           <span className="font-semibold text-xs">PIX À Vista</span>
                         </div>
-                        <p className="text-[9px] text-muted-foreground">Pagamento único • 10% OFF</p>
+                        <p className="text-[9px] text-muted-foreground">Pagamento único{isManualCashProposal ? '' : ' • 10% OFF'}</p>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-sm sm:text-base font-bold text-[#9C1E1E]">
                         {displayCashValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </div>
-                      {!proposal.is_custom_days && proposal.duration_months > 0 && (
+                      {!isManualCashProposal && !proposal.is_custom_days && proposal.duration_months > 0 && (
                         <p className="text-[8px] sm:text-[9px] text-muted-foreground">
                           {(displayCashValue / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                         </p>
@@ -2383,10 +2384,10 @@ const PropostaPublicaPage = () => {
                 </Card>
 
                 {/* Plano Fidelidade - Compact Mobile */}
-                {!proposal.is_custom_days && (
+                {showFidelityOption && (
                   <Card 
                     className={`p-2.5 sm:p-3 cursor-pointer transition-all rounded-xl ${
-                      selectedPlan === 'fidelidade' 
+                      effectiveSelectedPlan === 'fidelidade' 
                         ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50/80 to-white shadow-md' 
                         : 'border border-gray-200 hover:border-gray-300 bg-white'
                     }`}
@@ -2395,9 +2396,9 @@ const PropostaPublicaPage = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                          selectedPlan === 'fidelidade' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
+                          effectiveSelectedPlan === 'fidelidade' ? 'border-[#9C1E1E] bg-[#9C1E1E]' : 'border-gray-300'
                         }`}>
-                          {selectedPlan === 'fidelidade' && <Check className="h-2.5 w-2.5 text-white" />}
+                          {effectiveSelectedPlan === 'fidelidade' && <Check className="h-2.5 w-2.5 text-white" />}
                         </div>
                         <div className="min-w-0">
                           <span className="font-semibold text-xs">Plano Fidelidade</span>
