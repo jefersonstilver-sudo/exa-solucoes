@@ -951,7 +951,9 @@ const NovaPropostaPage = () => {
           ? 0 
           : manualCashDraft
             ? parseFloat(cashValue) || 0
-            : fidelMonthlyDraft * durationMonths * (1 - discountPercent / 100);
+            : isCustomDays
+              ? calculateDaysPrice
+              : fidelMonthlyDraft * durationMonths * (1 - discountPercent / 100);
         
         const draftData = {
           status: 'rascunho',
