@@ -38,6 +38,46 @@ export interface EvoMessage {
   raw?: any; // original payload for media base64 fetch
 }
 
+const unwrapWhatsAppMessage = (message: any): any => {
+  let current = message ?? {};
+  for (let i = 0; i < 10; i++) {
+    const next =
+      current?.ephemeralMessage?.message ??
+      current?.viewOnceMessage?.message ??
+      current?.viewOnceMessageV2?.message ??
+      current?.viewOnceMessageV2Extension?.message ??
+      current?.documentWithCaptionMessage?.message;
+    if (!next || next === current) break;
+    current = next;
+  }
+  return current ?? {};
+};
+
+const stripHeavyMediaFields = (media: any) => {
+  if (!media || typeof media !== 'object') return media;
+  const {
+    jpegThumbnail,
+    contextInfo,
+    scansSidecar,
+    firstScanSidecar,
+    firstScanLength,
+    midQualityFileSha256,
+    waveform,
+    ...rest
+  } = media;
+  return rest;
+};
+
+const compactMediaMessage = (raw: any): any => {
+  const msg = unwrapWhatsAppMessage(raw?.message ?? raw);
+  const compact: any = {};
+  for (const key of ['imageMessage', 'videoMessage', 'ptvMessage', 'audioMessage', 'pttMessage', 'stickerMessage', 'documentMessage']) {
+    if (msg?.[key]) compact[key] = stripHeavyMediaFields(msg[key]);
+  }
+  if (Object.keys(compact).length === 0) return raw;
+  return raw?.key ? { key: raw.key, message: compact } : { message: compact };
+};
+
 export const normalizeChat = (raw: any): EvoChat | null => {
   const remoteJid: string | undefined =
     raw?.remoteJid ?? raw?.id ?? raw?.key?.remoteJid;
@@ -89,14 +129,8 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
   const id: string | undefined = raw?.key?.id ?? raw?.id;
   if (!id) return null;
   const fromMe: boolean = Boolean(raw?.key?.fromMe ?? raw?.fromMe);
-  let msg = raw?.message ?? {};
-
-  // Unwrap common WhatsApp envelopes
-  if (msg.ephemeralMessage?.message) msg = msg.ephemeralMessage.message;
-  if (msg.viewOnceMessage?.message) msg = msg.viewOnceMessage.message;
-  if (msg.viewOnceMessageV2?.message) msg = msg.viewOnceMessageV2.message;
-  if (msg.viewOnceMessageV2Extension?.message) msg = msg.viewOnceMessageV2Extension.message;
-  if (msg.documentWithCaptionMessage?.message) msg = msg.documentWithCaptionMessage.message;
+  const msg = unwrapWhatsAppMessage(raw?.message ?? {});
+  const rawType = String(raw?.messageType ?? raw?.type ?? raw?.mediaType ?? '').toLowerCase();
 
   let mediaType: EvoMediaType | undefined;
   let mediaMime: string | undefined;
@@ -124,13 +158,13 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
     mediaType = 'audio';
     mediaMime = am.mimetype;
     directUrl = am.url;
-  } else if (msg.documentMessage) {
-    const dm = msg.documentMessage;
+  } else if (msg.documentMessage || rawType.includes('document')) {
+    const dm = msg.documentMessage ?? raw?.documentMessage ?? raw?.message?.documentMessage ?? {};
     mediaType = 'document';
-    mediaMime = dm?.mimetype;
-    mediaFileName = dm?.fileName || dm?.title;
-    directUrl = dm?.url;
-    caption = dm?.caption || '';
+    mediaMime = dm?.mimetype ?? raw?.mimetype ?? raw?.mimeType ?? raw?.mediaMime;
+    mediaFileName = dm?.fileName || dm?.title || raw?.fileName || raw?.mediaFileName || raw?.title;
+    directUrl = dm?.url ?? raw?.url ?? raw?.mediaUrl;
+    caption = dm?.caption || raw?.caption || '';
   }
 
   if (!mediaType && Object.keys(msg).length) {
