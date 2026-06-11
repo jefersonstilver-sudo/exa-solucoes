@@ -89,7 +89,14 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
   const id: string | undefined = raw?.key?.id ?? raw?.id;
   if (!id) return null;
   const fromMe: boolean = Boolean(raw?.key?.fromMe ?? raw?.fromMe);
-  const msg = raw?.message ?? {};
+  let msg = raw?.message ?? {};
+
+  // Unwrap common WhatsApp envelopes
+  if (msg.ephemeralMessage?.message) msg = msg.ephemeralMessage.message;
+  if (msg.viewOnceMessage?.message) msg = msg.viewOnceMessage.message;
+  if (msg.viewOnceMessageV2?.message) msg = msg.viewOnceMessageV2.message;
+  if (msg.viewOnceMessageV2Extension?.message) msg = msg.viewOnceMessageV2Extension.message;
+  if (msg.documentWithCaptionMessage?.message) msg = msg.documentWithCaptionMessage.message;
 
   let mediaType: EvoMediaType | undefined;
   let mediaMime: string | undefined;
@@ -106,23 +113,38 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
     mediaType = 'sticker';
     mediaMime = msg.stickerMessage.mimetype;
     directUrl = msg.stickerMessage.url;
-  } else if (msg.videoMessage) {
+  } else if (msg.videoMessage || msg.ptvMessage) {
+    const vm = msg.videoMessage || msg.ptvMessage;
     mediaType = 'video';
-    mediaMime = msg.videoMessage.mimetype;
-    directUrl = msg.videoMessage.url;
-    caption = msg.videoMessage.caption || '';
-  } else if (msg.audioMessage) {
+    mediaMime = vm.mimetype;
+    directUrl = vm.url;
+    caption = vm.caption || '';
+  } else if (msg.audioMessage || msg.pttMessage) {
+    const am = msg.audioMessage || msg.pttMessage;
     mediaType = 'audio';
-    mediaMime = msg.audioMessage.mimetype;
-    directUrl = msg.audioMessage.url;
-  } else if (msg.documentMessage || msg.documentWithCaptionMessage) {
-    const dm = msg.documentMessage || msg.documentWithCaptionMessage?.message?.documentMessage;
+    mediaMime = am.mimetype;
+    directUrl = am.url;
+  } else if (msg.documentMessage) {
+    const dm = msg.documentMessage;
     mediaType = 'document';
     mediaMime = dm?.mimetype;
-    mediaFileName = dm?.fileName;
+    mediaFileName = dm?.fileName || dm?.title;
     directUrl = dm?.url;
     caption = dm?.caption || '';
   }
+
+  if (!mediaType && Object.keys(msg).length) {
+    const known = new Set([
+      'conversation', 'extendedTextMessage', 'messageContextInfo', 'protocolMessage',
+      'senderKeyDistributionMessage', 'reactionMessage', 'pollCreationMessage',
+      'pollUpdateMessage',
+    ]);
+    const unknownKeys = Object.keys(msg).filter((k) => !known.has(k));
+    if (unknownKeys.length) {
+      console.warn('[normalizeMessage] unhandled message keys:', unknownKeys, msg);
+    }
+  }
+
 
   const text: string =
     msg.conversation ||
