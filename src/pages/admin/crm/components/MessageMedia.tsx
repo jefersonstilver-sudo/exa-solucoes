@@ -176,16 +176,6 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
           />
         )}
         {!dataUrl && <span className="text-[11px] opacity-80">Áudio</span>}
-        {dataUrl && (
-          <button
-            type="button"
-            onClick={downloadFile}
-            title="Baixar áudio"
-            className={cn('w-6 h-6 rounded-full flex items-center justify-center', fromMe ? 'bg-white/20 hover:bg-white/30' : 'bg-black/10 hover:bg-black/20')}
-          >
-            <Download className="w-3 h-3" />
-          </button>
-        )}
         {error && <AlertCircle className="w-3.5 h-3.5 text-red-400" />}
       </div>
     );
