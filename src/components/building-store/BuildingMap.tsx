@@ -211,7 +211,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
               />
             </div>
           ) : (
-            <BuildingHoverCard building={building} businessLocation={businessLocation}>
+            <BuildingHoverCard building={building} businessLocation={businessLocation} mode={hoverCardMode}>
               <div>
                 <CustomPinImage
                   buildingId={building.id}
