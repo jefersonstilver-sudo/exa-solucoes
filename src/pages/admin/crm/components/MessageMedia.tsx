@@ -77,13 +77,16 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
     videoFixAttempted.current = true;
     setVideoFixing(true);
     setVideoFixFailed(false);
-    const inputName = `whatsapp-${message.id}.mp4`;
-    const outputName = `whatsapp-${message.id}-browser.mp4`;
+    const safeId = message.id.replace(/[^a-z0-9_-]/gi, '') || String(Date.now());
+    const inputName = `whatsapp-${safeId}.mp4`;
+    const outputName = `whatsapp-${safeId}-browser.mp4`;
+    let ffmpegInstance: Awaited<ReturnType<typeof getFFmpeg>> | null = null;
     try {
       const [{ fetchFile }, ffmpeg] = await Promise.all([
         import('@ffmpeg/util'),
         getFFmpeg(),
       ]);
+      ffmpegInstance = ffmpeg;
       await ffmpeg.writeFile(inputName, await fetchFile(dataUrl));
       await ffmpeg.exec([
         '-i', inputName,
@@ -104,12 +107,9 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
       setVideoFixFailed(true);
     } finally {
       setVideoFixing(false);
-      try {
-        const ffmpeg = await getFFmpeg();
-        await safeUnlink(ffmpeg, inputName);
-        await safeUnlink(ffmpeg, outputName);
-      } catch {
-        // ignore cleanup errors
+      if (ffmpegInstance) {
+        await safeUnlink(ffmpegInstance, inputName);
+        await safeUnlink(ffmpegInstance, outputName);
       }
     }
   };
