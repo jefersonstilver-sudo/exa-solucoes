@@ -948,9 +948,12 @@ const NovaPropostaPage = () => {
 
         // Valor mensal efetivo para o rascunho
         const fidelMonthlyDraft = parseFloat(fidelValue) || 0;
+        const manualCashDraft = overwriteCashValue && !isCustomPayment && modalidadeProposta !== 'permuta';
         const cashTotalDraft = modalidadeProposta === 'permuta' 
           ? 0 
-          : fidelMonthlyDraft * durationMonths * (1 - discountPercent / 100);
+          : manualCashDraft
+            ? parseFloat(cashValue) || 0
+            : fidelMonthlyDraft * durationMonths * (1 - discountPercent / 100);
         
         const draftData = {
           status: 'rascunho',
@@ -971,15 +974,16 @@ const NovaPropostaPage = () => {
           total_panels: totalPanels,
           total_impressions_month: totalImpressionsAdjusted,
           // Período e pagamento
-          duration_months: isCustomDays ? 0 : durationMonths,
+          duration_months: manualCashDraft ? (durationMonths > 0 ? durationMonths : 1) : isCustomDays ? 0 : durationMonths,
           fidel_monthly_value: modalidadeProposta === 'permuta' ? 0 : fidelMonthlyDraft,
           cash_total_value: modalidadeProposta === 'permuta' ? 0 : cashTotalDraft,
-          discount_percent: discountPercent,
-          payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
-          is_custom_days: isCustomDays,
-          custom_days: isCustomDays ? customDays : null,
-          custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
-          custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
+          cash_value_manual: manualCashDraft,
+          discount_percent: manualCashDraft ? 0 : discountPercent,
+          payment_type: manualCashDraft ? 'standard' : isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+          is_custom_days: manualCashDraft ? false : isCustomDays,
+          custom_days: manualCashDraft ? null : isCustomDays ? customDays : null,
+          custom_days_start_date: !manualCashDraft && isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+          custom_days_end_date: !manualCashDraft && isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
           custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
             installment: idx + 1,
             due_date: formatDateForInput(p.dueDate),
@@ -1055,6 +1059,7 @@ const NovaPropostaPage = () => {
     clientData.country, clientData.document, clientData.address,
     clientData.latitude, clientData.longitude,
     selectedBuildings, selectedBuildingsData, durationMonths, fidelValue, discountPercent,
+    overwriteCashValue, cashValue,
     modalidadeProposta, itensPermuta, valorTotalPermuta, ocultarValoresPublico,
     descricaoContrapartida, metodoPagamentoAlternativo, valorReferenciaMonetaria, tituloProposta,
     quantidadePosicoes, tipoProduto, isCustomDays, customDays, isEditMode, draftId, isSavingDraft,
