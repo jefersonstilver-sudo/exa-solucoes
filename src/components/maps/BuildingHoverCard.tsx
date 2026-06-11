@@ -169,6 +169,14 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   };
 
   const getButtonContent = () => {
+    if (isProposalMode) {
+      return (
+        <>
+          <Check className="h-3 w-3 mr-2" />
+          Incluído na Proposta
+        </>
+      );
+    }
     if (isAdding) {
       return (
         <>
