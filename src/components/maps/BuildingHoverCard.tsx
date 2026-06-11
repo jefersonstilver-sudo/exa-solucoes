@@ -27,14 +27,17 @@ interface BuildingHoverCardProps {
   children: React.ReactNode;
   side?: CardSide;
   businessLocation?: { lat: number; lng: number } | null;
+  mode?: 'store' | 'proposal';
 }
 
 const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   building,
   children,
   side,
-  businessLocation
+  businessLocation,
+  mode = 'store'
 }) => {
+  const isProposalMode = mode === 'proposal';
   const [isAdding, setIsAdding] = useState(false);
   const [dynamicSide, setDynamicSide] = useState<CardSide>(side || 'top');
   const [inCartLocal, setInCartLocal] = useState(false);
@@ -43,6 +46,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
 
   // Keep local inCart in sync (works even when rendered outside provider)
   const computeInCart = useCallback(() => {
+    if (isProposalMode) return true; // sempre "incluído" no modo proposta
     try {
       const c: any = cart || (window as any).__simpleCart;
       if (c?.isItemInCart) {
@@ -56,17 +60,18 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
     } catch {
       return false;
     }
-  }, [cart, building.id]);
+  }, [cart, building.id, isProposalMode]);
 
   React.useEffect(() => {
     setInCartLocal(computeInCart());
   }, [computeInCart]);
 
   React.useEffect(() => {
+    if (isProposalMode) return; // não escuta carrinho
     const handler = () => setInCartLocal(computeInCart());
     window.addEventListener('cart:updated' as any, handler);
     return () => window.removeEventListener('cart:updated' as any, handler);
-  }, [computeInCart]);
+  }, [computeInCart, isProposalMode]);
 
   // Smart positioning when hover card opens
   const handleOpenChange = useCallback((open: boolean) => {
@@ -140,6 +145,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   const distance = getBuildingDistance();
 
   const handleAddToCart = async () => {
+    if (isProposalMode) return; // no-op no modo proposta
     if (inCartLocal || isAdding) return;
 
     const targetCart: any = cart || (window as any).__simpleCart;
@@ -163,6 +169,14 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
   };
 
   const getButtonContent = () => {
+    if (isProposalMode) {
+      return (
+        <>
+          <Check className="h-3 w-3 mr-2" />
+          Incluído na Proposta
+        </>
+      );
+    }
     if (isAdding) {
       return (
         <>
@@ -313,18 +327,20 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
             {/* Action Button */}
             <Button
               onClick={handleAddToCart}
-              disabled={inCartLocal || isAdding}
+              disabled={isProposalMode || inCartLocal || isAdding}
               className={`w-full py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 ${
-                !cart && !(window as any).__simpleCart
-                  ? 'bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed' 
-                  : isAdding 
-                    ? 'bg-[#9C1E1E]/80 text-white cursor-wait' 
-                    : inCartLocal 
-                      ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
-                      : 'bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white hover:scale-105 active:scale-95'
+                isProposalMode
+                  ? 'bg-green-500 hover:bg-green-500 text-white cursor-default'
+                  : !cart && !(window as any).__simpleCart
+                    ? 'bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed' 
+                    : isAdding 
+                      ? 'bg-[#9C1E1E]/80 text-white cursor-wait' 
+                      : inCartLocal 
+                        ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
+                        : 'bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white hover:scale-105 active:scale-95'
               }`}
             >
-              {(!cart && !(window as any).__simpleCart) ? (
+              {(!isProposalMode && !cart && !(window as any).__simpleCart) ? (
                 <>
                   <Plus className="h-3 w-3 mr-2" />
                   Carrinho Indisponível
@@ -333,6 +349,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
                 getButtonContent()
               )}
             </Button>
+
 
             {/* Amenities */}
             {((building.amenities && building.amenities.length > 0) || (building.caracteristicas && building.caracteristicas.length > 0)) && (

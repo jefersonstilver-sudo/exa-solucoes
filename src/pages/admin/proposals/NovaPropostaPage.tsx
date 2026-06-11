@@ -4578,7 +4578,10 @@ Parcelas:
       <ProposalMapDialog
         open={mapDialogOpen}
         onOpenChange={setMapDialogOpen}
-        buildings={selectedBuildingsData as any}
+        buildings={selectedBuildingsData.map((b: any) => ({
+          ...b,
+          numero_elevadores: b.quantidade_telas || b.numero_elevadores || 0,
+        })) as any}
       />
     </div>;
 };
