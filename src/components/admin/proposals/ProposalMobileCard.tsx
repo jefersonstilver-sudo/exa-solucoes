@@ -27,6 +27,7 @@ interface Proposal {
   total_panels: number;
   fidel_monthly_value: number;
   cash_total_value: number;
+  cash_value_manual?: boolean | null;
   duration_months: number;
   status: string;
   created_at: string;
@@ -216,6 +217,19 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
               </span>
             </div>
             <span className="text-[10px] text-muted-foreground">{timeAgo}</span>
+          </div>
+        </div>
+      ) : proposal.cash_value_manual ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] text-muted-foreground">À vista</p>
+            <p className="text-sm font-bold text-[#9C1E1E]">{formatCurrency(proposal.cash_total_value)}</p>
+          </div>
+          <div className="text-right">
+            <Badge className="bg-red-50 text-[#9C1E1E] text-[10px] px-1.5 py-0 border-0">
+              Pagamento único
+            </Badge>
+            <p className="text-[10px] text-muted-foreground">{timeAgo}</p>
           </div>
         </div>
       ) : (
