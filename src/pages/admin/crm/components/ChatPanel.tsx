@@ -39,6 +39,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
   const [search, setSearch] = useState('');
 
   const [messages, setMessages] = useState<EvoMessage[]>([]);
+  const [messageLayoutVersion, setMessageLayoutVersion] = useState(0);
   const [msgsLoading, setMsgsLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null);
@@ -59,6 +60,20 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     stickToBottomRef.current = distanceFromBottom < 120;
   }, []);
+
+  const refreshMessagesLayout = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const repaintAndScroll = () => {
+      const el = scrollRef.current;
+      if (!el) return;
+      void el.offsetHeight;
+      scrollMessagesToBottom(behavior);
+      handleMessagesScroll();
+    };
+
+    requestAnimationFrame(repaintAndScroll);
+    window.setTimeout(repaintAndScroll, 80);
+    window.setTimeout(repaintAndScroll, 240);
+  }, [handleMessagesScroll, scrollMessagesToBottom]);
 
   const initials = (name: string) =>
     name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
