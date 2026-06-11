@@ -277,7 +277,7 @@ const SuperAdminRoutes = () => {
       <Route path="email-logs" element={<EmailLogs />} />
       
       {/* ============ SISTEMA ============ */}
-      <Route path="usuarios" element={<UsersPage />} />
+      <Route path="usuarios" element={<ErrorBoundary><UsersPage /></ErrorBoundary>} />
       <Route path="tipos-conta" element={<TiposContaPage />} />
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
