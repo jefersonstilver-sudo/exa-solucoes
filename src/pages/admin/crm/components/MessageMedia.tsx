@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Download, FileText, Play, Pause, AlertCircle } from 'lucide-react';
+import { Loader2, Download, FileText, Play, Pause, AlertCircle, Languages } from 'lucide-react';
 import { fetchMediaDataUrl, type EvoMessage } from '../lib/evolutionClient';
 import { cn } from '@/lib/utils';
 import { getFFmpeg, safeUnlink } from '@/components/video-trimmer/ffmpegSingleton';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Props {
   instance: string;
