@@ -2030,6 +2030,13 @@ Parcelas:
         toast.error('Adicione ao menos um item de permuta');
         return;
       }
+    } else if (isCustomDays) {
+      // Período em Dias: aceita valor automático OU valor manual
+      const valorDias = overwriteCashValue ? parseFloat(cashValue) || 0 : calculateDaysPrice;
+      if (valorDias <= 0) {
+        toast.error('Defina o valor total da proposta por dias');
+        return;
+      }
     } else {
       // Monetária padrão
       if (!fidelValue || parseFloat(fidelValue) <= 0) {
