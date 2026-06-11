@@ -537,7 +537,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                   backgroundSize: '16px 16px',
                 }}
               >
-                <div ref={messageContentRef} className="min-h-full space-y-2">
+                <div key={messageLayoutVersion} ref={messageContentRef} className="min-h-full space-y-2 transform-gpu">
                 {msgsLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -567,9 +567,9 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                         </span>
                       )}
                     </div>
-                    {messages.map((m) => (
+                    {messages.map((m, index) => (
                     <div
-                      key={m.id}
+                      key={`${m.id}-${m.timestamp}-${m.mediaType ?? 'text'}-${index}`}
                       className={cn(
                         'flex',
                         m.fromMe ? 'justify-end' : 'justify-start',
