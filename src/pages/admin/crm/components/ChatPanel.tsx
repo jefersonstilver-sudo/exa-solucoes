@@ -69,10 +69,14 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
           .filter((c): c is EvoChat => Boolean(c))
           .map((c) => {
             const enrich = contactsMap.get(c.remoteJid);
-            const looksLikeNumber = !c.name || /^\d+$/.test(c.name) || c.name === c.remoteJid.split('@')[0];
+            const phone = c.remoteJid.split('@')[0];
+            const trimmed = (c.name || '').trim();
+            const looksLikeNumber = !trimmed || /^\d+$/.test(trimmed) || trimmed === phone;
+            const enrichedName = enrich?.name?.trim();
+            const finalName = looksLikeNumber && enrichedName ? enrichedName : (trimmed || enrichedName || phone);
             return {
               ...c,
-              name: looksLikeNumber && enrich?.name ? enrich.name : c.name,
+              name: finalName,
               profilePicUrl: c.profilePicUrl || enrich?.pic || null,
             };
           })

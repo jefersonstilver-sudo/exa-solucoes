@@ -78,10 +78,13 @@ export const normalizeChat = (raw: any): EvoChat | null => {
 
   const isGroup = remoteJid.endsWith('@g.us');
   const name: string =
-    raw?.pushName ??
-    raw?.name ??
-    raw?.subject ??
-    raw?.profilePicUrl?.name ??
+    (raw?.pushName && String(raw.pushName).trim()) ||
+    (raw?.name && String(raw.name).trim()) ||
+    (raw?.subject && String(raw.subject).trim()) ||
+    (raw?.verifiedName && String(raw.verifiedName).trim()) ||
+    (raw?.notify && String(raw.notify).trim()) ||
+    (raw?.profileName && String(raw.profileName).trim()) ||
+    (typeof raw?.profilePicUrl === 'object' ? raw?.profilePicUrl?.name : '') ||
     remoteJid.split('@')[0];
 
   // Last message preview
