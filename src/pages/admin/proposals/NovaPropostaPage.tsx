@@ -1559,6 +1559,8 @@ Parcelas:
       
       const fullName = `${clientData.firstName.trim()} ${clientData.lastName.trim()}`;
       
+      const isManualCashProposal = overwriteCashValue && !isCustomPayment && modalidadeProposta !== 'permuta';
+
       // Dados comuns para criar ou atualizar
       const proposalData = {
         client_name: fullName,
@@ -1573,16 +1575,16 @@ Parcelas:
         total_panels: totalPanels,
         total_impressions_month: totalImpressionsAdjusted,
         quantidade_posicoes: quantidadePosicoes,
-        fidel_monthly_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
-        cash_total_value: isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal,
-        cash_value_manual: overwriteCashValue && !isCustomPayment && !isCustomDays && modalidadeProposta !== 'permuta',
-        discount_percent: isCustomDays ? -10 : discountPercent,
-        duration_months: isCustomDays ? 0 : durationMonths,
+        fidel_monthly_value: isManualCashProposal ? fidelMonthly : isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
+        cash_total_value: isManualCashProposal ? parseFloat(cashValue) || 0 : isCustomDays ? calculateDaysPrice : isCustomPayment ? customTotal : cashTotal,
+        cash_value_manual: isManualCashProposal,
+        discount_percent: isManualCashProposal ? 0 : isCustomDays ? -10 : discountPercent,
+        duration_months: isManualCashProposal ? (durationMonths > 0 ? durationMonths : 1) : isCustomDays ? 0 : durationMonths,
         created_by: selectedSellerId || user?.id,
         seller_name: selectedSeller?.nome || currentUser?.nome || selectedSeller?.email || 'Vendedor',
         seller_phone: selectedSeller?.telefone || currentUser?.telefone || null,
         seller_email: selectedSeller?.email || currentUser?.email || null,
-        payment_type: isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
+        payment_type: isManualCashProposal ? 'standard' : isCustomDays ? 'days' : isCustomPayment ? 'custom' : 'standard',
         tipo_produto: tipoProduto,
         client_address: clientData.address || null,
         client_latitude: clientData.latitude || null,
@@ -1595,10 +1597,10 @@ Parcelas:
         cobranca_futura: cobrancaFutura,
         data_inicio_cobranca: null,
         exigir_contrato: exigirContrato,
-        custom_days: isCustomDays ? customDays : null,
-        is_custom_days: isCustomDays,
-        custom_days_start_date: isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
-        custom_days_end_date: isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
+        custom_days: isManualCashProposal ? null : isCustomDays ? customDays : null,
+        is_custom_days: isManualCashProposal ? false : isCustomDays,
+        custom_days_start_date: !isManualCashProposal && isCustomDays && customDaysStartDate ? format(customDaysStartDate, 'yyyy-MM-dd') : null,
+        custom_days_end_date: !isManualCashProposal && isCustomDays && customDaysEndDate ? format(customDaysEndDate, 'yyyy-MM-dd') : null,
         cc_emails: ccEmails.length > 0 ? ccEmails : null,
         venda_futura: vendaFutura,
         predios_contratados: vendaFutura ? prediosContratados : selectedBuildingsData.length,
