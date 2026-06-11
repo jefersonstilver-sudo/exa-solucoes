@@ -1,59 +1,32 @@
-## Diagnóstico
+## Problema
 
-Após inspecionar o código:
+Ao ativar o toggle **"Definir valor à vista manualmente"** (linha 3235 de `NovaPropostaPage.tsx`):
+- O campo "Valor Total à Vista" abre, mas o **Valor Mensal (Fidelidade)** acima continua editável, dando a sensação de que ambos competem.
+- O **slider de Desconto PIX** também continua ativo, mas é ignorado (`cashTotal` passa a usar `cashValue` direto), confundindo o usuário.
+- O usuário relata que "não consegue" definir o valor à vista — o input aceita digitação, mas a UI não dá feedback de que o controle agora é manual.
 
-- **Rota está registrada** em `src/routes/SuperAdminRoutes.tsx` (linha 280): `<Route path="usuarios" element={<UsersPage />} />`. Montagem correta em `/super_admin/*` (App.tsx) → resolve em `/super_admin/usuarios`.
-- **Sidebar aponta corretamente** em `src/components/admin/layout/ModernAdminSidebar.tsx` (linha 401-405): `href: buildPath('usuarios')` com `useAdminBasePath` retornando `/super_admin` para `super_admin` → `/super_admin/usuarios`. NavLink usa `to={item.href}` sem `preventDefault`.
-- **Componente existe** (`src/pages/admin/UsersPage.tsx`, default export) e importa hooks/diálogos que existem (`useUserStats.tsx`, `UserConsoleDialog`, `CreateUserDialog`, etc.).
-- **Permissão não bloqueia**: `super_admin` é tratado como CEO em `useDynamicModulePermissions` e tem `hasModuleAccess` sempre `true`. Não há `ProtectedModuleRoute` envolvendo a rota.
-- **Não existe `<Navigate>` ou `navigate()` que redirecione `/super_admin/usuarios` → `/super_admin`** em nenhum lugar do código.
+## Mudanças (apenas UI/UX no card de pagamento)
 
-A tela "Carregando página…" com logo é o `PageTransitionLoader` global (`usePageTransition`), que aparece em qualquer troca de rota. Ele esconde, durante ~500 ms, qualquer crash de render do componente filho.
+Arquivo único: `src/pages/admin/proposals/NovaPropostaPage.tsx`
 
-A hipótese mais forte (consistente com URL voltar a `/super_admin` e nenhum erro visível) é: **o `UsersPage` lança um erro durante render/effect** (ex.: RPC `get_users_with_last_access` ausente/sem permissão, hook `useUserStats` falhando, sub-componente quebrado). Esse erro é capturado por um `ErrorBoundary` ancestral (ou pelo Suspense em volta de `SuperAdminPage` em App.tsx) que descarta a árvore e remonta — caindo no `index` route (`Dashboard`) sem mudar a URL visualmente percebida pelo usuário, antes do `PageTransitionLoader` sumir.
+1. **Desativar visualmente o campo Valor Mensal** (linhas 3180–3192) quando `overwriteCashValue === true`:
+   - Adicionar `disabled={overwriteCashValue}` no `<Input>` do `fidelValue`.
+   - Adicionar classes `opacity-60 bg-gray-100 cursor-not-allowed` quando manual estiver ativo.
+   - Esconder o alerta de "valor difere do sugerido" (3194–3213) enquanto manual estiver ativo (não faz sentido nesse modo).
 
-## O que será feito
+2. **Desativar visualmente o Slider de Desconto PIX** (linhas 3221–3231) quando `overwriteCashValue === true`:
+   - Passar `disabled` no `<Slider>`.
+   - Envolver em `<div className={overwriteCashValue ? 'opacity-50 pointer-events-none' : ''}>`.
+   - Mostrar um pequeno texto: "Desconto desativado — valor à vista definido manualmente".
 
-Mudanças escopadas APENAS à rota `/super_admin/usuarios`. Nenhum outro item de menu, helper de navegação, `App.tsx`, `SuperAdminPage`, `PageTransitionLoader` ou `useDynamicModulePermissions` será alterado.
+3. **Destacar o input manual** (linhas 3240–3246):
+   - Garantir `autoFocus` quando o toggle for ligado, para o usuário digitar imediatamente.
+   - Adicionar borda primária (`border-primary`) e um hint "Esse valor substitui o cálculo automático".
+   - Pré-preencher `cashValue` com o `cashTotal` atual no momento em que o toggle é ativado (assim o usuário edita a partir do valor sugerido em vez de campo vazio).
 
-### 1. Isolar a rota num ErrorBoundary visível
+4. **Nenhuma alteração** em lógica de cálculo (`cashTotal`, salvamento, contratos) — apenas comportamento de UI dos três blocos acima.
 
-Em `src/routes/SuperAdminRoutes.tsx`, substituir:
+## Resultado esperado
 
-```tsx
-<Route path="usuarios" element={<UsersPage />} />
-```
-
-por:
-
-```tsx
-<Route
-  path="usuarios"
-  element={
-    <ErrorBoundary>
-      <UsersPage />
-    </ErrorBoundary>
-  }
-/>
-```
-
-Usa o `src/components/ui/ErrorBoundary.tsx` que já existe e mostra a mensagem de erro + stack na tela (em vez de bubble + redirect silencioso).
-
-### 2. Reforçar tratamento dentro de `UsersPage.tsx`
-
-- Adicionar `console.error` detalhado quando `fetchUsers()` falhar (já existe `toast.error`, mas sem log estruturado).
-- Adicionar estado `loadError: string | null`. Quando setado, renderizar um card vermelho com o erro e botão "Tentar novamente", **sem** redirecionar.
-- Estado de loading explícito: skeleton/spinner enquanto `loading || loadingStats`.
-- Estado vazio explícito quando `users.length === 0` após carregar: card "Nenhum usuário encontrado" com botão "Atualizar".
-- Envolver chamadas a `useUserStats`/RPC com try/catch e logs prefixados `[UsersPage]` para diagnóstico no console.
-
-### 3. Verificação pós-correção
-
-- Recarregar `/super_admin`, clicar em "Usuários".
-- Cenário A (RPC ok): URL muda para `/super_admin/usuarios`, lista renderiza, ou estado vazio aparece.
-- Cenário B (RPC falha): URL muda para `/super_admin/usuarios`, mensagem de erro visível na tela + log no console com causa raiz — sem voltar ao Dashboard.
-
-### Fora de escopo
-
-- Não alterar `App.tsx`, `SuperAdminPage`, `usePageTransition`, `ModernAdminSidebar`, `useAdminBasePath`, `useDynamicModulePermissions`, nem outras rotas.
-- Não mexer em RLS/RPC do Supabase nesta task (se o RPC estiver com permissão errada, o erro ficará visível e tratamos em task separada).
+- Toggle OFF: comportamento atual (mensal editável, slider ativo, manual oculto).
+- Toggle ON: mensal e slider ficam cinzas/bloqueados, e o campo "Valor Total à Vista" recebe foco já preenchido com o valor atual, pronto para edição.
