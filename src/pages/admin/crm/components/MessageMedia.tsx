@@ -21,9 +21,30 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
   const [videoFixFailed, setVideoFixFailed] = useState(false);
   const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker');
   const [playing, setPlaying] = useState(false);
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoFixAttempted = useRef(false);
   const requested = useRef(false);
+
+  const transcribeAudio = async () => {
+    if (transcribing || transcript) return;
+    if (!dataUrl) { setOpen(true); toast.info('Carregando áudio...'); return; }
+    setTranscribing(true);
+    try {
+      const { data, error: err } = await supabase.functions.invoke('transcribe-audio', {
+        body: { audioUrl: dataUrl, language: 'pt', prompt: 'Áudio de WhatsApp' },
+      });
+      if (err) throw err;
+      if (!data?.text) throw new Error('Sem texto');
+      setTranscript(data.text);
+    } catch (e: any) {
+      console.error('[transcribe]', e);
+      toast.error('Falha ao transcrever áudio');
+    } finally {
+      setTranscribing(false);
+    }
+  };
 
   useEffect(() => {
     if (!open || dataUrl || requested.current) return;
