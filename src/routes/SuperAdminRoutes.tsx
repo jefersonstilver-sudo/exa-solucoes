@@ -1,6 +1,7 @@
 
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import Dashboard from '@/pages/admin/Dashboard';
 import BuildingsManagement3 from '@/pages/admin/BuildingsManagement3';
 import OrdersPage from '@/pages/admin/OrdersPage';
