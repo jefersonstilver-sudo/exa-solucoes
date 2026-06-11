@@ -22,6 +22,7 @@ interface BuildingMapProps {
   autoFitAllBuildings?: boolean;
   hideDefaultControls?: boolean;
   gestureHandling?: 'cooperative' | 'greedy' | 'auto';
+  hoverCardMode?: 'store' | 'proposal';
 }
 
 const BuildingMap: React.FC<BuildingMapProps> = ({ 
@@ -33,7 +34,8 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   enableClustering = false,
   autoFitAllBuildings = false,
   hideDefaultControls = false,
-  gestureHandling = 'cooperative'
+  gestureHandling = 'cooperative',
+  hoverCardMode = 'store'
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
