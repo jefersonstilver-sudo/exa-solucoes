@@ -15,13 +15,12 @@ interface Props {
 export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => {
   const { mediaType, mediaFileName, mediaMime, raw } = message;
   const cleanMime = mediaMime?.split(';')[0].trim().toLowerCase();
-  const isPdf = cleanMime === 'application/pdf' || mediaFileName?.toLowerCase().endsWith('.pdf');
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [videoFixing, setVideoFixing] = useState(false);
   const [videoFixFailed, setVideoFixFailed] = useState(false);
-  const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker' || isPdf);
+  const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker');
   const [transcript, setTranscript] = useState<string | null>(null);
   const [transcribing, setTranscribing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
