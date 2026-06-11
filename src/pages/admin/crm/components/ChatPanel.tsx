@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import type { CollaboratorRow } from './CollaboratorCard';
 import {
   callEvolution,
+  fetchContacts,
   formatChatTime,
   jidToNumber,
   normalizeChat,
@@ -21,6 +22,7 @@ import {
   type EvoChat,
   type EvoMessage,
 } from '../lib/evolutionClient';
+import { MessageMedia } from './MessageMedia';
 
 interface Props {
   collaborator: CollaboratorRow;
