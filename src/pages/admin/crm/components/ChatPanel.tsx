@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
   Loader2,
@@ -218,6 +218,10 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     return () => clearInterval(t);
   }, [active, loadMessages]);
 
+  useLayoutEffect(() => {
+    refreshMessagesLayout('auto');
+  }, [messageLayoutVersion, refreshMessagesLayout]);
+
   useEffect(() => {
     const content = messageContentRef.current;
     if (!content) return;
@@ -228,7 +232,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     resizeObserver.observe(content);
 
     return () => resizeObserver.disconnect();
-  }, [messages.length, scrollMessagesToBottom]);
+  }, [messageLayoutVersion, messages.length, scrollMessagesToBottom]);
 
   // -------- Export full history --------
   const handleExportAll = async () => {
