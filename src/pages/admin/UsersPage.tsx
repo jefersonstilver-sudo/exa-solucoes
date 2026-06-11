@@ -38,6 +38,7 @@ const UsersPage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('team');
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -47,29 +48,29 @@ const UsersPage = () => {
   const { stats, loading: loadingStats, refetch: refetchStats } = useUserStats();
 
   const fetchUsers = async () => {
+    console.log('[UsersPage] fetchUsers iniciado');
     try {
       setLoading(true);
-      
-      const { data, error, status } = await supabase
-        .rpc('get_users_with_last_access');
+      setLoadError(null);
+
+      const { data, error } = await supabase.rpc('get_users_with_last_access');
 
       if (error) {
-        if (error.code === 'PGRST301' || error.message.includes('permission denied')) {
-          toast.error('Sem permissão para visualizar usuários.');
-        } else {
-          toast.error('Erro ao carregar usuários: ' + error.message);
-        }
+        console.error('[UsersPage] Erro RPC get_users_with_last_access:', error);
+        const msg = error.code === 'PGRST301' || (error.message || '').includes('permission denied')
+          ? 'Sem permissão para visualizar usuários.'
+          : `Erro ao carregar usuários: ${error.message}`;
+        setLoadError(msg);
+        toast.error(msg);
+        setUsers([]);
         return;
       }
 
-      if (!data || data.length === 0) {
-        toast.warning('Nenhum usuário encontrado');
-      } else {
-        toast.success(`${data.length} usuários carregados`);
-      }
-
-      setUsers(data || []);
+      console.log('[UsersPage] usuários carregados:', data?.length ?? 0);
+      setUsers((data as any) || []);
     } catch (error: any) {
+      console.error('[UsersPage] Erro crítico em fetchUsers:', error);
+      setLoadError(error?.message || 'Erro crítico ao carregar usuários');
       toast.error('Erro crítico ao carregar usuários');
     } finally {
       setLoading(false);
