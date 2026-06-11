@@ -11624,6 +11624,7 @@ export type Database = {
         Row: {
           access_token: string
           cash_total_value: number
+          cash_value_manual: boolean
           cc_emails: string[] | null
           chosen_plan: string | null
           client_address: string | null
@@ -11720,6 +11721,7 @@ export type Database = {
         Insert: {
           access_token?: string
           cash_total_value: number
+          cash_value_manual?: boolean
           cc_emails?: string[] | null
           chosen_plan?: string | null
           client_address?: string | null
@@ -11816,6 +11818,7 @@ export type Database = {
         Update: {
           access_token?: string
           cash_total_value?: number
+          cash_value_manual?: boolean
           cc_emails?: string[] | null
           chosen_plan?: string | null
           client_address?: string | null
