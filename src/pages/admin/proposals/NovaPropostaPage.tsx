@@ -3097,11 +3097,11 @@ Parcelas:
                   <Input 
                     type="number" 
                     min={1} 
-                    max={29} 
+                    max={365} 
                     value={customDays} 
                     readOnly={!!(customDaysStartDate && customDaysEndDate)}
                     onChange={e => {
-                      setCustomDays(Math.min(29, Math.max(1, parseInt(e.target.value) || 1)));
+                      setCustomDays(Math.min(365, Math.max(1, parseInt(e.target.value) || 1)));
                       setCustomDaysStartDate(null);
                       setCustomDaysEndDate(null);
                     }} 
@@ -3266,12 +3266,13 @@ Parcelas:
                 <Switch checked={overwriteCashValue} onCheckedChange={(checked) => {
                   setOverwriteCashValue(checked);
                   if (checked) {
-                    setIsCustomDays(false);
+                    // Compatível com "Dias": NÃO desliga isCustomDays
                     setIsCustomPayment(false);
-                    if (durationMonths <= 0) setDurationMonths(1);
                   }
                   if (checked && !cashValue) {
-                    const suggested = fidelTotal * (1 - discountPercent / 100);
+                    const suggested = isCustomDays
+                      ? calculateDaysPrice
+                      : fidelTotal * (1 - discountPercent / 100);
                     if (suggested > 0) setCashValue(suggested.toFixed(2));
                   }
                 }} />
