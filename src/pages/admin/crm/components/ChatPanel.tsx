@@ -547,7 +547,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                         )}
                         {m.text && (
                           <p className="leading-relaxed whitespace-pre-wrap break-words">
-                            {m.text}
+                            {renderLinkedText(m.text)}
                           </p>
                         )}
                         {!m.text && !m.mediaType && (
