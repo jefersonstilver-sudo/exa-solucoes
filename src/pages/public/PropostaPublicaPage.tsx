@@ -2202,6 +2202,7 @@ const PropostaPublicaPage = () => {
             fidelidadeComExclusividade={proposal.fidel_monthly_value * (1 + (proposal.exclusividade_percentual || 35) / 100)}
             percentualExtra={proposal.exclusividade_percentual || 35}
             durationMonths={proposal.duration_months}
+            cashOnly={isManualCashProposal}
             escolhido={clienteEscolheuExclusividade}
             onChoose={setClienteEscolheuExclusividade}
           />
