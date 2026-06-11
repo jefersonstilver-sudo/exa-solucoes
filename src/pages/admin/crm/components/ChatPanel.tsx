@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
   Loader2,
@@ -39,6 +39,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
   const [search, setSearch] = useState('');
 
   const [messages, setMessages] = useState<EvoMessage[]>([]);
+  const [messageLayoutVersion, setMessageLayoutVersion] = useState(0);
   const [msgsLoading, setMsgsLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null);
@@ -59,6 +60,20 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     stickToBottomRef.current = distanceFromBottom < 120;
   }, []);
+
+  const refreshMessagesLayout = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const repaintAndScroll = () => {
+      const el = scrollRef.current;
+      if (!el) return;
+      void el.offsetHeight;
+      scrollMessagesToBottom(behavior);
+      handleMessagesScroll();
+    };
+
+    requestAnimationFrame(repaintAndScroll);
+    window.setTimeout(repaintAndScroll, 80);
+    window.setTimeout(repaintAndScroll, 240);
+  }, [handleMessagesScroll, scrollMessagesToBottom]);
 
   const initials = (name: string) =>
     name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -146,18 +161,17 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         const list = await fetchPage(chat, 1);
         const sorted = list.sort((a, b) => a.timestamp - b.timestamp);
         setMessages(sorted);
+        setMessageLayoutVersion((v) => v + 1);
         setPage(1);
         setHasMore(list.length >= PAGE_SIZE);
-        setTimeout(() => {
-          scrollMessagesToBottom(silent ? 'auto' : 'smooth');
-        }, 50);
+        refreshMessagesLayout(silent ? 'auto' : 'smooth');
       } catch (e: any) {
         if (!silent) toast.error(e?.message ?? 'Falha ao carregar mensagens');
       } finally {
         setMsgsLoading(false);
       }
     },
-    [instance, fetchPage, scrollMessagesToBottom],
+    [instance, fetchPage, refreshMessagesLayout],
   );
 
   const loadOlder = useCallback(async () => {
@@ -177,6 +191,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         const merged = [...list.filter((m) => !seen.has(m.id)), ...prev];
         return merged.sort((a, b) => a.timestamp - b.timestamp);
       });
+      setMessageLayoutVersion((v) => v + 1);
       setPage(next);
       if (list.length < PAGE_SIZE) setHasMore(false);
       // Preserve scroll position after prepending older messages
@@ -203,6 +218,10 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     return () => clearInterval(t);
   }, [active, loadMessages]);
 
+  useLayoutEffect(() => {
+    refreshMessagesLayout('auto');
+  }, [messageLayoutVersion, refreshMessagesLayout]);
+
   useEffect(() => {
     const content = messageContentRef.current;
     if (!content) return;
@@ -213,7 +232,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     resizeObserver.observe(content);
 
     return () => resizeObserver.disconnect();
-  }, [messages.length, scrollMessagesToBottom]);
+  }, [messageLayoutVersion, messages.length, scrollMessagesToBottom]);
 
   // -------- Export full history --------
   const handleExportAll = async () => {
@@ -522,7 +541,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                   backgroundSize: '16px 16px',
                 }}
               >
-                <div ref={messageContentRef} className="min-h-full space-y-2">
+                <div key={messageLayoutVersion} ref={messageContentRef} className="min-h-full space-y-2 transform-gpu">
                 {msgsLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -552,9 +571,9 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                         </span>
                       )}
                     </div>
-                    {messages.map((m) => (
+                    {messages.map((m, index) => (
                     <div
-                      key={m.id}
+                      key={`${m.id}-${m.timestamp}-${m.mediaType ?? 'text'}-${index}`}
                       className={cn(
                         'flex',
                         m.fromMe ? 'justify-end' : 'justify-start',
