@@ -44,6 +44,21 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
   const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messageContentRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
+
+  const handleMessagesScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = distanceFromBottom < 120;
+  }, []);
 
   const initials = (name: string) =>
     name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -134,10 +149,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         setPage(1);
         setHasMore(list.length >= PAGE_SIZE);
         setTimeout(() => {
-          scrollRef.current?.scrollTo({
-            top: scrollRef.current.scrollHeight,
-            behavior: silent ? 'auto' : 'smooth',
-          });
+          scrollMessagesToBottom(silent ? 'auto' : 'smooth');
         }, 50);
       } catch (e: any) {
         if (!silent) toast.error(e?.message ?? 'Falha ao carregar mensagens');
@@ -145,7 +157,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         setMsgsLoading(false);
       }
     },
-    [instance, fetchPage],
+    [instance, fetchPage, scrollMessagesToBottom],
   );
 
   const loadOlder = useCallback(async () => {
@@ -190,6 +202,18 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     const t = setInterval(() => loadMessages(active, true), POLL_MESSAGES_MS);
     return () => clearInterval(t);
   }, [active, loadMessages]);
+
+  useEffect(() => {
+    const content = messageContentRef.current;
+    if (!content) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (stickToBottomRef.current) requestAnimationFrame(() => scrollMessagesToBottom('auto'));
+    });
+    resizeObserver.observe(content);
+
+    return () => resizeObserver.disconnect();
+  }, [messages.length, scrollMessagesToBottom]);
 
   // -------- Export full history --------
   const handleExportAll = async () => {
@@ -490,13 +514,15 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
               {/* Messages */}
               <div
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto p-4 space-y-2"
+                onScroll={handleMessagesScroll}
+                className="flex-1 overflow-y-auto p-4"
                 style={{
                   backgroundImage:
                     'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)',
                   backgroundSize: '16px 16px',
                 }}
               >
+                <div ref={messageContentRef} className="min-h-full space-y-2">
                 {msgsLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -577,6 +603,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                     ))}
                   </>
                 )}
+                </div>
               </div>
 
 
