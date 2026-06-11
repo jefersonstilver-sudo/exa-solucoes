@@ -146,7 +146,9 @@ export const normalizeMessage = (raw: any): EvoMessage | null => {
   };
 };
 
-// Fetch media as base64 data URL via Evolution API
+// Fetch media as playable URL (blob:) via Evolution API.
+// For video, we force MP4 conversion and return a blob URL with mime video/mp4
+// so the browser can actually play it (large data: URLs fail to play in Chrome).
 export const fetchMediaDataUrl = async (
   instance: string,
   rawMessage: any,
@@ -154,18 +156,36 @@ export const fetchMediaDataUrl = async (
 ): Promise<string | null> => {
   if (!instance || !rawMessage) return null;
   try {
+    const convertToMp4 = Boolean(opts.convertToMp4);
     const res = await callEvolution(
       `/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`,
       'POST',
-      { message: rawMessage, convertToMp4: Boolean(opts.convertToMp4) },
+      { message: rawMessage, convertToMp4 },
     );
     const d = res.data ?? {};
-    const base64: string | undefined = d.base64 ?? d.media ?? d.data;
-    const mimetype: string | undefined =
-      d.mimetype ?? d.mediaType ?? d.mime ?? 'application/octet-stream';
+    let base64: string | undefined = d.base64 ?? d.media ?? d.data;
     if (!base64) return null;
-    if (base64.startsWith('data:')) return base64;
-    return `data:${mimetype};base64,${base64}`;
+    if (base64.startsWith('data:')) {
+      const comma = base64.indexOf(',');
+      base64 = base64.slice(comma + 1);
+    }
+    let mimetype: string =
+      d.mimetype ?? d.mediaType ?? d.mime ?? 'application/octet-stream';
+    // When MP4 conversion is requested, the returned mimetype is often the
+    // original (e.g. video/3gpp). Force video/mp4 so <video> can play it.
+    if (convertToMp4) mimetype = 'video/mp4';
+
+    // Decode base64 → Blob → object URL (much more reliable for media playback)
+    try {
+      const bin = atob(base64);
+      const len = bin.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: mimetype });
+      return URL.createObjectURL(blob);
+    } catch {
+      return `data:${mimetype};base64,${base64}`;
+    }
   } catch (e) {
     console.error('[evolutionClient] fetchMediaDataUrl error', e);
     return null;
