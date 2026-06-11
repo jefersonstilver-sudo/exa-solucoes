@@ -32,6 +32,12 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
       .finally(() => setLoading(false));
   }, [open, dataUrl, instance, raw, mediaType]);
 
+  useEffect(() => {
+    return () => {
+      if (dataUrl && dataUrl.startsWith('blob:')) URL.revokeObjectURL(dataUrl);
+    };
+  }, [dataUrl]);
+
   const extFromMime = (mime?: string) => {
     if (!mime) return 'bin';
     const m = mime.split(';')[0].trim();
