@@ -446,9 +446,17 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                             : 'bg-white text-gray-900 rounded-bl-sm',
                         )}
                       >
-                        <p className="leading-relaxed whitespace-pre-wrap break-words">
-                          {m.text || <span className="italic opacity-60">[mídia]</span>}
-                        </p>
+                        {m.mediaType && (
+                          <MessageMedia instance={instance} message={m} fromMe={m.fromMe} />
+                        )}
+                        {m.text && (
+                          <p className="leading-relaxed whitespace-pre-wrap break-words">
+                            {m.text}
+                          </p>
+                        )}
+                        {!m.text && !m.mediaType && (
+                          <p className="leading-relaxed italic opacity-60">[mensagem vazia]</p>
+                        )}
                         <div
                           className={cn(
                             'flex items-center justify-end gap-1 mt-0.5',
