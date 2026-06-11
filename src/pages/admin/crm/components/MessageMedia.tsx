@@ -14,12 +14,14 @@ interface Props {
 
 export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => {
   const { mediaType, mediaFileName, mediaMime, raw } = message;
+  const cleanMime = mediaMime?.split(';')[0].trim().toLowerCase();
+  const isPdf = cleanMime === 'application/pdf' || mediaFileName?.toLowerCase().endsWith('.pdf');
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [videoFixing, setVideoFixing] = useState(false);
   const [videoFixFailed, setVideoFixFailed] = useState(false);
-  const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker');
+  const [open, setOpen] = useState(mediaType === 'image' || mediaType === 'sticker' || isPdf);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [transcribing, setTranscribing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -295,20 +297,29 @@ export const MessageMedia: React.FC<Props> = ({ instance, message, fromMe }) => 
   return (
     <div className="mb-1.5">
       {dataUrl ? (
-        <div className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15' : 'bg-black/5')}>
-          <FileText className="w-4 h-4" />
-          <a
-            href={dataUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="truncate max-w-[180px] hover:underline"
-            title="Abrir arquivo"
-          >
-            {safeFileName}
-          </a>
-          <button type="button" onClick={downloadFile} title="Baixar arquivo" className="ml-1 opacity-70 hover:opacity-100">
-            <Download className="w-3.5 h-3.5" />
-          </button>
+        <div className="space-y-2">
+          <div className={cn('flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs', fromMe ? 'bg-white/15' : 'bg-black/5')}>
+            <FileText className="w-4 h-4 flex-shrink-0" />
+            <a
+              href={dataUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="truncate max-w-[220px] hover:underline"
+              title="Abrir arquivo"
+            >
+              {safeFileName}
+            </a>
+            <button type="button" onClick={downloadFile} title="Baixar arquivo" className="ml-1 opacity-70 hover:opacity-100 flex-shrink-0">
+              <Download className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {isPdf && (
+            <iframe
+              src={dataUrl}
+              title={safeFileName}
+              className="w-[520px] max-w-full h-[360px] rounded-lg border border-black/10 bg-white"
+            />
+          )}
         </div>
       ) : (
         <button
