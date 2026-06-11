@@ -1371,7 +1371,7 @@ const PropostaPublicaPage = () => {
               </Card>
 
               {/* Cartão de Crédito Recorrente Option */}
-              <Card 
+              {!isManualCashProposal && <Card 
                 className={`p-4 cursor-pointer transition-all border-2 ${
                   paymentMethod === 'cartao_recorrente' 
                     ? 'border-purple-500 bg-purple-50' 
@@ -1414,7 +1414,7 @@ const PropostaPublicaPage = () => {
                     </div>
                   </div>
                 )}
-              </Card>
+              </Card>}
 
               {/* Generate Payment Button - Dynamic based on selection */}
               <Button
@@ -2423,7 +2423,7 @@ const PropostaPublicaPage = () => {
         )}
 
         {/* Resumo de Valores por Local - Só aparece para propostas monetárias */}
-        {!isCortesia && proposal.modalidade_proposta !== 'permuta' && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
+        {!isCortesia && !isManualCashProposal && proposal.modalidade_proposta !== 'permuta' && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {/* Fidelidade */}
             <Card className="p-2 sm:p-3 bg-white border-slate-200 space-y-1">
