@@ -3265,6 +3265,11 @@ Parcelas:
               <div className="flex items-center gap-3 mb-3">
                 <Switch checked={overwriteCashValue} onCheckedChange={(checked) => {
                   setOverwriteCashValue(checked);
+                  if (checked) {
+                    setIsCustomDays(false);
+                    setIsCustomPayment(false);
+                    if (durationMonths <= 0) setDurationMonths(1);
+                  }
                   if (checked && !cashValue) {
                     const suggested = fidelTotal * (1 - discountPercent / 100);
                     if (suggested > 0) setCashValue(suggested.toFixed(2));
