@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import type { CollaboratorRow } from './CollaboratorCard';
 import {
   callEvolution,
+  fetchContacts,
   formatChatTime,
   jidToNumber,
   normalizeChat,
@@ -21,6 +22,7 @@ import {
   type EvoChat,
   type EvoMessage,
 } from '../lib/evolutionClient';
+import { MessageMedia } from './MessageMedia';
 
 interface Props {
   collaborator: CollaboratorRow;
@@ -53,15 +55,27 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
       if (!silent) setChatsLoading(true);
       setChatsError(null);
       try {
-        const res = await callEvolution(
-          `/chat/findChats/${encodeURIComponent(instance)}`,
-          'POST',
-          {},
-        );
-        const list: any[] = Array.isArray(res.data) ? res.data : [];
+        const [chatsRes, contactsMap] = await Promise.all([
+          callEvolution(
+            `/chat/findChats/${encodeURIComponent(instance)}`,
+            'POST',
+            {},
+          ),
+          fetchContacts(instance),
+        ]);
+        const list: any[] = Array.isArray(chatsRes.data) ? chatsRes.data : [];
         const normalized = list
           .map(normalizeChat)
           .filter((c): c is EvoChat => Boolean(c))
+          .map((c) => {
+            const enrich = contactsMap.get(c.remoteJid);
+            const looksLikeNumber = !c.name || /^\d+$/.test(c.name) || c.name === c.remoteJid.split('@')[0];
+            return {
+              ...c,
+              name: looksLikeNumber && enrich?.name ? enrich.name : c.name,
+              profilePicUrl: c.profilePicUrl || enrich?.pic || null,
+            };
+          })
           .sort((a, b) => b.lastMessageTime - a.lastMessageTime);
         setChats(normalized);
         if (!active && normalized.length > 0) setActive(normalized[0]);
@@ -432,9 +446,17 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                             : 'bg-white text-gray-900 rounded-bl-sm',
                         )}
                       >
-                        <p className="leading-relaxed whitespace-pre-wrap break-words">
-                          {m.text || <span className="italic opacity-60">[mídia]</span>}
-                        </p>
+                        {m.mediaType && (
+                          <MessageMedia instance={instance} message={m} fromMe={m.fromMe} />
+                        )}
+                        {m.text && (
+                          <p className="leading-relaxed whitespace-pre-wrap break-words">
+                            {m.text}
+                          </p>
+                        )}
+                        {!m.text && !m.mediaType && (
+                          <p className="leading-relaxed italic opacity-60">[mensagem vazia]</p>
+                        )}
                         <div
                           className={cn(
                             'flex items-center justify-end gap-1 mt-0.5',
