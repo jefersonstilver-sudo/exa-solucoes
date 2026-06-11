@@ -2171,9 +2171,21 @@ const PropostaPublicaPage = () => {
             bairro: b.bairro || '',
             latitude: b.latitude,
             longitude: b.longitude,
+            manual_latitude: b.manual_latitude,
+            manual_longitude: b.manual_longitude,
+            imagem_principal: b.imagem_principal || b.imageurl,
+            publico_estimado: b.publico_estimado || 0,
+            visualizacoes_mes: b.visualizacoes_mes || 0,
+            quantidade_telas: b.quantidade_telas || 0,
+            numero_elevadores: b.quantidade_telas || b.numero_elevadores || 0,
+            preco_base: b.preco_base || 0,
+            status: 'ativo',
+            amenities: b.amenities || [],
+            caracteristicas: b.caracteristicas || [],
           })) as any}
           title="Locais Contratados"
         />
+
 
 
         {/* Módulo do Produto Escolhido - Imagem Âncora */}
