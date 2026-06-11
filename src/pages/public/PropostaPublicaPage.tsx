@@ -906,7 +906,7 @@ const PropostaPublicaPage = () => {
       console.log('💳 Pagamento personalizado - 1ª parcela:', paymentValue);
     } else {
       // Pagamento padrão
-      paymentValue = selectedPlan === 'avista' 
+      paymentValue = effectiveSelectedPlan === 'avista' 
         ? proposal.cash_total_value 
         : proposal.fidel_monthly_value * proposal.duration_months;
     }
@@ -927,7 +927,7 @@ const PropostaPublicaPage = () => {
         body: {
           proposalId: proposal.id,
           paymentMethod,
-          selectedPlan: isCustomPayment ? 'custom' : selectedPlan,
+          selectedPlan: isCustomPayment ? 'custom' : effectiveSelectedPlan,
           clientEmail: emailToUse,
           diaVencimento: paymentMethod === 'boleto' ? diaVencimento : undefined,
           isCustomPayment,
@@ -1031,7 +1031,7 @@ const PropostaPublicaPage = () => {
         body: {
           proposalId: proposal?.id,
           clientEmail: email,
-          selectedPlan: isCustom ? 'custom' : selectedPlan,
+          selectedPlan: isCustom ? 'custom' : effectiveSelectedPlan,
           paymentMethod: payment?.method,
           paymentData: payment,
           // Custom payment fields
