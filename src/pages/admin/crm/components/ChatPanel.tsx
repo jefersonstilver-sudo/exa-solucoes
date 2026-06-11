@@ -477,7 +477,27 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                     Sem mensagens nesta conversa.
                   </div>
                 ) : (
-                  messages.map((m) => (
+                  <>
+                    <div className="flex justify-center pb-2">
+                      {hasMore ? (
+                        <button
+                          onClick={loadOlder}
+                          disabled={loadingMore}
+                          className="text-[11px] px-3 py-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm border border-gray-200 disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {loadingMore ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Carregando...</>
+                          ) : (
+                            <>↑ Carregar mensagens mais antigas</>
+                          )}
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 italic">
+                          Início do histórico disponível
+                        </span>
+                      )}
+                    </div>
+                    {messages.map((m) => (
                     <div
                       key={m.id}
                       className={cn(
