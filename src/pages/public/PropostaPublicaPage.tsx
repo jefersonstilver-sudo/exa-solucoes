@@ -58,6 +58,8 @@ interface Proposal {
   duration_months: number;
   is_custom_days?: boolean | null;
   custom_days?: number | null;
+  custom_days_start_date?: string | null;
+  custom_days_end_date?: string | null;
   status: string;
   created_at: string;
   sent_at: string | null;
@@ -151,7 +153,8 @@ const PropostaPublicaPage = () => {
   const [diaVencimento, setDiaVencimento] = useState<5 | 10 | 15>(10);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
-  const isManualCashProposal = Boolean((proposal as any)?.cash_value_manual);
+  const isCustomDaysProposal = Boolean((proposal as any)?.is_custom_days);
+  const isManualCashProposal = Boolean((proposal as any)?.cash_value_manual) || isCustomDaysProposal;
   const effectiveSelectedPlan = isManualCashProposal ? 'avista' : selectedPlan;
   
   // Cortesia states
@@ -2063,10 +2066,14 @@ const PropostaPublicaPage = () => {
 
         {/* Módulo de Período da Campanha - Mobile Optimized */}
         {(() => {
-          const startDate = new Date(proposal.created_at);
-          const endDate = proposal.is_custom_days && proposal.custom_days
-            ? addDays(startDate, proposal.custom_days)
-            : addMonths(startDate, proposal.duration_months);
+          const startDate = proposal.custom_days_start_date
+            ? new Date(proposal.custom_days_start_date + 'T00:00:00')
+            : new Date(proposal.created_at);
+          const endDate = proposal.custom_days_end_date
+            ? new Date(proposal.custom_days_end_date + 'T00:00:00')
+            : proposal.is_custom_days && proposal.custom_days
+              ? addDays(startDate, proposal.custom_days)
+              : addMonths(startDate, proposal.duration_months);
           const totalDays = proposal.is_custom_days && proposal.custom_days
             ? proposal.custom_days
             : differenceInDays(endDate, startDate);

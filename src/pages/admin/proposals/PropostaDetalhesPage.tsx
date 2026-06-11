@@ -665,13 +665,15 @@ const PropostaDetalhesPage = () => {
             </div>
 
             <div className="border-t border-gray-100 pt-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Fidelidade/mês</span>
-                <span className="font-semibold">{formatCurrency(proposal.fidel_monthly_value)}</span>
-              </div>
+              {!proposal.is_custom_days && !(proposal as any).cash_value_manual && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Fidelidade/mês</span>
+                  <span className="font-semibold">{formatCurrency(proposal.fidel_monthly_value)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Total em {proposal.is_custom_days ? `${proposal.custom_days} dias` : `${proposal.duration_months} meses`}</span>
-                <span className="font-semibold">{formatCurrency(proposal.is_custom_days ? ((proposal as any).total_value || 0) : (proposal.fidel_monthly_value * proposal.duration_months))}</span>
+                <span className="font-semibold">{formatCurrency(proposal.is_custom_days || (proposal as any).cash_value_manual ? (proposal.cash_total_value || 0) : (proposal.fidel_monthly_value * proposal.duration_months))}</span>
               </div>
               
               {/* Custom Installments */}

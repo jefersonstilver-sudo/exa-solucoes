@@ -181,19 +181,19 @@ export const ProposalMobileCard: React.FC<ProposalMobileCardProps> = ({
 
       {/* Values row - is_custom_days shows total, otherwise monthly */}
       {proposal.is_custom_days ? (
-        // Período em DIAS: mostra valor total
+        // Período em DIAS: mostra valor total (usa cash_total_value que respeita valor manual)
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
               <p className="text-[10px] text-muted-foreground">{proposal.custom_days || 0} dias</p>
-              <p className="text-sm font-semibold text-emerald-600">
-                {formatCurrency(proposal.custom_installments?.reduce((sum, i) => sum + i.amount, 0) || proposal.cash_total_value || 0)}
+              <p className="text-sm font-bold text-[#9C1E1E]">
+                {formatCurrency(proposal.cash_total_value || proposal.custom_installments?.reduce((sum, i) => sum + i.amount, 0) || 0)}
               </p>
             </div>
           </div>
           <div className="text-right">
             <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
-              Período Personalizado
+              {proposal.cash_value_manual ? 'À vista · Dias' : 'Período em Dias'}
             </Badge>
             <p className="text-[10px] text-muted-foreground">{timeAgo}</p>
           </div>
