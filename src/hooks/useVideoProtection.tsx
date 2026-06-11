@@ -239,20 +239,20 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
       const style = document.createElement('style');
       style.id = styleId;
       style.textContent = `
-        video {
+        video:not(.crm-message-video) {
           pointer-events: none !important;
           user-select: none !important;
           -webkit-user-select: none !important;
           -ms-user-select: none !important;
           -moz-user-select: none !important;
         }
-        video::cue {
+        video:not(.crm-message-video)::cue {
           pointer-events: none !important;
         }
-        video::-webkit-media-controls {
+        video:not(.crm-message-video)::-webkit-media-controls {
           display: none !important;
         }
-        video::-webkit-media-controls-enclosure {
+        video:not(.crm-message-video)::-webkit-media-controls-enclosure {
           display: none !important;
         }
       `;
