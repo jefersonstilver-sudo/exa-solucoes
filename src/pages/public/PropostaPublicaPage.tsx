@@ -2160,6 +2160,22 @@ const PropostaPublicaPage = () => {
           </Card>
         )}
 
+        {/* Mapa fullscreen dos prédios desta proposta */}
+        <ProposalMapDialog
+          open={mapDialogOpen}
+          onOpenChange={setMapDialogOpen}
+          buildings={buildings.map((b: any) => ({
+            id: b.building_id || b.id,
+            nome: b.nome || b.building_name || 'Prédio',
+            endereco: b.endereco || '',
+            bairro: b.bairro || '',
+            latitude: b.latitude,
+            longitude: b.longitude,
+          })) as any}
+          title="Locais Contratados"
+        />
+
+
         {/* Módulo do Produto Escolhido - Imagem Âncora */}
         <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
 
