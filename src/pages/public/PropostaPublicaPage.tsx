@@ -53,6 +53,7 @@ interface Proposal {
   quantidade_posicoes?: number;
   fidel_monthly_value: number;
   cash_total_value: number;
+  cash_value_manual?: boolean | null;
   discount_percent: number;
   duration_months: number;
   is_custom_days?: boolean | null;
@@ -150,6 +151,8 @@ const PropostaPublicaPage = () => {
   const [diaVencimento, setDiaVencimento] = useState<5 | 10 | 15>(10);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
+  const isManualCashProposal = Boolean((proposal as any)?.cash_value_manual);
+  const effectiveSelectedPlan = isManualCashProposal ? 'avista' : selectedPlan;
   
   // Cortesia states
   const [isCortesia, setIsCortesia] = useState(false);
@@ -601,7 +604,7 @@ const PropostaPublicaPage = () => {
         proposal_id: proposal.id,
         action: 'aceita',
         details: { 
-          selected_plan: selectedPlan,
+          selected_plan: effectiveSelectedPlan,
           timestamp: new Date().toISOString()
         }
       });
@@ -611,7 +614,7 @@ const PropostaPublicaPage = () => {
         body: {
           proposalId: proposal.id,
           eventType: 'proposal_accepted',
-          metadata: { selectedPlan }
+          metadata: { selectedPlan: effectiveSelectedPlan }
         }
       }).then(() => {
         console.log('🔔 Notificação EXA Alerts enviada (proposal_accepted)');
@@ -628,7 +631,7 @@ const PropostaPublicaPage = () => {
           body: {
             proposalId: proposal.id,
             clientEmail: proposal.client_email,
-            selectedPlan
+            selectedPlan: effectiveSelectedPlan
           }
         }).then(() => {
           console.log('✅ Email de aceitação enviado');
