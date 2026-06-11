@@ -1,7 +1,7 @@
 /* PROTEÇÃO ANTI-PIRATARIA DE VÍDEO */
 
 /* Bloquear TODOS os controles nativos do navegador */
-video {
+video:not(.crm-message-video) {
   pointer-events: none !important;
   user-select: none !important;
   -webkit-user-select: none !important;
@@ -11,78 +11,78 @@ video {
 }
 
 /* Remover controles do Chrome/Safari */
-video::-webkit-media-controls {
+video:not(.crm-message-video)::-webkit-media-controls {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-enclosure {
+video:not(.crm-message-video)::-webkit-media-controls-enclosure {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-panel {
+video:not(.crm-message-video)::-webkit-media-controls-panel {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-play-button {
+video:not(.crm-message-video)::-webkit-media-controls-play-button {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-start-playback-button {
+video:not(.crm-message-video)::-webkit-media-controls-start-playback-button {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-timeline {
+video:not(.crm-message-video)::-webkit-media-controls-timeline {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-current-time-display {
+video:not(.crm-message-video)::-webkit-media-controls-current-time-display {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-time-remaining-display {
+video:not(.crm-message-video)::-webkit-media-controls-time-remaining-display {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-mute-button {
+video:not(.crm-message-video)::-webkit-media-controls-mute-button {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-volume-slider {
+video:not(.crm-message-video)::-webkit-media-controls-volume-slider {
   display: none !important;
   visibility: hidden !important;
 }
 
-video::-webkit-media-controls-fullscreen-button {
+video:not(.crm-message-video)::-webkit-media-controls-fullscreen-button {
   display: none !important;
   visibility: hidden !important;
 }
 
 /* Remover controles do Firefox */
-video::-moz-media-controls {
+video:not(.crm-message-video)::-moz-media-controls {
   display: none !important;
   visibility: hidden !important;
 }
 
 /* Remover controles do IE/Edge */
-video::-ms-media-controls {
+video:not(.crm-message-video)::-ms-media-controls {
   display: none !important;
   visibility: hidden !important;
 }
 
 /* Bloquear context menu em TODOS os elementos de vídeo */
-video,
-video *,
-video::before,
-video::after {
+video:not(.crm-message-video),
+video:not(.crm-message-video) *,
+video:not(.crm-message-video)::before,
+video:not(.crm-message-video)::after {
   context-menu: none !important;
 }
 
