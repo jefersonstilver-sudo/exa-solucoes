@@ -43,6 +43,7 @@ import { BusinessSegmentSelector } from '@/components/ui/business-segment-select
 import { ItensPermutaEditor } from '@/components/admin/proposals/ItensPermutaEditor';
 import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
 import { ClientLogoPreview } from '@/components/admin/proposals/ClientLogoPreview';
+import ProposalMapDialog from '@/components/admin/proposals/ProposalMapDialog';
 
 interface Building {
   id: string;
@@ -210,6 +211,9 @@ const NovaPropostaPage = () => {
 
   // Estado para preview da proposta
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  // Estado para mapa fullscreen dos prédios selecionados
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
 
   // Estado para título da proposta
   const [tituloProposta, setTituloProposta] = useState('');
@@ -2483,15 +2487,30 @@ Parcelas:
 
         {/* Seção 2: Seleção de Prédios */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm border-white/50 relative z-30">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              <h2 className="font-semibold">Prédios</h2>
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
+              <h2 className="font-semibold truncate">Prédios</h2>
             </div>
-            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-              {selectedBuildings.length} selecionados • {totalPanels} telas
-            </span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMapDialogOpen(true)}
+                disabled={selectedBuildingsData.length === 0}
+                title={selectedBuildingsData.length === 0 ? 'Adicione prédios para ver no mapa' : 'Visualizar prédios no mapa'}
+                className="gap-1.5 rounded-full border-slate-200 bg-white/80 backdrop-blur hover:bg-white hover:border-slate-300 hover:shadow-md transition-all text-slate-700 font-medium h-8 px-2.5 sm:px-3 disabled:opacity-50"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline text-xs">Mapa</span>
+              </Button>
+              <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full whitespace-nowrap">
+                {selectedBuildings.length} selecionados • {totalPanels} telas
+              </span>
+            </div>
           </div>
+
 
           {/* Botão Vertical Premium */}
           <div className="mb-4">
@@ -4554,6 +4573,12 @@ Parcelas:
         previewClientName={`${clientData.firstName} ${clientData.lastName}`.trim()}
         previewClientDocLabel={getDocumentLabel()}
         previewClientDocValue={clientData.document || getDocumentPlaceholder()}
+      />
+
+      <ProposalMapDialog
+        open={mapDialogOpen}
+        onOpenChange={setMapDialogOpen}
+        buildings={selectedBuildingsData as any}
       />
     </div>;
 };
