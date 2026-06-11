@@ -44,7 +44,8 @@ import {
   CalendarDays,
   Lock,
   Timer,
-  User as UserIcon
+  User as UserIcon,
+  QrCode
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -234,6 +235,13 @@ export function ModernAdminSidebar() {
           badge: pedidosSemVideo > 0 ? pedidosSemVideo : undefined,
           badgeColor: 'bg-[#9C1E1E]',
           badgeTooltip: 'Pedidos aguardando envio de vídeo'
+        },
+        {
+          title: 'Scans QR Code',
+          href: buildPath('qr-scans'),
+          icon: QrCode,
+          moduleKey: MODULE_KEYS.pedidos,
+          badgeTooltip: 'Todos os scans rastreados de QR Code'
         },
         {
           title: 'Jurídico',

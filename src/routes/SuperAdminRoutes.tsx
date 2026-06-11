@@ -108,6 +108,11 @@ const SuperAdminRoutes = () => {
       <Route path="agenda" element={<Navigate to="/super_admin/tarefas" replace />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
+      <Route path="qr-scans" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando scans..." />}>
+          {React.createElement(lazy(() => import('@/pages/admin/QrScansAdminPage')))}
+        </Suspense>
+      } />
       <Route path="produtos" element={<ProdutosPage />} />
       <Route path="propostas" element={<PropostasPage />} />
       <Route path="propostas/nova" element={<NovaPropostaPage />} />
