@@ -68,7 +68,68 @@ const compactMediaMessage = (raw: any): any => {
     if (msg?.[key]) compact[key] = stripHeavyMediaFields(msg[key]);
   }
   if (Object.keys(compact).length === 0) return raw;
-  return raw?.key ? { key: raw.key, message: compact } : { message: compact };
+  if (!raw?.key) return { message: compact };
+  return {
+    key: raw.key,
+    message: compact,
+    messageType: raw.messageType,
+    messageTimestamp: raw.messageTimestamp,
+    source: raw.source,
+    status: raw.status,
+  };
+};
+
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+  }
+  return btoa(binary);
+};
+
+const extractMediaBase64 = (payload: any): string | undefined => {
+  const candidate = payload?.base64 ?? payload?.media ?? payload?.data ?? payload?.file;
+  if (typeof candidate === 'string') return candidate;
+  if (typeof payload?.buffer === 'string') return payload.buffer;
+  const bufferData = payload?.buffer?.data ?? payload?.buffer;
+  if (Array.isArray(bufferData)) return bytesToBase64(Uint8Array.from(bufferData));
+  return undefined;
+};
+
+const mediaPayloadToUrl = (payload: any, rawMessage: any): string | null => {
+  let base64 = extractMediaBase64(payload);
+  if (!base64) return null;
+  if (base64.startsWith('data:')) {
+    const comma = base64.indexOf(',');
+    base64 = base64.slice(comma + 1);
+  }
+  const sourceMsg = unwrapWhatsAppMessage(rawMessage?.message ?? rawMessage);
+  const reportedMime: string =
+    payload?.mimetype ??
+    payload?.mimeType ??
+    payload?.mime ??
+    sourceMsg?.documentMessage?.mimetype ??
+    sourceMsg?.imageMessage?.mimetype ??
+    sourceMsg?.videoMessage?.mimetype ??
+    sourceMsg?.audioMessage?.mimetype ??
+    sourceMsg?.stickerMessage?.mimetype ??
+    'application/octet-stream';
+  const mimetype = reportedMime.split(';')[0].trim();
+
+  try {
+    const bin = atob(base64);
+    const len = bin.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: mimetype });
+    const url = URL.createObjectURL(blob);
+    console.log('[evolutionClient] blob created:', { mimetype, size: blob.size, url });
+    return url;
+  } catch (decodeErr) {
+    console.error('[evolutionClient] base64 decode failed', decodeErr);
+    return `data:${mimetype};base64,${base64}`;
+  }
 };
 
 export const normalizeChat = (raw: any): EvoChat | null => {
@@ -208,50 +269,31 @@ export const fetchMediaDataUrl = async (
   if (!instance || !rawMessage) return null;
   try {
     const convertToMp4 = Boolean(opts.convertToMp4);
-    const messagePayload = compactMediaMessage(rawMessage);
-    const res = await callEvolution(
-      `/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`,
-      'POST',
-      { message: messagePayload, convertToMp4 },
-    );
-    const d = res.data ?? {};
-    console.log('[evolutionClient] media response keys:', Object.keys(d), 'mimetype:', d?.mimetype, 'convertToMp4:', convertToMp4);
-    let base64: string | undefined = d.base64 ?? d.media ?? d.data;
-    if (!base64) {
-      console.warn('[evolutionClient] no base64 in response', d);
-      return null;
-    }
-    if (base64.startsWith('data:')) {
-      const comma = base64.indexOf(',');
-      base64 = base64.slice(comma + 1);
-    }
-    const sourceMsg = unwrapWhatsAppMessage(rawMessage?.message ?? rawMessage);
-    const reportedMime: string =
-      d.mimetype ??
-      d.mimeType ??
-      d.mime ??
-      sourceMsg?.documentMessage?.mimetype ??
-      sourceMsg?.imageMessage?.mimetype ??
-      sourceMsg?.videoMessage?.mimetype ??
-      sourceMsg?.audioMessage?.mimetype ??
-      sourceMsg?.stickerMessage?.mimetype ??
-      'application/octet-stream';
-    // Strip codec params (e.g. "audio/ogg; codecs=opus") for Blob/<video> compatibility
-    const mimetype = reportedMime.split(';')[0].trim();
-
+    const candidates: any[] = [compactMediaMessage(rawMessage)];
     try {
-      const bin = atob(base64);
-      const len = bin.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: mimetype });
-      const url = URL.createObjectURL(blob);
-      console.log('[evolutionClient] blob created:', { mimetype, size: blob.size, url });
-      return url;
-    } catch (decodeErr) {
-      console.error('[evolutionClient] base64 decode failed', decodeErr);
-      return `data:${mimetype};base64,${base64}`;
+      const compactJson = JSON.stringify(candidates[0]);
+      const rawJson = JSON.stringify(rawMessage);
+      if (rawJson && rawJson !== compactJson && rawJson.length < 85_000) candidates.push(rawMessage);
+    } catch {
+      // keep compact payload only
     }
+
+    let lastPayload: any = null;
+    for (const messagePayload of candidates) {
+      const res = await callEvolution(
+        `/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`,
+        'POST',
+        { message: messagePayload, convertToMp4 },
+      );
+      const d = res.data ?? {};
+      lastPayload = d;
+      console.log('[evolutionClient] media response keys:', Object.keys(d), 'mimetype:', d?.mimetype, 'convertToMp4:', convertToMp4);
+      const url = mediaPayloadToUrl(d, rawMessage);
+      if (url) return url;
+    }
+
+    console.warn('[evolutionClient] no base64 in response', lastPayload);
+    return null;
   } catch (e) {
     console.error('[evolutionClient] fetchMediaDataUrl error', e);
     return null;
