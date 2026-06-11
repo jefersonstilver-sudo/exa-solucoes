@@ -603,6 +603,21 @@ const NovaPropostaPage = () => {
       setDurationMonths(existingProposal.duration_months || 6);
       setDiscountPercent(existingProposal.discount_percent || 10);
       setFidelValue(String(existingProposal.fidel_monthly_value || ''));
+
+      // Re-hidratar toggle "Valor à Vista Manual"
+      {
+        const savedCash = Number(existingProposal.cash_total_value || 0);
+        const savedMonthly = Number(existingProposal.fidel_monthly_value || 0);
+        const savedDuration = Number(existingProposal.duration_months || 0);
+        const savedDiscount = Number(existingProposal.discount_percent || 0);
+        const expectedCash = savedMonthly * savedDuration * (1 - savedDiscount / 100);
+        const flag = (existingProposal as any).cash_value_manual;
+        const isManual = typeof flag === 'boolean'
+          ? flag
+          : (savedCash > 0 && Math.abs(savedCash - expectedCash) > 1);
+        setOverwriteCashValue(isManual);
+        setCashValue(isManual ? String(savedCash || '') : '');
+      }
       
       if (existingProposal.payment_type === 'custom' && existingProposal.custom_installments) {
         setIsCustomPayment(true);
