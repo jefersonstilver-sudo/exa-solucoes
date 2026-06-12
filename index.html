@@ -193,7 +193,11 @@
         function clearAndReload() {
           try { localStorage.removeItem('html-build-id'); } catch (e) {}
           try { localStorage.removeItem('app-version'); } catch (e) {}
-          var doReload = function() { location.replace('/?_v=' + Date.now()); };
+          var doReload = function() {
+            var search = location.search || '';
+            var sep = search ? '&' : '?';
+            location.replace(location.pathname + search + sep + '_v=' + Date.now());
+          };
           if ('caches' in window) {
             caches.keys()
               .then(function(names) { return Promise.all(names.map(function(n) { return caches.delete(n); })); })

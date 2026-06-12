@@ -66,7 +66,9 @@ export const useVersionWatcher = () => {
             if (typeof window.__exaForceRefresh === 'function') {
               window.__exaForceRefresh();
             } else {
-              window.location.replace('/?_v=' + Date.now());
+              const search = window.location.search || '';
+              const separator = search ? '&' : '?';
+              window.location.replace(`${window.location.pathname}${search}${separator}_v=${Date.now()}`);
             }
           }, 5000);
         }
