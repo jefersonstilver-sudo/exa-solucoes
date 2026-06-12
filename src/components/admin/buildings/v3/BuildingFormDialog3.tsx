@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { 
   Building2, UserCircle, DollarSign, Camera, Trash2, MapPin, 
-  Phone, Monitor, Users, Layers
+  Phone, Monitor, Users, Layers, FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -39,6 +39,7 @@ import ImageGallery3, { LocalImage } from './ImageGallery3';
 import CharacteristicsSelector from '../form/CharacteristicsSelector';
 import { useBuildingDelete } from '@/hooks/useBuildingDelete';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import ImportarFormularioDialog, { ImportedFormData } from './ImportarFormularioDialog';
 
 interface BuildingFormDialog3Props {
   open: boolean;
@@ -114,6 +115,8 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('basico');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+
   
   const { permissions } = useUserPermissions();
   const { deleteBuilding, loading: deleting } = useBuildingDelete();
@@ -371,13 +374,29 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#9C1E1E]" />
-              {building ? 'Editar Prédio' : 'Novo Prédio'}
-            </DialogTitle>
-            <DialogDescription>
-              {building ? 'Atualize as informações do prédio' : 'Cadastre um novo prédio no sistema'}
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-[#9C1E1E]" />
+                  {building ? 'Editar Prédio' : 'Novo Prédio'}
+                </DialogTitle>
+                <DialogDescription>
+                  {building ? 'Atualize as informações do prédio' : 'Cadastre um novo prédio no sistema'}
+                </DialogDescription>
+              </div>
+              {!building && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowImport(true)}
+                  className="flex-shrink-0 gap-1.5"
+                >
+                  <FileText className="h-4 w-4" />
+                  Importar formulário
+                </Button>
+              )}
+            </div>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
@@ -781,7 +800,20 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportarFormularioDialog
+        open={showImport}
+        onOpenChange={setShowImport}
+        onImport={(data, importedImages) => {
+          setFormData(prev => ({ ...prev, ...(data as any) }));
+          if (importedImages.length > 0) {
+            setImages(prev => [...prev, ...importedImages].slice(0, 4));
+          }
+          setActiveTab('basico');
+        }}
+      />
     </>
+
   );
 };
 
