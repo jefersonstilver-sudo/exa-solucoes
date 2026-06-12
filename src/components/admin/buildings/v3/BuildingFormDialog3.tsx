@@ -349,6 +349,18 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
         }
       }
 
+      // Se o prédio foi criado a partir de um formulário importado, removê-lo da fila
+      if (!building && importedSourceId) {
+        try {
+          await (supabase as any)
+            .from('predios_cadastro_externo')
+            .delete()
+            .eq('id', importedSourceId);
+        } catch (delErr) {
+          console.warn('[BuildingFormDialog3] Falha ao excluir formulário importado:', delErr);
+        }
+      }
+
       toast.success(building ? 'Prédio atualizado!' : 'Prédio criado!');
       onSuccess();
       handleClose();
