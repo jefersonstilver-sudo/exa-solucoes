@@ -151,6 +151,13 @@ const FormulariosSindicosPage: React.FC = () => {
         fotos_urls: editing.fotos_urls || []
       };
 
+      if (canEditComercial) {
+        payload.valor_mensal = editing.valor_mensal ?? null;
+        payload.valor_trimestral = editing.valor_trimestral ?? null;
+        payload.valor_semestral = editing.valor_semestral ?? null;
+        payload.valor_anual = editing.valor_anual ?? null;
+      }
+
       let cadastroId = editing.id as string | undefined;
 
       if (isNew) {
