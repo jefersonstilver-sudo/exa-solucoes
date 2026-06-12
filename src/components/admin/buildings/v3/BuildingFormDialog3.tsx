@@ -116,6 +116,7 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
   const [activeTab, setActiveTab] = useState('basico');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [importedSourceId, setImportedSourceId] = useState<string | null>(null);
 
   
   const { permissions } = useUserPermissions();
