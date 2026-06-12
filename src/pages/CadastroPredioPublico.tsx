@@ -150,12 +150,12 @@ const CadastroPredioPublico: React.FC = () => {
           <p className="text-white/70 text-sm mb-6">
             Nossa equipe vai analisar as informações do seu prédio e entrar em contato em breve.
           </p>
-          <button
-            onClick={() => { setForm(initialState); setFotos([]); setSuccess(false); }}
-            className="text-[#C7141A] hover:text-[#B40D1A] text-sm font-medium"
+          <a
+            href="https://examidia.com.br"
+            className="inline-block px-6 py-3 rounded-xl bg-[#C7141A] hover:bg-[#B40D1A] text-white text-sm font-semibold transition"
           >
-            Cadastrar outro prédio
-          </button>
+            Voltar ao site
+          </a>
         </div>
       </div>
     );
