@@ -201,7 +201,16 @@ const FormulariosSindicosPage: React.FC = () => {
             Formulários dos Síndicos
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Cadastros enviados via link público <code className="text-xs">/cadastro-predio</code>
+            Cadastros enviados via link público (
+            <a
+              href="/cadastro-predio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#C7141A] hover:underline font-medium"
+            >
+              aqui
+            </a>
+            )
           </p>
         </div>
         <div className="flex gap-2">
