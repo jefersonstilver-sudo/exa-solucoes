@@ -10966,6 +10966,10 @@ export type Database = {
           telefone_principal: string | null
           tipo_predio: string | null
           updated_at: string
+          valor_anual: number | null
+          valor_mensal: number | null
+          valor_semestral: number | null
+          valor_trimestral: number | null
           vice_sindico_contato: string | null
           vice_sindico_nome: string | null
         }
@@ -10992,6 +10996,10 @@ export type Database = {
           telefone_principal?: string | null
           tipo_predio?: string | null
           updated_at?: string
+          valor_anual?: number | null
+          valor_mensal?: number | null
+          valor_semestral?: number | null
+          valor_trimestral?: number | null
           vice_sindico_contato?: string | null
           vice_sindico_nome?: string | null
         }
@@ -11018,6 +11026,10 @@ export type Database = {
           telefone_principal?: string | null
           tipo_predio?: string | null
           updated_at?: string
+          valor_anual?: number | null
+          valor_mensal?: number | null
+          valor_semestral?: number | null
+          valor_trimestral?: number | null
           vice_sindico_contato?: string | null
           vice_sindico_nome?: string | null
         }
