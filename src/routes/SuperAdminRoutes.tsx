@@ -29,6 +29,7 @@ import FinancialReports from '@/pages/admin/FinancialReports';
 import ZApiDiagnostics from '@/pages/admin/ZApiDiagnostics';
 import AssinaturasPage from '@/pages/admin/AssinaturasPage';
 import EmailLogs from '@/pages/admin/EmailLogs';
+import FormulariosSindicosPage from '@/pages/admin/FormulariosSindicosPage';
 import LogosAdmin from '@/components/admin/LogosAdmin';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 import SyncNotionPage from '@/pages/admin/SyncNotionPage';
@@ -265,6 +266,7 @@ const SuperAdminRoutes = () => {
       
       {/* ============ LEADS & CLIENTES ============ */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
+      <Route path="formularios-sindicos" element={<FormulariosSindicosPage />} />
       <Route path="leads-exa" element={<LeadsExa />} />
       
       {/* ============ CONTEÚDO ============ */}
