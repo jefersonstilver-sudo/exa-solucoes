@@ -81,6 +81,7 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const InteresseSindicoLanding = lazy(() => import('./pages/InteresseSindicoLanding'));
 const InteresseSindicoFormulario = lazy(() => import('./pages/InteresseSindicoFormulario'));
 const InteresseSindicoSucesso = lazy(() => import('./pages/InteresseSindicoSucesso'));
+const CadastroPredioPublico = lazy(() => import('./pages/CadastroPredioPublico'));
 
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
