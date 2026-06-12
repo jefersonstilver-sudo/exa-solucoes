@@ -136,7 +136,7 @@ const ImportarFormularioDialog: React.FC<Props> = ({ open, onOpenChange, onImpor
         preco_anual: it.valor_anual ?? '',
       };
 
-      onImport(data, images);
+      onImport(data, images, it.id);
       toast.success('Formulário importado — revise e salve');
       onOpenChange(false);
     } finally {
