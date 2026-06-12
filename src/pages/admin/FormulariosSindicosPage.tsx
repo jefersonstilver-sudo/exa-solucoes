@@ -211,36 +211,35 @@ const FormulariosSindicosPage: React.FC = () => {
           ) : items.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Nenhum cadastro recebido ainda.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-2">
               {items.map(it => {
                 const foto = it.fotos_urls?.[0];
+                const localizacao = [it.bairro, it.cidade, it.estado].filter(Boolean).join(', ');
                 return (
                   <div
                     key={it.id}
-                    className="group relative rounded-xl border bg-card overflow-hidden hover:shadow-md transition"
+                    className="flex items-center gap-3 rounded-xl border bg-card p-3 hover:shadow-md transition"
                   >
-                    <div className="aspect-[16/10] bg-muted flex items-center justify-center overflow-hidden">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-base truncate">{it.nome || 'Sem nome'}</div>
+                      <div className="text-xs text-muted-foreground truncate mt-0.5">
+                        {localizacao || it.endereco || '—'}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button size="sm" variant="ghost" onClick={() => { setEditing(it); setNewFotos([]); }}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(it.id)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-muted flex items-center justify-center shrink-0">
                       {foto ? (
                         <img src={foto} alt={it.nome || 'Prédio'} className="w-full h-full object-cover" />
                       ) : (
-                        <Building2 className="w-14 h-14 text-muted-foreground/40" strokeWidth={1.25} />
+                        <Building2 className="w-8 h-8 text-muted-foreground/40" strokeWidth={1.25} />
                       )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 p-3">
-                      <div className="min-w-0">
-                        <div className="font-medium text-sm truncate">{it.nome || 'Sem nome'}</div>
-                        {it.cidade && (
-                          <div className="text-xs text-muted-foreground truncate">{it.cidade}{it.estado ? ` - ${it.estado}` : ''}</div>
-                        )}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button size="sm" variant="ghost" onClick={() => { setEditing(it); setNewFotos([]); }}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(it.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 );
