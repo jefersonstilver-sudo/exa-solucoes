@@ -81,6 +81,7 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const InteresseSindicoLanding = lazy(() => import('./pages/InteresseSindicoLanding'));
 const InteresseSindicoFormulario = lazy(() => import('./pages/InteresseSindicoFormulario'));
 const InteresseSindicoSucesso = lazy(() => import('./pages/InteresseSindicoSucesso'));
+const CadastroPredioPublico = lazy(() => import('./pages/CadastroPredioPublico'));
 
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
@@ -264,6 +265,18 @@ const AppContent = () => {
           <Route path="/interessesindico/sucesso" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
               <InteresseSindicoSucesso />
+            </Suspense>
+          } />
+
+          {/* CADASTRO DE PRÉDIO PÚBLICO (síndicos) */}
+          <Route path="/cadastro-predio" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando formulário..." />}>
+              <CadastroPredioPublico />
+            </Suspense>
+          } />
+          <Route path="/cadastropredio" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando formulário..." />}>
+              <CadastroPredioPublico />
             </Suspense>
           } />
 
