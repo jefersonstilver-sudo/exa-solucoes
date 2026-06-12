@@ -8,6 +8,7 @@ const InteresseSindicoLanding = React.lazy(() => import('@/pages/InteresseSindic
 const InteresseSindicoFormulario = React.lazy(() => import('@/pages/InteresseSindicoFormulario'));
 const InteresseSindicoSucesso = React.lazy(() => import('@/pages/InteresseSindicoSucesso'));
 const PropostaJorbelRedirect = React.lazy(() => import('@/pages/PropostaJorbelRedirect'));
+const CadastroPredioPublico = React.lazy(() => import('@/pages/CadastroPredioPublico'));
 
 export const AppRoutes = () => {
   return (
