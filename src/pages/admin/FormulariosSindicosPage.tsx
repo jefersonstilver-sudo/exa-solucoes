@@ -64,6 +64,8 @@ const emptyForm: Partial<Cadastro> = {
 };
 
 const FormulariosSindicosPage: React.FC = () => {
+  const { userProfile } = useAuth();
+  const canEditComercial = userProfile?.role === 'super_admin' || userProfile?.role === 'admin_financeiro';
   const [items, setItems] = useState<Cadastro[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<Cadastro> | null>(null);
