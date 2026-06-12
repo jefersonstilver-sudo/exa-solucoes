@@ -20,6 +20,8 @@ export const AppRoutes = () => {
       <Route path="/interessesindico/sucesso" element={<InteresseSindicoSucesso />} />
       <Route path="/proposta-jorbel" element={<PropostaJorbelRedirect />} />
       <Route path="/proposta-jorbel/" element={<PropostaJorbelRedirect />} />
+      <Route path="/cadastro-predio" element={<CadastroPredioPublico />} />
+      <Route path="/cadastropredio" element={<CadastroPredioPublico />} />
       <Route path="/*" element={<AuthRoutes />} />
     </Routes>
   );
