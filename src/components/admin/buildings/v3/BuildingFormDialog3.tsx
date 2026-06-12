@@ -374,13 +374,29 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#9C1E1E]" />
-              {building ? 'Editar Prédio' : 'Novo Prédio'}
-            </DialogTitle>
-            <DialogDescription>
-              {building ? 'Atualize as informações do prédio' : 'Cadastre um novo prédio no sistema'}
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-[#9C1E1E]" />
+                  {building ? 'Editar Prédio' : 'Novo Prédio'}
+                </DialogTitle>
+                <DialogDescription>
+                  {building ? 'Atualize as informações do prédio' : 'Cadastre um novo prédio no sistema'}
+                </DialogDescription>
+              </div>
+              {!building && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowImport(true)}
+                  className="flex-shrink-0 gap-1.5"
+                >
+                  <FileText className="h-4 w-4" />
+                  Importar formulário
+                </Button>
+              )}
+            </div>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
