@@ -403,6 +403,11 @@ const AdminRoutes = () => {
           <SindicosInteressados />
         </ProtectedModuleRoute>
       } />
+      <Route path="formularios-sindicos" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.formularios_sindicos}>
+          <FormulariosSindicosPage />
+        </ProtectedModuleRoute>
+      } />
       <Route path="leads-exa" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.leads}>
           <LeadsExa />
