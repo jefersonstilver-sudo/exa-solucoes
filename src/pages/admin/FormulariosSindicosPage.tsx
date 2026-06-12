@@ -272,7 +272,17 @@ const FormulariosSindicosPage: React.FC = () => {
           </DialogHeader>
 
           {editing && (
-            <div className="space-y-6 py-2">
+            <Tabs defaultValue="geral" className="py-2">
+              <TabsList className={canEditComercial ? 'grid w-full grid-cols-2' : 'grid w-full grid-cols-1'}>
+                <TabsTrigger value="geral">Geral</TabsTrigger>
+                {canEditComercial && (
+                  <TabsTrigger value="comercial">
+                    <DollarSign className="w-3.5 h-3.5 mr-1" />Comercial
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              <TabsContent value="geral" className="space-y-6 mt-4">
               <section className="space-y-3">
                 <h3 className="font-semibold text-sm">Dados Básicos</h3>
                 <div>
@@ -365,8 +375,58 @@ const FormulariosSindicosPage: React.FC = () => {
                   }} />
                 </label>
               </section>
-            </div>
+              </TabsContent>
+
+              {canEditComercial && (
+                <TabsContent value="comercial" className="space-y-6 mt-4">
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-[#C7141A]" />
+                      <h3 className="font-semibold text-sm">Preços por Plano</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Valores comerciais editáveis apenas por Super Admin e Financeiro.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label>Mensal (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_mensal ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_mensal: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Trimestral Total (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_trimestral ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_trimestral: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Semestral Total (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_semestral ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_semestral: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Anual Total (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_anual ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_anual: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                    </div>
+                  </section>
+                </TabsContent>
+              )}
+            </Tabs>
           )}
+
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditing(null); setNewFotos([]); }} disabled={saving}>Cancelar</Button>
