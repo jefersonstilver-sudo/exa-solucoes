@@ -268,6 +268,18 @@ const AppContent = () => {
             </Suspense>
           } />
 
+          {/* CADASTRO DE PRÉDIO PÚBLICO (síndicos) */}
+          <Route path="/cadastro-predio" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando formulário..." />}>
+              <CadastroPredioPublico />
+            </Suspense>
+          } />
+          <Route path="/cadastropredio" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando formulário..." />}>
+              <CadastroPredioPublico />
+            </Suspense>
+          } />
+
 
           <Route path="/monitor" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando monitor..." />}>
