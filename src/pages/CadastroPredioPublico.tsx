@@ -211,10 +211,15 @@ const CadastroPredioPublico: React.FC = () => {
               </div>
               <div>
                 <label className={labelCls}>Tipo de prédio</label>
-                <select className={inputCls} value={form.tipo_predio} onChange={e => update('tipo_predio', e.target.value)}>
-                  <option value="" className="bg-slate-900">Selecione</option>
-                  <option value="Residencial" className="bg-slate-900">🏠 Residencial</option>
-                  <option value="Comercial" className="bg-slate-900">🏢 Comercial</option>
+                <select
+                  className={inputCls}
+                  style={{ colorScheme: 'dark' }}
+                  value={form.tipo_predio}
+                  onChange={e => update('tipo_predio', e.target.value)}
+                >
+                  <option value="" style={{ background: '#0f172a', color: '#ffffff' }}>Selecione</option>
+                  <option value="Residencial" style={{ background: '#0f172a', color: '#ffffff' }}>🏠 Residencial</option>
+                  <option value="Comercial" style={{ background: '#0f172a', color: '#ffffff' }}>🏢 Comercial</option>
                 </select>
               </div>
             </div>
