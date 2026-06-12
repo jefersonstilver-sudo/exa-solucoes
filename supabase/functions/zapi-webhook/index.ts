@@ -875,9 +875,9 @@ serve(async (req) => {
         // Buscar alertas recentes para vincular a confirmação
         const { data: recentAlerts } = await supabase
           .from('panel_offline_alerts_history')
-          .select('*, devices(id, name, metadata)')
-          .order('sent_at', { ascending: false })
-          .limit(20);
+          .select('id, painel_id, mensagem, destinatarios_notificados, incident_id, incident_number, alert_number, created_at')
+          .order('created_at', { ascending: false })
+          .limit(30);
         
         let matchedAlert = null;
         let deviceInfo = null;
@@ -896,28 +896,39 @@ serve(async (req) => {
             
             // Encontrar alert correspondente
             if (recentAlerts) {
-              matchedAlert = recentAlerts.find(a => a.painel_id === deviceIdFromButton || a.device_id === deviceIdFromButton);
+              matchedAlert = recentAlerts.find((a: any) => a.painel_id === deviceIdFromButton);
             }
           }
         }
         
-        // Fallback: buscar por telefone do destinatário
+        // Fallback: buscar por telefone do destinatário (coluna correta: destinatarios_notificados)
         if (!deviceInfo && recentAlerts) {
           const phoneClean = phone?.replace(/\D/g, '');
-          for (const alert of recentAlerts) {
-            const recipients = alert.recipients || [];
-            for (const recipient of recipients) {
-              const recipientClean = recipient.phone?.replace(/\D/g, '');
-              if (recipientClean && phoneClean && 
-                  (recipientClean.includes(phoneClean.slice(-8)) || phoneClean.includes(recipientClean.slice(-8)))) {
-                matchedAlert = alert;
-                deviceInfo = alert.devices;
-                break;
+          for (const alert of recentAlerts as any[]) {
+            const dests: any = alert.destinatarios_notificados;
+            const list: string[] = Array.isArray(dests) ? dests : [];
+            const found = list.some((d: string) => {
+              const dClean = String(d || '').replace(/\D/g, '');
+              if (!dClean || !phoneClean) return false;
+              return dClean === phoneClean ||
+                     dClean.endsWith(phoneClean.slice(-8)) ||
+                     phoneClean.endsWith(dClean.slice(-8));
+            });
+            if (found) {
+              matchedAlert = alert;
+              if (alert.painel_id) {
+                const { data: dev } = await supabase
+                  .from('devices')
+                  .select('id, name, metadata')
+                  .eq('id', alert.painel_id)
+                  .maybeSingle();
+                if (dev) deviceInfo = dev;
               }
+              break;
             }
-            if (matchedAlert) break;
           }
         }
+
         
         console.log('[ZAPI-WEBHOOK] 🔍 Matched alert:', matchedAlert ? matchedAlert.id : 'none');
         console.log('[ZAPI-WEBHOOK] 🔍 Device info:', deviceInfo ? { id: deviceInfo.id, name: deviceInfo.name } : 'none');
@@ -961,15 +972,15 @@ serve(async (req) => {
             console.log('[ZAPI-WEBHOOK] ✅ Device notifications PAUSED until online:', finalDeviceId);
           }
           
-          // Log na história de alertas
+          // Log na história de alertas (sem device_name — coluna inexistente)
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: finalDeviceId,
-            device_name: finalDeviceName,
             tipo: 'paused',
-            mensagem: `Notificações pausadas por ${senderNameBtn}`,
+            mensagem: `Notificações interrompidas por ${senderNameBtn} (botão nativo) — ${finalDeviceName}`,
             tempo_offline_minutos: 0,
             destinatarios_notificados: [phone]
           });
+
         }
         
         // Inserir confirmação
@@ -1075,6 +1086,233 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    // ========== PROCESSAR RESPOSTAS DE TEXTO PARA ALERTAS DE PAINEL OFFLINE ==========
+    // Aceita: "1", "2", "3" (digitado) OU palavras-chave ("interromper", "visualizei", "verificando")
+    // Importante: precisa rodar ANTES do task-follow-up e do bloqueio "exa_alert notification-only"
+    try {
+      const rawText = (payload.text?.message || payload.body || '').trim();
+      const normalized = rawText.toLowerCase();
+      const phoneClean = (phone || '').replace(/\D/g, '');
+
+      // Detectar intenção
+      let panelAction: 'verificando' | 'visualizei' | 'interromper' | null = null;
+      if (/^1$/.test(rawText) || normalized.includes('verificando') || normalized.includes('já estou verificando')) {
+        panelAction = 'verificando';
+      } else if (/^2$/.test(rawText) || normalized === 'visualizei' || normalized.includes('já visualizei')) {
+        panelAction = 'visualizei';
+      } else if (/^3$/.test(rawText) || normalized.includes('interromper') || normalized.includes('parar notifica')) {
+        panelAction = 'interromper';
+      }
+
+      if (panelAction && phoneClean) {
+        console.log('[ZAPI-WEBHOOK] 🔔 Panel alert TEXT response detected:', { phone, panelAction, rawText });
+
+        // Buscar último alerta enviado para este telefone (últimas 6 horas)
+        const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+        const { data: recentAlerts } = await supabase
+          .from('panel_offline_alerts_history')
+          .select('id, painel_id, mensagem, destinatarios_notificados, incident_id, incident_number, alert_number, created_at')
+          .gte('created_at', sixHoursAgo)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        let matchedAlert: any = null;
+        for (const alert of recentAlerts || []) {
+          const dests: any = alert.destinatarios_notificados;
+          const list: string[] = Array.isArray(dests) ? dests : [];
+          const found = list.some((d: string) => {
+            const dClean = String(d || '').replace(/\D/g, '');
+            if (!dClean || !phoneClean) return false;
+            return dClean === phoneClean ||
+                   dClean.endsWith(phoneClean.slice(-8)) ||
+                   phoneClean.endsWith(dClean.slice(-8));
+          });
+          if (found) { matchedAlert = alert; break; }
+        }
+
+        // Buscar device a partir do alert
+        let deviceRow: any = null;
+        if (matchedAlert?.painel_id) {
+          const { data: dev } = await supabase
+            .from('devices')
+            .select('id, name, metadata, condominio_name')
+            .eq('id', matchedAlert.painel_id)
+            .maybeSingle();
+          deviceRow = dev;
+        }
+
+        const deviceId: string | null = deviceRow?.id || matchedAlert?.painel_id || null;
+        const deviceName: string = deviceRow?.condominio_name || deviceRow?.name || 'Painel';
+        const senderNameTxt = payload.senderName || payload.chatName || payload.pushName || 'Usuário';
+
+        // Buscar Z-API config para responder
+        const { data: alertAgent } = await supabase
+          .from('agents')
+          .select('zapi_config')
+          .eq('key', 'exa_alert')
+          .maybeSingle();
+        const zCfg = alertAgent?.zapi_config as { instance_id?: string; token?: string } | null;
+        const zClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN') || '';
+
+        const sendAck = async (message: string) => {
+          try {
+            // Preferir o shim Evolution (mesmo caminho do envio do alerta)
+            await supabase.functions.invoke('zapi-send-message', {
+              body: { agentKey: 'exa_alert', phone, message, skipSplit: true }
+            });
+          } catch (e) {
+            console.error('[ZAPI-WEBHOOK] ⚠️ ack via shim falhou, tentando Z-API direto:', e);
+            if (zCfg?.instance_id && zCfg?.token) {
+              try {
+                await fetch(
+                  `https://api.z-api.io/instances/${zCfg.instance_id}/token/${zCfg.token}/send-text`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Client-Token': zClientToken },
+                    body: JSON.stringify({ phone, message })
+                  }
+                );
+              } catch (e2) {
+                console.error('[ZAPI-WEBHOOK] ❌ ack Z-API direto falhou:', e2);
+              }
+            }
+          }
+        };
+
+        // Sem contexto suficiente
+        if (!deviceId) {
+          console.warn('[ZAPI-WEBHOOK] ⚠️ Panel TEXT response sem alerta recente para telefone:', phone);
+          await sendAck(
+            `⚠️ Não encontrei um alerta recente vinculado a este número para aplicar a opção *${panelAction.toUpperCase()}*.\n\nSe o painel continuar offline, você receberá um novo alerta em instantes.`
+          );
+          return new Response(JSON.stringify({
+            success: true,
+            processed: 'panel_alert_text_no_context',
+            action: panelAction
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // Buscar buttonId correspondente para auditoria
+        const { data: buttonsList } = await supabase
+          .from('panel_offline_alert_buttons')
+          .select('id, label')
+          .eq('ativo', true);
+        const findBtnId = (kw: string) =>
+          (buttonsList || []).find((b: any) => b.label?.toLowerCase().includes(kw))?.id || null;
+        const buttonIdByAction: Record<string, string | null> = {
+          verificando: findBtnId('verificando'),
+          visualizei: findBtnId('visualizei'),
+          interromper: findBtnId('interromper'),
+        };
+        const labelByAction: Record<string, string> = {
+          verificando: 'Já estou verificando',
+          visualizei: 'Visualizei',
+          interromper: 'Interromper Notificações',
+        };
+
+        // Aplicar pausa quando necessário
+        let pauseUntil: string | null = null;
+        if (panelAction === 'visualizei') {
+          pauseUntil = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+        } else if (panelAction === 'interromper') {
+          pauseUntil = 'indefinite';
+        }
+
+        if (pauseUntil) {
+          const currentMeta = (deviceRow?.metadata || {}) as Record<string, any>;
+          const updatedMeta = {
+            ...currentMeta,
+            notifications_paused_until: pauseUntil,
+            paused_by: phone,
+            paused_by_name: senderNameTxt,
+            paused_at: new Date().toISOString(),
+          };
+          const { error: pauseErr } = await supabase
+            .from('devices')
+            .update({ metadata: updatedMeta })
+            .eq('id', deviceId);
+          if (pauseErr) {
+            console.error('[ZAPI-WEBHOOK] ❌ Erro ao pausar device:', pauseErr);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Device pausado:', { deviceId, pauseUntil });
+          }
+
+          // Log no histórico
+          await supabase.from('panel_offline_alerts_history').insert({
+            painel_id: deviceId,
+            tipo: 'paused',
+            mensagem: panelAction === 'interromper'
+              ? `Notificações interrompidas por ${senderNameTxt} (resposta via texto)`
+              : `Notificações pausadas por 3h por ${senderNameTxt} (resposta via texto)`,
+            tempo_offline_minutos: 0,
+            destinatarios_notificados: [phone],
+            incident_id: matchedAlert?.incident_id || null,
+            incident_number: matchedAlert?.incident_number || null,
+          });
+        }
+
+        // Registrar confirmação
+        const { error: confErr } = await supabase
+          .from('panel_offline_alert_confirmations')
+          .insert({
+            alert_history_id: matchedAlert?.id || null,
+            device_id: deviceId,
+            device_name: deviceName,
+            recipient_phone: phone,
+            recipient_name: senderNameTxt,
+            button_id: buttonIdByAction[panelAction],
+            button_label: labelByAction[panelAction],
+            reference_message_id: payload.referenceMessageId || null,
+            raw_webhook: payload,
+            alert_number: matchedAlert?.alert_number || null,
+            incident_id: matchedAlert?.incident_id || null,
+            incident_number: matchedAlert?.incident_number || null,
+          });
+        if (confErr) console.error('[ZAPI-WEBHOOK] ❌ Erro confirmation:', confErr);
+
+        // Montar mensagem de confirmação
+        const horaBR = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        let ackMsg = '';
+        if (panelAction === 'interromper') {
+          ackMsg =
+            `🛑 *Notificações INTERROMPIDAS*\n\n` +
+            `📍 ${deviceName}\n` +
+            `👤 Por: ${senderNameTxt}\n` +
+            `⏰ ${horaBR}\n\n` +
+            `✅ Você não receberá mais alertas deste painel enquanto ele estiver offline.\n` +
+            `🔔 Os alertas voltam automaticamente quando o painel ficar online novamente.`;
+        } else if (panelAction === 'visualizei') {
+          ackMsg =
+            `👁️ *Alerta visualizado*\n\n` +
+            `📍 ${deviceName}\n` +
+            `👤 Por: ${senderNameTxt}\n` +
+            `⏸️ Notificações pausadas por *3 horas*.\n` +
+            `⏰ ${horaBR}`;
+        } else {
+          ackMsg =
+            `🔧 *Verificação registrada*\n\n` +
+            `📍 ${deviceName}\n` +
+            `👤 Por: ${senderNameTxt}\n` +
+            `⏰ ${horaBR}\n\n` +
+            `Continuaremos enviando os alertas normalmente até o painel voltar online.`;
+        }
+        await sendAck(ackMsg);
+
+        return new Response(JSON.stringify({
+          success: true,
+          processed: 'panel_alert_text_response',
+          action: panelAction,
+          device_id: deviceId,
+          paused_until: pauseUntil
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    } catch (panelTextErr) {
+      console.error('[ZAPI-WEBHOOK] ❌ Erro no handler de texto de alerta de painel:', panelTextErr);
+      // não interromper o fluxo, segue para os próximos handlers
+    }
+
+
 
     // ========== TASK FOLLOW-UP RESPONSE ROUTING ==========
     // Check if this phone has an active task notification queue entry

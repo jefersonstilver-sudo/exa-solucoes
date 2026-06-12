@@ -1,76 +1,54 @@
-# Ajustes finais do mapa da proposta (paridade total com a loja)
+## Diagnóstico
 
-## Problemas atuais
-1. **Card hover sem fotos e com 0/0/0** — ProposalMapDialog na página pública recebe só `{id, nome, endereco, bairro, lat, lng}`. Faltam `imagem_principal`, `publico_estimado`, `visualizacoes_mes`, `numero_elevadores`/`quantidade_telas`, `preco_base`.
-2. **Botão "Adicionar" vermelho** — `BuildingHoverCard` lê do carrinho (`useCartOptional`/`__simpleCart`). Como a proposta não tem carrinho, todo prédio aparece como "Adicionar". Deveria mostrar estado fechado/selecionado (verde como na loja quando está no carrinho) porque o prédio já faz parte da proposta.
-3. **Scroll do mouse não dá zoom** — `ProposalMapDialog` não passa `scrollwheel`, então usa default `false`. Apesar de `gestureHandling="greedy"`, o `scrollwheel:false` desabilita o zoom por roda no `BuildingMap` (linha 97).
+O problema principal é que o alerta offline aparece como lista numerada, não como botão nativo. A função de envio (`zapi-send-message`) converte qualquer `buttons` em texto numerado por segurança. Porém o webhook (`zapi-webhook`) só trata resposta nativa de botão para alerta de painel; quando você digita `3`, a mensagem entra como texto normal e o próprio agente `exa_alert` é ignorado como “notification-only”. Resultado: não pausa e não envia confirmação.
 
-## Mudanças
+Também encontrei inconsistências que deixam o fluxo frágil:
+- O envio não inclui `deviceId` no ID do botão, mas o webhook espera formato `buttonId:deviceId`.
+- O handler de botão em `zapi-webhook` busca colunas/campos incorretos (`sent_at`, `recipients`) enquanto a tabela usa `created_at` e `destinatarios_notificados`.
+- A lógica de pausa existe, mas está dividida entre `zapi-webhook` e `zapi-button-webhook`, com comportamentos diferentes.
 
-### 1. `src/components/maps/BuildingHoverCard.tsx`
-- Nova prop opcional `mode?: 'store' | 'proposal'` (default `'store'`).
-- Quando `mode === 'proposal'`:
-  - **Ignora** `useCartOptional`/`__simpleCart`/`cart:updated` (sem assinatura, sem listener).
-  - Botão sempre renderiza estado "incluído" desabilitado, **verde** igual à loja quando já está no carrinho (`bg-green-500 hover:bg-green-500 text-white cursor-default`), com label **"✓ Incluído na Proposta"** + `Check` icon.
-  - `handleAddToCart` vira no-op.
-  - Footer pode esconder o bloco de preço "A partir de" se quiser, mas mantemos por paridade visual com a loja (mesmas métricas, mesma foto, mesmas amenities).
-- Mantém comportamento atual quando `mode === 'store'` (zero regressão).
+## Plano de correção definitiva
 
-### 2. `src/components/building-store/BuildingMap.tsx`
-- Nova prop opcional `hoverCardMode?: 'store' | 'proposal'` (default `'store'`).
-- Repassa para `<BuildingHoverCard mode={hoverCardMode} ... />` em todos os pontos onde é renderizado (renderização do pin React via `createRoot`).
-- Nenhuma outra mudança comportamental.
+1. **Criar um handler único para respostas de alerta offline**
+   - Centralizar em `zapi-webhook` a interpretação de:
+     - resposta digitada: `1`, `2`, `3`
+     - texto equivalente: “visualizei”, “interromper”, “verificando”
+     - botão nativo, se vier pelo WhatsApp
+   - Processar isso antes do bloqueio `EXA Alert: ignoring inbound`.
 
-### 3. `src/components/admin/proposals/ProposalMapDialog.tsx`
-- Adiciona `scrollwheel` ao `<BuildingMap>` (zoom com roda do mouse igual loja).
-- Passa `hoverCardMode="proposal"`.
-- Mantém `gestureHandling="greedy"`, `autoFitAllBuildings`, `enableClustering`, `requirePreciseGeocode={false}`.
-- Tipa prop `buildings` aceitando o shape enriquecido (Partial<BuildingStore>) — sem mudança de assinatura externa.
+2. **Mapear corretamente as opções do alerta**
+   - `1` / “Já estou verificando”: registrar confirmação sem parar alertas.
+   - `2` / “Visualizei”: registrar confirmação e pausar temporariamente, mantendo a regra atual de 3 horas.
+   - `3` / “Interromper Notificações”: registrar confirmação e gravar `devices.metadata.notifications_paused_until = 'indefinite'` até o painel voltar online.
 
-### 4. `src/pages/public/PropostaPublicaPage.tsx`
-- No bloco que renderiza `<ProposalMapDialog ... buildings={...}>`, **passar o array enriquecido completo** (o mesmo `buildings` já hidratado em `enriched` no fetch — contém `imagem_principal`, `publico_estimado`, `visualizacoes_mes`, `quantidade_telas`, `preco_base`, `bairro`, `endereco`, `nome`).
-- Normalizar para o shape esperado pelo `BuildingMap` + `BuildingHoverCard`:
-  ```ts
-  buildings={buildings.map((b: any) => ({
-    id: b.building_id || b.id,
-    nome: b.nome,
-    endereco: b.endereco || '',
-    bairro: b.bairro || '',
-    latitude: b.latitude,
-    longitude: b.longitude,
-    manual_latitude: b.manual_latitude,
-    manual_longitude: b.manual_longitude,
-    imagem_principal: b.imagem_principal,
-    publico_estimado: b.publico_estimado || 0,
-    visualizacoes_mes: b.visualizacoes_mes || 0,
-    quantidade_telas: b.quantidade_telas || 0,
-    numero_elevadores: b.quantidade_telas || b.numero_elevadores || 0, // hover card lê esse
-    preco_base: b.preco_base || 0,
-    status: 'ativo',
-  }))}
-  ```
-- Garante "apenas prédios da proposta" — o array já é exclusivo da proposta.
+3. **Amarrar cada resposta ao painel correto**
+   - No envio do alerta em `monitor-panels`, persistir um contexto por telefone com o último alerta enviado: `device_id`, nome do painel, ocorrência, número do aviso e opções disponíveis.
+   - Incluir `deviceId`/ocorrência no payload de botão quando houver botão nativo.
+   - Se não houver contexto, fazer fallback pelo último registro de `panel_offline_alerts_history` daquele telefone usando `created_at` e `destinatarios_notificados`.
 
-### 5. `src/pages/admin/proposals/NovaPropostaPage.tsx`
-- `selectedBuildingsData` já contém os campos certos (vem do select de `buildings` com `quantidade_telas, visualizacoes_mes, preco_base, imagem_principal`). Adicionar somente alias `numero_elevadores` no map passado para o dialog:
-  ```ts
-  buildings={selectedBuildingsData.map((b: any) => ({
-    ...b,
-    numero_elevadores: b.quantidade_telas || b.numero_elevadores || 0,
-  })) as any}
-  ```
+4. **Enviar confirmação clara no WhatsApp**
+   - Após clicar/digitar `3`, responder algo como:
+     - “Notificações interrompidas para Riverside 2.”
+     - “Você não receberá novos avisos deste painel enquanto ele permanecer offline.”
+     - “Os alertas voltam automaticamente quando ele ficar online.”
+   - Se não encontrar painel/contexto, avisar que a opção não pôde ser vinculada em vez de falhar silenciosamente.
 
-## Resultado esperado
-- Hover card idêntico à loja: foto do prédio, público, exibições, telas, preço base, amenities/características.
-- Botão **verde "✓ Incluído na Proposta"** (estilo idêntico ao "No Carrinho" da loja), desabilitado, sem ação.
-- **Scroll-zoom** funcionando com a roda do mouse.
-- **Pinch-zoom** no mobile (já funciona via greedy gestureHandling).
-- Apenas os prédios da proposta atual no mapa.
-- Nenhuma regressão na loja (BuildingMap default permanece `mode='store'`).
+5. **Corrigir os botões reais com fallback seguro**
+   - Manter a resposta por número funcionando sempre, pois é a parte mais confiável.
+   - Tentar envio com botões nativos somente pelo provedor/API que estiver estável para a instância de notificações.
+   - Se o provedor retornar erro ou o WhatsApp renderizar mal, manter automaticamente a lista numerada como fallback, sem quebrar o atendimento.
 
-## Arquivos editados
-- `src/components/maps/BuildingHoverCard.tsx`
-- `src/components/building-store/BuildingMap.tsx`
-- `src/components/admin/proposals/ProposalMapDialog.tsx`
-- `src/pages/public/PropostaPublicaPage.tsx`
-- `src/pages/admin/proposals/NovaPropostaPage.tsx`
+6. **Ajustar logs e auditoria**
+   - Registrar todas as ações em `panel_offline_alert_confirmations` com `button_label`, telefone, nome, painel, ocorrência e raw webhook.
+   - Registrar também no histórico quando a opção `3` interromper alertas.
+   - Remover dependência de UUID hardcoded do botão “Interromper Notificações”.
+
+7. **Validação final**
+   - Simular alerta offline para um painel.
+   - Responder `3` no WhatsApp.
+   - Confirmar que:
+     - metadata do device recebeu `notifications_paused_until: 'indefinite'`;
+     - confirmação foi salva;
+     - mensagem de confirmação voltou no WhatsApp;
+     - o próximo ciclo do `monitor-panels` não envia novo alerta do mesmo painel;
+     - quando o painel voltar online, o pause é limpo automaticamente, preservando o comportamento atual.
