@@ -33,7 +33,7 @@ export interface ImportedFormData {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onImport: (data: Partial<ImportedFormData>, images: LocalImage[]) => void;
+  onImport: (data: Partial<ImportedFormData>, images: LocalImage[], sourceId: string) => void;
 }
 
 interface Cadastro {
