@@ -7,6 +7,7 @@ import OrdersPage from '@/pages/admin/OrdersPage';
 import OrderDetails from '@/pages/admin/OrderDetails';
 import ApprovalsPage from '@/pages/admin/ApprovalsPage';
 import SindicosInteressados from '@/pages/admin/SindicosInteressados';
+import FormulariosSindicosPage from '@/pages/admin/FormulariosSindicosPage';
 import CouponsPage from '@/pages/admin/CouponsPage';
 import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
@@ -400,6 +401,11 @@ const AdminRoutes = () => {
       <Route path="sindicos-interessados" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.sindicos}>
           <SindicosInteressados />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="formularios-sindicos" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.formularios_sindicos}>
+          <FormulariosSindicosPage />
         </ProtectedModuleRoute>
       } />
       <Route path="leads-exa" element={
