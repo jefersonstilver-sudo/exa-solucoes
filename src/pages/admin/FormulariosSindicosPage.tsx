@@ -16,7 +16,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Pencil, Trash2, Upload, X, ExternalLink, Building2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Plus, Pencil, Trash2, Upload, X, ExternalLink, Building2, DollarSign } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const CARACTERISTICAS_OPCOES = [
   'Piscina', 'Academia', 'Churrasqueira', 'Playground', 'Salão de festas',
@@ -45,6 +47,10 @@ interface Cadastro {
   caracteristicas: string[] | null;
   outras_caracteristicas: string | null;
   fotos_urls: string[] | null;
+  valor_mensal: number | null;
+  valor_trimestral: number | null;
+  valor_semestral: number | null;
+  valor_anual: number | null;
   created_at: string;
 }
 
@@ -53,10 +59,13 @@ const emptyForm: Partial<Cadastro> = {
   tipo_predio: '', numero_unidades: null, numero_andares: null, numero_blocos: null,
   sindico_nome: '', sindico_contato: '', vice_sindico_nome: '', vice_sindico_contato: '',
   contato_portaria: '', telefone_principal: '',
-  caracteristicas: [], outras_caracteristicas: '', fotos_urls: []
+  caracteristicas: [], outras_caracteristicas: '', fotos_urls: [],
+  valor_mensal: null, valor_trimestral: null, valor_semestral: null, valor_anual: null,
 };
 
 const FormulariosSindicosPage: React.FC = () => {
+  const { userProfile } = useAuth();
+  const canEditComercial = userProfile?.role === 'super_admin' || userProfile?.role === 'admin_financeiro';
   const [items, setItems] = useState<Cadastro[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<Cadastro> | null>(null);
@@ -141,6 +150,13 @@ const FormulariosSindicosPage: React.FC = () => {
         outras_caracteristicas: editing.outras_caracteristicas || null,
         fotos_urls: editing.fotos_urls || []
       };
+
+      if (canEditComercial) {
+        payload.valor_mensal = editing.valor_mensal ?? null;
+        payload.valor_trimestral = editing.valor_trimestral ?? null;
+        payload.valor_semestral = editing.valor_semestral ?? null;
+        payload.valor_anual = editing.valor_anual ?? null;
+      }
 
       let cadastroId = editing.id as string | undefined;
 
@@ -256,7 +272,17 @@ const FormulariosSindicosPage: React.FC = () => {
           </DialogHeader>
 
           {editing && (
-            <div className="space-y-6 py-2">
+            <Tabs defaultValue="geral" className="py-2">
+              <TabsList className={canEditComercial ? 'grid w-full grid-cols-2' : 'grid w-full grid-cols-1'}>
+                <TabsTrigger value="geral">Geral</TabsTrigger>
+                {canEditComercial && (
+                  <TabsTrigger value="comercial">
+                    <DollarSign className="w-3.5 h-3.5 mr-1" />Comercial
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              <TabsContent value="geral" className="space-y-6 mt-4">
               <section className="space-y-3">
                 <h3 className="font-semibold text-sm">Dados Básicos</h3>
                 <div>
@@ -349,8 +375,58 @@ const FormulariosSindicosPage: React.FC = () => {
                   }} />
                 </label>
               </section>
-            </div>
+              </TabsContent>
+
+              {canEditComercial && (
+                <TabsContent value="comercial" className="space-y-6 mt-4">
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-[#C7141A]" />
+                      <h3 className="font-semibold text-sm">Preços por Plano</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Valores comerciais editáveis apenas por Super Admin e Financeiro.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label>Mensal (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_mensal ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_mensal: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Trimestral Total (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_trimestral ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_trimestral: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Semestral Total (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_semestral ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_semestral: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Anual Total (R$)</Label>
+                        <Input
+                          type="number" step="0.01" min="0" placeholder="0,00"
+                          value={editing.valor_anual ?? ''}
+                          onChange={e => setEditing({ ...editing, valor_anual: e.target.value ? parseFloat(e.target.value) : null })}
+                        />
+                      </div>
+                    </div>
+                  </section>
+                </TabsContent>
+              )}
+            </Tabs>
           )}
+
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditing(null); setNewFotos([]); }} disabled={saving}>Cancelar</Button>
