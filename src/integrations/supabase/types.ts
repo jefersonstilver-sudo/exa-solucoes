@@ -10942,6 +10942,87 @@ export type Database = {
         }
         Relationships: []
       }
+      predios_cadastro_externo: {
+        Row: {
+          bairro: string | null
+          building_id: string | null
+          caracteristicas: string[] | null
+          cidade: string | null
+          contato_portaria: string | null
+          created_at: string
+          endereco: string
+          estado: string | null
+          fotos_urls: string[] | null
+          id: string
+          nome: string | null
+          numero_andares: number | null
+          numero_blocos: number | null
+          numero_unidades: number | null
+          outras_caracteristicas: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sindico_contato: string | null
+          sindico_nome: string | null
+          telefone_principal: string | null
+          tipo_predio: string | null
+          updated_at: string
+          vice_sindico_contato: string | null
+          vice_sindico_nome: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          building_id?: string | null
+          caracteristicas?: string[] | null
+          cidade?: string | null
+          contato_portaria?: string | null
+          created_at?: string
+          endereco: string
+          estado?: string | null
+          fotos_urls?: string[] | null
+          id?: string
+          nome?: string | null
+          numero_andares?: number | null
+          numero_blocos?: number | null
+          numero_unidades?: number | null
+          outras_caracteristicas?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sindico_contato?: string | null
+          sindico_nome?: string | null
+          telefone_principal?: string | null
+          tipo_predio?: string | null
+          updated_at?: string
+          vice_sindico_contato?: string | null
+          vice_sindico_nome?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          building_id?: string | null
+          caracteristicas?: string[] | null
+          cidade?: string | null
+          contato_portaria?: string | null
+          created_at?: string
+          endereco?: string
+          estado?: string | null
+          fotos_urls?: string[] | null
+          id?: string
+          nome?: string | null
+          numero_andares?: number | null
+          numero_blocos?: number | null
+          numero_unidades?: number | null
+          outras_caracteristicas?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sindico_contato?: string | null
+          sindico_nome?: string | null
+          telefone_principal?: string | null
+          tipo_predio?: string | null
+          updated_at?: string
+          vice_sindico_contato?: string | null
+          vice_sindico_nome?: string | null
+        }
+        Relationships: []
+      }
       price_validation_logs: {
         Row: {
           building_ids: string[] | null
