@@ -817,11 +817,12 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
       <ImportarFormularioDialog
         open={showImport}
         onOpenChange={setShowImport}
-        onImport={(data, importedImages) => {
+        onImport={(data, importedImages, sourceId) => {
           setFormData(prev => ({ ...prev, ...(data as any) }));
           if (importedImages.length > 0) {
             setImages(prev => [...prev, ...importedImages].slice(0, 4));
           }
+          setImportedSourceId(sourceId);
           setActiveTab('basico');
         }}
       />
