@@ -47,6 +47,10 @@ interface Cadastro {
   caracteristicas: string[] | null;
   outras_caracteristicas: string | null;
   fotos_urls: string[] | null;
+  valor_mensal: number | null;
+  valor_trimestral: number | null;
+  valor_semestral: number | null;
+  valor_anual: number | null;
   created_at: string;
 }
 
@@ -55,7 +59,8 @@ const emptyForm: Partial<Cadastro> = {
   tipo_predio: '', numero_unidades: null, numero_andares: null, numero_blocos: null,
   sindico_nome: '', sindico_contato: '', vice_sindico_nome: '', vice_sindico_contato: '',
   contato_portaria: '', telefone_principal: '',
-  caracteristicas: [], outras_caracteristicas: '', fotos_urls: []
+  caracteristicas: [], outras_caracteristicas: '', fotos_urls: [],
+  valor_mensal: null, valor_trimestral: null, valor_semestral: null, valor_anual: null,
 };
 
 const FormulariosSindicosPage: React.FC = () => {
