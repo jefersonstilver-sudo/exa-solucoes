@@ -800,7 +800,20 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportarFormularioDialog
+        open={showImport}
+        onOpenChange={setShowImport}
+        onImport={(data, importedImages) => {
+          setFormData(prev => ({ ...prev, ...(data as any) }));
+          if (importedImages.length > 0) {
+            setImages(prev => [...prev, ...importedImages].slice(0, 4));
+          }
+          setActiveTab('basico');
+        }}
+      />
     </>
+
   );
 };
 
