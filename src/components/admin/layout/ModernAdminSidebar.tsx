@@ -290,6 +290,12 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.predios
         },
         {
+          title: 'Formulários Síndicos',
+          href: buildPath('formularios-sindicos'),
+          icon: Building2,
+          moduleKey: MODULE_KEYS.formularios_sindicos
+        },
+        {
           title: 'Painéis EXA',
           href: buildPath('paineis-exa'),
           icon: Tv,
