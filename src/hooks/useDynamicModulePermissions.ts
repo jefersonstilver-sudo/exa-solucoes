@@ -39,6 +39,7 @@ export const MODULE_KEYS = {
   aprovacoes: 'aprovacoes',
   beneficios: 'beneficios',
   sindicos: 'sindicos',
+  formularios_sindicos: 'formularios_sindicos',
   leads: 'leads',
   processos: 'processos',
   gestao_tempo: 'gestao_tempo',
