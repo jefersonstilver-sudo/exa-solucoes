@@ -33,7 +33,7 @@ export interface ImportedFormData {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onImport: (data: Partial<ImportedFormData>, images: LocalImage[]) => void;
+  onImport: (data: Partial<ImportedFormData>, images: LocalImage[], sourceId: string) => void;
 }
 
 interface Cadastro {
@@ -136,7 +136,7 @@ const ImportarFormularioDialog: React.FC<Props> = ({ open, onOpenChange, onImpor
         preco_anual: it.valor_anual ?? '',
       };
 
-      onImport(data, images);
+      onImport(data, images, it.id);
       toast.success('Formulário importado — revise e salve');
       onOpenChange(false);
     } finally {

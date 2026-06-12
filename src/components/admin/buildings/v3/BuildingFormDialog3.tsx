@@ -116,6 +116,7 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
   const [activeTab, setActiveTab] = useState('basico');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [importedSourceId, setImportedSourceId] = useState<string | null>(null);
 
   
   const { permissions } = useUserPermissions();
@@ -345,6 +346,18 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
           });
 
           await supabase.from('buildings').update(imageUpdate).eq('id', buildingId);
+        }
+      }
+
+      // Se o prédio foi criado a partir de um formulário importado, removê-lo da fila
+      if (!building && importedSourceId) {
+        try {
+          await (supabase as any)
+            .from('predios_cadastro_externo')
+            .delete()
+            .eq('id', importedSourceId);
+        } catch (delErr) {
+          console.warn('[BuildingFormDialog3] Falha ao excluir formulário importado:', delErr);
         }
       }
 
@@ -804,11 +817,12 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
       <ImportarFormularioDialog
         open={showImport}
         onOpenChange={setShowImport}
-        onImport={(data, importedImages) => {
+        onImport={(data, importedImages, sourceId) => {
           setFormData(prev => ({ ...prev, ...(data as any) }));
           if (importedImages.length > 0) {
             setImages(prev => [...prev, ...importedImages].slice(0, 4));
           }
+          setImportedSourceId(sourceId);
           setActiveTab('basico');
         }}
       />
