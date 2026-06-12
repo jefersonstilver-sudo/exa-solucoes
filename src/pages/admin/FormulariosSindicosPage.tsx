@@ -211,47 +211,40 @@ const FormulariosSindicosPage: React.FC = () => {
           ) : items.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Nenhum cadastro recebido ainda.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Prédio</TableHead>
-                    <TableHead>Endereço</TableHead>
-                    <TableHead>Síndico</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Fotos</TableHead>
-                    <TableHead>Recebido em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map(it => (
-                    <TableRow key={it.id}>
-                      <TableCell className="font-medium">{it.nome || '—'}</TableCell>
-                      <TableCell className="max-w-xs truncate">{it.endereco}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">{it.sindico_nome || '—'}</div>
-                        <div className="text-xs text-muted-foreground">{it.sindico_contato || ''}</div>
-                      </TableCell>
-                      <TableCell>{it.tipo_predio && <Badge variant="outline">{it.tipo_predio}</Badge>}</TableCell>
-                      <TableCell>{(it.fotos_urls?.length || 0)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(it.created_at).toLocaleString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => { setEditing(it); setNewFotos([]); }}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(it.id)}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {items.map(it => {
+                const foto = it.fotos_urls?.[0];
+                return (
+                  <div
+                    key={it.id}
+                    className="group relative rounded-xl border bg-card overflow-hidden hover:shadow-md transition"
+                  >
+                    <div className="aspect-[16/10] bg-muted flex items-center justify-center overflow-hidden">
+                      {foto ? (
+                        <img src={foto} alt={it.nome || 'Prédio'} className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="w-14 h-14 text-muted-foreground/40" strokeWidth={1.25} />
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-2 p-3">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{it.nome || 'Sem nome'}</div>
+                        {it.cidade && (
+                          <div className="text-xs text-muted-foreground truncate">{it.cidade}{it.estado ? ` - ${it.estado}` : ''}</div>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button size="sm" variant="ghost" onClick={() => { setEditing(it); setNewFotos([]); }}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(it.id)}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
