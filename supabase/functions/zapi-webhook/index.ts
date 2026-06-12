@@ -972,15 +972,15 @@ serve(async (req) => {
             console.log('[ZAPI-WEBHOOK] ✅ Device notifications PAUSED until online:', finalDeviceId);
           }
           
-          // Log na história de alertas
+          // Log na história de alertas (sem device_name — coluna inexistente)
           await supabase.from('panel_offline_alerts_history').insert({
             painel_id: finalDeviceId,
-            device_name: finalDeviceName,
             tipo: 'paused',
-            mensagem: `Notificações pausadas por ${senderNameBtn}`,
+            mensagem: `Notificações interrompidas por ${senderNameBtn} (botão nativo) — ${finalDeviceName}`,
             tempo_offline_minutos: 0,
             destinatarios_notificados: [phone]
           });
+
         }
         
         // Inserir confirmação
