@@ -16,7 +16,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Pencil, Trash2, Upload, X, ExternalLink, Building2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Plus, Pencil, Trash2, Upload, X, ExternalLink, Building2, DollarSign } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const CARACTERISTICAS_OPCOES = [
   'Piscina', 'Academia', 'Churrasqueira', 'Playground', 'Salão de festas',
