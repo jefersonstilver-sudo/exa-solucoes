@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { 
   Building2, UserCircle, DollarSign, Camera, Trash2, MapPin, 
-  Phone, Monitor, Users, Layers
+  Phone, Monitor, Users, Layers, FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -39,6 +39,7 @@ import ImageGallery3, { LocalImage } from './ImageGallery3';
 import CharacteristicsSelector from '../form/CharacteristicsSelector';
 import { useBuildingDelete } from '@/hooks/useBuildingDelete';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import ImportarFormularioDialog, { ImportedFormData } from './ImportarFormularioDialog';
 
 interface BuildingFormDialog3Props {
   open: boolean;
