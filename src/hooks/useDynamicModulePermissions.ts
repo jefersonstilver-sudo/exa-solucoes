@@ -91,6 +91,7 @@ export const MODULE_ROUTES: Record<string, { path: string; label: string }> = {
   videos_anunciantes: { path: '/admin/videos', label: 'Vídeos' },
   beneficios: { path: '/admin/beneficio-prestadores', label: 'Benefícios' },
   sindicos: { path: '/admin/sindicos-interessados', label: 'Síndicos' },
+  formularios_sindicos: { path: '/admin/formularios-sindicos', label: 'Formulários Síndicos' },
   leads: { path: '/admin/leads-exa', label: 'Leads' },
   processos: { path: '/admin/processos', label: 'Processos' },
   gestao_tempo: { path: '/admin/gestao-tempo', label: 'Gestão de Tempo' },
