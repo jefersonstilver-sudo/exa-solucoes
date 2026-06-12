@@ -875,9 +875,9 @@ serve(async (req) => {
         // Buscar alertas recentes para vincular a confirmação
         const { data: recentAlerts } = await supabase
           .from('panel_offline_alerts_history')
-          .select('*, devices(id, name, metadata)')
-          .order('sent_at', { ascending: false })
-          .limit(20);
+          .select('id, painel_id, mensagem, destinatarios_notificados, incident_id, incident_number, alert_number, created_at')
+          .order('created_at', { ascending: false })
+          .limit(30);
         
         let matchedAlert = null;
         let deviceInfo = null;
@@ -896,28 +896,39 @@ serve(async (req) => {
             
             // Encontrar alert correspondente
             if (recentAlerts) {
-              matchedAlert = recentAlerts.find(a => a.painel_id === deviceIdFromButton || a.device_id === deviceIdFromButton);
+              matchedAlert = recentAlerts.find((a: any) => a.painel_id === deviceIdFromButton);
             }
           }
         }
         
-        // Fallback: buscar por telefone do destinatário
+        // Fallback: buscar por telefone do destinatário (coluna correta: destinatarios_notificados)
         if (!deviceInfo && recentAlerts) {
           const phoneClean = phone?.replace(/\D/g, '');
-          for (const alert of recentAlerts) {
-            const recipients = alert.recipients || [];
-            for (const recipient of recipients) {
-              const recipientClean = recipient.phone?.replace(/\D/g, '');
-              if (recipientClean && phoneClean && 
-                  (recipientClean.includes(phoneClean.slice(-8)) || phoneClean.includes(recipientClean.slice(-8)))) {
-                matchedAlert = alert;
-                deviceInfo = alert.devices;
-                break;
+          for (const alert of recentAlerts as any[]) {
+            const dests: any = alert.destinatarios_notificados;
+            const list: string[] = Array.isArray(dests) ? dests : [];
+            const found = list.some((d: string) => {
+              const dClean = String(d || '').replace(/\D/g, '');
+              if (!dClean || !phoneClean) return false;
+              return dClean === phoneClean ||
+                     dClean.endsWith(phoneClean.slice(-8)) ||
+                     phoneClean.endsWith(dClean.slice(-8));
+            });
+            if (found) {
+              matchedAlert = alert;
+              if (alert.painel_id) {
+                const { data: dev } = await supabase
+                  .from('devices')
+                  .select('id, name, metadata')
+                  .eq('id', alert.painel_id)
+                  .maybeSingle();
+                if (dev) deviceInfo = dev;
               }
+              break;
             }
-            if (matchedAlert) break;
           }
         }
+
         
         console.log('[ZAPI-WEBHOOK] 🔍 Matched alert:', matchedAlert ? matchedAlert.id : 'none');
         console.log('[ZAPI-WEBHOOK] 🔍 Device info:', deviceInfo ? { id: deviceInfo.id, name: deviceInfo.name } : 'none');
