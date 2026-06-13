@@ -258,6 +258,11 @@ const SuperAdminRoutes = () => {
       
       {/* ============ ATIVOS ============ */}
       <Route path="predios" element={<BuildingsManagement3 />} />
+      <Route path="relatorio-playlist" element={
+        <Suspense fallback={<GlobalLoadingPage message="Gerando relatório..." />}>
+          {React.createElement(lazy(() => import('@/pages/admin/RelatorioPlaylistPage')))}
+        </Suspense>
+      } />
       <Route path="paineis-exa" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>
           <PaineisPage />
