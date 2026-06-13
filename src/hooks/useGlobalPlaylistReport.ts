@@ -347,7 +347,7 @@ export function useGlobalPlaylistReport() {
       }
       // Prédio offline com pedido ativo
       for (const b of buildingsReport) {
-        if (!b.online && b.pedidos_ativos_count > 0) {
+        if (!b.online && b.quantidade_telas > 0 && b.pedidos_ativos_count > 0) {
           alerts.push({
             type: 'predio_offline_com_pedido',
             severity: 'red',
