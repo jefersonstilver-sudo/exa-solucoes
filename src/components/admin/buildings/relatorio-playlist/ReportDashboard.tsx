@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import type { PlaylistReport } from '@/hooks/useGlobalPlaylistReport';
 
 interface Props {
@@ -13,10 +13,36 @@ const Kpi = ({ label, value, accent }: { label: string; value: React.ReactNode; 
   </div>
 );
 
+const fmtDate = (iso: string | null) => {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('pt-BR');
+  } catch {
+    return '—';
+  }
+};
+
 const ReportDashboard: React.FC<Props> = ({ report }) => {
-  const { kpis, rankings } = report;
+  const { kpis, rankings, clients } = report;
   const [openClientes, setOpenClientes] = useState(true);
   const [openPredios, setOpenPredios] = useState(true);
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
+
+  const pedidosByClient = useMemo(() => {
+    const m = new Map<string, typeof clients[number]['pedidos']>();
+    for (const c of clients) m.set(c.client_id, c.pedidos);
+    return m;
+  }, [clients]);
+
+  const toggleClient = (id: string) => {
+    setExpandedClients((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
 
   return (
     <section className="report-section mt-6">
@@ -69,14 +95,80 @@ const ReportDashboard: React.FC<Props> = ({ report }) => {
                   {rankings.topClientes.length === 0 && (
                     <tr><td colSpan={4} className="py-3 text-slate-400 text-center">Sem dados</td></tr>
                   )}
-                  {rankings.topClientes.map((c, i) => (
-                    <tr key={c.client_id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="py-1.5 px-2 text-slate-500">{i + 1}</td>
-                      <td className="py-1.5 px-2 text-slate-800">{c.nome}</td>
-                      <td className="py-1.5 px-2 text-right font-medium">{c.predios_count}</td>
-                      <td className="py-1.5 px-2 text-right text-slate-600">{c.videos_count}</td>
-                    </tr>
-                  ))}
+                  {rankings.topClientes.map((c, i) => {
+                    const pedidos = pedidosByClient.get(c.client_id) || [];
+                    const isOpen = expandedClients.has(c.client_id);
+                    return (
+                      <React.Fragment key={c.client_id}>
+                        <tr
+                          className="border-b last:border-0 hover:bg-slate-50 cursor-pointer"
+                          onClick={() => toggleClient(c.client_id)}
+                        >
+                          <td className="py-1.5 px-2 text-slate-500">{i + 1}</td>
+                          <td className="py-1.5 px-2 text-slate-800">
+                            <span className="inline-flex items-center gap-1">
+                              {pedidos.length > 0 ? (
+                                isOpen ? (
+                                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                ) : (
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                )
+                              ) : (
+                                <span className="w-3.5 h-3.5 inline-block" />
+                              )}
+                              {c.nome}
+                              {pedidos.length > 0 && (
+                                <span className="ml-1 text-[10px] text-slate-400">
+                                  ({pedidos.length} {pedidos.length === 1 ? 'pedido' : 'pedidos'})
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="py-1.5 px-2 text-right font-medium">{c.predios_count}</td>
+                          <td className="py-1.5 px-2 text-right text-slate-600">{c.videos_count}</td>
+                        </tr>
+                        {isOpen && pedidos.length > 0 && (
+                          <tr className="bg-slate-50/60">
+                            <td colSpan={4} className="px-2 pb-2">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="text-left text-slate-400">
+                                    <th className="py-1 px-2 font-medium w-8">#</th>
+                                    <th className="py-1 px-2 font-medium">Pedido</th>
+                                    <th className="py-1 px-2 font-medium">Início</th>
+                                    <th className="py-1 px-2 font-medium text-right">Prédios</th>
+                                    <th className="py-1 px-2 font-medium text-right">Vídeos</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {pedidos.map((p, j) => (
+                                    <tr key={p.pedido_id} className="border-t border-slate-200/60">
+                                      <td className="py-1 px-2 text-slate-400">{j + 1}</td>
+                                      <td className="py-1 px-2 text-slate-700 font-mono">
+                                        {p.pedido_id.slice(0, 8)}…
+                                        {p.plano_meses ? (
+                                          <span className="ml-2 text-[10px] text-slate-400">
+                                            {p.plano_meses}m
+                                          </span>
+                                        ) : null}
+                                      </td>
+                                      <td className="py-1 px-2 text-slate-600">{fmtDate(p.data_inicio)}</td>
+                                      <td className="py-1 px-2 text-right font-medium text-slate-700">
+                                        {p.predios_count}
+                                      </td>
+                                      <td className="py-1 px-2 text-right text-slate-600">
+                                        {p.videos_count}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
