@@ -58,6 +58,8 @@ export interface ReportClient {
     valor_total: number | null;
     data_inicio: string | null;
     data_fim: string | null;
+    predios_count: number;
+    videos_count: number;
   }[];
 }
 
