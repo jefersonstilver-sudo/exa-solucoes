@@ -474,8 +474,12 @@ export function useGlobalPlaylistReport() {
       ).length;
       const totalVideosH = totalVideos - totalVideosV;
       const uniqueRowsWithDays = uniqueDisplayed
-        .map((pv: any) => diffDays(pv.updated_at || pv.created_at))
+        .map((pv: any) => {
+          const ped = pedidosById.get(pv.pedido_id);
+          return diffDays(pv.approved_at || ped?.data_inicio || pv.created_at);
+        })
         .filter((d: number) => d > 0);
+
       const tempoMedioDias = uniqueRowsWithDays.length
         ? Math.round(uniqueRowsWithDays.reduce((s: number, d: number) => s + d, 0) / uniqueRowsWithDays.length)
         : 0;
