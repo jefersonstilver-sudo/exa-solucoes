@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Building2, Plus, RefreshCw } from 'lucide-react';
+import { Building2, Plus, RefreshCw, FileText } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface BuildingsHeader3Props {
   stats: {
@@ -20,6 +21,9 @@ const BuildingsHeader3: React.FC<BuildingsHeader3Props> = ({
   onRefresh,
   onNewBuilding
 }) => {
+  const { isAdmin } = useAuth();
+  const openReport = () =>
+    window.open('/super_admin/relatorio-playlist', '_blank', 'noopener,noreferrer');
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-4">
       <div className="flex items-center justify-between">
@@ -67,6 +71,19 @@ const BuildingsHeader3: React.FC<BuildingsHeader3Props> = ({
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openReport}
+              className="h-9 border-[#7D1818]/30 text-[#7D1818] hover:bg-[#7D1818]/5"
+              title="Gerar Relatório de Playlist (auditoria)"
+            >
+              <FileText className="h-4 w-4 mr-1" />
+              <span className="hidden md:inline">Relatório de Playlist</span>
+              <span className="md:hidden">Relatório</span>
+            </Button>
+          )}
           <Button
             onClick={onNewBuilding}
             size="sm"
