@@ -1,27 +1,30 @@
-## Card de Clientes — expansão por pedido (com contagem de prédios incluindo internos)
 
-### 1. Hook: incluir prédios `interno` no dataset (sem inflar o KPI público)
-Arquivo: `src/hooks/useGlobalPlaylistReport.ts`
+## 1. Corrigir prédios mostrados como offline indevidamente
+`src/hooks/useGlobalPlaylistReport.ts` (linha ~204)
 
-- Query de `buildings` (linha ~151): trocar `.in('status', ['ativo','instalação','instalacao'])` para `.in('status', ['ativo','instalação','instalacao','interno'])` — assim os prédios internos (entrada, sala de reunião comercial, tablet) entram na contagem por pedido.
-- KPI `totalPredios` (linha ~633): manter paridade com a loja pública → contar apenas `buildings.filter(b => b.status !== 'interno').length`.
-- Em `ReportClient.pedidos` (no agrupamento de linha ~512), adicionar `predios_count: number` calculado a partir de `lista_predios` do pedido intersectado com `buildingIds` (que agora inclui internos). Também adicionar `videos_count: number` (vídeo único em exibição AGORA para o pedido — usar `currentVideoIdByPedido`).
-- Atualizar o tipo `ReportClient['pedidos'][number]` para incluir `predios_count` e `videos_count`.
+A query de `devices` usa `.eq('is_active', true)`, mas o monitor canônico (`src/modules/monitoramento-ia/utils/devices.ts`) usa `.or('is_deleted.is.null,is_deleted.eq.false')`. Devices reais online mas sem `is_active=true` ficam invisíveis e o prédio aparece como Offline/Sem painel.
 
-### 2. Dashboard: card "Clientes" vira lista hierárquica expansível
-Arquivo: `src/components/admin/buildings/relatorio-playlist/ReportDashboard.tsx`
+- Trocar o filtro de `devices` para `.or('is_deleted.is.null,is_deleted.eq.false')`, igualando exatamente o monitor público.
+- Manter a regra atual `bd.some(d => status==='online')` (já idêntica ao `useBuildingsPanelsStatus`).
 
-- Cada linha do ranking de clientes vira clicável (chevron à esquerda do nome).
-- Estado local `expandedClients: Set<string>` (clientes inicialmente recolhidos para manter elegância).
-- Ao expandir um cliente, renderizar uma sub-tabela com os pedidos daquele cliente, mostrando:
-  - `#` (índice 1..n)
-  - `Pedido` (primeiros 8 chars do id + plano em meses)
-  - `Início` (`data_inicio` formatado pt-BR)
-  - `Prédios` (`predios_count`, contagem por pedido — inclui internos)
-  - `Vídeos` (`videos_count`, vídeo único em exibição AGORA)
-- A coluna agregada "Vídeos" do cliente continua sendo `c.total_videos` (já existe).
-- Manter o container `max-h-[420px] overflow-y-auto` com `<thead sticky>` para scroll vertical elegante.
-- Sub-linhas têm fundo `bg-slate-50/60` e indentação para diferenciar da linha-pai.
+## 2. Miniaturas dos vídeos na página (não no PDF)
+`src/components/admin/buildings/relatorio-playlist/ReportByBuilding.tsx`
 
-### 3. Fora de escopo
-Sem mudanças no card "Prédios", em outros KPIs, em alertas, RPC, RLS, schema, edge functions ou qualquer outra parte da UI/fluxo. O dataset de pedidos e a regra canônica de "1 vídeo por pedido AGORA" permanecem iguais.
+- Adicionar coluna `Miniatura` (primeira da `VideoTable`) com `<video src={video_url} preload="metadata" muted playsInline>` 80×45 (horizontal) ou 45×80 (vertical), `className="video-thumb"`.
+- Hover dá play silencioso; mouseleave pausa — mesmo padrão do `VideoPreviewCard` existente. Sem novo componente: inline simples para evitar regressão.
+- A classe `.video-thumb` já é escondida no `report-print.css`, então os thumbs somem no PDF automaticamente.
+
+## 3. PDF exporta APENAS a relação Prédio × Pedido × Vídeo
+`src/pages/admin/RelatorioPlaylistPage.tsx`, `src/components/admin/buildings/relatorio-playlist/report-print.css`, `ReportByBuilding.tsx`
+
+- Adicionar `no-print` em `ReportActiveOrders`, `ReportDashboard`, `ReportAlerts` e no banner vermelho do `ReportHeader`. No PDF resta: um título compacto pt-BR + a seção "Visão por Prédio".
+- Inserir no topo da página um bloco `print-only` minimalista: "Relatório de Playlist em Exibição — gerado em {data} por {usuário}".
+- No CSS de print:
+  - Esconder colunas pouco úteis no papel via classes `print-hide-col` em `<th>/<td>`: `Slot`, `Dur.`, `QR`, `Status`, `▶`.
+  - Deixar visível no PDF: `Vídeo` (nome em negrito), `Cliente`, `Pedido` (8 chars + plano), `Período`, `Dias no ar`, `Agendamento`.
+  - Cabeçalho de cada prédio compacto: nome + bairro + status online/offline + contagem H/V.
+  - `page-break-before: always` em cada prédio com vídeos para legibilidade.
+  - `.video-thumb` continua oculto no PDF (já está).
+
+## 4. Fora de escopo
+Sem alterações em outros KPIs, no card "Clientes", RPC, RLS, schema, edge functions ou qualquer outro fluxo/UI. O filtro `totalPredios` (excluindo `interno`) permanece igual.

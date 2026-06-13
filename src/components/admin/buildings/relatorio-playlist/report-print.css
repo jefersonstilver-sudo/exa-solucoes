@@ -45,8 +45,16 @@
   }
 
   .report-building-section {
+    page-break-before: always;
+    break-before: page;
+  }
+  .report-building-section:first-of-type {
     page-break-before: auto;
     break-before: auto;
+  }
+
+  .print-hide-col {
+    display: none !important;
   }
 
   .report-building-header {
