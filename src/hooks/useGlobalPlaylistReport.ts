@@ -578,20 +578,21 @@ export function useGlobalPlaylistReport() {
           videos_count: b.videosH.length + b.videosV.length,
         }));
 
-      // 10.1) Pedidos ativos resumidos (contagem única H/V por pedido+video)
+      // 10.1) Pedidos ativos — vídeo único em exibição AGORA (regra canônica)
       const activeOrders: ReportActiveOrder[] = pedidosFiltered.map((p: any) => {
         const u = usersById.get(p.client_id);
-        const pvs = (pedidoVideos as any[]).filter(
-          (pv: any) => pv.pedido_id === p.id && pv.selected_for_display
-        );
-        const seenVid = new Set<string>();
+        const currentVid = currentVideoIdByPedido.get(p.id);
+        const pvCurrent = currentVid
+          ? (pedidoVideos as any[]).find(
+              (pv: any) => pv.pedido_id === p.id && pv.video_id === currentVid
+            )
+          : null;
         let h = 0, v = 0;
-        for (const pv of pvs) {
-          if (seenVid.has(pv.video_id)) continue;
-          seenVid.add(pv.video_id);
-          if (inferOrientacao(pv.videos?.orientacao) === 'vertical') v++;
-          else h++;
+        if (pvCurrent) {
+          if (inferOrientacao(pvCurrent.videos?.orientacao) === 'vertical') v = 1;
+          else h = 1;
         }
+
         const prediosCount = (p.lista_predios || []).filter((id: string) =>
           buildingIds.includes(id)
         ).length;
