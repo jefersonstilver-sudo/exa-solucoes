@@ -167,8 +167,8 @@ export function useGlobalPlaylistReport() {
       );
       const pedidoIds = pedidosFiltered.map((p: any) => p.id);
 
-      // 3) Paralelo: pedido_videos + users + painels/paineis_status
-      const [pvRes, usersRes, painelsRes] = await Promise.all([
+      // 3) Paralelo: pedido_videos + users + devices (mesma fonte da página /super_admin/predios)
+      const [pvRes, usersRes, devicesRes] = await Promise.all([
         pedidoIds.length
           ? (supabase as any)
               .from('pedido_videos')
@@ -182,51 +182,37 @@ export function useGlobalPlaylistReport() {
           .select('id, nome, primeiro_nome, sobrenome, email')
           .in('id', Array.from(new Set(pedidosFiltered.map((p: any) => p.client_id).filter(Boolean)))),
         (supabase as any)
-          .from('painels')
-          .select('id, building_id, status, ultima_sync')
-          .in('building_id', buildingIds),
+          .from('devices')
+          .select('id, building_id, status, last_online_at')
+          .in('building_id', buildingIds)
+          .eq('is_active', true),
       ]);
 
       if (pvRes.error) throw pvRes.error;
       if (usersRes.error) throw usersRes.error;
-      if (painelsRes.error) throw painelsRes.error;
+      if (devicesRes.error) throw devicesRes.error;
 
       const pedidoVideos = pvRes.data || [];
       const usersById = new Map<string, any>(
         (usersRes.data || []).map((u: any) => [u.id, u])
       );
-      const painels = painelsRes.data || [];
+      const devices = devicesRes.data || [];
 
-      // 4) paineis_status para os painels encontrados
-      const painelIds = painels.map((p: any) => p.id);
-      const { data: statusRaw } = painelIds.length
-        ? await (supabase as any)
-            .from('paineis_status')
-            .select('painel_id, status, ultimo_heartbeat')
-            .in('painel_id', painelIds)
-        : { data: [] };
-      const statusByPainel = new Map<string, any>(
-        (statusRaw || []).map((s: any) => [s.painel_id, s])
-      );
-
-      // 5) Construir mapa de building -> online
-      const buildingOnline = new Map<string, boolean>();
+      // 5) Construir mapa de building -> online (mesma regra do useBuildingsPanelsStatus)
+      type BuildingNet = { online: boolean; total: number; label: string };
+      const buildingNet = new Map<string, BuildingNet>();
       buildings.forEach((b: any) => {
-        const bp = painels.filter((p: any) => p.building_id === b.id);
-        if (bp.length === 0) {
-          buildingOnline.set(b.id, false);
+        const bd = devices.filter((d: any) => d.building_id === b.id);
+        if (bd.length === 0) {
+          buildingNet.set(b.id, { online: false, total: 0, label: 'Sem painel' });
           return;
         }
-        const anyOnline = bp.some((p: any) => {
-          const st = statusByPainel.get(p.id);
-          if (!st) return false;
-          const heartbeat = st.ultimo_heartbeat || p.ultima_sync;
-          if (!heartbeat) return false;
-          const ageMin = (Date.now() - new Date(heartbeat).getTime()) / 60_000;
-          const sOk = (st.status || '').toLowerCase() === 'online' || (st.status || '').toLowerCase() === 'ativo';
-          return sOk && ageMin <= OFFLINE_THRESHOLD_MIN;
+        const online = bd.some((d: any) => (d.status || '').toLowerCase() === 'online');
+        buildingNet.set(b.id, {
+          online,
+          total: bd.length,
+          label: online ? 'Online' : 'Offline',
         });
-        buildingOnline.set(b.id, anyOnline);
       });
 
       // 6) Montar linhas de vídeo (apenas selected_for_display)
@@ -285,7 +271,7 @@ export function useGlobalPlaylistReport() {
             .filter((p: any) => (p.lista_predios || []).includes(b.id))
             .map((p: any) => p.id)
         );
-        const online = buildingOnline.get(b.id) ?? false;
+        const net = buildingNet.get(b.id) ?? { online: false, total: 0, label: 'Sem painel' };
         return {
           id: b.id,
           nome: b.nome,
@@ -293,9 +279,9 @@ export function useGlobalPlaylistReport() {
           bairro: b.bairro || null,
           endereco: b.endereco || null,
           status: b.status,
-          quantidade_telas: b.quantidade_telas || 0,
-          online,
-          online_label: online ? 'Online' : 'Offline / Sem heartbeat',
+          quantidade_telas: net.total || b.quantidade_telas || 0,
+          online: net.online,
+          online_label: net.label,
           videosH,
           videosV,
           pedidos_ativos_count: pedidosAtivos.size,
@@ -361,7 +347,7 @@ export function useGlobalPlaylistReport() {
       }
       // Prédio offline com pedido ativo
       for (const b of buildingsReport) {
-        if (!b.online && b.pedidos_ativos_count > 0) {
+        if (!b.online && b.quantidade_telas > 0 && b.pedidos_ativos_count > 0) {
           alerts.push({
             type: 'predio_offline_com_pedido',
             severity: 'red',

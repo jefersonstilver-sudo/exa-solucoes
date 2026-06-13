@@ -5,7 +5,6 @@ import { useGlobalPlaylistReport } from '@/hooks/useGlobalPlaylistReport';
 import ReportHeader from '@/components/admin/buildings/relatorio-playlist/ReportHeader';
 import ReportDashboard from '@/components/admin/buildings/relatorio-playlist/ReportDashboard';
 import ReportAlerts from '@/components/admin/buildings/relatorio-playlist/ReportAlerts';
-import ReportByClient from '@/components/admin/buildings/relatorio-playlist/ReportByClient';
 import ReportByBuilding from '@/components/admin/buildings/relatorio-playlist/ReportByBuilding';
 import ReportSkeleton from '@/components/admin/buildings/relatorio-playlist/ReportSkeleton';
 import '@/components/admin/buildings/relatorio-playlist/report-print.css';
@@ -56,7 +55,6 @@ const RelatorioPlaylistPage: React.FC = () => {
             />
             <ReportDashboard report={data} />
             <ReportAlerts report={data} />
-            <ReportByClient report={data} />
             <ReportByBuilding report={data} />
             <footer className="mt-8 text-center text-xs text-slate-400 print:text-slate-700">
               EXA Mídia — Relatório de Playlist em Exibição · {new Date(data.generatedAt).toLocaleString('pt-BR')}
