@@ -190,10 +190,11 @@ export function useGlobalPlaylistReport() {
           ? (supabase as any)
               .from('pedido_videos')
               .select(
-                'id, pedido_id, video_id, slot_position, is_active, approval_status, selected_for_display, qr_config, created_at, updated_at, videos:videos ( id, nome, url, duracao, orientacao )'
+                'id, pedido_id, video_id, slot_position, is_active, approval_status, selected_for_display, qr_config, created_at, updated_at, approved_at, is_base_video, videos:videos ( id, nome, url, duracao, orientacao )'
               )
               .in('pedido_id', pedidoIds)
           : Promise.resolve({ data: [], error: null }),
+
         (supabase as any)
           .from('users')
           .select('id, nome, primeiro_nome, sobrenome, email')
