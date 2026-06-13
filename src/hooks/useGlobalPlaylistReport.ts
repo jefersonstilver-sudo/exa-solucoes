@@ -167,8 +167,8 @@ export function useGlobalPlaylistReport() {
       );
       const pedidoIds = pedidosFiltered.map((p: any) => p.id);
 
-      // 3) Paralelo: pedido_videos + users + devices (mesma fonte da página /super_admin/predios)
-      const [pvRes, usersRes, devicesRes] = await Promise.all([
+      // 3) Paralelo: pedido_videos + users + devices + campanhas (campaigns_advanced)
+      const [pvRes, usersRes, devicesRes, campAdvRes] = await Promise.all([
         pedidoIds.length
           ? (supabase as any)
               .from('pedido_videos')
@@ -186,6 +186,12 @@ export function useGlobalPlaylistReport() {
           .select('id, building_id, status, last_online_at')
           .in('building_id', buildingIds)
           .eq('is_active', true),
+        pedidoIds.length
+          ? (supabase as any)
+              .from('campaigns_advanced')
+              .select('id, pedido_id')
+              .in('pedido_id', pedidoIds)
+          : Promise.resolve({ data: [], error: null }),
       ]);
 
       if (pvRes.error) throw pvRes.error;
@@ -197,6 +203,62 @@ export function useGlobalPlaylistReport() {
         (usersRes.data || []).map((u: any) => [u.id, u])
       );
       const devices = devicesRes.data || [];
+
+      // 3.1) Buscar agendamentos (campaign_video_schedules + campaign_schedule_rules)
+      const campAdv = (campAdvRes as any)?.data || [];
+      const campaignIds = campAdv.map((c: any) => c.id);
+      const pedidoByCampaign = new Map<string, string>(
+        campAdv.map((c: any) => [c.id, c.pedido_id])
+      );
+
+      const [cvsRes, rulesRes] = await Promise.all([
+        campaignIds.length
+          ? (supabase as any)
+              .from('campaign_video_schedules')
+              .select('id, campaign_id, video_id')
+              .in('campaign_id', campaignIds)
+          : Promise.resolve({ data: [] }),
+        Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const cvs = (cvsRes as any)?.data || [];
+      const cvsIds = cvs.map((c: any) => c.id);
+      const { data: rulesRaw } = cvsIds.length
+        ? await (supabase as any)
+            .from('campaign_schedule_rules')
+            .select('campaign_video_schedule_id, days_of_week, start_time, end_time, is_active, is_all_day')
+            .in('campaign_video_schedule_id', cvsIds)
+        : { data: [] };
+      const rules = rulesRaw || [];
+
+      // Map (pedido_id::video_id) -> rules[]
+      const scheduleKey = (pid: string, vid: string) => `${pid}::${vid}`;
+      const rulesByPedidoVideo = new Map<string, any[]>();
+      for (const r of rules) {
+        if (r.is_active === false) continue;
+        const link = cvs.find((c: any) => c.id === r.campaign_video_schedule_id);
+        if (!link) continue;
+        const pid = pedidoByCampaign.get(link.campaign_id);
+        if (!pid) continue;
+        const k = scheduleKey(pid, link.video_id);
+        if (!rulesByPedidoVideo.has(k)) rulesByPedidoVideo.set(k, []);
+        rulesByPedidoVideo.get(k)!.push(r);
+      }
+
+      const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const hhmm = (t: string | null) => (t ? t.slice(0, 5) : '');
+      const summarizeRules = (rs: any[]): string => {
+        if (!rs || rs.length === 0) return 'Sem agendamento configurado';
+        const parts = rs.map((r) => {
+          const days = Array.isArray(r.days_of_week) && r.days_of_week.length
+            ? r.days_of_week.map((d: number) => DAY_LABELS[d] ?? d).join('/')
+            : 'Todos';
+          const time = r.is_all_day ? '24h' : `${hhmm(r.start_time)}–${hhmm(r.end_time)}`;
+          return `${days} ${time}`;
+        });
+        return parts.join(' · ');
+      };
+
 
       // 5) Construir mapa de building -> online (mesma regra do useBuildingsPanelsStatus)
       type BuildingNet = { online: boolean; total: number; label: string };
@@ -243,7 +305,7 @@ export function useGlobalPlaylistReport() {
           qr_url: qr.redirect_url || null,
           selecionado_em: selecionadoEm,
           dias_em_exibicao: diffDays(selecionadoEm),
-          schedule_summary: 'Sem agendamento configurado',
+          schedule_summary: summarizeRules(rulesByPedidoVideo.get(scheduleKey(pedido.id, pv.video_id)) || []),
           plano_meses: pedido.plano_meses ?? null,
           valor_total: pedido.valor_total ?? null,
           data_inicio: pedido.data_inicio ?? null,
@@ -290,6 +352,7 @@ export function useGlobalPlaylistReport() {
 
       // 8) Agrupar por cliente
       const clientsMap = new Map<string, ReportClient>();
+      const clientVideoIds = new Map<string, Set<string>>();
       for (const r of allRows) {
         let c = clientsMap.get(r.client_id);
         if (!c) {
@@ -304,15 +367,22 @@ export function useGlobalPlaylistReport() {
             pedidos: [],
           };
           clientsMap.set(r.client_id, c);
+          clientVideoIds.set(r.client_id, new Set());
         }
         const bId = (r as any).__building_id;
         if (bId && !c.predios.find((p) => p.id === bId)) {
           const b = buildings.find((x: any) => x.id === bId);
           if (b) c.predios.push({ id: b.id, nome: b.nome });
         }
-        c.total_videos += 1;
-        if (r.orientacao === 'vertical') c.total_videos_v += 1;
-        else c.total_videos_h += 1;
+        // Conta vídeo único (1 vídeo em N prédios = 1 vídeo, não N)
+        const seen = clientVideoIds.get(r.client_id)!;
+        const pvKey = `${r.pedido_id}::${r.video_id}`;
+        if (!seen.has(pvKey)) {
+          seen.add(pvKey);
+          c.total_videos += 1;
+          if (r.orientacao === 'vertical') c.total_videos_v += 1;
+          else c.total_videos_h += 1;
+        }
         if (!c.pedidos.find((p) => p.pedido_id === r.pedido_id)) {
           c.pedidos.push({
             pedido_id: r.pedido_id,
@@ -326,6 +396,7 @@ export function useGlobalPlaylistReport() {
       const clients = Array.from(clientsMap.values()).sort(
         (a, b) => b.predios.length - a.predios.length
       );
+
 
       // 9) Alertas
       const alerts: ReportAlert[] = [];
@@ -358,16 +429,18 @@ export function useGlobalPlaylistReport() {
         }
       }
 
-      // 10) KPIs e rankings
-      const totalVideosH = buildingsReport.reduce((s, b) => s + b.videosH.length, 0);
-      const totalVideosV = buildingsReport.reduce((s, b) => s + b.videosV.length, 0);
-      const totalVideos = totalVideosH + totalVideosV;
-      const allRowsWithDays = allRows.filter((r) => r.dias_em_exibicao > 0);
-      const tempoMedioDias = allRowsWithDays.length
-        ? Math.round(
-            allRowsWithDays.reduce((s, r) => s + r.dias_em_exibicao, 0) /
-              allRowsWithDays.length
-          )
+      // 10) KPIs e rankings — vídeos contados como ÚNICOS (1 vídeo em N prédios = 1)
+      const uniqueDisplayed = pedidoVideos.filter((pv: any) => pv.selected_for_display);
+      const totalVideos = uniqueDisplayed.length;
+      const totalVideosV = uniqueDisplayed.filter(
+        (pv: any) => inferOrientacao(pv.videos?.orientacao) === 'vertical'
+      ).length;
+      const totalVideosH = totalVideos - totalVideosV;
+      const uniqueRowsWithDays = uniqueDisplayed
+        .map((pv: any) => diffDays(pv.updated_at || pv.created_at))
+        .filter((d: number) => d > 0);
+      const tempoMedioDias = uniqueRowsWithDays.length
+        ? Math.round(uniqueRowsWithDays.reduce((s: number, d: number) => s + d, 0) / uniqueRowsWithDays.length)
         : 0;
 
       const topClientes = clients
