@@ -429,16 +429,18 @@ export function useGlobalPlaylistReport() {
         }
       }
 
-      // 10) KPIs e rankings
-      const totalVideosH = buildingsReport.reduce((s, b) => s + b.videosH.length, 0);
-      const totalVideosV = buildingsReport.reduce((s, b) => s + b.videosV.length, 0);
-      const totalVideos = totalVideosH + totalVideosV;
-      const allRowsWithDays = allRows.filter((r) => r.dias_em_exibicao > 0);
-      const tempoMedioDias = allRowsWithDays.length
-        ? Math.round(
-            allRowsWithDays.reduce((s, r) => s + r.dias_em_exibicao, 0) /
-              allRowsWithDays.length
-          )
+      // 10) KPIs e rankings — vídeos contados como ÚNICOS (1 vídeo em N prédios = 1)
+      const uniqueDisplayed = pedidoVideos.filter((pv: any) => pv.selected_for_display);
+      const totalVideos = uniqueDisplayed.length;
+      const totalVideosV = uniqueDisplayed.filter(
+        (pv: any) => inferOrientacao(pv.videos?.orientacao) === 'vertical'
+      ).length;
+      const totalVideosH = totalVideos - totalVideosV;
+      const uniqueRowsWithDays = uniqueDisplayed
+        .map((pv: any) => diffDays(pv.updated_at || pv.created_at))
+        .filter((d: number) => d > 0);
+      const tempoMedioDias = uniqueRowsWithDays.length
+        ? Math.round(uniqueRowsWithDays.reduce((s: number, d: number) => s + d, 0) / uniqueRowsWithDays.length)
         : 0;
 
       const topClientes = clients
