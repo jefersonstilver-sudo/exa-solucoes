@@ -69,10 +69,26 @@ export interface ReportAlert {
   context: Record<string, any>;
 }
 
+export interface ReportActiveOrder {
+  pedido_id: string;
+  client_id: string;
+  client_name: string;
+  client_email: string;
+  plano_meses: number | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  predios_count: number;
+  videos_total: number;
+  videos_h: number;
+  videos_v: number;
+  has_display: boolean;
+}
+
 export interface PlaylistReport {
   generatedAt: string;
   buildings: ReportBuilding[];
   clients: ReportClient[];
+  activeOrders: ReportActiveOrder[];
   kpis: {
     totalPredios: number;
     totalClientes: number;
@@ -142,6 +158,7 @@ export function useGlobalPlaylistReport() {
           generatedAt: new Date().toISOString(),
           buildings: [],
           clients: [],
+          activeOrders: [],
           kpis: {
             totalPredios: 0, totalClientes: 0, totalVideos: 0, totalVideosH: 0,
             totalVideosV: 0, totalPedidos: 0, totalAlertas: 0, tempoMedioDias: 0,
@@ -230,6 +247,11 @@ export function useGlobalPlaylistReport() {
             .in('campaign_video_schedule_id', cvsIds)
         : { data: [] };
       const rules = rulesRaw || [];
+      console.debug('[PlaylistReport] schedules', {
+        campaigns: campAdv.length,
+        videoSchedules: cvs.length,
+        rules: rules.length,
+      });
 
       // Map (pedido_id::video_id) -> rules[]
       const scheduleKey = (pid: string, vid: string) => `${pid}::${vid}`;
@@ -460,10 +482,44 @@ export function useGlobalPlaylistReport() {
           videos_count: b.videosH.length + b.videosV.length,
         }));
 
+      // 10.1) Pedidos ativos resumidos (contagem única H/V por pedido+video)
+      const activeOrders: ReportActiveOrder[] = pedidosFiltered.map((p: any) => {
+        const u = usersById.get(p.client_id);
+        const pvs = (pedidoVideos as any[]).filter(
+          (pv: any) => pv.pedido_id === p.id && pv.selected_for_display
+        );
+        const seenVid = new Set<string>();
+        let h = 0, v = 0;
+        for (const pv of pvs) {
+          if (seenVid.has(pv.video_id)) continue;
+          seenVid.add(pv.video_id);
+          if (inferOrientacao(pv.videos?.orientacao) === 'vertical') v++;
+          else h++;
+        }
+        const prediosCount = (p.lista_predios || []).filter((id: string) =>
+          buildingIds.includes(id)
+        ).length;
+        return {
+          pedido_id: p.id,
+          client_id: p.client_id,
+          client_name: buildClientName(u),
+          client_email: u?.email || '—',
+          plano_meses: p.plano_meses ?? null,
+          data_inicio: p.data_inicio ?? null,
+          data_fim: p.data_fim ?? null,
+          predios_count: prediosCount,
+          videos_total: h + v,
+          videos_h: h,
+          videos_v: v,
+          has_display: h + v > 0,
+        };
+      }).sort((a, b) => b.videos_total - a.videos_total);
+
       const report: PlaylistReport = {
         generatedAt: new Date().toISOString(),
         buildings: buildingsReport.sort((a, b) => a.nome.localeCompare(b.nome)),
         clients,
+        activeOrders,
         kpis: {
           totalPredios: buildingsReport.filter((b) => b.videosH.length + b.videosV.length > 0).length,
           totalClientes: clients.length,

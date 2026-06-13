@@ -6,24 +6,13 @@ interface Props {
   report: PlaylistReport;
 }
 
-const fmtMoney = (v: number | null) =>
-  v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
 const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString('pt-BR') : '—');
 
-const StatusBadge = ({ s }: { s: string }) => {
-  const map: Record<string, string> = {
-    approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    pending: 'bg-amber-100 text-amber-700 border-amber-200',
-    rejected: 'bg-red-100 text-red-700 border-red-200',
-  };
-  const cls = map[s] || 'bg-slate-100 text-slate-700 border-slate-200';
-  return (
-    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border ${cls}`}>
-      {s}
-    </span>
-  );
-};
+const DisplayBadge = () => (
+  <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border bg-[#7D1818]/10 text-[#7D1818] border-[#7D1818]/20">
+    Em exibição
+  </span>
+);
 
 const VideoTable = ({
   title,
@@ -54,7 +43,6 @@ const VideoTable = ({
               <th className="text-left px-2 py-1.5 font-semibold">Cliente</th>
               <th className="text-left px-2 py-1.5 font-semibold">Pedido</th>
               <th className="text-left px-2 py-1.5 font-semibold">Período</th>
-              <th className="text-right px-2 py-1.5 font-semibold">Valor</th>
               <th className="text-center px-2 py-1.5 font-semibold">Dur.</th>
               <th className="text-center px-2 py-1.5 font-semibold">Slot</th>
               <th className="text-center px-2 py-1.5 font-semibold">Dias no ar</th>
@@ -82,9 +70,6 @@ const VideoTable = ({
                   <div>{fmtDate(r.data_inicio)}</div>
                   <div className="text-slate-500">→ {fmtDate(r.data_fim)}</div>
                 </td>
-                <td className="px-2 py-1.5 text-right font-medium whitespace-nowrap">
-                  {fmtMoney(r.valor_total)}
-                </td>
                 <td className="px-2 py-1.5 text-center">
                   {r.video_duracao ? `${r.video_duracao}s` : '—'}
                 </td>
@@ -92,12 +77,12 @@ const VideoTable = ({
                 <td className="px-2 py-1.5 text-center font-semibold text-[#7D1818]">
                   {r.dias_em_exibicao}d
                 </td>
-                <td className="px-2 py-1.5 text-slate-700 max-w-[160px]">
+                <td className="px-2 py-1.5 text-slate-700 max-w-[180px]">
                   <span className="text-[11px]">{r.schedule_summary}</span>
                 </td>
                 <td className="px-2 py-1.5 text-center">
                   {r.qr_enabled ? (
-                    <span title={r.qr_url || ''} className="inline-flex items-center text-emerald-700">
+                    <span title={r.qr_url || ''} className="inline-flex items-center text-[#7D1818]">
                       <QrCode className="h-3 w-3" />
                     </span>
                   ) : (
@@ -105,7 +90,7 @@ const VideoTable = ({
                   )}
                 </td>
                 <td className="px-2 py-1.5 text-center">
-                  <StatusBadge s={r.approval_status} />
+                  <DisplayBadge />
                 </td>
                 <td className="px-2 py-1.5 text-center no-print">
                   {r.video_url ? (
@@ -150,12 +135,16 @@ const BuildingBlock = ({ b }: { b: ReportBuilding }) => (
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-xs whitespace-nowrap">
-        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-          {b.status}
-        </span>
+      <div className="flex items-center gap-2 text-xs whitespace-nowrap flex-wrap justify-end">
+        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{b.status}</span>
         <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
           {b.quantidade_telas} telas
+        </span>
+        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+          📺 H: {b.videosH.length}
+        </span>
+        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+          📱 V: {b.videosV.length}
         </span>
         <span
           className={`px-2 py-0.5 rounded-md ${
