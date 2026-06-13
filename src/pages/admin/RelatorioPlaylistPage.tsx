@@ -54,6 +54,7 @@ const RelatorioPlaylistPage: React.FC = () => {
               loading={loading}
               onRefresh={refetch}
             />
+            <ReportActiveOrders report={data} />
             <ReportDashboard report={data} />
             <ReportAlerts report={data} />
             <ReportByBuilding report={data} />
