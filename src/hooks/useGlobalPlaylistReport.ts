@@ -247,6 +247,11 @@ export function useGlobalPlaylistReport() {
             .in('campaign_video_schedule_id', cvsIds)
         : { data: [] };
       const rules = rulesRaw || [];
+      console.debug('[PlaylistReport] schedules', {
+        campaigns: campAdv.length,
+        videoSchedules: cvs.length,
+        rules: rules.length,
+      });
 
       // Map (pedido_id::video_id) -> rules[]
       const scheduleKey = (pid: string, vid: string) => `${pid}::${vid}`;
