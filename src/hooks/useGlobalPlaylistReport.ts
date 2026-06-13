@@ -271,7 +271,7 @@ export function useGlobalPlaylistReport() {
             .filter((p: any) => (p.lista_predios || []).includes(b.id))
             .map((p: any) => p.id)
         );
-        const online = buildingOnline.get(b.id) ?? false;
+        const net = buildingNet.get(b.id) ?? { online: false, total: 0, label: 'Sem painel' };
         return {
           id: b.id,
           nome: b.nome,
@@ -279,9 +279,9 @@ export function useGlobalPlaylistReport() {
           bairro: b.bairro || null,
           endereco: b.endereco || null,
           status: b.status,
-          quantidade_telas: b.quantidade_telas || 0,
-          online,
-          online_label: online ? 'Online' : 'Offline / Sem heartbeat',
+          quantidade_telas: net.total || b.quantidade_telas || 0,
+          online: net.online,
+          online_label: net.label,
           videosH,
           videosV,
           pedidos_ativos_count: pedidosAtivos.size,
