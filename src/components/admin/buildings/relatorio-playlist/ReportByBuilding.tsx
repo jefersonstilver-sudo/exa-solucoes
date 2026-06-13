@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Building2, Play, QrCode } from 'lucide-react';
 import type { PlaylistReport, ReportBuilding, ReportVideoRow } from '@/hooks/useGlobalPlaylistReport';
 
@@ -13,6 +13,34 @@ const DisplayBadge = () => (
     Em exibição
   </span>
 );
+
+const VideoThumb: React.FC<{ row: ReportVideoRow }> = ({ row }) => {
+  const ref = useRef<HTMLVideoElement>(null);
+  if (!row.video_url) {
+    return <div className="bg-slate-200 rounded w-[80px] h-[45px]" />;
+  }
+  const isVertical = row.orientacao === 'vertical';
+  const w = isVertical ? 45 : 80;
+  const h = isVertical ? 80 : 45;
+  return (
+    <div
+      className="video-thumb relative overflow-hidden rounded bg-black/80 ring-1 ring-slate-200"
+      style={{ width: w, height: h }}
+      onMouseEnter={() => { ref.current?.play().catch(() => {}); }}
+      onMouseLeave={() => { const v = ref.current; if (v) { v.pause(); v.currentTime = 0; } }}
+    >
+      <video
+        ref={ref}
+        src={row.video_url}
+        muted
+        playsInline
+        loop
+        preload="metadata"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
+};
 
 const VideoTable = ({
   title,
@@ -39,22 +67,26 @@ const VideoTable = ({
         <table className="w-full text-xs">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
+              <th className="text-left px-2 py-1.5 font-semibold print-hide-col">Mini</th>
               <th className="text-left px-2 py-1.5 font-semibold">Vídeo</th>
               <th className="text-left px-2 py-1.5 font-semibold">Cliente</th>
               <th className="text-left px-2 py-1.5 font-semibold">Pedido</th>
               <th className="text-left px-2 py-1.5 font-semibold">Período</th>
-              <th className="text-center px-2 py-1.5 font-semibold">Dur.</th>
-              <th className="text-center px-2 py-1.5 font-semibold">Slot</th>
+              <th className="text-center px-2 py-1.5 font-semibold print-hide-col">Dur.</th>
+              <th className="text-center px-2 py-1.5 font-semibold print-hide-col">Slot</th>
               <th className="text-center px-2 py-1.5 font-semibold">Dias no ar</th>
               <th className="text-left px-2 py-1.5 font-semibold">Agendamento</th>
-              <th className="text-center px-2 py-1.5 font-semibold">QR</th>
-              <th className="text-center px-2 py-1.5 font-semibold">Status</th>
+              <th className="text-center px-2 py-1.5 font-semibold print-hide-col">QR</th>
+              <th className="text-center px-2 py-1.5 font-semibold print-hide-col">Status</th>
               <th className="text-center px-2 py-1.5 font-semibold no-print">▶</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.pedido_video_id} className="border-t border-slate-100 odd:bg-white even:bg-slate-50/50">
+                <td className="px-2 py-1.5 print-hide-col">
+                  <VideoThumb row={r} />
+                </td>
                 <td className="px-2 py-1.5 max-w-[200px]">
                   <div className="font-medium text-slate-900 truncate">{r.video_nome}</div>
                 </td>
@@ -70,17 +102,17 @@ const VideoTable = ({
                   <div>{fmtDate(r.data_inicio)}</div>
                   <div className="text-slate-500">→ {fmtDate(r.data_fim)}</div>
                 </td>
-                <td className="px-2 py-1.5 text-center">
+                <td className="px-2 py-1.5 text-center print-hide-col">
                   {r.video_duracao ? `${r.video_duracao}s` : '—'}
                 </td>
-                <td className="px-2 py-1.5 text-center">{r.slot_position}</td>
+                <td className="px-2 py-1.5 text-center print-hide-col">{r.slot_position}</td>
                 <td className="px-2 py-1.5 text-center font-semibold text-[#7D1818]">
                   {r.dias_em_exibicao}d
                 </td>
                 <td className="px-2 py-1.5 text-slate-700 max-w-[180px]">
                   <span className="text-[11px]">{r.schedule_summary}</span>
                 </td>
-                <td className="px-2 py-1.5 text-center">
+                <td className="px-2 py-1.5 text-center print-hide-col">
                   {r.qr_enabled ? (
                     <span title={r.qr_url || ''} className="inline-flex items-center text-[#7D1818]">
                       <QrCode className="h-3 w-3" />
@@ -89,7 +121,7 @@ const VideoTable = ({
                     <span className="text-slate-300">—</span>
                   )}
                 </td>
-                <td className="px-2 py-1.5 text-center">
+                <td className="px-2 py-1.5 text-center print-hide-col">
                   <DisplayBadge />
                 </td>
                 <td className="px-2 py-1.5 text-center no-print">
@@ -187,7 +219,7 @@ const ReportByBuilding: React.FC<Props> = ({ report }) => {
       ))}
 
       {withoutVideos.length > 0 && (
-        <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+        <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm no-print">
           <div className="font-semibold mb-1">
             {withoutVideos.length} prédio(s) elegível(eis) sem nenhum vídeo em exibição:
           </div>
