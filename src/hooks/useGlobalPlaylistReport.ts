@@ -440,6 +440,18 @@ export function useGlobalPlaylistReport() {
       // 7) Agrupar por prédio
       const buildingsReport: ReportBuilding[] = buildings.map((b: any) => {
         const rows = allRows.filter((r: any) => r.__building_id === b.id);
+        // Sanity check: cada pedido só pode aparecer 1x por prédio (regra canônica)
+        const seenPedidos = new Set<string>();
+        for (const r of rows) {
+          if (seenPedidos.has(r.pedido_id)) {
+            console.warn('[PlaylistReport] VIOLAÇÃO: pedido duplicado no mesmo prédio', {
+              building_id: b.id,
+              building_nome: b.nome,
+              pedido_id: r.pedido_id,
+            });
+          }
+          seenPedidos.add(r.pedido_id);
+        }
         const videosH = rows.filter((r) => r.orientacao === 'horizontal' || r.orientacao === 'desconhecida');
         const videosV = rows.filter((r) => r.orientacao === 'vertical');
         const pedidosAtivos = new Set(
