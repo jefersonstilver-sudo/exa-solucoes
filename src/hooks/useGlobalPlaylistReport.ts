@@ -69,10 +69,26 @@ export interface ReportAlert {
   context: Record<string, any>;
 }
 
+export interface ReportActiveOrder {
+  pedido_id: string;
+  client_id: string;
+  client_name: string;
+  client_email: string;
+  plano_meses: number | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  predios_count: number;
+  videos_total: number;
+  videos_h: number;
+  videos_v: number;
+  has_display: boolean;
+}
+
 export interface PlaylistReport {
   generatedAt: string;
   buildings: ReportBuilding[];
   clients: ReportClient[];
+  activeOrders: ReportActiveOrder[];
   kpis: {
     totalPredios: number;
     totalClientes: number;
