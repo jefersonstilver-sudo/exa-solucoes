@@ -514,12 +514,9 @@ export function useGlobalPlaylistReport() {
 
       // 9) Alertas
       const alerts: ReportAlert[] = [];
-      // Pedidos sem vídeo em exibição
-      const pedidoHasDisplay = new Set(
-        pedidoVideos.filter((pv: any) => pv.selected_for_display).map((pv: any) => pv.pedido_id)
-      );
+      // Pedidos sem vídeo em exibição AGORA (regra canônica)
       for (const p of pedidosFiltered) {
-        if (!pedidoHasDisplay.has(p.id)) {
+        if (!currentVideoIdByPedido.has(p.id)) {
           const u = usersById.get(p.client_id);
           alerts.push({
             type: 'pedido_sem_video',
@@ -543,8 +540,10 @@ export function useGlobalPlaylistReport() {
         }
       }
 
-      // 10) KPIs e rankings — vídeos contados como ÚNICOS (1 vídeo em N prédios = 1)
-      const uniqueDisplayed = pedidoVideos.filter((pv: any) => pv.selected_for_display);
+      // 10) KPIs e rankings — 1 vídeo único por pedido (regra canônica AGORA)
+      const uniqueDisplayed = pedidoVideos.filter(
+        (pv: any) => currentVideoIdByPedido.get(pv.pedido_id) === pv.video_id
+      );
       const totalVideos = uniqueDisplayed.length;
       const totalVideosV = uniqueDisplayed.filter(
         (pv: any) => inferOrientacao(pv.videos?.orientacao) === 'vertical'
@@ -560,6 +559,7 @@ export function useGlobalPlaylistReport() {
       const tempoMedioDias = uniqueRowsWithDays.length
         ? Math.round(uniqueRowsWithDays.reduce((s: number, d: number) => s + d, 0) / uniqueRowsWithDays.length)
         : 0;
+
 
       const topClientes = clients
         .slice(0, 10)
