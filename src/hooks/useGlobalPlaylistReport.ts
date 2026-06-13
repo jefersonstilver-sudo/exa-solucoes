@@ -233,7 +233,7 @@ export function useGlobalPlaylistReport() {
         campaignIds.length
           ? (supabase as any)
               .from('campaign_video_schedules')
-              .select('id, campaign_id, video_id')
+              .select('id, campaign_id, video_id, priority')
               .in('campaign_id', campaignIds)
           : Promise.resolve({ data: [] }),
         Promise.resolve({ data: [] as any[] }),
@@ -247,6 +247,7 @@ export function useGlobalPlaylistReport() {
             .select('campaign_video_schedule_id, days_of_week, start_time, end_time, is_active, is_all_day')
             .in('campaign_video_schedule_id', cvsIds)
         : { data: [] };
+
       const rules = rulesRaw || [];
       console.debug('[PlaylistReport] schedules', {
         campaigns: campAdv.length,
