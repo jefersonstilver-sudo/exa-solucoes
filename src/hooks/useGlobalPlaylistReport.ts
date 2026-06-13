@@ -150,7 +150,7 @@ export function useGlobalPlaylistReport() {
         .select(
           'id, nome, codigo_predio, bairro, endereco, status, quantidade_telas'
         )
-        .in('status', ['ativo', 'instalação', 'instalacao']);
+        .in('status', ['ativo', 'instalação', 'instalacao', 'interno']);
       if (bErr) throw bErr;
       const buildings = buildingsRaw || [];
       const buildingIds = buildings.map((b: any) => b.id);
@@ -512,12 +512,19 @@ export function useGlobalPlaylistReport() {
           else c.total_videos_h += 1;
         }
         if (!c.pedidos.find((p) => p.pedido_id === r.pedido_id)) {
+          const pedidoObj = pedidosById.get(r.pedido_id);
+          const prediosCount = pedidoObj
+            ? (pedidoObj.lista_predios || []).filter((id: string) => buildingIds.includes(id)).length
+            : 0;
+          const currentVid = currentVideoIdByPedido.get(r.pedido_id);
           c.pedidos.push({
             pedido_id: r.pedido_id,
             plano_meses: r.plano_meses,
             valor_total: r.valor_total,
             data_inicio: r.data_inicio,
             data_fim: r.data_fim,
+            predios_count: prediosCount,
+            videos_count: currentVid ? 1 : 0,
           });
         }
       }
@@ -642,7 +649,7 @@ export function useGlobalPlaylistReport() {
         clients,
         activeOrders,
         kpis: {
-          totalPredios: buildings.length,
+          totalPredios: buildings.filter((b: any) => b.status !== 'interno').length,
           totalClientes: clients.length,
           totalVideos,
           totalVideosH,
