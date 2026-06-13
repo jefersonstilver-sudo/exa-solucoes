@@ -640,7 +640,7 @@ export function useGlobalPlaylistReport() {
         clients,
         activeOrders,
         kpis: {
-          totalPredios: buildingsReport.filter((b) => b.videosH.length + b.videosV.length > 0).length,
+          totalPredios: buildings.length,
           totalClientes: clients.length,
           totalVideos,
           totalVideosH,
