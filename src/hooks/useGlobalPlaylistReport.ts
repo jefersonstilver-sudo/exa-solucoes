@@ -305,7 +305,7 @@ export function useGlobalPlaylistReport() {
           qr_url: qr.redirect_url || null,
           selecionado_em: selecionadoEm,
           dias_em_exibicao: diffDays(selecionadoEm),
-          schedule_summary: 'Sem agendamento configurado',
+          schedule_summary: summarizeRules(rulesByPedidoVideo.get(scheduleKey(pedido.id, pv.video_id)) || []),
           plano_meses: pedido.plano_meses ?? null,
           valor_total: pedido.valor_total ?? null,
           data_inicio: pedido.data_inicio ?? null,
