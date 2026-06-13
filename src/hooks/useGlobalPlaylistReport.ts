@@ -573,8 +573,14 @@ export function useGlobalPlaylistReport() {
         : 0;
 
 
-      const topClientes = clients
-        .slice(0, 10)
+      const topClientes = [...clients]
+        .sort((a, b) => {
+          const d = b.predios.length - a.predios.length;
+          if (d !== 0) return d;
+          const dv = b.total_videos - a.total_videos;
+          if (dv !== 0) return dv;
+          return (a.client_name || '').localeCompare(b.client_name || '');
+        })
         .map((c) => ({
           client_id: c.client_id,
           nome: c.client_name,
@@ -582,13 +588,17 @@ export function useGlobalPlaylistReport() {
           videos_count: c.total_videos,
         }));
       const topPredios = [...buildingsReport]
-        .sort((a, b) => b.videosH.length + b.videosV.length - (a.videosH.length + a.videosV.length))
-        .slice(0, 10)
+        .sort((a, b) => {
+          const d = (b.videosH.length + b.videosV.length) - (a.videosH.length + a.videosV.length);
+          if (d !== 0) return d;
+          return (a.nome || '').localeCompare(b.nome || '');
+        })
         .map((b) => ({
           id: b.id,
           nome: b.nome,
           videos_count: b.videosH.length + b.videosV.length,
         }));
+
 
       // 10.1) Pedidos ativos — vídeo único em exibição AGORA (regra canônica)
       const activeOrders: ReportActiveOrder[] = pedidosFiltered.map((p: any) => {
@@ -630,7 +640,7 @@ export function useGlobalPlaylistReport() {
         clients,
         activeOrders,
         kpis: {
-          totalPredios: buildingsReport.filter((b) => b.videosH.length + b.videosV.length > 0).length,
+          totalPredios: buildings.length,
           totalClientes: clients.length,
           totalVideos,
           totalVideosH,
