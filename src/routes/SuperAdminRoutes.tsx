@@ -45,6 +45,7 @@ import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
 import LegalFlowPage from '@/pages/admin/contracts/LegalFlowPage';
 const JuridicoWorkspacePage = lazy(() => import('@/pages/admin/contracts/JuridicoWorkspacePage'));
 import PosicoesDisponiveisPage from '@/pages/admin/PosicoesDisponiveisPage';
+const RelatorioPlaylistPage = lazy(() => import('@/pages/admin/RelatorioPlaylistPage'));
 
 // Lazy imports para páginas do monitoramento-ia (integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
@@ -258,6 +259,11 @@ const SuperAdminRoutes = () => {
       
       {/* ============ ATIVOS ============ */}
       <Route path="predios" element={<BuildingsManagement3 />} />
+      <Route path="relatorio-playlist" element={
+        <Suspense fallback={<GlobalLoadingPage message="Gerando relatório..." />}>
+          <RelatorioPlaylistPage />
+        </Suspense>
+      } />
       <Route path="paineis-exa" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>
           <PaineisPage />
