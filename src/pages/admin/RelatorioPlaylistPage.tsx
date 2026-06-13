@@ -45,18 +45,31 @@ const RelatorioPlaylistPage: React.FC = () => {
           </div>
         ) : data ? (
           <>
-            <ReportHeader
-              generatedAt={data.generatedAt}
-              userLabel={userLabel}
-              totalPredios={data.kpis.totalPredios}
-              totalVideos={data.kpis.totalVideos}
-              totalAlertas={data.kpis.totalAlertas}
-              loading={loading}
-              onRefresh={refetch}
-            />
-            <ReportActiveOrders report={data} />
-            <ReportDashboard report={data} />
-            <ReportAlerts report={data} />
+            <div className="no-print">
+              <ReportHeader
+                generatedAt={data.generatedAt}
+                userLabel={userLabel}
+                totalPredios={data.kpis.totalPredios}
+                totalVideos={data.kpis.totalVideos}
+                totalAlertas={data.kpis.totalAlertas}
+                loading={loading}
+                onRefresh={refetch}
+              />
+            </div>
+            <div className="print-only-block hidden print:block mb-4 border-b border-black pb-2">
+              <h1 className="text-xl font-bold">Relatório de Playlist em Exibição</h1>
+              <p className="text-xs">
+                EXA Mídia · Gerado em {new Date(data.generatedAt).toLocaleString('pt-BR')} · Por: {userLabel}
+              </p>
+              <p className="text-xs mt-1">
+                Prédios: {data.kpis.totalPredios} · Vídeos no ar: {data.kpis.totalVideos} · Alertas: {data.kpis.totalAlertas}
+              </p>
+            </div>
+            <div className="no-print">
+              <ReportActiveOrders report={data} />
+              <ReportDashboard report={data} />
+              <ReportAlerts report={data} />
+            </div>
             <ReportByBuilding report={data} />
             <footer className="mt-8 text-center text-xs text-slate-400 print:text-slate-700">
               EXA Mídia — Relatório de Playlist em Exibição · {new Date(data.generatedAt).toLocaleString('pt-BR')}
