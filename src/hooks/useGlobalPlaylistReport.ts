@@ -158,6 +158,7 @@ export function useGlobalPlaylistReport() {
           generatedAt: new Date().toISOString(),
           buildings: [],
           clients: [],
+          activeOrders: [],
           kpis: {
             totalPredios: 0, totalClientes: 0, totalVideos: 0, totalVideosH: 0,
             totalVideosV: 0, totalPedidos: 0, totalAlertas: 0, tempoMedioDias: 0,
