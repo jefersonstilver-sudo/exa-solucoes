@@ -205,7 +205,7 @@ export function useGlobalPlaylistReport() {
           .from('devices')
           .select('id, building_id, status, last_online_at')
           .in('building_id', buildingIds)
-          .eq('is_active', true),
+          .or('is_deleted.is.null,is_deleted.eq.false'),
         pedidoIds.length
           ? (supabase as any)
               .from('campaigns_advanced')
