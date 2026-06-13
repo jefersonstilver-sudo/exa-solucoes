@@ -301,14 +301,90 @@ export function useGlobalPlaylistReport() {
         });
       });
 
-      // 6) Montar linhas de vídeo (apenas selected_for_display)
+      // 5.5) REGRA CANÔNICA (espelha RPC get_current_display_video):
+      // Para cada pedido, escolhe UM ÚNICO video_id em exibição AGORA:
+      //   1) Agendado ativo agora (DOW Brasília + horário em [start,end]),
+      //      desempate: priority DESC, depois start_time ASC.
+      //   2) Senão, vídeo base (approved + is_active + selected_for_display, menor slot_position).
+      const nowBR = new Date(
+        new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })
+      );
+      const nowDow = nowBR.getDay();
+      const nowMinutes = nowBR.getHours() * 60 + nowBR.getMinutes();
+      const toMin = (t: string | null) => {
+        if (!t) return null;
+        const [h, m] = t.split(':');
+        return parseInt(h, 10) * 60 + parseInt(m, 10);
+      };
+      const ruleActiveNow = (r: any): boolean => {
+        if (r.is_active === false) return false;
+        const days = Array.isArray(r.days_of_week) ? r.days_of_week : [];
+        if (days.length && !days.includes(nowDow)) return false;
+        if (r.is_all_day) return true;
+        const s = toMin(r.start_time);
+        const e = toMin(r.end_time);
+        if (s === null || e === null) return true;
+        return nowMinutes >= s && nowMinutes <= e;
+      };
+      const cvsById = new Map<string, any>(cvs.map((c: any) => [c.id, c]));
+      const currentVideoIdByPedido = new Map<string, string>();
+      let pedidosComVideoAtivo = 0;
+      let pedidosSemVideoAtivo = 0;
+      for (const pedido of pedidosFiltered) {
+        const pvs = (pedidoVideos as any[]).filter(
+          (pv: any) => pv.pedido_id === pedido.id && pv.approval_status === 'approved'
+        );
+        // 1) Agendado ativo agora
+        const scheduledCandidates: { video_id: string; priority: number; start: number }[] = [];
+        for (const pv of pvs) {
+          const rs = rulesByPedidoVideo.get(scheduleKey(pedido.id, pv.video_id)) || [];
+          const active = rs.find(ruleActiveNow);
+          if (!active) continue;
+          const link = cvs.find(
+            (c: any) => c.video_id === pv.video_id && pedidoByCampaign.get(c.campaign_id) === pedido.id
+          );
+          scheduledCandidates.push({
+            video_id: pv.video_id,
+            priority: link?.priority ?? 0,
+            start: toMin(active.start_time) ?? 0,
+          });
+        }
+        if (scheduledCandidates.length) {
+          scheduledCandidates.sort(
+            (a, b) => b.priority - a.priority || a.start - b.start
+          );
+          currentVideoIdByPedido.set(pedido.id, scheduledCandidates[0].video_id);
+          pedidosComVideoAtivo++;
+          continue;
+        }
+        // 2) Base
+        const base = pvs
+          .filter((pv: any) => pv.is_active && pv.selected_for_display)
+          .sort((a: any, b: any) => (a.slot_position ?? 0) - (b.slot_position ?? 0))[0];
+        if (base) {
+          currentVideoIdByPedido.set(pedido.id, base.video_id);
+          pedidosComVideoAtivo++;
+        } else {
+          pedidosSemVideoAtivo++;
+        }
+      }
+      console.debug('[PlaylistReport] snapshot', {
+        nowBR: nowBR.toISOString(),
+        dow: nowDow,
+        totalPedidos: pedidosFiltered.length,
+        pedidosComVideoAtivo,
+        pedidosSemVideoAtivo,
+      });
+
+      // 6) Montar linhas de vídeo (1 vídeo por pedido, conforme regra canônica)
       const pedidosById = new Map<string, any>(pedidosFiltered.map((p: any) => [p.id, p]));
       const allRows: ReportVideoRow[] = [];
 
       for (const pv of pedidoVideos) {
         const pedido = pedidosById.get(pv.pedido_id);
         if (!pedido) continue;
-        if (!pv.selected_for_display) continue;
+        if (currentVideoIdByPedido.get(pv.pedido_id) !== pv.video_id) continue;
+
         const user = usersById.get(pedido.client_id);
         const qr = pv.qr_config || {};
         // Data-base de "dias em exibição": approved_at > pedido.data_inicio > created_at.
