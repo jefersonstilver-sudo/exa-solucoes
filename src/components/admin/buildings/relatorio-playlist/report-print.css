@@ -1,0 +1,102 @@
+/* Estilos de impressão para o Relatório de Playlist em Exibição
+   Otimizado para A4 retrato, paginação inteligente V4.0 */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 14mm 10mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000 !important;
+    font-size: 10pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Esconde chrome do app */
+  .no-print,
+  aside,
+  nav,
+  header[data-app-header],
+  [data-sidebar],
+  [data-app-sidebar],
+  .app-sidebar,
+  .app-header {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  .report-root {
+    max-width: 100% !important;
+    background: #fff !important;
+  }
+
+  .report-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 8mm;
+  }
+
+  .report-building-section {
+    page-break-before: auto;
+    break-before: auto;
+  }
+
+  .report-building-header {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8.5pt !important;
+  }
+
+  thead {
+    display: table-header-group; /* repete em cada página */
+  }
+
+  tr, td, th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  th, td {
+    border: 0.4pt solid #555 !important;
+    padding: 3pt 4pt !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  th {
+    background: #eee !important;
+    font-weight: 600;
+  }
+
+  .report-kpi-card,
+  .report-card {
+    border: 0.6pt solid #888 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border-radius: 4pt !important;
+    padding: 4pt 6pt !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+
+  .video-thumb,
+  video {
+    display: none !important;
+  }
+}
