@@ -352,6 +352,7 @@ export function useGlobalPlaylistReport() {
 
       // 8) Agrupar por cliente
       const clientsMap = new Map<string, ReportClient>();
+      const clientVideoIds = new Map<string, Set<string>>();
       for (const r of allRows) {
         let c = clientsMap.get(r.client_id);
         if (!c) {
@@ -366,15 +367,22 @@ export function useGlobalPlaylistReport() {
             pedidos: [],
           };
           clientsMap.set(r.client_id, c);
+          clientVideoIds.set(r.client_id, new Set());
         }
         const bId = (r as any).__building_id;
         if (bId && !c.predios.find((p) => p.id === bId)) {
           const b = buildings.find((x: any) => x.id === bId);
           if (b) c.predios.push({ id: b.id, nome: b.nome });
         }
-        c.total_videos += 1;
-        if (r.orientacao === 'vertical') c.total_videos_v += 1;
-        else c.total_videos_h += 1;
+        // Conta vídeo único (1 vídeo em N prédios = 1 vídeo, não N)
+        const seen = clientVideoIds.get(r.client_id)!;
+        const pvKey = `${r.pedido_id}::${r.video_id}`;
+        if (!seen.has(pvKey)) {
+          seen.add(pvKey);
+          c.total_videos += 1;
+          if (r.orientacao === 'vertical') c.total_videos_v += 1;
+          else c.total_videos_h += 1;
+        }
         if (!c.pedidos.find((p) => p.pedido_id === r.pedido_id)) {
           c.pedidos.push({
             pedido_id: r.pedido_id,
@@ -388,6 +396,7 @@ export function useGlobalPlaylistReport() {
       const clients = Array.from(clientsMap.values()).sort(
         (a, b) => b.predios.length - a.predios.length
       );
+
 
       // 9) Alertas
       const alerts: ReportAlert[] = [];
