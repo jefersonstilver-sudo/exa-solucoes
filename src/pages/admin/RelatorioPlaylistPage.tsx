@@ -6,6 +6,7 @@ import ReportHeader from '@/components/admin/buildings/relatorio-playlist/Report
 import ReportDashboard from '@/components/admin/buildings/relatorio-playlist/ReportDashboard';
 import ReportAlerts from '@/components/admin/buildings/relatorio-playlist/ReportAlerts';
 import ReportByBuilding from '@/components/admin/buildings/relatorio-playlist/ReportByBuilding';
+import ReportActiveOrders from '@/components/admin/buildings/relatorio-playlist/ReportActiveOrders';
 import ReportSkeleton from '@/components/admin/buildings/relatorio-playlist/ReportSkeleton';
 import '@/components/admin/buildings/relatorio-playlist/report-print.css';
 
