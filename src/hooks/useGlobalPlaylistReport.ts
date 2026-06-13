@@ -190,10 +190,11 @@ export function useGlobalPlaylistReport() {
           ? (supabase as any)
               .from('pedido_videos')
               .select(
-                'id, pedido_id, video_id, slot_position, is_active, approval_status, selected_for_display, qr_config, created_at, updated_at, videos:videos ( id, nome, url, duracao, orientacao )'
+                'id, pedido_id, video_id, slot_position, is_active, approval_status, selected_for_display, qr_config, created_at, updated_at, approved_at, is_base_video, videos:videos ( id, nome, url, duracao, orientacao )'
               )
               .in('pedido_id', pedidoIds)
           : Promise.resolve({ data: [], error: null }),
+
         (supabase as any)
           .from('users')
           .select('id, nome, primeiro_nome, sobrenome, email')
@@ -309,8 +310,21 @@ export function useGlobalPlaylistReport() {
         if (!pv.selected_for_display) continue;
         const user = usersById.get(pedido.client_id);
         const qr = pv.qr_config || {};
-        const selecionadoEm = pv.updated_at || pv.created_at || null;
+        // Data-base de "dias em exibição": approved_at > pedido.data_inicio > created_at.
+        // NUNCA usar updated_at — é reescrito por toggles/slot/qr/sync e zera o contador.
+        const baseDate =
+          pv.approved_at || pedido.data_inicio || pv.created_at || null;
         const video = pv.videos || {};
+        const diasCalc = diffDays(baseDate);
+        if (diasCalc === 0) {
+          console.debug('[PlaylistReport] 0 dias diag', {
+            pedido_id: pedido.id,
+            video_id: pv.video_id,
+            approved_at: pv.approved_at,
+            data_inicio: pedido.data_inicio,
+            created_at: pv.created_at,
+          });
+        }
         const row: ReportVideoRow = {
           pedido_video_id: pv.id,
           pedido_id: pedido.id,
@@ -325,8 +339,9 @@ export function useGlobalPlaylistReport() {
           selected_for_display: true,
           qr_enabled: !!qr.enabled,
           qr_url: qr.redirect_url || null,
-          selecionado_em: selecionadoEm,
-          dias_em_exibicao: diffDays(selecionadoEm),
+          selecionado_em: baseDate,
+          dias_em_exibicao: diasCalc,
+
           schedule_summary: summarizeRules(rulesByPedidoVideo.get(scheduleKey(pedido.id, pv.video_id)) || []),
           plano_meses: pedido.plano_meses ?? null,
           valor_total: pedido.valor_total ?? null,
@@ -459,8 +474,12 @@ export function useGlobalPlaylistReport() {
       ).length;
       const totalVideosH = totalVideos - totalVideosV;
       const uniqueRowsWithDays = uniqueDisplayed
-        .map((pv: any) => diffDays(pv.updated_at || pv.created_at))
+        .map((pv: any) => {
+          const ped = pedidosById.get(pv.pedido_id);
+          return diffDays(pv.approved_at || ped?.data_inicio || pv.created_at);
+        })
         .filter((d: number) => d > 0);
+
       const tempoMedioDias = uniqueRowsWithDays.length
         ? Math.round(uniqueRowsWithDays.reduce((s: number, d: number) => s + d, 0) / uniqueRowsWithDays.length)
         : 0;
