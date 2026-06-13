@@ -125,6 +125,7 @@ const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agent
 const CRMClients = lazy(() => import('@/pages/admin/CRMClients'));
 const CRMEvolutionPage = lazy(() => import('@/pages/admin/crm/CRMEvolutionPage'));
 const CRMConversationsPage = lazy(() => import('@/pages/admin/crm/CRMConversationsPage'));
+const RelatorioPlaylistPage = lazy(() => import('@/pages/admin/RelatorioPlaylistPage'));
 
 const AdminRoutes = () => {
   return (
@@ -387,6 +388,13 @@ const AdminRoutes = () => {
       <Route path="predios" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.predios}>
           <BuildingsManagement3 />
+        </ProtectedModuleRoute>
+      } />
+      <Route path="relatorio-playlist" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.predios}>
+          <Suspense fallback={<GlobalLoadingPage message="Gerando relatório..." />}>
+            <RelatorioPlaylistPage />
+          </Suspense>
         </ProtectedModuleRoute>
       } />
       <Route path="paineis-exa" element={
