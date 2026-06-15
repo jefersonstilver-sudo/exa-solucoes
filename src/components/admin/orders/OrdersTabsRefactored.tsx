@@ -51,8 +51,21 @@ const DEFAULT_TAB_ORDER = [
   'cancelado', 'bloqueado'
 ];
 
-const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrderDetails }) => {
-  const { ordersAndAttempts, loading, refetch } = useOrdersWithAttemptsRefactored();
+const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrderDetails, searchTerm = '' }) => {
+  const { ordersAndAttempts: rawOrdersAndAttempts, loading, refetch } = useOrdersWithAttemptsRefactored();
+
+  // Aplica busca global (id, cliente, email) antes da segmentação por status
+  const ordersAndAttempts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return rawOrdersAndAttempts;
+    return rawOrdersAndAttempts.filter((item: any) => {
+      return (
+        item.id?.toLowerCase().includes(term) ||
+        item.client_name?.toLowerCase().includes(term) ||
+        item.client_email?.toLowerCase().includes(term)
+      );
+    });
+  }, [rawOrdersAndAttempts, searchTerm]);
   const { blockOrder, unblockOrder, isBlocking, isUnblocking } = useOrderBlocking();
   const { userProfile } = useAuth();
   
