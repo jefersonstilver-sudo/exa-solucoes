@@ -498,7 +498,7 @@ const OrdersPage = () => {
 
         {/* Orders Tabs */}
         <div className="animate-fade-in">
-          <OrdersTabsRefactored onViewOrderDetails={handleViewOrderDetails} />
+          <OrdersTabsRefactored onViewOrderDetails={handleViewOrderDetails} searchTerm={searchTerm} />
         </div>
       </div>
 
