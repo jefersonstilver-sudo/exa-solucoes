@@ -28,6 +28,7 @@ import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
 
 interface OrdersTabsRefactoredProps {
   onViewOrderDetails: (orderId: string) => void;
+  searchTerm?: string;
 }
 
 // Configuração das abas
