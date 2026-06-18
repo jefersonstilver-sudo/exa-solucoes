@@ -92,9 +92,26 @@ const CadastroPredioPublico: React.FC = () => {
     }
     setSubmitting(true);
     try {
-      const { data: inserted, error } = await (supabase as any)
+      // Gera id no cliente para evitar .select() pós-insert (bloqueado por RLS para anon)
+      const cadastroId =
+        (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      let fotosUrls: string[] = [];
+      if (fotos.length > 0) {
+        try {
+          fotosUrls = await uploadFotos(cadastroId);
+        } catch (upErr) {
+          console.error('Falha no upload de fotos', upErr);
+          // segue o cadastro mesmo se fotos falharem
+        }
+      }
+
+      const { error } = await (supabase as any)
         .from('predios_cadastro_externo')
         .insert({
+          id: cadastroId,
           nome: form.nome || null,
           endereco: form.endereco,
           bairro: form.bairro || null,
@@ -112,28 +129,16 @@ const CadastroPredioPublico: React.FC = () => {
           telefone_principal: form.telefone_principal || null,
           caracteristicas: form.caracteristicas,
           outras_caracteristicas: form.outras_caracteristicas || null,
-          fotos_urls: []
-        })
-        .select('id')
-        .single();
+          fotos_urls: fotosUrls
+        });
 
-      if (error || !inserted) throw error || new Error('Erro ao salvar');
-
-      if (fotos.length > 0) {
-        const urls = await uploadFotos(inserted.id);
-        if (urls.length > 0) {
-          await (supabase as any)
-            .from('predios_cadastro_externo')
-            .update({ fotos_urls: urls })
-            .eq('id', inserted.id);
-        }
-      }
+      if (error) throw error;
 
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      console.error(err);
-      toast.error('Erro ao enviar cadastro. Tente novamente.');
+      console.error('[cadastro-predio] erro ao enviar', err);
+      toast.error(err?.message ? `Erro: ${err.message}` : 'Erro ao enviar cadastro. Tente novamente.');
     } finally {
       setSubmitting(false);
     }
