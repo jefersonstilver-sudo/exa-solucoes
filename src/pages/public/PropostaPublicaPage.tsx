@@ -2030,7 +2030,7 @@ const PropostaPublicaPage = () => {
             <Button 
               variant="outline" 
               className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=drive_link', '_blank')}
+              onClick={() => window.open('https://drive.google.com/file/d/13LxuugUAscR99bMrylvK-S1Ry-oSe1aM/view?usp=drivesdk', '_blank')}
             >
               <FileText className="h-4 w-4 mr-2 text-[#9C1E1E]" />
               Ver Mídia Kit
