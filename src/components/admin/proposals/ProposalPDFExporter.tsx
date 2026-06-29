@@ -1142,7 +1142,7 @@ export class ProposalPDFExporter {
       },
       { 
         label: 'Ver Midia Kit Completo', 
-        url: 'https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=drive_link'
+        url: 'https://drive.google.com/file/d/13LxuugUAscR99bMrylvK-S1Ry-oSe1aM/view?usp=drivesdk'
       },
       { 
         label: 'Visitar Nosso Site', 
