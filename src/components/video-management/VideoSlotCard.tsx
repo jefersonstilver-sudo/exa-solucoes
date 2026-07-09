@@ -312,17 +312,13 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                           
                           if (slot.id && onSetBaseVideo) {
                             setSettingBase(true);
-                            // Libera o botão apenas após 5s para dar tempo do backend
-                            // processar a fila AWS (troca de master) e evitar cliques
-                            // repetidos que deixavam pedidos sem master.
-                            setTimeout(() => setSettingBase(false), 5000);
-
                             console.log('✅ [SLOT_CARD] Chamando onSetBaseVideo...');
                             videoLogger.logUserClick('set_base_video_calling', 'Chamando callback onSetBaseVideo', {
                               slotId: slot.id
                             });
                             try {
-                              onSetBaseVideo(slot.id);
+                              // Aguarda de verdade — inclui polling real da fila AWS
+                              await onSetBaseVideo(slot.id);
                               videoLogger.logUserClick('set_base_video_callback_called', 'Callback executado', {
                                 slotId: slot.id
                               });
@@ -333,6 +329,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                                 error: error.message,
                                 stack: error.stack
                               });
+                            } finally {
+                              setSettingBase(false);
                             }
                           } else {
                             const errorData = {
