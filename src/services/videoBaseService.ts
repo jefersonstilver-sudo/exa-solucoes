@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { videoLogger } from "./logger/VideoActionLogger";
+import { pollAwsTasks } from "@/lib/awsTaskPolling";
 
 /* -------------------------------------------------------------------------- */
 /* Types & Interfaces                                                          */
@@ -11,6 +12,12 @@ export type SetBaseVideoResult = {
   pedido_video_id?: string | null;
   video_id?: string | null;
   message: string;
+  aws?: {
+    task_ids: string[];
+    completed: string[];
+    failed: string[];
+    pending: string[];
+  };
 };
 
 type PedidoVideosRow = {
