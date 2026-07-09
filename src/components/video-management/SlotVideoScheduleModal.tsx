@@ -231,24 +231,46 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
       }
 
       // Enviar para AWS após salvar com sucesso (só se tiver orderId)
+      // Aguarda o polling real da fila (task_ids) antes de fechar / recarregar.
+      let awsFailed = false;
       if (orderId) {
-        console.log('📡 [SCHEDULE_MODAL] Enviando programação AWS...');
+        console.log('📡 [SCHEDULE_MODAL] Enviando programação AWS e aguardando fila...');
         try {
-          await sendWebhookAfterScheduleSave(orderId, videoName, videoId, scheduleRules.length === 0);
-          console.log('✅ [SCHEDULE_MODAL] Programação AWS enviada');
+          const webhookResult = await sendWebhookAfterScheduleSave(
+            orderId,
+            videoName,
+            videoId,
+            scheduleRules.length === 0,
+          );
+          console.log('✅ [SCHEDULE_MODAL] Resultado AWS:', webhookResult);
+          if (!webhookResult.success) {
+            awsFailed = true;
+            const failedCount = webhookResult.poll?.failed.length ?? 0;
+            const pendingCount = webhookResult.poll?.pending.length ?? 0;
+            toast.error(
+              `AWS não confirmou a programação (${failedCount} falha(s), ${pendingCount} pendente(s)). Tente novamente.`,
+              { duration: 8000 },
+            );
+          }
         } catch (webhookError) {
-          console.error('❌ [SCHEDULE_MODAL] Erro no envio AWS (não afeta o save):', webhookError);
+          awsFailed = true;
+          console.error('❌ [SCHEDULE_MODAL] Erro no envio AWS:', webhookError);
+          toast.error('Falha ao aplicar programação na AWS. Tente novamente.');
         }
       }
+
+      // Se AWS falhou, deixa o modal aberto pro usuário reagir (retry manual)
+      if (awsFailed) {
+        return;
+      }
+
       onClose();
 
-      // Aguarda 5s antes do reload para dar tempo do backend AWS processar a
-      // fila de programação (task_id → completed) e evitar reload prematuro
-      // que fazia o pedido ficar sem programação aplicada.
+      // Reload após confirmação real da fila
       setTimeout(() => {
-        console.log('🔄 [SCHEDULE_MODAL] Forçando refresh da página após save (5s p/ fila AWS)');
+        console.log('🔄 [SCHEDULE_MODAL] Refresh após confirmação AWS');
         window.location.reload();
-      }, 5000);
+      }, 500);
     } catch (error: any) {
       console.error('❌ [SCHEDULE_MODAL] Erro ao salvar:', error);
       console.error('❌ [SCHEDULE_MODAL] Stack:', error?.stack);
