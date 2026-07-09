@@ -81,6 +81,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const [showQRView, setShowQRView] = React.useState(false);
+  const [settingBase, setSettingBase] = React.useState(false);
   const {
     forceCleanupSlot
   } = useForceCleanup();
