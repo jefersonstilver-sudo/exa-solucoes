@@ -52,12 +52,12 @@ export async function pollAwsTasks(
     if (pendingIds.length === 0) break;
 
     try {
-      const { data, error } = await supabase.functions.invoke('check-aws-task-status', {
-        body: { task_ids: pendingIds },
+      const { data, error } = await supabase.functions.invoke('update-video-master-aws', {
+        body: { action: 'check_status', task_ids: pendingIds },
       });
 
       if (error) {
-        console.warn('[AWS_POLL] erro no check-aws-task-status, retry em', intervalMs, error);
+        console.warn('[AWS_POLL] erro no check_status, retry em', intervalMs, error);
       } else {
         const list: AwsTaskStatusResult[] = (data as any)?.statuses || [];
         options.onTick?.(list);
