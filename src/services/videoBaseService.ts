@@ -81,9 +81,11 @@ const notifyExternalAPI = async (pedidoId: string, activeVideoId: string, previo
     
     videoLogger.log("info", "NOTIFY_API_START", "Iniciando sincronização AWS", { pedidoId, activeVideoId, previousVideoId });
 
-    const { data, error } = await supabase.functions.invoke('sync-video-status-to-aws', {
-      body: { pedidoId, activeVideoId, previousVideoId }
-    });
+    // sync-video-status-to-aws foi descontinuada (rota PATCH /ativo/batch removida na AWS).
+    // Mantido no-op local para preservar o fluxo — a sincronização real agora é feita
+    // via update-video-master-aws / update-video-schedule-aws com polling de task_id.
+    const data = { success: true, skipped: true, reason: 'PATCH /ativo/batch descontinuado' };
+    const error: any = null;
 
     console.log('📥 [NOTIFY_API] Resposta AWS sync:', { data, error });
 
