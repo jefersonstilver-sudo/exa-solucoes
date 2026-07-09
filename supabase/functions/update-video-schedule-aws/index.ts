@@ -123,6 +123,7 @@ serve(async (req) => {
 
     // 4. Enviar para todos os prédios
     const results: any[] = [];
+    const task_ids: string[] = [];
     for (const buildingUuid of lista) {
       const clientId = buildingUuid.replace(/-/g, '').substring(0, 4);
       const endpoint = `${EXTERNAL_API_BASE}/programacao/${clientId}/${encodeURIComponent(titulo)}`;
@@ -138,15 +139,21 @@ serve(async (req) => {
         });
         clearTimeout(timer);
         const text = await resp.text();
-        console.log(`📥 [SCHEDULE_AWS] ${clientId} -> ${resp.status} ${text.substring(0, 200)}`);
-        results.push({ clientId, status: resp.status, ok: resp.ok, body: text.substring(0, 200) });
+        let task_id: string | null = null;
+        try {
+          const j = JSON.parse(text);
+          task_id = j?.task_id || j?.taskId || j?.id || null;
+        } catch { /* not json */ }
+        if (task_id) task_ids.push(task_id);
+        console.log(`📥 [SCHEDULE_AWS] ${clientId} -> ${resp.status} task_id=${task_id || 'n/a'} ${text.substring(0, 200)}`);
+        results.push({ clientId, status: resp.status, ok: resp.ok, task_id, body: text.substring(0, 200) });
       } catch (err: any) {
         console.error(`❌ [SCHEDULE_AWS] erro em ${clientId}:`, err?.message);
         results.push({ clientId, ok: false, error: err?.message });
       }
     }
 
-    return new Response(JSON.stringify({ success: true, titulo, results }), {
+    return new Response(JSON.stringify({ success: true, titulo, task_ids, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

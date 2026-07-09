@@ -12,18 +12,68 @@ function stripExt(s: string | null | undefined) {
   return (s || '').replace(/\.[^/.]+$/, '');
 }
 
+function extractTaskId(raw: string): string | null {
+  if (!raw) return null;
+  try {
+    const j = JSON.parse(raw);
+    return j?.task_id || j?.taskId || j?.id || null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const payload = await req.json().catch(() => ({}));
+
+    // ---- MODO PROXY: consultar status de tasks da fila AWS ----
+    // (o front está em HTTPS e não pode chamar http://18.228.252.149:8000 direto)
+    if (payload?.action === 'check_status') {
+      const task_ids: string[] = Array.isArray(payload.task_ids) ? payload.task_ids : [];
+      if (task_ids.length === 0) {
+        return new Response(JSON.stringify({ statuses: [] }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const statuses = await Promise.all(
+        task_ids.map(async (task_id: string) => {
+          try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 8000);
+            const resp = await fetch(
+              `${EXTERNAL_API_BASE}/status/${encodeURIComponent(task_id)}`,
+              { method: 'GET', signal: ctrl.signal },
+            );
+            clearTimeout(timer);
+            const text = await resp.text();
+            let status = 'unknown';
+            try {
+              const j = JSON.parse(text);
+              const s = String(j?.status || '').toLowerCase();
+              if (['queued', 'processing', 'completed', 'failed'].includes(s)) status = s;
+            } catch { /* keep unknown */ }
+            return { task_id, http_status: resp.status, status };
+          } catch (err: any) {
+            return { task_id, status: 'unknown', error: err?.message };
+          }
+        }),
+      );
+      return new Response(JSON.stringify({ statuses }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ---- MODO PADRÃO: PATCH /master em cada prédio ----
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { pedido_id, ativar_titulo, desativar_titulo } = await req.json();
+    const { pedido_id, ativar_titulo, desativar_titulo } = payload;
     if (!pedido_id || !ativar_titulo) {
       return new Response(
         JSON.stringify({ error: 'pedido_id e ativar_titulo são obrigatórios' }),
@@ -50,6 +100,7 @@ serve(async (req) => {
     }
 
     const results: any[] = [];
+    const task_ids: string[] = [];
     for (const buildingUuid of lista) {
       const clientId = buildingUuid.replace(/-/g, '').substring(0, 4);
       const endpoint = `${EXTERNAL_API_BASE}/master/${clientId}`;
@@ -71,15 +122,17 @@ serve(async (req) => {
         });
         clearTimeout(timer);
         const text = await resp.text();
-        console.log(`📥 [MASTER_AWS] ${clientId} -> ${resp.status} ${text.substring(0, 200)}`);
-        results.push({ clientId, status: resp.status, ok: resp.ok, body: text.substring(0, 200) });
+        const task_id = extractTaskId(text);
+        if (task_id) task_ids.push(task_id);
+        console.log(`📥 [MASTER_AWS] ${clientId} -> ${resp.status} task_id=${task_id || 'n/a'} ${text.substring(0, 200)}`);
+        results.push({ clientId, status: resp.status, ok: resp.ok, task_id, body: text.substring(0, 200) });
       } catch (err: any) {
         console.error(`❌ [MASTER_AWS] erro em ${clientId}:`, err?.message);
         results.push({ clientId, ok: false, error: err?.message });
       }
     }
 
-    return new Response(JSON.stringify({ success: true, ativar, desativar, results }), {
+    return new Response(JSON.stringify({ success: true, ativar, desativar, task_ids, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

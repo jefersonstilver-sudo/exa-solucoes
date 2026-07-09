@@ -1,4 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
+import { pollAwsTasks, type PollAwsTasksResult } from '@/lib/awsTaskPolling';
+
+export interface ScheduleWebhookResult {
+  success: boolean;
+  skipped?: boolean;
+  task_ids: string[];
+  poll?: PollAwsTasksResult;
+  error?: string;
+}
 
 interface ScheduleRule {
   days_of_week: number[];
@@ -256,20 +265,26 @@ export async function sendWebhookAfterScheduleSave(
   videoName: string,
   videoId?: string,
   clear: boolean = false
-): Promise<void> {
+): Promise<ScheduleWebhookResult> {
   try {
     if (!videoId) {
       console.warn('⚠️ [WEBHOOK] sendWebhookAfterScheduleSave chamado sem videoId, pulando envio AWS');
-      return;
+      return { success: true, skipped: true, task_ids: [] };
     }
     console.log(`🎯 [WEBHOOK] Enviando programação AWS do vídeo "${videoName}" (clear=${clear})`);
     const { data, error } = await supabase.functions.invoke('update-video-schedule-aws', {
       body: { pedido_id: orderId, video_id: videoId, clear }
     });
     if (error) throw error;
-    console.log(`✅ [WEBHOOK] Programação AWS enviada para "${videoName}":`, data);
-  } catch (error) {
+    const task_ids: string[] = (data as any)?.task_ids || [];
+    console.log(`✅ [WEBHOOK] Programação AWS enfileirada para "${videoName}", task_ids:`, task_ids);
+
+    // Polling real da fila AWS — só volta quando todas terminarem
+    const poll = await pollAwsTasks(task_ids);
+    console.log(`🏁 [WEBHOOK] Polling AWS terminou para "${videoName}":`, poll);
+    return { success: poll.all_ok, task_ids, poll };
+  } catch (error: any) {
     console.error(`❌ [WEBHOOK] Erro ao enviar programação AWS para "${videoName}":`, error);
-    // Não re-throw para não bloquear o fluxo de salvamento
+    return { success: false, task_ids: [], error: error?.message || 'Erro desconhecido' };
   }
 }
