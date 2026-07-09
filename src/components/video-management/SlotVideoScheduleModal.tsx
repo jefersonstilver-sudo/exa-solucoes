@@ -242,11 +242,13 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
       }
       onClose();
 
-      // Forçar refresh da página após salvar para garantir que as mudanças sejam refletidas
+      // Aguarda 5s antes do reload para dar tempo do backend AWS processar a
+      // fila de programação (task_id → completed) e evitar reload prematuro
+      // que fazia o pedido ficar sem programação aplicada.
       setTimeout(() => {
-        console.log('🔄 [SCHEDULE_MODAL] Forçando refresh da página após save');
+        console.log('🔄 [SCHEDULE_MODAL] Forçando refresh da página após save (5s p/ fila AWS)');
         window.location.reload();
-      }, 1000);
+      }, 5000);
     } catch (error: any) {
       console.error('❌ [SCHEDULE_MODAL] Erro ao salvar:', error);
       console.error('❌ [SCHEDULE_MODAL] Stack:', error?.stack);
