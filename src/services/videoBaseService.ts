@@ -397,7 +397,7 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         desativar_master: desativarTitulo,
       });
 
-      const { error: masterError } = await supabase.functions.invoke('update-video-master-aws', {
+      const { data: masterData, error: masterError } = await supabase.functions.invoke('update-video-master-aws', {
         body: {
           pedido_id: currentSlot.pedido_id,
           ativar_titulo: ativarTitulo,
@@ -410,12 +410,16 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         throw masterError;
       }
 
-      console.log('✅ [SET_BASE_VIDEO] Master trocado com sucesso na API externa');
+      console.log('✅ [SET_BASE_VIDEO] Master trocado, task_ids:', (masterData as any)?.task_ids);
+
+      const collectedTaskIds: string[] = [
+        ...(((masterData as any)?.task_ids as string[]) || []),
+      ];
 
       // 🧹 Limpar programação do novo master na API externa (master não tem programação)
       try {
         console.log('🧹 [SET_BASE_VIDEO] Limpando programação do novo master na API externa...');
-        const { error: clearSchedErr } = await supabase.functions.invoke('update-video-schedule-aws', {
+        const { data: schedData, error: clearSchedErr } = await supabase.functions.invoke('update-video-schedule-aws', {
           body: {
             pedido_id: currentSlot.pedido_id,
             video_id: currentSlot.video_id,
@@ -425,11 +429,34 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         if (clearSchedErr) {
           console.warn('⚠️ [SET_BASE_VIDEO] Falha ao limpar programação externa:', clearSchedErr);
         } else {
-          console.log('✅ [SET_BASE_VIDEO] Programação externa limpa');
+          console.log('✅ [SET_BASE_VIDEO] Programação externa limpa, task_ids:', (schedData as any)?.task_ids);
+          const ids = ((schedData as any)?.task_ids as string[]) || [];
+          collectedTaskIds.push(...ids);
         }
       } catch (clearErr: any) {
         console.warn('⚠️ [SET_BASE_VIDEO] Erro ao limpar programação externa:', clearErr?.message);
       }
+
+      // 🕒 Polling real da fila AWS — só volta quando todas as tasks terminarem
+      console.log(`⏳ [SET_BASE_VIDEO] Polling ${collectedTaskIds.length} task(s) AWS...`);
+      const pollResult = await pollAwsTasks(collectedTaskIds);
+      console.log('🏁 [SET_BASE_VIDEO] Polling terminou:', pollResult);
+
+      return {
+        success: pollResult.all_ok,
+        timestamp: now(),
+        message: pollResult.all_ok
+          ? (result.message || 'Vídeo definido como principal')
+          : `Falha na AWS (${pollResult.failed.length} falha(s), ${pollResult.pending.length} pendente(s))`,
+        pedido_video_id: result.new_base_id,
+        video_id: null,
+        aws: {
+          task_ids: collectedTaskIds,
+          completed: pollResult.completed,
+          failed: pollResult.failed,
+          pending: pollResult.pending,
+        },
+      };
     } catch (err: any) {
       console.error('❌ [SET_BASE_VIDEO] ERRO ao chamar PATCH /master:', err);
       const { toast } = await import("@/hooks/use-toast");
