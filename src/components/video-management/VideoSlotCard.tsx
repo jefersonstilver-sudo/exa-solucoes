@@ -284,7 +284,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                       <Button 
                         variant="outline" 
                         size="sm" 
+                        disabled={settingBase}
                         onClick={async () => {
+                          if (settingBase) return;
                           console.log('🔄 [BASE_VIDEO] Definindo novo vídeo base:', {
                             oldBaseVideoId: slot.id,
                             newBaseVideoId: slot.id,
@@ -309,6 +311,12 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                           videoLogger.logUserClick('set_base_video_button', 'Clique no botão Definir como Principal', clickData);
                           
                           if (slot.id && onSetBaseVideo) {
+                            setSettingBase(true);
+                            // Libera o botão apenas após 5s para dar tempo do backend
+                            // processar a fila AWS (troca de master) e evitar cliques
+                            // repetidos que deixavam pedidos sem master.
+                            setTimeout(() => setSettingBase(false), 5000);
+
                             console.log('✅ [SLOT_CARD] Chamando onSetBaseVideo...');
                             videoLogger.logUserClick('set_base_video_calling', 'Chamando callback onSetBaseVideo', {
                               slotId: slot.id
@@ -335,14 +343,23 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                             videoLogger.logUserClick('set_base_video_no_callback', 'Callback não disponível', errorData);
                           }
                         }} 
-                        className="text-xs sm:text-xs px-2.5 sm:px-2 py-1 h-9 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg" 
-                        title={hasActiveSchedule ? "Os agendamentos serão removidos" : "Clique para definir como vídeo principal"}
+                        className="text-xs sm:text-xs px-2.5 sm:px-2 py-1 h-9 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg disabled:opacity-60" 
+                        title={settingBase ? "Processando na AWS..." : (hasActiveSchedule ? "Os agendamentos serão removidos" : "Clique para definir como vídeo principal")}
                       >
-                        <Star className="h-3 w-3 mr-1" />
-                        Definir Principal
+                        {settingBase ? (
+                          <>
+                            <span className="inline-block h-3 w-3 mr-1 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            Processando...
+                          </>
+                        ) : (
+                          <>
+                            <Star className="h-3 w-3 mr-1" />
+                            Definir Principal
+                          </>
+                        )}
                       </Button>
                     </TooltipTrigger>
-                    {hasActiveSchedule && <TooltipContent>
+                    {hasActiveSchedule && !settingBase && <TooltipContent>
                         <p className="font-medium">⚠️ Atenção</p>
                         <p className="text-xs mt-1">Os agendamentos deste vídeo serão removidos ao torná-lo principal</p>
                       </TooltipContent>}
