@@ -9,6 +9,38 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Retry transitório para PGRST002 (cache de schema do PostgREST recarregando)
+// e outros 5xx/erros de rede momentâneos. Não altera comportamento em sucesso.
+const RETRY_STATUS = new Set([502, 503, 504]);
+const MAX_RETRIES = 3;
+
+const resilientFetch: typeof fetch = async (input, init) => {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(input as any, init);
+
+      if (!RETRY_STATUS.has(response.status) || attempt === MAX_RETRIES) {
+        return response;
+      }
+
+      console.warn(
+        `⏳ [SUPABASE] Resposta ${response.status} (API temporariamente indisponível). Tentativa ${attempt + 1}/${MAX_RETRIES}...`
+      );
+    } catch (err) {
+      lastError = err;
+      if (attempt === MAX_RETRIES) throw err;
+      console.warn(`⏳ [SUPABASE] Falha de rede. Tentativa ${attempt + 1}/${MAX_RETRIES}...`, err);
+    }
+
+    // Backoff exponencial: 800ms, 1.6s, 3.2s
+    await new Promise((resolve) => setTimeout(resolve, 800 * Math.pow(2, attempt)));
+  }
+
+  throw lastError ?? new Error('Falha ao contatar o Supabase');
+};
+
 export const supabase = createClient<Database>(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
@@ -21,6 +53,7 @@ export const supabase = createClient<Database>(
       flowType: 'implicit'
     },
     global: {
+      fetch: resilientFetch,
       headers: {
         'X-Client-Info': 'supabase-js@2.x'
       }
