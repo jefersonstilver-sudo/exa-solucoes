@@ -77,6 +77,12 @@ serve(async (req) => {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase configuration missing");
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     db = supabase;
+    const bearer = req.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
+    if (!bearer) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    const { data: { user }, error: authError } = await supabase.auth.getUser(bearer);
+    if (authError || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    const { data: role, error: roleError } = await supabase.from('user_roles').select('role').eq('user_id', user.id).in('role', ['super_admin', 'admin_financeiro', 'admin']).limit(1);
+    if (roleError || !role?.length) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
     const asaasBaseUrl = "https://api.asaas.com/v3";
 
     let startDate: string | null = null;

@@ -14,6 +14,12 @@ serve(async (req) => {
   const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!key || !url || !service) return respond({ error: 'Service unavailable' }, 503);
   const db = createClient(url, service);
+  const bearer = req.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
+  if (!bearer) return respond({ error: 'Unauthorized' }, 401);
+  const { data: { user }, error: authError } = await db.auth.getUser(bearer);
+  if (authError || !user) return respond({ error: 'Unauthorized' }, 401);
+  const { data: role, error: roleError } = await db.from('user_roles').select('role').eq('user_id', user.id).in('role', ['super_admin', 'admin_financeiro', 'admin']).limit(1);
+  if (roleError || !role?.length) return respond({ error: 'Forbidden' }, 403);
   let runId: string | undefined;
   let pages = 0, items = 0, created = 0, updated = 0;
   try {
