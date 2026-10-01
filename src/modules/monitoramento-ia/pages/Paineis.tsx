@@ -12,6 +12,7 @@ import { FullscreenMonitor } from '../components/FullscreenMonitor';
 import { ViewToggle } from '../components/ViewToggle';
 import { OfflineAlert } from '../components/OfflineAlert';
 import { ProviderStatsCards } from '../components/ProviderStatsCards';
+import { InternetAccountsSection } from '@/components/admin/internet-accounts/InternetAccountsSection';
 import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
 import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
@@ -417,6 +418,8 @@ export const PaineisPage = () => {
 
       {/* Indicadores de Operadora */}
       <ProviderStatsCards />
+
+      {import.meta.env.VITE_ENABLE_INTERNET_ACCOUNTS !== 'false' && <InternetAccountsSection />}
 
       {/* Barra de ações - Mobile otimizado */}
       <div className="flex flex-col gap-3 lg:gap-4">

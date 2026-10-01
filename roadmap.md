@@ -1,4 +1,6 @@
 # Financeiro — etapas 0 e 1
+- [x] Contas de Internet, fase 1: schema/RLS, bucket privado, funções administrativas e tela isolada com execução vazia real.
+- [ ] Contas de Internet, fase 2: worker externo, cofre e piloto LIGGA somente leitura — depende de infraestrutura externa aprovada; não solicitar credenciais na fase 1.
 - [x] Pausar agendamento mensal de parcelas e gatilhos de geração/espelhamento financeiro, sem alterar obrigações existentes.
 - [x] Retirar da configuração os agendamentos automáticos de cancelamento de pedidos, cobrança de fidelidade e lembretes PIX; também suspender o verificador automático legado no frontend e ocultar a geração manual de fluxo de despesas.
 - [ ] Confirmar no painel de agendamentos hospedados a desativação efetiva dos três agendamentos definidos apenas na configuração; removê-los do arquivo não comprova cancelamento de jobs remotos. O banco pg_cron contém somente o agendamento mensal de parcelas (pausado) entre os jobs financeiros remanescentes.
