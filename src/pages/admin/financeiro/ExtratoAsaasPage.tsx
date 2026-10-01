@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { formatCurrency } from '@/utils/format';
 import { toast } from 'sonner';
+import ExtratoAsaasDetailSheet from './ExtratoAsaasDetailSheet';
 
 type Movement = { id: string; data: string; tipo: string; descricao: string | null; valor: number; saldo: number; payment_id: string | null; transfer_id: string | null; bill_payment_id: string | null; correspondencia_status: string; synced_at: string };
 type Run = { state: string; finished_at: string | null; started_at: string; items_count: number; errors: unknown };
@@ -34,6 +35,7 @@ export default function ExtratoAsaasPage() {
   const [run, setRun] = useState<Run | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [closing, setClosing] = useState<number | null>(null);
+  const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -122,7 +124,7 @@ export default function ExtratoAsaasPage() {
           <p className="text-xs text-muted-foreground">{total} movimentos encontrados · Correspondência por ID oficial, sem baixa automática</p>
           <div className="overflow-x-auto border rounded-md">
             <table className="w-full min-w-[780px] text-sm"><thead className="bg-muted/50 text-muted-foreground"><tr><th className="p-3 text-left">Data</th><th className="p-3 text-left">Movimento</th><th className="p-3 text-left">Conferência</th><th className="p-3 text-right">Valor</th><th className="p-3 text-right">Saldo</th></tr></thead>
-              <tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="p-3 whitespace-nowrap">{dateLabel(row.data)}</td><td className="p-3"><div className="flex items-center gap-2 font-medium">{row.valor >= 0 ? <ArrowDownLeft className="h-4 w-4 text-primary" /> : <ArrowUpRight className="h-4 w-4 text-destructive" />}{row.descricao || row.tipo}</div><div className="text-xs text-muted-foreground">{row.tipo} · {row.id}</div></td><td className="p-3"><Badge variant={row.correspondencia_status === 'correspondente' ? 'secondary' : 'outline'}>{row.correspondencia_status === 'correspondente' ? 'Correspondente' : row.correspondencia_status === 'ambiguo' ? 'Ambíguo' : 'Sem correspondência'}</Badge></td><td className={`p-3 text-right font-medium tabular-nums ${row.valor < 0 ? 'text-destructive' : 'text-primary'}`}>{row.valor > 0 ? '+' : ''}{formatCurrency(Number(row.valor))}</td><td className="p-3 text-right tabular-nums">{formatCurrency(Number(row.saldo))}</td></tr>)}</tbody>
+              <tbody>{rows.map(row => <tr key={row.id} className="border-t cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-primary" tabIndex={0} role="button" aria-label={`Detalhes do movimento ${row.descricao || row.tipo}, ${dateLabel(row.data)}`} onClick={() => setSelectedMovement(row)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMovement(row); } }}><td className="p-3 whitespace-nowrap">{dateLabel(row.data)}</td><td className="p-3"><div className="flex items-center gap-2 font-medium">{row.valor >= 0 ? <ArrowDownLeft className="h-4 w-4 text-primary" /> : <ArrowUpRight className="h-4 w-4 text-destructive" />}{row.descricao || row.tipo}</div><div className="text-xs text-muted-foreground">{row.tipo} · {row.id}</div></td><td className="p-3"><Badge variant={row.correspondencia_status === 'correspondente' ? 'secondary' : 'outline'}>{row.correspondencia_status === 'correspondente' ? 'Correspondente' : row.correspondencia_status === 'ambiguo' ? 'Ambíguo' : 'Sem correspondência'}</Badge></td><td className={`p-3 text-right font-medium tabular-nums ${row.valor < 0 ? 'text-destructive' : 'text-primary'}`}>{row.valor > 0 ? '+' : ''}{formatCurrency(Number(row.valor))}</td><td className="p-3 text-right tabular-nums">{formatCurrency(Number(row.saldo))}</td></tr>)}</tbody>
             </table>
             {!loading && !rows.length && <p className="p-10 text-center text-sm text-muted-foreground">{run?.state === 'failed' ? 'Não foi possível completar a leitura do Asaas.' : 'Nenhum movimento encontrado.'}</p>}
             {loading && <p className="p-10 text-center text-sm text-muted-foreground">Carregando extrato...</p>}
@@ -130,6 +132,7 @@ export default function ExtratoAsaasPage() {
           <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Página {page + 1} de {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span><div className="flex gap-2"><Button variant="outline" size="icon" aria-label="Página anterior" disabled={page === 0 || loading} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button><Button variant="outline" size="icon" aria-label="Próxima página" disabled={(page + 1) * PAGE_SIZE >= total || loading} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button></div></div>
         </section>
       </div>
+      <ExtratoAsaasDetailSheet movement={selectedMovement} onClose={() => setSelectedMovement(null)} />
     </main>
   );
 }

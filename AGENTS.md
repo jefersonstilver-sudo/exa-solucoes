@@ -5,3 +5,4 @@ Cache only successful public logo responses for at most 24 hours and time-bound 
 For Asaas ingestion, authenticate events and persist a unique provider/event ID before acknowledging; do not credit orders by name or amount, because those matches can credit the wrong client.
 Keep financial generation cron jobs and automatic finance-writing triggers disabled until the approved replacement is in place; preserve existing obligations and use only authorized manual Asaas mirror synchronization.
 Mirror Asaas bank movements separately from receivables and outflows using financialTransactions IDs; reconcile only by provider IDs and never trigger financial settlement from a statement line.
+Read Asaas statement details through an admin-authorized edge function keyed by stored movement ID; this keeps provider credentials and related-resource resolution off the browser.
