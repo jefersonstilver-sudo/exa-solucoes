@@ -8279,6 +8279,706 @@ export type Database = {
         }
         Relationships: []
       }
+      internet_audit_events: {
+        Row: {
+          account_id: string | null
+          actor_id: string | null
+          actor_type: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          event_type: string
+          id: string
+          run_id: string | null
+          safe_details: Json
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          actor_id?: string | null
+          actor_type: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          event_type: string
+          id?: string
+          run_id?: string | null
+          safe_details?: Json
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_type?: string
+          id?: string
+          run_id?: string | null
+          safe_details?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_audit_events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "internet_provider_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_audit_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_collection_jobs: {
+        Row: {
+          account_id: string
+          attempt: number
+          counts: Json
+          created_at: string
+          error_code: string | null
+          heartbeat_at: string | null
+          id: string
+          lease_until: string | null
+          phase_changed_at: string
+          phase_sequence: number
+          run_id: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          attempt?: number
+          counts?: Json
+          created_at?: string
+          error_code?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          lease_until?: string | null
+          phase_changed_at?: string
+          phase_sequence?: number
+          run_id: string
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          attempt?: number
+          counts?: Json
+          created_at?: string
+          error_code?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          lease_until?: string | null
+          phase_changed_at?: string
+          phase_sequence?: number
+          run_id?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_collection_jobs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "internet_provider_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_collection_jobs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_collection_runs: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          expected_accounts: number
+          finished_at: string | null
+          id: string
+          provider_id: string | null
+          request_key: string
+          requested_by: string
+          scope: string
+          started_at: string | null
+          state: string
+          summary: Json
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          expected_accounts?: number
+          finished_at?: string | null
+          id?: string
+          provider_id?: string | null
+          request_key: string
+          requested_by: string
+          scope: string
+          started_at?: string | null
+          state?: string
+          summary?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          expected_accounts?: number
+          finished_at?: string | null
+          id?: string
+          provider_id?: string | null
+          request_key?: string
+          requested_by?: string
+          scope?: string
+          started_at?: string | null
+          state?: string
+          summary?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_collection_runs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "internet_provider_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_collection_runs_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "internet_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_contract_buildings: {
+        Row: {
+          building_id: string
+          contract_id: string
+          created_at: string
+          evidence_type: string
+          id: string
+          state: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          building_id: string
+          contract_id: string
+          created_at?: string
+          evidence_type: string
+          id?: string
+          state?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          building_id?: string
+          contract_id?: string
+          created_at?: string
+          evidence_type?: string
+          id?: string
+          state?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_contract_buildings_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_contract_buildings_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "internet_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_contracts: {
+        Row: {
+          access_id: string | null
+          account_id: string
+          billing_cycle: string | null
+          created_at: string
+          due_day: number | null
+          external_contract_id: string
+          id: string
+          installation_address: string | null
+          last_verified_run_id: string | null
+          portal_contract_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_id?: string | null
+          account_id: string
+          billing_cycle?: string | null
+          created_at?: string
+          due_day?: number | null
+          external_contract_id: string
+          id?: string
+          installation_address?: string | null
+          last_verified_run_id?: string | null
+          portal_contract_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_id?: string | null
+          account_id?: string
+          billing_cycle?: string | null
+          created_at?: string
+          due_day?: number | null
+          external_contract_id?: string
+          id?: string
+          installation_address?: string | null
+          last_verified_run_id?: string | null
+          portal_contract_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_contracts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "internet_provider_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_contracts_last_verified_run_id_fkey"
+            columns: ["last_verified_run_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          id: string
+          invoice_id: string
+          official_document_id: string | null
+          run_id: string
+          sha256: string
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          id?: string
+          invoice_id: string
+          official_document_id?: string | null
+          run_id: string
+          sha256: string
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          id?: string
+          invoice_id?: string
+          official_document_id?: string | null
+          run_id?: string
+          sha256?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_documents_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "internet_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_documents_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_exceptions: {
+        Row: {
+          account_id: string | null
+          code: string
+          contract_id: string | null
+          created_at: string
+          id: string
+          invoice_id: string | null
+          job_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          run_id: string
+          safe_message: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          code: string
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          job_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          run_id: string
+          safe_message: string
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          code?: string
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          job_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          run_id?: string
+          safe_message?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_exceptions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "internet_provider_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_exceptions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "internet_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_exceptions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "internet_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_exceptions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_exceptions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_invoice_observations: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string | null
+          evidence_hash: string
+          id: string
+          invoice_id: string
+          job_id: string
+          observed_at: string
+          portal_status: string
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_date?: string | null
+          evidence_hash: string
+          id?: string
+          invoice_id: string
+          job_id: string
+          observed_at?: string
+          portal_status: string
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          evidence_hash?: string
+          id?: string
+          invoice_id?: string
+          job_id?: string
+          observed_at?: string
+          portal_status?: string
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_invoice_observations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "internet_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_invoice_observations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_invoice_observations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_invoice_payments: {
+        Row: {
+          bank_movement_id: string | null
+          bank_provider: string | null
+          bank_status: string
+          created_at: string
+          id: string
+          invoice_id: string
+          paid_at: string | null
+          portal_payment_id: string | null
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          bank_movement_id?: string | null
+          bank_provider?: string | null
+          bank_status?: string
+          created_at?: string
+          id?: string
+          invoice_id: string
+          paid_at?: string | null
+          portal_payment_id?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          bank_movement_id?: string | null
+          bank_provider?: string | null
+          bank_status?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          paid_at?: string | null
+          portal_payment_id?: string | null
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "internet_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_invoices: {
+        Row: {
+          amount: number
+          bank_status: string
+          competence: string | null
+          contract_id: string
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string | null
+          last_verified_run_id: string | null
+          official_invoice_id: string
+          portal_observed_at: string | null
+          portal_status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_status?: string
+          competence?: string | null
+          contract_id: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          last_verified_run_id?: string | null
+          official_invoice_id: string
+          portal_observed_at?: string | null
+          portal_status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_status?: string
+          competence?: string | null
+          contract_id?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          last_verified_run_id?: string | null
+          official_invoice_id?: string
+          portal_observed_at?: string | null
+          portal_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_invoices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "internet_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internet_invoices_last_verified_run_id_fkey"
+            columns: ["last_verified_run_id"]
+            isOneToOne: false
+            referencedRelation: "internet_collection_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_provider_accounts: {
+        Row: {
+          access_state: string
+          account_label: string
+          created_at: string
+          credential_ref: string | null
+          enabled: boolean
+          external_account_id: string | null
+          holder_document: string | null
+          holder_name: string
+          id: string
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_state?: string
+          account_label: string
+          created_at?: string
+          credential_ref?: string | null
+          enabled?: boolean
+          external_account_id?: string | null
+          holder_document?: string | null
+          holder_name: string
+          id?: string
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_state?: string
+          account_label?: string
+          created_at?: string
+          credential_ref?: string | null
+          enabled?: boolean
+          external_account_id?: string | null
+          holder_document?: string | null
+          holder_name?: string
+          id?: string
+          provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_provider_accounts_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "internet_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internet_providers: {
+        Row: {
+          aliases: string[]
+          code: string
+          collection_mode: string
+          created_at: string
+          display_name: string
+          enabled: boolean
+          fornecedor_id: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          aliases?: string[]
+          code: string
+          collection_mode?: string
+          created_at?: string
+          display_name: string
+          enabled?: boolean
+          fornecedor_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          aliases?: string[]
+          code?: string
+          collection_mode?: string
+          created_at?: string
+          display_name?: string
+          enabled?: boolean
+          fornecedor_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internet_providers_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investimentos: {
         Row: {
           building_id: string | null
@@ -16625,6 +17325,29 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      internet_claim_job: { Args: { p_job_id: string }; Returns: boolean }
+      internet_dispatch_collection: {
+        Args: {
+          p_account_id: string
+          p_actor_id: string
+          p_provider_id: string
+          p_request_key: string
+          p_scope: string
+        }
+        Returns: string
+      }
+      internet_update_job_phase: {
+        Args: {
+          p_account_id: string
+          p_counts: Json
+          p_error_code: string
+          p_job_id: string
+          p_run_id: string
+          p_sequence: number
+          p_state: string
+        }
+        Returns: boolean
       }
       investigate_missing_transaction: {
         Args: { p_amount: number; p_email: string }

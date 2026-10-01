@@ -1,0 +1,1 @@
+ALTER TABLE public.internet_providers ADD CONSTRAINT internet_providers_fornecedor_id_fkey FOREIGN KEY (fornecedor_id) REFERENCES public.fornecedores(id);
