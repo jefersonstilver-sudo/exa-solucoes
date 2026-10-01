@@ -143,7 +143,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     );
   }
 
-  if (error || !logos.length) {
+  if (!logos.length) {
     return null; // Falha silenciosa para não quebrar a página
   }
 

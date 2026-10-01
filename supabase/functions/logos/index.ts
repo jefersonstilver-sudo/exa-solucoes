@@ -72,12 +72,16 @@ serve(async (req) => {
         const batch = (logos || []).slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(batch.map(async (logo: any) => {
           const info = extractBucketAndPath(logo.file_url);
+          // Public bucket URLs need no signed URL. Signing each logo adds
+          // another upstream request and can stall the entire public ticker.
+          if (typeof logo.file_url === 'string' && logo.file_url.includes('/storage/v1/object/public/')) {
+            return logo;
+          }
           if (!info) {
-            const cacheBustedUrl = logo.file_url + (logo.file_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
             return { 
               id: logo.id,
               name: logo.name,
-              file_url: cacheBustedUrl,
+              file_url: logo.file_url,
               link_url: logo.link_url,
               is_active: logo.is_active,
               sort_order: logo.sort_order,

@@ -44,12 +44,13 @@ export const useLogos = () => {
 
       // Usar a Edge Function para obter logos públicas
       const { data, error } = await supabase.functions.invoke('logos', {
-        method: 'GET'
+        method: 'GET',
+        signal: AbortSignal.timeout(15000)
       });
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
-        setError(previous => logos.length ? previous : 'Erro ao carregar logos');
+        setError('Erro ao carregar logos');
         return;
       }
 
@@ -69,7 +70,7 @@ export const useLogos = () => {
       }
     } catch (err) {
       console.error('❌ Unexpected error fetching logos:', err);
-      setError(previous => logos.length ? previous : 'Erro inesperado ao carregar logos');
+      setError('Erro inesperado ao carregar logos');
     } finally {
       setLoading(false);
     }
