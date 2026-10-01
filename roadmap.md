@@ -9,6 +9,6 @@
 - [x] Suspender agendamentos antigos com autenticação insegura.
 - [x] Implantar webhook autenticado após configuração do token: o endpoint responde e rejeita requisições sem token ou com token inválido; nesta etapa apenas registra eventos para reconciliação posterior e não dá baixa em pedidos.
 - [x] Validar o endpoint EXA-PAGAMENTOS-2.0 pelo lado Supabase/Lovable: função responde 405 a GET e 401 a POST vazio sem token ou com token inválido; usa `asaas-access-token` e registra por ID antes de confirmar. Nenhum evento Asaas novo consta em `webhook_logs` e a entrega real ainda não foi comprovada.
-- [ ] Confirmar após o próximo evento Asaas real que há resposta 200 e registro único em `webhook_logs`, sem dar baixa automática em obrigações; conferir a configuração externa do token e os eventos selecionados no painel Asaas.
+- [ ] Confirmar após o reenvio real no Asaas do evento `evt_05b708f961d739ea7eba7e4db318f621&1543434805` que há resposta 200 e registro único em `webhook_logs`, sem baixa automática; bloqueado até o reenvio externo. A função corrigida foi publicada e os testes locais passaram, mas não há chamada nem registro do evento após a publicação. O pagamento `pay_8mj3fhelg71jibab` ainda não consta em `transacoes_asaas`.
 - [ ] Substituir agendamentos por acionamento seguro com resultado final verificável — bloqueado por ausência de credencial de agendamento compartilhável neste ambiente; enquanto isso a sincronização depende de acionamento manual autorizado.
 - [ ] Conciliar histórico por IDs Asaas — reservado para etapa 2.
