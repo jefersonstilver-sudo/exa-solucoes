@@ -14,7 +14,7 @@
 - [ ] Conciliar histórico por IDs Asaas — reservado para etapa 2.
 
 # Espelho do extrato Asaas
-- [ ] Detalhes oficiais ao clicar em qualquer movimento do Extrato Asaas, com transferência EBANX e recebimento verificados sem alterar sincronização ou lançamentos.
+- [ ] Confirmar o clique na linha EBANX e em PAYMENT_RECEIVED com sessão administrativa no aplicativo — bloqueado: esta prévia usa Supabase externo e não oferece sessão administrativa de teste. Painel e função publicados; consultas oficiais de EBANX (HTTP 200, comprovante presente) e PAYMENT_RECEIVED (HTTP 200, cliente HTTP 200) verificadas separadamente, sem alterar lançamentos.
 - [x] Criar espelho separado com acesso administrativo, leitura integral paginada do extrato oficial e conferência por IDs oficiais; adicionar tela de extrato no financeiro.
 - [x] Comparar a API real ao arquivo enviado sem importar dados: 492 movimentos e 492 pares data/valor/saldo coincidentes, fechamento R$ 1.063,24; IDs da API (ftn_) diferem dos números no XLSX.
 - [ ] Executar leitura no aplicativo com sessão administrativa, repetir para aferir idempotência e conferir registros gravados — bloqueado: Supabase externo não fornece sessão de teste e não há usuário conectado na prévia.
