@@ -946,6 +946,69 @@ export type Database = {
         }
         Relationships: []
       }
+      asaas_extrato_movimentos: {
+        Row: {
+          bill_payment_id: string | null
+          correspondencia_id: string | null
+          correspondencia_status: string
+          correspondencia_tipo: string | null
+          created_at: string
+          data: string
+          descricao: string | null
+          external_reference: string | null
+          id: string
+          ordem_asaas: number | null
+          payment_id: string | null
+          raw_data: Json
+          saldo: number
+          synced_at: string
+          tipo: string
+          transfer_id: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          bill_payment_id?: string | null
+          correspondencia_id?: string | null
+          correspondencia_status?: string
+          correspondencia_tipo?: string | null
+          created_at?: string
+          data: string
+          descricao?: string | null
+          external_reference?: string | null
+          id: string
+          ordem_asaas?: number | null
+          payment_id?: string | null
+          raw_data: Json
+          saldo: number
+          synced_at?: string
+          tipo: string
+          transfer_id?: string | null
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          bill_payment_id?: string | null
+          correspondencia_id?: string | null
+          correspondencia_status?: string
+          correspondencia_tipo?: string | null
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          external_reference?: string | null
+          id?: string
+          ordem_asaas?: number | null
+          payment_id?: string | null
+          raw_data?: Json
+          saldo?: number
+          synced_at?: string
+          tipo?: string
+          transfer_id?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       asaas_saidas: {
         Row: {
           asaas_id: string
