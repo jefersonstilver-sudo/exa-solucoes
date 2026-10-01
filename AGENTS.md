@@ -3,3 +3,4 @@ For provider connection cards and their detailed list, restrict devices to the I
 For provider outage start times, use an open offline event newer than the device's last online observation; fall back to labeled last-online time because stale open events can remain after recovery.
 Cache only successful public logo responses for at most 24 hours and time-bound their upstream fetch; this preserves real previously loaded logos during transient Supabase outages without indefinite stale images.
 For Asaas ingestion, authenticate events and persist a unique provider/event ID before acknowledging; do not credit orders by name or amount, because those matches can credit the wrong client.
+Keep financial generation cron jobs and automatic finance-writing triggers disabled until the approved replacement is in place; preserve existing obligations and use only authorized manual Asaas mirror synchronization.

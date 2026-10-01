@@ -1,4 +1,8 @@
 # Financeiro — etapas 0 e 1
+- [x] Pausar agendamento mensal de parcelas e gatilhos de geração/espelhamento financeiro, sem alterar obrigações existentes.
+- [x] Retirar da configuração os agendamentos automáticos de cancelamento de pedidos, cobrança de fidelidade e lembretes PIX; também suspender o verificador automático legado no frontend e ocultar a geração manual de fluxo de despesas.
+- [ ] Confirmar no painel de agendamentos hospedados a desativação efetiva dos três agendamentos definidos apenas na configuração; removê-los do arquivo não comprova cancelamento de jobs remotos. O banco pg_cron contém somente o agendamento mensal de parcelas (pausado) entre os jobs financeiros remanescentes.
+- [ ] Rotas manuais e webhooks legados de pagamento ainda podem escrever status ou criar cobranças se invocados; não desativar sem decisão específica sobre pagamentos em produção. Relatórios VAR e lembretes de propostas são comunicação comercial, não processamento bancário, e continuam agendados.
 - [x] Fotografar contagens e estado técnico antes da ingestão.
 - [x] Ampliar logs, restringir acesso e preparar registro atômico por ID de evento Asaas.
 - [x] Instrumentar sincronizações de entradas e saídas com paginação completa.

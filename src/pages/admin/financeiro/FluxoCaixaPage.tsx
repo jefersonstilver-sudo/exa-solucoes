@@ -10,7 +10,7 @@ import { formatCurrency } from '@/utils/format';
 const FluxoCaixaPage: React.FC = () => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
-  const { loading, resumo, projecao30d, projecao60d, projecao90d, fetchFluxoCaixa, gerarFluxoDespesasFixas } = useFluxoCaixa();
+  const { loading, resumo, projecao30d, projecao60d, projecao90d, fetchFluxoCaixa } = useFluxoCaixa();
   const permissions = useFinanceiroPermissions();
   const [periodo, setPeriodo] = useState<'30' | '60' | '90'>('30');
 
@@ -47,14 +47,6 @@ const FluxoCaixaPage: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button 
-              onClick={gerarFluxoDespesasFixas} 
-              variant="ghost" 
-              size="sm"
-              className="text-gray-600 hover:text-gray-900 hover:bg-white/60"
-            >
-              Atualizar Despesas
-            </Button>
             <Button 
               onClick={() => fetchFluxoCaixa()} 
               disabled={loading} 

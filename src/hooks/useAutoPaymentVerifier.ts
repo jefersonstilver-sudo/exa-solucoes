@@ -43,43 +43,28 @@ export const useAutoPaymentVerifier = () => {
 
       return result;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('❌ [AUTO_VERIFIER] Erro na verificação:', error);
       const errorResult = {
         success: false,
         total_checked: 0,
         verified_count: 0,
         approved_count: 0,
-        errors: [error.message],
+        errors: [message],
         timestamp: new Date().toISOString()
       };
       setLastResult(errorResult);
-      toast.error(`Erro na verificação automática: ${error.message}`);
+      toast.error(`Erro na verificação automática: ${message}`);
       return errorResult;
     } finally {
       setIsRunning(false);
     }
   };
 
-  // Iniciar verificação automática (a cada 5 minutos)
+  // Suspenso durante a reconstrução financeira: a verificação legada pode baixar pedidos.
   const startAutoVerification = () => {
-    if (intervalId) {
-      console.log('⚠️ [AUTO_VERIFIER] Verificação automática já está rodando');
-      return;
-    }
-
-    console.log('🚀 [AUTO_VERIFIER] Iniciando verificação automática (a cada 5 minutos)');
-    
-    // Executar imediatamente
-    runVerification();
-    
-    // Configurar execução periódica
-    const id = setInterval(() => {
-      runVerification();
-    }, 5 * 60 * 1000); // 5 minutos
-
-    setIntervalId(id);
-    toast.success('Sistema de verificação automática iniciado!');
+    toast.info('Verificação automática suspensa durante a reconstrução financeira.');
   };
 
   // Parar verificação automática

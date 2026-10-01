@@ -45,7 +45,7 @@ export const AutoPaymentVerifier: React.FC = () => {
           <div className="flex space-x-2">
             <Button
               onClick={runVerification}
-              disabled={isRunning}
+              disabled
               variant="outline"
               size="sm"
               className="border-blue-500 text-blue-700 hover:bg-blue-500 hover:text-white"
@@ -66,6 +66,7 @@ export const AutoPaymentVerifier: React.FC = () => {
             {!isAutoRunning ? (
               <Button
                 onClick={startAutoVerification}
+                disabled
                 className="bg-green-600 hover:bg-green-700 text-white"
                 size="sm"
               >
@@ -128,7 +129,7 @@ export const AutoPaymentVerifier: React.FC = () => {
           <p>• Verifica pedidos pendentes há mais de 10 minutos</p>
           <p>• Consulta diretamente a API do Mercado Pago</p>
           <p>• Atualiza automaticamente o status se confirmado</p>
-          <p>• Roda automaticamente a cada 5 minutos quando ativado</p>
+          <p>• Verificação legada suspensa até a aprovação da nova estrutura financeira</p>
           <p><strong>⏰ Próxima verificação:</strong> {isAutoRunning ? 'Em até 5 minutos' : 'Sistema parado'}</p>
         </div>
       </CardContent>

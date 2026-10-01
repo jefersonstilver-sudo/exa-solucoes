@@ -425,10 +425,6 @@ verify_jwt = false
 verify_jwt = false
 
 [[cron]]
-function_name = "auto-cancel-expired-orders"
-schedule = "0 */1 * * *"
-
-[[cron]]
 function_name = "conversation-follow-up"
 schedule = "*/2 * * * *"
 
@@ -448,16 +444,8 @@ schedule = "*/5 * * * *"
 function_name = "relatorio-var-scheduled"
 schedule = "* * * * *"
 
-[[cron]]
-function_name = "billing-scheduler"
-schedule = "0 8 * * *"
-
 [functions.notify-upcoming-pix]
 verify_jwt = false
-
-[[cron]]
-function_name = "notify-upcoming-pix"
-schedule = "0 12 * * *"
 
 [[cron]]
 function_name = "sync-notion-buildings"
