@@ -108,7 +108,7 @@ export const PaineisPage = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
 
   // Hook to get events count per device for the selected period
-  const { eventsMap: periodEventsMap, offlineTimeMap, providerStats, loading: eventsLoading } = usePeriodDeviceEvents(
+  const { eventsMap: periodEventsMap, offlineTimeMap, loading: eventsLoading } = usePeriodDeviceEvents(
     period,
     customStartDate,
     customEndDate
@@ -416,10 +416,7 @@ export const PaineisPage = () => {
       </Collapsible>
 
       {/* Indicadores de Operadora */}
-      <ProviderStatsCards 
-        providerStats={providerStats} 
-        periodLabel={getPeriodLabel(period)} 
-      />
+      <ProviderStatsCards />
 
       {/* Barra de ações - Mobile otimizado */}
       <div className="flex flex-col gap-3 lg:gap-4">

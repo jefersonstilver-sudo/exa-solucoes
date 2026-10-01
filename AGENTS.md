@@ -1,0 +1,1 @@
+Use `devices` as the source of current provider connectivity, querying all non-deleted rows with pagination and a Realtime subscription plus 60-second refresh; history events describe outages, not live status.
