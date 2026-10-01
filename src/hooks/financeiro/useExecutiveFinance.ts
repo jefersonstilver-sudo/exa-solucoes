@@ -52,9 +52,9 @@ export function useExecutiveFinance() {
       let entries = 0, exits = 0, received = 0, pending = 0;
       // The statement mirror is the only source for actual cash. Read every page; a partial page is never a zero.
       for (let offset = 0; offset < (total || 0); offset += BATCH) {
-        const { data, error: pageError } = await supabase.from('asaas_extrato_movimentos').select('valor,tipo,correspondencia_status').gte('data', first).lte('data', `${month}-31`).order('ordem_asaas', { ascending: true }).range(offset, offset + BATCH - 1);
+        const { data, error: pageError } = await supabase.from('asaas_extrato_movimentos').select('valor,tipo,correspondencia_status').gte('data', first).lt('data', `${month}-32`).order('ordem_asaas', { ascending: true }).range(offset, offset + BATCH - 1);
         if (pageError) throw pageError;
-        // Month-filtered rows may be fewer than all-time count; continue by returned page length below.
+        // A short page is the last page of this month's movements.
         for (const row of data || []) {
           const value = Number(row.valor);
           if (value > 0) entries += value;
