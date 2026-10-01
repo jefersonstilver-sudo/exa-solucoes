@@ -19,3 +19,9 @@
 - [x] Comparar a API real ao arquivo enviado sem importar dados: 492 movimentos e 492 pares data/valor/saldo coincidentes, fechamento R$ 1.063,24; IDs da API (ftn_) diferem dos números no XLSX.
 - [ ] Executar leitura no aplicativo com sessão administrativa, repetir para aferir idempotência e conferir registros gravados — bloqueado: Supabase externo não fornece sessão de teste e não há usuário conectado na prévia.
 - [ ] Ativar atualização independente de visitas ao aplicativo somente quando existir agendador autenticado autorizado, sem reativar rotinas financeiras antigas.
+
+# Fundação financeira EXA 2.0
+- [x] Separar indicadores bancários de contratado/previsto, substituir receita derivada de pedidos no painel principal e adicionar alerta de conciliação.
+- [x] Ampliar visualização do extrato por período/tipo/categoria, sem modificar sincronização ou dar baixa.
+- [ ] Certificar conciliação fim a fim por IDs de todas as obrigações, testes e operações internas — bloqueado: espelho contém movimentos sem correspondência e falta vínculo comercial inequívoco.
+- [ ] Validar telas financeiras autenticadas na prévia — bloqueado: conexão Supabase externa sem sessão administrativa injetada.

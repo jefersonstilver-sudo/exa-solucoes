@@ -48,12 +48,12 @@ const DashboardFinanceiroV2: React.FC = () => {
   const value = (amount: number | null | undefined) => amount == null ? 'Indisponível' : formatCurrency(amount);
   const primary = [
     ['Saldo Asaas ao vivo', balance?.source === 'asaas' ? balance.available : null],
-    ['Entradas realizadas · mês', snapshot?.entradas],
-    ['Saídas realizadas · mês', snapshot?.saidas],
-    ['Resultado de caixa · mês', snapshot ? snapshot.entradas - snapshot.saidas : null],
+    ['Entradas realizadas · mês', snapshot?.lastSync ? snapshot.entradas : null],
+    ['Saídas realizadas · mês', snapshot?.lastSync ? snapshot.saidas : null],
+    ['Resultado de caixa · mês', snapshot?.lastSync ? snapshot.entradas - snapshot.saidas : null],
   ] as const;
   const commitments = [
-    ['Receita de cobranças recebidas · Asaas', snapshot?.receita],
+    ['Recebimentos de cobranças · Asaas', snapshot?.lastSync ? snapshot.receita : null],
     ['Receita recorrente contratada · MRR', snapshot?.mrr],
     ['Receita prevista · mês', snapshot?.previsto],
     ['Inadimplência registrada', snapshot?.inadimplencia],
@@ -82,7 +82,7 @@ const DashboardFinanceiroV2: React.FC = () => {
           <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
             {commitments.map(([label, amount]) => <div key={label} className="border-b pb-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-lg font-medium tabular-nums">{executiveLoading && !snapshot ? 'Carregando…' : value(amount)}</p></div>)}
           </div>
-          <p className="text-xs text-muted-foreground">MRR e previsão não são dinheiro recebido. Movimentos bancários incluem transferências e taxas; correspondência por ID não dá baixa em obrigações.</p>
+          <p className="text-xs text-muted-foreground">MRR e previsão não são dinheiro recebido. Recebimentos bancários brutos podem incluir testes e operações internas; não representam receita comercial líquida. Correspondência por ID não dá baixa em obrigações.</p>
         </section>
         <section aria-label="Acesso às áreas financeiras"><FinanceiroQuickNav /></section>
       </div>

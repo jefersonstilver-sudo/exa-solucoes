@@ -36,7 +36,7 @@ export function useExecutiveFinance() {
         supabase.from('assinaturas').select('pedido_id,valor_mensal').eq('status', 'ativa'),
         supabase.from('cobrancas').select('valor,status,data_vencimento').in('status', ['pendente', 'vencido']).limit(1001),
         supabase.from('despesas_fixas').select('valor,status').eq('ativo', true).limit(1001),
-        supabase.from('despesas_variaveis').select('valor,status').gte('data', first).lt('data', new Date(today.getFullYear(), today.getMonth() + 1, 1).toLocaleDateString('en-CA')).limit(1001),
+        supabase.from('despesas_variaveis').select('valor,status').gte('data', first).lt('data', `${today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear()}-${String((today.getMonth() + 1) % 12 + 1).padStart(2, '0')}-01`).limit(1001),
         supabase.from('parcelas_despesas').select('valor,status').eq('competencia', month).limit(1001),
       ]);
       const responses = [runResult, countResult, lastResult, subscriptionsResult, chargesResult, fixedResult, variableResult, installmentsResult];
@@ -72,7 +72,7 @@ export function useExecutiveFinance() {
       let mrr: number | null = null;
       if (subs.length <= 1000 && subs.every(sub => sub.pedido_id)) {
         const ids = [...new Set(subs.map(sub => sub.pedido_id).filter((id): id is string => !!id))];
-        const orders = ids.length ? await supabase.from('pedidos').select('id,is_test_order,is_master').in('id', ids) : null;
+        const orders = ids.length ? await supabase.from('pedidos').select('id,is_test_order,is_master').in('id', ids) : { data: [], error: null };
         if (!orders?.error && (orders?.data?.length || 0) === ids.length) {
           const eligible = new Set((orders?.data || []).filter(order => !order.is_test_order && !order.is_master).map(order => order.id));
           mrr = subs.filter(sub => sub.pedido_id && eligible.has(sub.pedido_id)).reduce((sum, sub) => sum + Number(sub.valor_mensal || 0), 0);
