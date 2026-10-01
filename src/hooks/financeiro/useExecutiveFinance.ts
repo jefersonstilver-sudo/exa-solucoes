@@ -36,7 +36,7 @@ export function useExecutiveFinance() {
         supabase.from('assinaturas').select('pedido_id,valor_mensal').eq('status', 'ativa'),
         supabase.from('cobrancas').select('valor,status,data_vencimento').in('status', ['pendente', 'vencido']).limit(1001),
         supabase.from('despesas_fixas').select('valor,status').eq('ativo', true).limit(1001),
-        supabase.from('despesas_variaveis').select('valor,status').gte('data', first).lt('data', `${month}-32`).limit(1001),
+        supabase.from('despesas_variaveis').select('valor,status').gte('data', first).lt('data', new Date(today.getFullYear(), today.getMonth() + 1, 1).toLocaleDateString('en-CA')).limit(1001),
         supabase.from('parcelas_despesas').select('valor,status').eq('competencia', month).limit(1001),
       ]);
       const responses = [runResult, countResult, lastResult, subscriptionsResult, chargesResult, fixedResult, variableResult, installmentsResult];
@@ -51,8 +51,9 @@ export function useExecutiveFinance() {
       const warning = !run || total == null ? 'Sem leitura completa do extrato.' : run.state !== 'completed' ? 'Última sincronização não concluída.' : !current ? 'Sincronização desatualizada.' : total !== run.items_count ? 'Quantidade de movimentos divergente.' : !Number.isFinite(balance) ? 'Saldo ao vivo indisponível.' : Math.abs(balance - lastBalance) >= 0.005 ? 'Saldo Asaas e extrato divergentes.' : 'Espelho conferido com saldo e quantidade; correspondências individuais ainda pendentes.';
       let entries = 0, exits = 0, received = 0, pending = 0;
       // The statement mirror is the only source for actual cash. Read every page; a partial page is never a zero.
+      const nextMonth = `${today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear()}-${String((today.getMonth() + 1) % 12 + 1).padStart(2, '0')}-01`;
       for (let offset = 0; offset < (total || 0); offset += BATCH) {
-        const { data, error: pageError } = await supabase.from('asaas_extrato_movimentos').select('valor,tipo,correspondencia_status').gte('data', first).lt('data', `${month}-32`).order('ordem_asaas', { ascending: true }).range(offset, offset + BATCH - 1);
+        const { data, error: pageError } = await supabase.from('asaas_extrato_movimentos').select('valor,tipo,correspondencia_status').gte('data', first).lt('data', nextMonth).order('ordem_asaas', { ascending: true }).range(offset, offset + BATCH - 1);
         if (pageError) throw pageError;
         // A short page is the last page of this month's movements.
         for (const row of data || []) {
