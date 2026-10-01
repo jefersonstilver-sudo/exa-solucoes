@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, FileText, History, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +33,7 @@ const mask = (value: string | null) => value ? `${'•'.repeat(Math.max(0, value
 
 export function InternetAccountsSection() {
   const queryClient = useQueryClient();
+  const dispatchLock = useRef(false);
   const [pending, setPending] = useState(false);
   const [accountForm, setAccountForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,7 +75,8 @@ export function InternetAccountsSection() {
     setSaving(false);
   };
   const dispatch = async (scope: 'all' | 'provider' | 'account', id?: string) => {
-    if (pending) return;
+    if (dispatchLock.current) return;
+    dispatchLock.current = true;
     setPending(true);
     try {
       const { data: response, error } = await supabase.functions.invoke<{ run?: Run }>('internet-collection-dispatch', {
@@ -84,7 +86,7 @@ export function InternetAccountsSection() {
       toast.info(response.run.state === 'not_configured' ? 'Nenhuma conta habilitada para coleta. Execução registrada sem resultados.' : 'Execução criada; aguardando coleta.');
       await queryClient.invalidateQueries({ queryKey: ['internet-accounts-admin'] });
     } catch { toast.error('Não foi possível iniciar a execução. Nenhum resultado foi presumido.'); }
-    finally { setPending(false); }
+    finally { dispatchLock.current = false; setPending(false); }
   };
 
   return <section className="border-t border-border pt-6 space-y-5" aria-label="Contas de Internet / Conciliação">
