@@ -34,7 +34,7 @@ const readCachedLogos = (): Logo[] => {
 
 export const useLogos = () => {
   const [logos, setLogos] = useState<Logo[]>(readCachedLogos);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => readCachedLogos().length === 0);
   const [error, setError] = useState<string | null>(null);
 
   const fetchLogos = async () => {
