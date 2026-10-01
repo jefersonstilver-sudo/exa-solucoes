@@ -36,6 +36,14 @@ function normalizeProvider(value: string | null): string {
 }
 
 async function fetchProviderStats(): Promise<ProviderConnectionData> {
+  const { data: buildingGroups, error: groupError } = await supabase
+    .from('device_groups')
+    .select('id')
+    .in('nome', ['Predios', 'Prédios']);
+  if (groupError) throw groupError;
+  if (!buildingGroups?.length) throw new Error('Grupo Prédios indisponível');
+
+  const buildingGroupIds = buildingGroups.map(group => group.id);
   const stats = new Map<string, ProviderConnectionStats>();
   const connections: ProviderConnection[] = [];
   let from = 0;
@@ -45,6 +53,7 @@ async function fetchProviderStats(): Promise<ProviderConnectionData> {
       .from('devices')
       .select('id, name, condominio_name, address, provider, status, last_online_at')
       .or('is_deleted.is.null,is_deleted.eq.false')
+       .in('device_group_id', buildingGroupIds)
       .order('id')
       .range(from, from + PAGE_SIZE - 1);
 
@@ -92,6 +101,9 @@ export function useProviderConnectionStats() {
     const channel = supabase
       .channel('provider-connection-status')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'device_groups' }, () => {
         queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       })
       .subscribe();
