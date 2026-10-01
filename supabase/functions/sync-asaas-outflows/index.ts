@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2.117.2/cors';
 
 type AsaasListResponse<T> = {
   object?: string;
@@ -65,7 +65,7 @@ serve(async (req) => {
 
   let runId: string | undefined;
   let pages = 0, synced = 0;
-  let db: ReturnType<typeof createClient> | undefined;
+  let markFailed: ((reason: string) => Promise<void>) | undefined;
 
   try {
     const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY");
@@ -76,7 +76,10 @@ serve(async (req) => {
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase configuration missing");
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    db = supabase;
+    markFailed = async (reason: string) => {
+      if (!runId) return;
+      await supabase.from('sync_runs').update({ state: 'failed', finished_at: new Date().toISOString(), pages_count: pages, items_count: synced, processed_count: synced, errors: [{ reason }] }).eq('id', runId);
+    };
     const bearer = req.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
     if (!bearer) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     const { data: { user }, error: authError } = await supabase.auth.getUser(bearer);
@@ -131,7 +134,7 @@ serve(async (req) => {
             cliente: row.cliente,
             metodo_pagamento: row.metodo_pagamento,
             external_reference: row.external_reference,
-            raw_data: row.raw_data as any,
+            raw_data: row.raw_data,
             synced_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -299,9 +302,9 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Asaas outflow sync failed", { run_id: runId, pages, synced, reason: error instanceof Error ? error.message : "unknown" });
-    if (runId && db) await db.from("sync_runs").update({ state: "failed", finished_at: new Date().toISOString(), pages_count: pages, items_count: synced, processed_count: synced, errors: [{ reason: error instanceof Error ? error.message : "unknown" }] }).eq("id", runId);
+    if (markFailed) await markFailed(error instanceof Error ? error.message : 'unknown');
     return new Response(
       JSON.stringify({ success: false, run_id: runId, error: "Synchronization failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
