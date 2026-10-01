@@ -43,9 +43,10 @@ export const useLogos = () => {
       setError(null);
 
       // Usar a Edge Function para obter logos públicas
-      const { data, error } = await supabase.functions.invoke('logos', {
-        method: 'GET'
-      });
+      const { data, error } = await Promise.race([
+        supabase.functions.invoke('logos', { method: 'GET' }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Logo request timed out')), 15000))
+      ]);
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
