@@ -13,11 +13,9 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import { corsHeaders as standardCorsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, asaas-access-token',
-};
+const corsHeaders = standardCorsHeaders;
 
 // ========================================
 // TIPOS DO WEBHOOK ASAAS
@@ -132,16 +130,28 @@ serve(async (req) => {
     );
   }
 
+  const configuredToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN');
+  if (!configuredToken) {
+    return new Response(JSON.stringify({ error: 'Webhook authentication is not configured' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+  const providedToken = req.headers.get('asaas-access-token') || '';
+  const tokenBytes = new TextEncoder().encode(configuredToken);
+  const providedBytes = new TextEncoder().encode(providedToken);
+  let difference = tokenBytes.length ^ providedBytes.length;
+  for (let index = 0; index < Math.max(tokenBytes.length, providedBytes.length); index++) difference |= (tokenBytes[index] || 0) ^ (providedBytes[index] || 0);
+  if (difference !== 0) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   try {
     // Parse do body
     const body = await req.text();
+    if (body.length > 100000) return new Response(JSON.stringify({ error: 'Payload too large' }), { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     log('info', '📥 Webhook Asaas recebido', { bodyLength: body.length });
     
     let event: AsaasWebhookEvent;
     try {
       event = JSON.parse(body);
     } catch (parseError) {
-      log('error', 'Erro ao parsear JSON do webhook', { error: parseError.message, body: body.substring(0, 500) });
+      log('error', 'Erro ao parsear JSON do webhook', { error: parseError.message });
       return new Response(
         JSON.stringify({ error: 'Invalid JSON' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -156,6 +166,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    if (typeof event.id !== 'string' || !/^[a-zA-Z0-9_-]{2,120}$/.test(event.id)) return new Response(JSON.stringify({ error: 'Invalid event ID' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     log('info', '🎯 Evento recebido', { 
       eventId: event.id,
@@ -171,33 +182,16 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Verificar idempotência - evitar processar o mesmo evento duas vezes
-    const { data: existingLog } = await supabase
-      .from('webhook_logs')
-      .select('id')
-      .eq('webhook_id', event.id)
-      .eq('provider', 'asaas')
-      .maybeSingle();
-
-    if (existingLog) {
+    // Inserção atômica: entregas repetidas têm a mesma identidade no banco.
+    const { data: recorded, error: recordError } = await supabase.rpc('record_asaas_webhook_event', { p_event_id: event.id, p_event_type: event.event, p_payload: event });
+    if (recordError || !recorded?.[0]?.log_id) return new Response(JSON.stringify({ error: 'Unable to persist event' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (!recorded[0].newly_recorded) {
       log('info', '⚠️ Evento já processado (idempotência)', { eventId: event.id });
       return new Response(
         JSON.stringify({ success: true, message: 'Event already processed' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Registrar log do webhook (antes de processar para garantir idempotência)
-    await supabase
-      .from('webhook_logs')
-      .insert({
-        provider: 'asaas',
-        webhook_id: event.id,
-        event_type: event.event,
-        payload: event,
-        status: 'received',
-        created_at: new Date().toISOString()
-      });
 
     // ========================================
     // PROCESSAR EVENTOS DE PAGAMENTO
@@ -743,14 +737,14 @@ serve(async (req) => {
   } catch (error: any) {
     log('error', '❌ Erro no webhook', { error: error.message, stack: error.stack });
     
-    // Sempre retornar 200 para evitar que o Asaas pause a fila
+    // Fail visibly so Asaas can retry; a durable event is retained for replay.
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error.message,
         message: 'Internal error but acknowledged'
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
