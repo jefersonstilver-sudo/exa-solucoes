@@ -1,3 +1,4 @@
 Use `devices` as the source of current provider connectivity, querying all non-deleted rows with pagination and a Realtime subscription plus 60-second refresh; history events describe outages, not live status.
+For provider connection cards and their detailed list, restrict devices to the IDs of the current Predios/Prédios device group; group membership is the source of truth, not building_id, so internal and ungrouped devices are excluded.
 For provider outage start times, use an open offline event newer than the device's last online observation; fall back to labeled last-online time because stale open events can remain after recovery.
 Cache only successful public logo responses for at most 24 hours and time-bound their upstream fetch; this preserves real previously loaded logos during transient Supabase outages without indefinite stale images.
