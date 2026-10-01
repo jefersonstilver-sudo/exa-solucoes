@@ -29,7 +29,8 @@ import {
   Banknote,
   Loader2,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  Landmark
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
@@ -76,6 +77,12 @@ const FinanceiroQuickNav: React.FC = () => {
       title: 'Lançamentos',
       icon: <TrendingUp className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/lancamentos')
+    },
+    {
+      id: 'extrato',
+      title: 'Extrato Asaas',
+      icon: <Landmark className="h-5 w-5 text-gray-600" />,
+      href: buildPath('financeiro/extrato')
     },
     {
       id: 'fluxo',

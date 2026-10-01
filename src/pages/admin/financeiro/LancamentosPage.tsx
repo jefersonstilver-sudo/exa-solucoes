@@ -322,6 +322,7 @@ const LancamentosPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => navigate(buildPath('financeiro/extrato'))}>Extrato Asaas</Button>
             <FinancialPeriodSelector
               value={periodFilter}
               onChange={setPeriodFilter}

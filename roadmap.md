@@ -12,3 +12,9 @@
 - [ ] Confirmar após o reenvio real no Asaas do evento `evt_05b708f961d739ea7eba7e4db318f621&1543434805` que há resposta 200 e registro único em `webhook_logs`, sem baixa automática; bloqueado até o reenvio externo. A função corrigida foi publicada e os testes locais passaram, mas não há chamada nem registro do evento após a publicação. O pagamento `pay_8mj3fhelg71jibab` ainda não consta em `transacoes_asaas`.
 - [ ] Substituir agendamentos por acionamento seguro com resultado final verificável — bloqueado por ausência de credencial de agendamento compartilhável neste ambiente; enquanto isso a sincronização depende de acionamento manual autorizado.
 - [ ] Conciliar histórico por IDs Asaas — reservado para etapa 2.
+
+# Espelho do extrato Asaas
+- [x] Criar espelho separado com acesso administrativo, leitura integral paginada do extrato oficial e conferência por IDs oficiais; adicionar tela de extrato no financeiro.
+- [x] Comparar a API real ao arquivo enviado sem importar dados: 492 movimentos e 492 pares data/valor/saldo coincidentes, fechamento R$ 1.063,24; IDs da API (ftn_) diferem dos números no XLSX.
+- [ ] Executar leitura no aplicativo com sessão administrativa, repetir para aferir idempotência e conferir registros gravados — bloqueado: Supabase externo não fornece sessão de teste e não há usuário conectado na prévia.
+- [ ] Ativar atualização independente de visitas ao aplicativo somente quando existir agendador autenticado autorizado, sem reativar rotinas financeiras antigas.
