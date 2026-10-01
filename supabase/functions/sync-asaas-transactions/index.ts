@@ -65,7 +65,7 @@ serve(async (req) => {
           boleto_barcode: null, boleto_nosso_numero: payment.nossoNumero || null,
           raw_data: payment, synced_at: new Date().toISOString(),
         };
-        // A historical status is changed only when Asaas itself returns a different status for the exact payment ID.
+        // Only Asaas' exact payment ID can update a mirrored payment; never match by amount/name.
         if (!existing || existing.status !== payment.status) {
           const { error } = await db.from('transacoes_asaas').upsert(row, { onConflict: 'payment_id' });
           if (error) throw new Error('Payment upsert failed');
