@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-import { corsHeaders } from 'npm:@supabase/supabase-js@2.117.2/cors';
+import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2.117.2/cors?target=deno';
 
 type AsaasListResponse<T> = {
   object?: string;
