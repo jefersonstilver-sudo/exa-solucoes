@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2.117.2/cors?target=deno';
+import { isValidEventId } from './eventIdentity.ts';
 
 const reply = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 const equal = (a: string, b: string) => {
@@ -21,10 +22,8 @@ serve(async (req) => {
   if (raw.length > 100000) return reply(413, { error: 'Payload too large' });
   let event: Record<string, unknown>;
   try { event = JSON.parse(raw); } catch { return reply(400, { error: 'Invalid JSON' }); }
-  // Keep the provider's top-level event ID unchanged as the deduplication key.
-  // Allow punctuation in provider IDs while rejecting whitespace/control characters;
-  // the 120-character bound also matches record_asaas_webhook_event's DB validation.
-  if (!event || typeof event !== 'object' || Array.isArray(event) || typeof event.id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{1,119}$/.test(event.id) || typeof event.event !== 'string' || !/^[A-Z][A-Z0-9_]{1,119}$/.test(event.event)) return reply(400, { error: 'Invalid event identity' });
+  // Preserve the provider's opaque top-level ID exactly for database deduplication.
+  if (!event || typeof event !== 'object' || Array.isArray(event) || !isValidEventId(event.id) || typeof event.event !== 'string' || !/^[A-Z][A-Z0-9_]{1,119}$/.test(event.event)) return reply(400, { error: 'Invalid event identity' });
   if (event.event.startsWith('PAYMENT_') && (!event.payment || typeof event.payment !== 'object' || typeof (event.payment as { id?: unknown }).id !== 'string')) return reply(400, { error: 'Invalid payment event' });
   const url = Deno.env.get('SUPABASE_URL'), service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !service) return reply(503, { error: 'Persistence unavailable' });
