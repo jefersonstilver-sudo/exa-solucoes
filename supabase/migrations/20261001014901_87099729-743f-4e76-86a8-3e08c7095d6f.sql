@@ -1,0 +1,1 @@
+SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname IN ('sync-asaas-transactions-daily','sync-asaas-outflows-hourly');

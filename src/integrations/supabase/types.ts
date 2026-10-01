@@ -7514,6 +7514,27 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_baselines: {
+        Row: {
+          captured_at: string
+          id: string
+          note: string
+          summary: Json
+        }
+        Insert: {
+          captured_at?: string
+          id?: string
+          note?: string
+          summary: Json
+        }
+        Update: {
+          captured_at?: string
+          id?: string
+          note?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
       financial_data_audit_logs: {
         Row: {
           access_granted: boolean
@@ -13085,24 +13106,48 @@ export type Database = {
           errors: Json | null
           finished_at: string | null
           id: string
+          items_count: number
+          last_success_at: string | null
+          pages_count: number
           processed_count: number | null
+          source: string | null
           started_at: string
+          state: string
+          updated_at: string
+          window_end: string | null
+          window_start: string | null
         }
         Insert: {
           created_at?: string | null
           errors?: Json | null
           finished_at?: string | null
           id?: string
+          items_count?: number
+          last_success_at?: string | null
+          pages_count?: number
           processed_count?: number | null
+          source?: string | null
           started_at: string
+          state?: string
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
         }
         Update: {
           created_at?: string | null
           errors?: Json | null
           finished_at?: string | null
           id?: string
+          items_count?: number
+          last_success_at?: string | null
+          pages_count?: number
           processed_count?: number | null
+          source?: string | null
           started_at?: string
+          state?: string
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
         }
         Relationships: []
       }
@@ -15399,28 +15444,49 @@ export type Database = {
       }
       webhook_logs: {
         Row: {
+          attempts: number
           created_at: string | null
+          error_message: string | null
+          event_type: string | null
           id: string
           origem: string
           payload: Json | null
+          processed_at: string | null
+          provider: string | null
           recebido_em: string | null
           status: string
+          updated_at: string
+          webhook_id: string | null
         }
         Insert: {
+          attempts?: number
           created_at?: string | null
+          error_message?: string | null
+          event_type?: string | null
           id?: string
           origem: string
           payload?: Json | null
+          processed_at?: string | null
+          provider?: string | null
           recebido_em?: string | null
           status: string
+          updated_at?: string
+          webhook_id?: string | null
         }
         Update: {
+          attempts?: number
           created_at?: string | null
+          error_message?: string | null
+          event_type?: string | null
           id?: string
           origem?: string
           payload?: Json | null
+          processed_at?: string | null
+          provider?: string | null
           recebido_em?: string | null
           status?: string
+          updated_at?: string
+          webhook_id?: string | null
         }
         Relationships: []
       }
@@ -16606,6 +16672,14 @@ export type Database = {
       process_mercadopago_webhook_with_cleanup: {
         Args: { p_payment_data: Json }
         Returns: Json
+      }
+      record_asaas_webhook_event: {
+        Args: { p_event_id: string; p_event_type: string; p_payload: Json }
+        Returns: {
+          log_id: string
+          newly_recorded: boolean
+          processing_status: string
+        }[]
       }
       recover_lost_transactions: { Args: never; Returns: Json }
       refresh_dashboard_metrics: { Args: never; Returns: undefined }
