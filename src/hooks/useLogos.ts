@@ -44,8 +44,7 @@ export const useLogos = () => {
 
       // Usar a Edge Function para obter logos públicas
       const { data, error } = await supabase.functions.invoke('logos', {
-        method: 'GET',
-        signal: AbortSignal.timeout(15000)
+        method: 'GET'
       });
 
       if (error) {
