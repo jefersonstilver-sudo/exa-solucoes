@@ -9,6 +9,21 @@ export interface ProviderConnectionStats {
   unknown: number;
 }
 
+export interface ProviderConnection {
+  id: string;
+  name: string;
+  building: string;
+  address: string | null;
+  provider: string;
+  status: string | null;
+  lastOnlineAt: string | null;
+}
+
+interface ProviderConnectionData {
+  providers: ProviderConnectionStats[];
+  connections: ProviderConnection[];
+}
+
 const QUERY_KEY = ['provider-connection-stats'];
 const PAGE_SIZE = 500;
 
@@ -20,14 +35,15 @@ function normalizeProvider(value: string | null): string {
   return provider;
 }
 
-async function fetchProviderStats(): Promise<ProviderConnectionStats[]> {
+async function fetchProviderStats(): Promise<ProviderConnectionData> {
   const stats = new Map<string, ProviderConnectionStats>();
+  const connections: ProviderConnection[] = [];
   let from = 0;
 
   while (true) {
     const { data, error } = await supabase
       .from('devices')
-      .select('id, provider, status')
+      .select('id, name, condominio_name, address, provider, status, last_online_at')
       .or('is_deleted.is.null,is_deleted.eq.false')
       .order('id')
       .range(from, from + PAGE_SIZE - 1);
@@ -36,6 +52,15 @@ async function fetchProviderStats(): Promise<ProviderConnectionStats[]> {
 
     for (const device of data || []) {
       const provider = normalizeProvider(device.provider);
+      connections.push({
+        id: device.id,
+        name: device.name,
+        building: device.condominio_name || device.name,
+        address: device.address,
+        provider,
+        status: device.status,
+        lastOnlineAt: device.last_online_at,
+      });
       const current = stats.get(provider) || { provider, online: 0, offline: 0, unknown: 0 };
       if (device.status === 'online') current.online += 1;
       else if (device.status === 'offline') current.offline += 1;
@@ -47,9 +72,12 @@ async function fetchProviderStats(): Promise<ProviderConnectionStats[]> {
     from += PAGE_SIZE;
   }
 
-  return Array.from(stats.values()).sort((a, b) =>
-    (b.online + b.offline + b.unknown) - (a.online + a.offline + a.unknown) || a.provider.localeCompare(b.provider)
-  );
+  return {
+    providers: Array.from(stats.values()).sort((a, b) =>
+      (b.online + b.offline + b.unknown) - (a.online + a.offline + a.unknown) || a.provider.localeCompare(b.provider)
+    ),
+    connections,
+  };
 }
 
 export function useProviderConnectionStats() {
