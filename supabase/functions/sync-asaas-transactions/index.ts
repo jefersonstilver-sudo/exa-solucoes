@@ -1,278 +1,85 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-interface AsaasPayment {
-  id: string;
-  customer: string;
-  billingType: string;
-  value: number;
-  netValue?: number;
-  status: string;
-  dueDate: string;
-  dateCreated: string;
-  paymentDate?: string;
-  description?: string;
-  externalReference?: string;
-  transactionReceiptUrl?: string;
-  nossoNumero?: string;
-  bankSlipUrl?: string;
-  invoiceUrl?: string;
-  pixTransaction?: {
-    id: string;
-    qrCode: string;
-    payload: string;
-  };
-  originalValue?: number;
-  confirmedDate?: string;
-  creditDate?: string;
-}
-
-interface AsaasCustomer {
-  id: string;
-  name: string;
-  email?: string;
-  cpfCnpj?: string;
-}
+const base = 'https://api.asaas.com/v3';
+const respond = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 
 serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return respond({ error: 'Method not allowed' }, 405);
+  const key = Deno.env.get('ASAAS_API_KEY');
+  const url = Deno.env.get('SUPABASE_URL');
+  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!key || !url || !service) return respond({ error: 'Service unavailable' }, 503);
+  const db = createClient(url, service);
+  let runId: string | undefined;
+  let pages = 0, items = 0, created = 0, updated = 0;
   try {
-    const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY");
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!ASAAS_API_KEY) {
-      throw new Error("ASAAS_API_KEY não configurada");
-    }
-
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-    const asaasBaseUrl = "https://api.asaas.com/v3";
-
-    console.log("🔄 [sync-asaas-transactions] Iniciando sincronização...");
-
-    // Parse request body for optional filters
-    let dateFilter = "";
-    let statusFilter = "";
-    
-    if (req.method === "POST") {
-      try {
-        const body = await req.json();
-        if (body.startDate) {
-          dateFilter = `&dateCreated[ge]=${body.startDate}`;
-        }
-        if (body.status) {
-          statusFilter = `&status=${body.status}`;
-        }
-      } catch {
-        // No body, use defaults
-      }
-    }
-
-    // Fetch payments from ASAAS with pagination
-    let offset = 0;
+    const body = await req.json().catch(() => ({}));
+    if (!body || typeof body !== 'object' || (body.startDate && !date(body.startDate)) || (body.status && !/^[A-Z_]{2,40}$/.test(body.status))) return respond({ error: 'Invalid filters' }, 400);
+    const { data: run, error: runError } = await db.from('sync_runs').insert({ source: 'asaas_payments', started_at: new Date().toISOString(), state: 'running', window_start: body.startDate || null }).select('id').single();
+    if (runError || !run) throw new Error('Cannot persist sync run');
+    runId = run.id;
     const limit = 100;
-    let hasMore = true;
-    let totalSynced = 0;
-    let totalUpdated = 0;
-    let totalSkipped = 0;
-    
-    // Cache for customer data
-    const customerCache: Record<string, AsaasCustomer> = {};
-
-    while (hasMore) {
-      const url = `${asaasBaseUrl}/payments?offset=${offset}&limit=${limit}${dateFilter}${statusFilter}`;
-      console.log(`📡 Fetching: ${url}`);
-
-      const response = await fetch(url, {
-        headers: {
-          "access_token": ASAAS_API_KEY,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ ASAAS API error:", errorText);
-        throw new Error(`ASAAS API error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      const payments: AsaasPayment[] = data.data || [];
-
-      console.log(`📦 Recebidos ${payments.length} pagamentos (offset: ${offset})`);
-
-      if (payments.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      // Process each payment
-      for (const payment of payments) {
-        // Get customer info (cached)
-        let customer = customerCache[payment.customer];
-        if (!customer && payment.customer) {
-          try {
-            const custResponse = await fetch(`${asaasBaseUrl}/customers/${payment.customer}`, {
-              headers: {
-                "access_token": ASAAS_API_KEY,
-                "Content-Type": "application/json",
-              },
-            });
-            if (custResponse.ok) {
-              customer = await custResponse.json();
-              customerCache[payment.customer] = customer;
-            }
-          } catch (e) {
-            console.warn(`⚠️ Erro ao buscar cliente ${payment.customer}:`, e);
-          }
+    let offset = 0;
+    const customerCache = new Map<string, { name?: string; email?: string; cpfCnpj?: string }>();
+    for (;;) {
+      const qs = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+      if (body.startDate) qs.set('dateCreated[ge]', body.startDate);
+      if (body.status) qs.set('status', body.status);
+      const response = await fetch(`${base}/payments?${qs}`, { headers: { access_token: key }, signal: AbortSignal.timeout(20000) });
+      if (!response.ok) throw new Error(`Payments API HTTP ${response.status}`);
+      const list = await response.json();
+      if (!Array.isArray(list.data) || typeof list.hasMore !== 'boolean') throw new Error('Invalid payments page');
+      pages++;
+      for (const payment of list.data) {
+        if (typeof payment.id !== 'string' || !payment.id.startsWith('pay_') || !payment.customer || typeof payment.value !== 'number') throw new Error('Invalid payment entry');
+        let customer = customerCache.get(payment.customer);
+        if (!customer) {
+          const response = await fetch(`${base}/customers/${encodeURIComponent(payment.customer)}`, { headers: { access_token: key }, signal: AbortSignal.timeout(10000) });
+          if (!response.ok) throw new Error(`Customer API HTTP ${response.status}`);
+          customer = await response.json();
+          customerCache.set(payment.customer, customer || {});
         }
-
-        // Calculate fee (netValue is what we receive after ASAAS fees)
-        const taxaAsaas = payment.netValue 
-          ? Number((payment.value - payment.netValue).toFixed(2))
-          : null;
-
-        // Prepare upsert data
-        const transactionData = {
-          payment_id: payment.id,
-          billing_type: payment.billingType,
-          status: payment.status,
-          valor: payment.value,
-          valor_liquido: payment.netValue || null,
-          taxa_asaas: taxaAsaas,
-          data_criacao: payment.dateCreated,
-          data_vencimento: payment.dueDate,
+        const { data: existing, error: lookupError } = await db.from('transacoes_asaas').select('id,status').eq('payment_id', payment.id).maybeSingle();
+        if (lookupError) throw new Error('Payment lookup failed');
+        const row = {
+          payment_id: payment.id, billing_type: payment.billingType, status: payment.status,
+          valor: payment.value, valor_liquido: payment.netValue ?? null,
+          taxa_asaas: payment.netValue == null ? null : Number((payment.value - payment.netValue).toFixed(2)),
+          data_criacao: payment.dateCreated, data_vencimento: payment.dueDate,
           data_pagamento: payment.paymentDate || payment.confirmedDate || null,
-          customer_id: payment.customer,
-          customer_name: customer?.name || null,
-          customer_email: customer?.email || null,
-          customer_cpf_cnpj: customer?.cpfCnpj || null,
-          description: payment.description || null,
-          external_reference: payment.externalReference || null,
-          pix_transaction_id: payment.pixTransaction?.id || null,
-          pix_qr_code: payment.pixTransaction?.qrCode || null,
-          pix_copy_paste: payment.pixTransaction?.payload || null,
-          boleto_url: payment.bankSlipUrl || null,
-          boleto_barcode: null, // ASAAS doesn't return barcode in list
-          boleto_nosso_numero: payment.nossoNumero || null,
-          raw_data: payment as unknown,
-          synced_at: new Date().toISOString(),
+          customer_id: payment.customer, customer_name: customer?.name || null,
+          customer_email: customer?.email || null, customer_cpf_cnpj: customer?.cpfCnpj || null,
+          description: payment.description || null, external_reference: payment.externalReference || null,
+          pix_transaction_id: payment.pixTransaction?.id || null, pix_qr_code: payment.pixTransaction?.qrCode || null,
+          pix_copy_paste: payment.pixTransaction?.payload || null, boleto_url: payment.bankSlipUrl || null,
+          boleto_barcode: null, boleto_nosso_numero: payment.nossoNumero || null,
+          raw_data: payment, synced_at: new Date().toISOString(),
         };
-
-        // Upsert: insert or update if exists
-        const { data: existing } = await supabase
-          .from("transacoes_asaas")
-          .select("id, status")
-          .eq("payment_id", payment.id)
-          .single();
-
-        if (existing) {
-          // Update only if status changed
-          if (existing.status !== payment.status) {
-            const { error } = await supabase
-              .from("transacoes_asaas")
-              .update(transactionData)
-              .eq("payment_id", payment.id);
-
-            if (error) {
-              console.error(`❌ Erro ao atualizar ${payment.id}:`, error);
-            } else {
-              totalUpdated++;
-              console.log(`✅ Atualizado: ${payment.id} (${existing.status} → ${payment.status})`);
-            }
-          } else {
-            totalSkipped++;
-          }
-        } else {
-          // Insert new
-          const { error } = await supabase
-            .from("transacoes_asaas")
-            .insert(transactionData);
-
-          if (error) {
-            console.error(`❌ Erro ao inserir ${payment.id}:`, error);
-          } else {
-            totalSynced++;
-            console.log(`🆕 Inserido: ${payment.id} (${payment.billingType} - R$ ${payment.value})`);
-          }
+        // A historical status is changed only when Asaas itself returns a different status for the exact payment ID.
+        if (!existing || existing.status !== payment.status) {
+          const { error } = await db.from('transacoes_asaas').upsert(row, { onConflict: 'payment_id' });
+          if (error) throw new Error('Payment upsert failed');
+          if (existing) updated++; else created++;
         }
+        items++;
       }
-
-      // Check if more pages
-      hasMore = data.hasMore === true;
-      offset += limit;
-
-      // Rate limiting - wait 200ms between requests
-      await new Promise(resolve => setTimeout(resolve, 200));
+      const { error: progressError } = await db.from('sync_runs').update({ pages_count: pages, items_count: items, processed_count: items, updated_at: new Date().toISOString() }).eq('id', runId);
+      if (progressError) throw new Error('Cannot persist progress');
+      if (!list.hasMore) break;
+      if (list.data.length === 0) throw new Error('Empty page with hasMore');
+      offset += list.data.length;
     }
-
-    // Fetch summary after sync
-    const { data: summary } = await supabase
-      .from("transacoes_asaas")
-      .select("status, billing_type, valor")
-      .order("created_at", { ascending: false });
-
-    const stats = {
-      total_records: summary?.length || 0,
-      by_status: {} as Record<string, { count: number; total: number }>,
-      by_type: {} as Record<string, { count: number; total: number }>,
-    };
-
-    summary?.forEach((t: any) => {
-      // By status
-      if (!stats.by_status[t.status]) {
-        stats.by_status[t.status] = { count: 0, total: 0 };
-      }
-      stats.by_status[t.status].count++;
-      stats.by_status[t.status].total += Number(t.valor);
-
-      // By type
-      if (!stats.by_type[t.billing_type]) {
-        stats.by_type[t.billing_type] = { count: 0, total: 0 };
-      }
-      stats.by_type[t.billing_type].count++;
-      stats.by_type[t.billing_type].total += Number(t.valor);
-    });
-
-    console.log("✅ [sync-asaas-transactions] Sincronização concluída:", {
-      synced: totalSynced,
-      updated: totalUpdated,
-      skipped: totalSkipped,
-    });
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        synced: totalSynced,
-        updated: totalUpdated,
-        skipped: totalSkipped,
-        stats,
-        last_sync: new Date().toISOString(),
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  } catch (error: any) {
-    console.error("❌ [sync-asaas-transactions] Erro:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    const finished = new Date().toISOString();
+    const { error } = await db.from('sync_runs').update({ finished_at: finished, last_success_at: finished, state: 'completed', pages_count: pages, items_count: items, processed_count: items, updated_at: finished }).eq('id', runId);
+    if (error) throw new Error('Cannot persist completed run');
+    return respond({ success: true, run_id: runId, pages, items, synced: created, updated, last_sync: finished });
+  } catch (e) {
+    console.error('Asaas payment sync failed', { run_id: runId, pages, items, reason: e instanceof Error ? e.message : 'unknown' });
+    if (runId) await db.from('sync_runs').update({ finished_at: new Date().toISOString(), state: 'failed', pages_count: pages, items_count: items, processed_count: items, errors: [{ reason: e instanceof Error ? e.message : 'unknown' }] }).eq('id', runId);
+    return respond({ success: false, run_id: runId, error: 'Synchronization failed' }, 500);
   }
 });
