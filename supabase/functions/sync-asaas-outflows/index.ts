@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 type AsaasListResponse<T> = {
   object?: string;
@@ -49,9 +46,9 @@ function toIsoDate(value?: string | null): string | null {
 }
 
 async function fetchAsaasJson(url: string, headers: Record<string, string>) {
-  const resp = await fetch(url, { headers });
+  const resp = await fetch(url, { headers, signal: AbortSignal.timeout(20000) });
   const text = await resp.text();
-  return { ok: resp.ok, status: resp.status, text, json: text ? safeJson(text) : null };
+  return { ok: resp.ok, status: resp.status, json: text ? safeJson(text) : null };
 }
 
 function safeJson(text: string) {
@@ -63,9 +60,12 @@ function safeJson(text: string) {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: corsHeaders });
+
+  let runId: string | undefined;
+  let pages = 0, synced = 0;
+  let db: ReturnType<typeof createClient> | undefined;
 
   try {
     const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY");
@@ -74,21 +74,22 @@ serve(async (req) => {
 
     if (!ASAAS_API_KEY) throw new Error("ASAAS_API_KEY não configurada");
 
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase configuration missing");
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    db = supabase;
     const asaasBaseUrl = "https://api.asaas.com/v3";
 
     let startDate: string | null = null;
     let endDate: string | null = null;
 
-    if (req.method === "POST") {
-      try {
-        const body = await req.json();
-        if (body?.startDate) startDate = String(body.startDate);
-        if (body?.endDate) endDate = String(body.endDate);
-      } catch {
-        // ignore
-      }
-    }
+    const body = await req.json().catch(() => ({}));
+    const validDate = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
+    if ((body.startDate && !validDate(body.startDate)) || (body.endDate && !validDate(body.endDate))) return new Response(JSON.stringify({ error: "Invalid dates" }), { status: 400, headers: corsHeaders });
+    if (body.startDate) startDate = body.startDate;
+    if (body.endDate) endDate = body.endDate;
+    const { data: run, error: runError } = await supabase.from("sync_runs").insert({ source: "asaas_outflows", state: "running", started_at: new Date().toISOString(), window_start: startDate, window_end: endDate }).select("id").single();
+    if (runError || !run) throw new Error("Cannot persist sync run");
+    runId = run.id;
 
     const commonHeaders = {
       "access_token": ASAAS_API_KEY,
@@ -141,7 +142,11 @@ serve(async (req) => {
       return true;
     };
 
-    let synced = 0;
+
+    const saveProgress = async () => {
+      const { error } = await supabase.from("sync_runs").update({ pages_count: pages, items_count: synced, processed_count: synced, updated_at: new Date().toISOString() }).eq("id", runId);
+      if (error) throw new Error("Cannot persist sync progress");
+    };
 
     // ------------------------------
     // TRANSFERS
@@ -157,11 +162,13 @@ serve(async (req) => {
         if (endDate) qs.set("dateCreated[le]", endDate);
 
         const url = `${asaasBaseUrl}/transfers?${qs.toString()}`;
-        const { ok, status, text, json } = await fetchAsaasJson(url, commonHeaders);
-        if (!ok) throw new Error(`ASAAS /transfers erro ${status}: ${text}`);
+        const { ok, status, json } = await fetchAsaasJson(url, commonHeaders);
+        if (!ok) throw new Error(`ASAAS /transfers HTTP ${status}`);
 
         const parsed = (json || {}) as AsaasListResponse<AsaasTransfer>;
-        const transfers = parsed.data || [];
+        if (!Array.isArray(parsed.data) || typeof parsed.hasMore !== "boolean") throw new Error("Invalid transfers page");
+        const transfers = parsed.data;
+        pages++;
 
         for (const tr of transfers) {
           const data = toIsoDate(tr.transferDate || tr.dateCreated) || new Date().toISOString().slice(0, 10);
@@ -185,8 +192,10 @@ serve(async (req) => {
           synced++;
         }
 
+        await saveProgress();
         hasMore = parsed.hasMore === true;
-        offset += limit;
+        if (hasMore && transfers.length === 0) throw new Error("Empty transfers page with hasMore");
+        offset += transfers.length;
         await new Promise((r) => setTimeout(r, 200));
       }
     }
@@ -208,11 +217,11 @@ serve(async (req) => {
           `${asaasBaseUrl}/bill?${qs.toString()}`,
         ];
 
-        let lastErr: { status: number; text: string } | null = null;
+        let lastErr: number | null = null;
         let parsed: AsaasListResponse<AsaasBillPayment> | null = null;
 
         for (const url of candidates) {
-          const { ok, status, text, json } = await fetchAsaasJson(url, commonHeaders);
+          const { ok, status, json } = await fetchAsaasJson(url, commonHeaders);
           if (ok) {
             parsed = (json || {}) as AsaasListResponse<AsaasBillPayment>;
             lastErr = null;
@@ -220,16 +229,18 @@ serve(async (req) => {
           }
           // tenta o próximo endpoint se for 404; senão já falha
           if (status !== 404) {
-            throw new Error(`ASAAS bill erro ${status}: ${text}`);
+            throw new Error(`ASAAS bill HTTP ${status}`);
           }
-          lastErr = { status, text };
+          lastErr = status;
         }
 
         if (!parsed) {
-          throw new Error(`ASAAS bill erro ${lastErr?.status || 500}: ${lastErr?.text || "endpoint não encontrado"}`);
+          throw new Error(`ASAAS bill HTTP ${lastErr || 500}`);
         }
 
-        const bills = parsed.data || [];
+        if (!Array.isArray(parsed.data) || typeof parsed.hasMore !== "boolean") throw new Error("Invalid bills page");
+        const bills = parsed.data;
+        pages++;
 
         for (const bp of bills) {
           const data =
@@ -262,15 +273,20 @@ serve(async (req) => {
           synced++;
         }
 
+        await saveProgress();
         hasMore = parsed.hasMore === true;
-        offset += limit;
+        if (hasMore && bills.length === 0) throw new Error("Empty bills page with hasMore");
+        offset += bills.length;
         await new Promise((r) => setTimeout(r, 200));
       }
     }
 
+    const finished = new Date().toISOString();
+    const { error: finishError } = await supabase.from("sync_runs").update({ state: "completed", finished_at: finished, last_success_at: finished, pages_count: pages, items_count: synced, processed_count: synced }).eq("id", runId);
+    if (finishError) throw new Error("Cannot persist completed run");
     return new Response(
       JSON.stringify({
-        success: true,
+        success: true, run_id: runId, pages,
         synced,
         window: { startDate, endDate },
         last_sync: new Date().toISOString(),
@@ -278,9 +294,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("❌ [sync-asaas-outflows] Erro:", error);
+    console.error("Asaas outflow sync failed", { run_id: runId, pages, synced, reason: error instanceof Error ? error.message : "unknown" });
+    if (runId && db) await db.from("sync_runs").update({ state: "failed", finished_at: new Date().toISOString(), pages_count: pages, items_count: synced, processed_count: synced, errors: [{ reason: error instanceof Error ? error.message : "unknown" }] }).eq("id", runId);
     return new Response(
-      JSON.stringify({ success: false, error: error?.message || String(error) }),
+      JSON.stringify({ success: false, run_id: runId, error: "Synchronization failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
