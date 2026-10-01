@@ -32,13 +32,13 @@ export function ProviderConnectionsDialog({ open, onOpenChange, connections, upd
 
   const rows = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('pt-BR');
-    const priority = (status: string | null) => status === 'offline' ? 0 : status === 'online' ? 1 : 2;
+    const priority = (status: string | null) => status === 'offline' ? (order === 'offline' ? 0 : 1) : status === 'online' ? (order === 'online' ? 0 : 1) : 2;
     return connections.filter(d =>
       (provider === 'all' || d.provider === provider) &&
       (!query || [d.building, d.name, d.address || '', d.provider].some(text => text.toLocaleLowerCase('pt-BR').includes(query)))
     ).sort((a, b) => {
       const statusDifference = priority(a.status) - priority(b.status);
-      if (statusDifference) return order === 'offline' ? statusDifference : -statusDifference;
+      if (statusDifference) return statusDifference;
       if (a.status === 'offline' && b.status === 'offline') {
         const aSince = validDate(openEvents?.get(a.id));
         const bSince = validDate(openEvents?.get(b.id));
