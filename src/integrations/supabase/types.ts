@@ -16673,6 +16673,14 @@ export type Database = {
         Args: { p_payment_data: Json }
         Returns: Json
       }
+      record_asaas_webhook_event: {
+        Args: { p_event_id: string; p_event_type: string; p_payload: Json }
+        Returns: {
+          log_id: string
+          newly_recorded: boolean
+          processing_status: string
+        }[]
+      }
       recover_lost_transactions: { Args: never; Returns: Json }
       refresh_dashboard_metrics: { Args: never; Returns: undefined }
       register_benefit_choice: {
