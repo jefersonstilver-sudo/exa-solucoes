@@ -1,4 +1,7 @@
 # Financeiro — etapas 0 e 1
+- [x] Pausar agendamento mensal de parcelas e gatilhos de geração/espelhamento financeiro, sem alterar obrigações existentes.
+- [x] Retirar da configuração os agendamentos automáticos de cancelamento de pedidos, cobrança de fidelidade e lembretes PIX.
+- [ ] Confirmar no painel de agendamentos hospedados a desativação efetiva dos três agendamentos definidos apenas na configuração; removê-los do arquivo não comprova cancelamento de jobs remotos.
 - [x] Fotografar contagens e estado técnico antes da ingestão.
 - [x] Ampliar logs, restringir acesso e preparar registro atômico por ID de evento Asaas.
 - [x] Instrumentar sincronizações de entradas e saídas com paginação completa.
