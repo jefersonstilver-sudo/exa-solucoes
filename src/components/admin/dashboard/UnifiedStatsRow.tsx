@@ -39,7 +39,7 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
   };
 
   const cadastrosTrend = calculateTrend(stats.cadastros, stats.cadastrosAnterior);
-  const vendasTrend = calculateTrend(stats.vendas, stats.vendasAnterior);
+  const vendasTrend = stats.vendas != null && stats.vendasAnterior != null ? calculateTrend(stats.vendas, stats.vendasAnterior) : null;
 
   // Separar clientes de admins
   const clientes = stats.cadastrosLista?.filter(u => u.role === 'cliente') || [];
@@ -140,99 +140,20 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           }
         />
 
-        {/* 3. Vendas - Receita Efetiva */}
         <AppleLikeMetricCard
-          label="Receita Efetiva"
-          value={stats.loading ? '...' : (isPrivate ? '•••••' : formatCurrency(stats.vendas))}
+          label="Recebimentos Asaas"
+          value={stats.loading ? '...' : isPrivate ? '•••••' : stats.vendas == null ? 'Indisponível' : formatCurrency(stats.vendas)}
           icon={DollarSign}
-          description={!stats.loading ? vendasTrend.value : undefined}
+          description={vendasTrend?.value}
           disableHover={isPrivate}
-          hoverContent={
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Receita do Período</p>
-                <p className="text-xs text-muted-foreground">
-                  Valor efetivamente recebido (parcelas pagas)
-                </p>
-              </div>
-              <div className="space-y-2 pt-2 border-t border-border/50">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">💰 Receita Efetiva:</span>
-                  <span className="text-sm font-semibold text-emerald-600">{formatCurrency(stats.vendas)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">📅 Projetada (período):</span>
-                  <span className="text-sm font-semibold text-blue-600">{formatCurrency(stats.vendasProjetadas)}</span>
-                </div>
-                <div className="flex justify-between items-center pt-1 border-t border-border/30">
-                  <span className="text-xs text-muted-foreground">Total (efetiva + projetada):</span>
-                  <span className="text-sm font-semibold">{formatCurrency(stats.vendas + stats.vendasProjetadas)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Período Anterior:</span>
-                  <span className="text-sm font-semibold">{formatCurrency(stats.vendasAnterior)}</span>
-                </div>
-              </div>
-            </div>
-          }
+          hoverContent={<p className="text-sm text-muted-foreground">Pagamentos recebidos no extrato Asaas no período selecionado. Inclui todos os recebimentos bancários; segregação comercial por pedido requer vínculo seguro por ID.</p>}
         />
-
-        {/* 4. Receita Projetada do Período + 2025 */}
         <AppleLikeMetricCard
-          label="Receita Projetada"
-          value={stats.loading ? '...' : (isPrivate ? '•••••' : formatCurrency(stats.vendasProjetadas))}
+          label="Previsto / contratado"
+          value="Ver financeiro"
           icon={DollarSign}
-          description={!stats.loading ? (
-            <span className="text-xs text-muted-foreground">
-              2025: {isPrivate ? '•••••' : formatCurrency(stats.vendasProjetadas2025)}
-            </span>
-          ) : undefined}
-          disableHover={isPrivate}
-          hoverContent={
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Vendas Projetadas</p>
-                <p className="text-xs text-muted-foreground">
-                  Parcelas pendentes por cliente
-                </p>
-              </div>
-              {stats.vendasProjetadasLista && stats.vendasProjetadasLista.length > 0 ? (
-                <div className="max-h-64 overflow-y-auto space-y-2 pt-2 border-t border-border/50">
-                  {stats.vendasProjetadasLista.slice(0, 10).map((venda, idx) => (
-                    <div key={idx} className="p-2 bg-accent/50 rounded-lg text-xs">
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="font-medium text-foreground truncate">{venda.clienteNome}</span>
-                        <span className="text-emerald-600 font-semibold whitespace-nowrap">{formatCurrency(venda.valorMes)}/mês</span>
-                      </div>
-                      <div className="flex justify-between text-muted-foreground mt-0.5">
-                        <span>{venda.produto}</span>
-                        <span>{venda.periodo}</span>
-                      </div>
-                      <div className="text-right text-blue-600 font-medium mt-1">
-                        Total: {formatCurrency(venda.valorTotal)}
-                      </div>
-                    </div>
-                  ))}
-                  {stats.vendasProjetadasLista.length > 10 && (
-                    <p className="text-xs text-muted-foreground text-center pt-1">
-                      +{stats.vendasProjetadasLista.length - 10} mais vendas...
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2 pt-2 border-t border-border/50">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">📅 Projetada (período):</span>
-                    <span className="text-sm font-semibold text-blue-600">{formatCurrency(stats.vendasProjetadas)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">📊 Projeção 2025:</span>
-                    <span className="text-sm font-semibold text-purple-600">{formatCurrency(stats.vendasProjetadas2025)}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          }
+          onClick={() => window.location.assign('/admin/financeiro')}
+          hoverContent={<p className="text-sm text-muted-foreground">Previsto e contratado não são recebidos. Consulte-os separadamente no financeiro.</p>}
         />
 
         {/* 5. Dispositivos Online (Painéis EXA) */}

@@ -6,3 +6,6 @@ For Asaas ingestion, authenticate events and persist a unique provider/event ID 
 Keep financial generation cron jobs and automatic finance-writing triggers disabled until the approved replacement is in place; preserve existing obligations and use only authorized manual Asaas mirror synchronization.
 Mirror Asaas bank movements separately from receivables and outflows using financialTransactions IDs; reconcile only by provider IDs and never trigger financial settlement from a statement line.
 Read Asaas statement details through an admin-authorized edge function keyed by stored movement ID; this keeps provider credentials and related-resource resolution off the browser.
+
+Executive finance must derive realized cash from paginated Asaas statement movements and treat contracted/forecast obligations separately; this prevents order totals or legacy payments being mislabeled as bank receipts.
+Statement categories are display-only until an official provider ID verifies the corresponding obligation; this prevents approximate matching from changing financial state.

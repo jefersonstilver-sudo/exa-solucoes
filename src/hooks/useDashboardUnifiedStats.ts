@@ -55,11 +55,11 @@ export interface UnifiedDashboardStats {
     pendentes: number;
     ticketMedio: number;
   };
-  vendas: number;              // Receita EFETIVAMENTE recebida (parcelas pagas)
+  vendas: number | null;       // Asaas confirmed receipts; null when unavailable
   vendasProjetadas: number;    // Parcelas PENDENTES (receita futura)
   vendasProjetadasLista: VendaProjetadaDetalhada[]; // Lista detalhada para hover
   vendasProjetadas2025: number; // Projeção anual 2025
-  vendasAnterior: number;
+  vendasAnterior: number | null;
   conversas: number;
   conversasPorTipo: Record<string, ConversationTypeStats>;
   conversasPorAgente: Record<string, AgentConversationStats>;
@@ -98,11 +98,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     pedidosAtivos: 0,
     pedidosSemContrato: 0,
     pedidosDetalhes: { pagos: 0, pendentes: 0, ticketMedio: 0 },
-    vendas: 0,
+    vendas: null,
     vendasProjetadas: 0,
     vendasProjetadasLista: [],
     vendasProjetadas2025: 0,
-    vendasAnterior: 0,
+    vendasAnterior: null,
     conversas: 0,
     conversasPorTipo: {},
     conversasPorAgente: {},
@@ -198,147 +198,27 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         p.contrato_status !== 'assinado'
       ).length || 0;
 
-      // 3. Vendas - Calcular baseado em PARCELAS PAGAS
-      // CANÔNICO: status canônicos apenas
-      const { data: vendasData } = await supabase
-        .from('pedidos')
-        .select('id, valor_total, is_fidelidade, total_parcelas')
-        .in('status', ['video_enviado', 'video_aprovado', 'ativo'])
-        .gte('created_at', start)
-        .lte('created_at', end)
-        .gt('valor_total', 0);
-
-      // Buscar todas as parcelas dos pedidos do período
-      const pedidoIds = vendasData?.map(p => p.id) || [];
-      let vendasEfetivas = 0;
-      let vendasProjetadas = 0;
-
-      if (pedidoIds.length > 0) {
-        // CRITICAL: Buscar APENAS parcelas pagas COM confirmação do Mercado Pago
-        // Isso garante que só contamos receita REALMENTE recebida
-        const { data: parcelasPagasConfirmadas } = await supabase
-          .from('parcelas')
-          .select('pedido_id, valor_final, mercadopago_payment_id')
-          .in('pedido_id', pedidoIds)
-          .eq('status', 'pago')
-          .not('mercadopago_payment_id', 'is', null);
-
-        // Buscar parcelas pendentes (para projeção)
-        const { data: parcelasPendentes } = await supabase
-          .from('parcelas')
-          .select('pedido_id, valor_final')
-          .in('pedido_id', pedidoIds)
-          .in('status', ['pendente', 'atrasado']);
-
-        // Criar mapa de valores pagos (apenas com confirmação MP) e pendentes por pedido
-        const parcelasPagasPorPedido: Record<string, number> = {};
-        const parcelasPendentesPorPedido: Record<string, number> = {};
-        
-        // SOMENTE parcelas com mercadopago_payment_id contam como receita efetiva
-        parcelasPagasConfirmadas?.forEach(p => {
-          parcelasPagasPorPedido[p.pedido_id] = (parcelasPagasPorPedido[p.pedido_id] || 0) + (p.valor_final || 0);
-        });
-
-        parcelasPendentes?.forEach(p => {
-          parcelasPendentesPorPedido[p.pedido_id] = (parcelasPendentesPorPedido[p.pedido_id] || 0) + (p.valor_final || 0);
-        });
-
-        // Calcular receita efetiva e projetada
-        // IMPORTANTE: Tanto pedidos parcelados quanto únicos só contam se tiverem
-        // parcela paga COM confirmação do Mercado Pago (mercadopago_payment_id)
-        vendasData?.forEach(pedido => {
-          // Receita efetiva: SOMENTE valores confirmados pelo MP
-          vendasEfetivas += parcelasPagasPorPedido[pedido.id] || 0;
-          
-          // Receita projetada: parcelas pendentes
-          vendasProjetadas += parcelasPendentesPorPedido[pedido.id] || 0;
-        });
-      }
-
-      const vendas = vendasEfetivas;
-
-      // Projeção anual 2025 - buscar todas as parcelas pendentes de 2025
-      const startOf2025 = new Date('2025-01-01').toISOString();
-      const endOf2025 = new Date('2025-12-31').toISOString();
-      
-      const { data: parcelas2025 } = await supabase
-        .from('parcelas')
-        .select('valor_final')
-        .in('status', ['pendente', 'atrasado'])
-        .gte('data_vencimento', startOf2025)
-        .lte('data_vencimento', endOf2025);
-
-      const vendasProjetadas2025 = parcelas2025?.reduce((sum, p) => sum + (p.valor_final || 0), 0) || 0;
-
-      // Buscar lista detalhada de vendas projetadas para hover
-      // CANÔNICO: status canônicos apenas
-      const { data: vendasProjetadasDetalhe } = await supabase
-        .from('pedidos')
-        .select(`
-          id,
-          plano_meses,
-          data_inicio,
-          data_fim,
-          lista_paineis,
-          client:users!pedidos_client_id_fkey(nome)
-        `)
-        .in('status', ['video_enviado', 'video_aprovado', 'ativo'])
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      // Buscar parcelas pendentes desses pedidos
-      const pedidoIdsParaDetalhe = vendasProjetadasDetalhe?.map(p => p.id) || [];
-      let vendasProjetadasLista: VendaProjetadaDetalhada[] = [];
-
-      if (pedidoIdsParaDetalhe.length > 0) {
-        const { data: parcelasDetalhe } = await supabase
-          .from('parcelas')
-          .select('pedido_id, valor_final')
-          .in('pedido_id', pedidoIdsParaDetalhe)
-          .in('status', ['pendente', 'atrasado']);
-
-        // Agrupar parcelas por pedido
-        const parcelasPorPedidoDetalhe: Record<string, { valorMes: number; count: number }> = {};
-        parcelasDetalhe?.forEach(p => {
-          if (!parcelasPorPedidoDetalhe[p.pedido_id]) {
-            parcelasPorPedidoDetalhe[p.pedido_id] = { valorMes: 0, count: 0 };
-          }
-          parcelasPorPedidoDetalhe[p.pedido_id].valorMes = p.valor_final || 0;
-          parcelasPorPedidoDetalhe[p.pedido_id].count++;
-        });
-
-        // Montar lista detalhada
-        vendasProjetadasLista = vendasProjetadasDetalhe
-          ?.filter(p => parcelasPorPedidoDetalhe[p.id])
-          .map(p => {
-            const clientNome = (p.client as any)?.nome || 'Cliente';
-            const paineis = Array.isArray(p.lista_paineis) ? p.lista_paineis.length : 1;
-            const meses = p.plano_meses || 12;
-            const dataInicio = p.data_inicio ? new Date(p.data_inicio).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : '';
-            const dataFim = p.data_fim ? new Date(p.data_fim).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : '';
-            const parcelasInfo = parcelasPorPedidoDetalhe[p.id];
-
-            return {
-              clienteNome: clientNome,
-              produto: `${paineis} painel${paineis > 1 ? 's' : ''} - ${meses} meses`,
-              periodo: `${dataInicio} - ${dataFim}`,
-              valorMes: parcelasInfo.valorMes,
-              valorTotal: parcelasInfo.valorMes * parcelasInfo.count
-            };
-          }) || [];
-      }
-
-      // Período anterior (mantém cálculo simples para comparação)
-      // CANÔNICO: status canônicos apenas
-      const { data: vendasAnteriores } = await supabase
-        .from('pedidos')
-        .select('valor_total')
-        .in('status', ['video_enviado', 'video_aprovado', 'ativo'])
-        .gte('created_at', previousStart.toISOString())
-        .lte('created_at', previousEnd.toISOString())
-        .gt('valor_total', 0);
-
-      const vendasAnterior = vendasAnteriores?.reduce((sum, p) => sum + (p.valor_total || 0), 0) || 0;
+      // Cash receipts: only official Asaas PAYMENT_RECEIVED statement lines, by movement date.
+      // Never infer receipt from order status, valor_total or legacy Mercado Pago installments.
+      const collectReceipts = async (begin: string, finish: string): Promise<number | null> => {
+        let total = 0;
+        for (let offset = 0; ; offset += 500) {
+          const { data, error } = await supabase.from('asaas_extrato_movimentos')
+            .select('valor').eq('tipo', 'PAYMENT_RECEIVED')
+            .gte('data', begin.slice(0, 10)).lte('data', finish.slice(0, 10))
+            .order('ordem_asaas', { ascending: true }).range(offset, offset + 499);
+          if (error || !data) return null;
+          total += data.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+          if (data.length < 500) return total;
+        }
+      };
+      const [vendas, vendasAnterior] = await Promise.all([
+        collectReceipts(start, end), collectReceipts(previousStart.toISOString(), previousEnd.toISOString())
+      ]);
+      // Contracted/forecast revenue is deliberately not added to received cash.
+      const vendasProjetadas = 0;
+      const vendasProjetadas2025 = 0;
+      const vendasProjetadasLista: VendaProjetadaDetalhada[] = [];
 
       // 4. Conversas com Mensagens do Período
       const { data: mensagensData } = await supabase
