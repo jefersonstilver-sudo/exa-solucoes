@@ -16,9 +16,25 @@ export interface Logo {
   updated_at: string;
 }
 
+// Only cache successful, real responses. Signed storage URLs expire after seven days.
+const LOGOS_CACHE_KEY = 'exa-public-logos-v1';
+const LOGOS_CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+
+const readCachedLogos = (): Logo[] => {
+  try {
+    const raw = localStorage.getItem(LOGOS_CACHE_KEY);
+    if (!raw) return [];
+    const cached = JSON.parse(raw) as { savedAt: number; logos: Logo[] };
+    if (!Number.isFinite(cached.savedAt) || Date.now() - cached.savedAt > LOGOS_CACHE_MAX_AGE || !Array.isArray(cached.logos)) return [];
+    return cached.logos.filter(logo => typeof logo.id === 'string' && typeof logo.file_url === 'string');
+  } catch {
+    return [];
+  }
+};
+
 export const useLogos = () => {
-  const [logos, setLogos] = useState<Logo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [logos, setLogos] = useState<Logo[]>(readCachedLogos);
+  const [loading, setLoading] = useState(() => readCachedLogos().length === 0);
   const [error, setError] = useState<string | null>(null);
 
   const fetchLogos = async () => {
@@ -27,9 +43,10 @@ export const useLogos = () => {
       setError(null);
 
       // Usar a Edge Function para obter logos públicas
-      const { data, error } = await supabase.functions.invoke('logos', {
-        method: 'GET'
-      });
+      const { data, error } = await Promise.race([
+        supabase.functions.invoke('logos', { method: 'GET' }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Logo request timed out')), 15000))
+      ]);
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
@@ -46,6 +63,11 @@ export const useLogos = () => {
       }));
       
       setLogos(typedLogos);
+      try {
+        localStorage.setItem(LOGOS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), logos: typedLogos }));
+      } catch {
+        // Storage can be unavailable (private browsing or full quota).
+      }
     } catch (err) {
       console.error('❌ Unexpected error fetching logos:', err);
       setError('Erro inesperado ao carregar logos');

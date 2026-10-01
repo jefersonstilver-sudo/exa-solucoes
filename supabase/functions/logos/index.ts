@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 interface Logo {
   id: string;
@@ -40,13 +36,14 @@ serve(async (req) => {
         .select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant, scale_factor')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
-        .limit(20);
+        .limit(20)
+        .abortSignal(AbortSignal.timeout(10000));
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch logos', details: error.message }), 
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Logos temporarily unavailable' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } }
         );
       }
 
@@ -75,12 +72,16 @@ serve(async (req) => {
         const batch = (logos || []).slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(batch.map(async (logo: any) => {
           const info = extractBucketAndPath(logo.file_url);
+          // Public bucket URLs need no signed URL. Signing each logo adds
+          // another upstream request and can stall the entire public ticker.
+          if (typeof logo.file_url === 'string' && logo.file_url.includes('/storage/v1/object/public/')) {
+            return logo;
+          }
           if (!info) {
-            const cacheBustedUrl = logo.file_url + (logo.file_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
             return { 
               id: logo.id,
               name: logo.name,
-              file_url: cacheBustedUrl,
+              file_url: logo.file_url,
               link_url: logo.link_url,
               is_active: logo.is_active,
               sort_order: logo.sort_order,
