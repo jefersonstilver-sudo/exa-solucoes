@@ -11,152 +11,26 @@
  * Design: Minimalista, neutro, cores apenas para semântica
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { ShieldAlert } from 'lucide-react';
+import React from 'react';
+import { ShieldAlert, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { addDays, startOfDay, endOfDay } from 'date-fns';
-import { useFinanceiroData } from '@/hooks/financeiro/useFinanceiroData';
+import { Button } from '@/components/ui/button';
 import { useFinanceiroPermissions } from '@/hooks/financeiro/useFinanceiroPermissions';
 import { useAsaasBalance } from '@/hooks/financeiro/useAsaasBalance';
-import { useFluxoCaixa } from '@/hooks/financeiro/useFluxoCaixa';
-import { useAlertasFinanceiros } from '@/hooks/financeiro/useAlertasFinanceiros';
-import ElegantPeriodButton, { ElegantPeriodType } from '@/components/admin/dashboard/ElegantPeriodButton';
-
-// Componentes do Dashboard V2
-import CashHealthHero from '@/components/admin/financeiro/CashHealthHero';
-import RiskCards from '@/components/admin/financeiro/RiskCards';
-import ProjectionCard from '@/components/admin/financeiro/ProjectionCard';
-import ImmediateActions from '@/components/admin/financeiro/ImmediateActions';
-import PerformanceMetrics from '@/components/admin/financeiro/PerformanceMetrics';
+import { useExecutiveFinance } from '@/hooks/financeiro/useExecutiveFinance';
 import FinanceiroQuickNav from '@/components/admin/financeiro/FinanceiroQuickNav';
+import { useNavigate } from 'react-router-dom';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { formatCurrency } from '@/utils/format';
 
 const DashboardFinanceiroV2: React.FC = () => {
-  const { metricas, inadimplentes, loading: financeiroLoading, refetch, temPermissaoFinanceira } = useFinanceiroData();
-  const { balance, summary, loading: balanceLoading, lastUpdated, fetchBalance } = useAsaasBalance();
-  const { projecao30d, projecao60d, projecao90d, resumo, fluxoCaixa, fetchFluxoCaixa } = useFluxoCaixa();
-  const { alertas, fetchAlertas } = useAlertasFinanceiros();
+  const { balance, fetchBalance } = useAsaasBalance();
   const permissions = useFinanceiroPermissions();
-
-  // Estado do seletor de período
-  const [periodFilter, setPeriodFilter] = useState<ElegantPeriodType>('current_month');
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
-  
-  // Calcular contas fixas da semana
-  const contasDaSemana = useMemo(() => {
-    const hoje = startOfDay(new Date());
-    const fimSemana = endOfDay(addDays(hoje, 7));
-    
-    const contasSemana = (fluxoCaixa || []).filter(item => {
-      const dataItem = new Date(item.data);
-      return item.tipo === 'saida' && 
-             dataItem >= hoje && 
-             dataItem <= fimSemana;
-    });
-    
-    return {
-      count: contasSemana.length,
-      value: contasSemana.reduce((sum, c) => sum + Math.abs(c.valor), 0)
-    };
-  }, [fluxoCaixa]);
-
-  useEffect(() => {
-    if (temPermissaoFinanceira && permissions.canView) {
-      fetchBalance();
-      fetchFluxoCaixa();
-      fetchAlertas();
-    }
-  }, [temPermissaoFinanceira, permissions.canView]);
-
-  const loading = financeiroLoading || balanceLoading;
-
-  // Handler de refresh unificado
-  const handleRefresh = () => {
-    fetchBalance();
-    refetch();
-    fetchFluxoCaixa();
-    fetchAlertas();
-  };
-
-  // Calcular dias de operação baseado no caixa e despesas médias
-  const diasOperacao = useMemo(() => {
-    const caixa = balance?.available || 0;
-    const despesasMensais = (metricas?.despesas_fixas_mes || 0) + (metricas?.despesas_variaveis_mes || 0);
-    if (despesasMensais === 0) return 90;
-    return Math.floor((caixa / despesasMensais) * 30);
-  }, [balance?.available, metricas?.despesas_fixas_mes, metricas?.despesas_variaveis_mes]);
-
-  // Dados para RiskCards
-  const riskData = useMemo(() => ({
-    cobrancasVencendo: 0, // TODO: Calcular do backend
-    cobrancasVencendoValor: 0,
-    cobrancasAtrasadas: summary?.overdue_count || metricas?.inadimplencia_count || 0,
-    cobrancasAtrasadasValor: summary?.total_overdue || metricas?.inadimplencia_total || 0,
-    contasProximas: contasDaSemana.count,
-    contasProximasValor: contasDaSemana.value,
-    alertasAtivos: alertas.filter(a => a.ativo && !a.resolvido).length
-  }), [summary, metricas, alertas, contasDaSemana]);
-
-  // Dados para ProjectionCard
-  const projecaoData = useMemo(() => {
-    const calc30 = projecao30d.reduce((acc, p) => ({ 
-      entradas: acc.entradas + p.entradas, 
-      saidas: acc.saidas + p.saidas,
-      saldo: acc.saldo + p.saldo
-    }), { entradas: 0, saidas: 0, saldo: 0 });
-
-    const calc60 = projecao60d.reduce((acc, p) => ({ 
-      entradas: acc.entradas + p.entradas, 
-      saidas: acc.saidas + p.saidas,
-      saldo: acc.saldo + p.saldo
-    }), { entradas: 0, saidas: 0, saldo: 0 });
-
-    const calc90 = projecao90d.reduce((acc, p) => ({ 
-      entradas: acc.entradas + p.entradas, 
-      saidas: acc.saidas + p.saidas,
-      saldo: acc.saldo + p.saldo
-    }), { entradas: 0, saidas: 0, saldo: 0 });
-
-    return {
-      projecao30d: calc30,
-      projecao60d: calc60,
-      projecao90d: calc90,
-      saldoAtual: balance?.available || 0
-    };
-  }, [projecao30d, projecao60d, projecao90d, balance?.available]);
-
-  // Dados para ImmediateActions
-  const actionsData = useMemo(() => ({
-    cobrar: { 
-      count: riskData.cobrancasAtrasadas, 
-      value: riskData.cobrancasAtrasadasValor 
-    },
-    pagar: { 
-      count: riskData.contasProximas, 
-      value: riskData.contasProximasValor 
-    },
-    reconciliar: { 
-      count: 0, 
-      value: 0 
-    },
-    alertas: { 
-      count: riskData.alertasAtivos 
-    }
-  }), [riskData]);
-
-  // Dados para PerformanceMetrics
-  const performanceData = useMemo(() => ({
-    receitaMes: metricas?.receita_realizada || 0,
-    receitaMesAnterior: 0, // TODO: Calcular mês anterior
-    despesasFixas: metricas?.despesas_fixas_mes || 0,
-    despesasFixasAnterior: 0,
-    despesasVariaveis: metricas?.despesas_variaveis_mes || 0,
-    despesasVariaveisAnterior: 0,
-    margemLiquida: metricas?.receita_realizada 
-      ? ((metricas.receita_realizada - (metricas.despesas_fixas_mes || 0) - (metricas.despesas_variaveis_mes || 0)) / metricas.receita_realizada) * 100
-      : 0,
-    margemLiquidaAnterior: 0
-  }), [metricas]);
+  const { snapshot, loading: executiveLoading, refresh } = useExecutiveFinance();
+  const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
+  React.useEffect(() => { if (permissions.canView) void fetchBalance(); }, [permissions.canView, fetchBalance]);
+  const temPermissaoFinanceira = permissions.canView;
 
   // Tela de acesso restrito
   if (!temPermissaoFinanceira || !permissions.canView) {
@@ -171,54 +45,48 @@ const DashboardFinanceiroV2: React.FC = () => {
     );
   }
 
+  const value = (amount: number | null | undefined) => amount == null ? 'Indisponível' : formatCurrency(amount);
+  const primary = [
+    ['Saldo Asaas ao vivo', balance?.source === 'asaas' ? balance.available : null],
+    ['Entradas realizadas · mês', snapshot?.entradas],
+    ['Saídas realizadas · mês', snapshot?.saidas],
+    ['Resultado de caixa · mês', snapshot ? snapshot.entradas - snapshot.saidas : null],
+  ] as const;
+  const commitments = [
+    ['Receita de cobranças recebidas · Asaas', snapshot?.receita],
+    ['Receita recorrente contratada · MRR', snapshot?.mrr],
+    ['Receita prevista · mês', snapshot?.previsto],
+    ['Inadimplência registrada', snapshot?.inadimplencia],
+    ['Contas a pagar · mês', snapshot?.contasPagar],
+    ['Despesas fixas · cadastro ativo', snapshot?.fixas],
+    ['Despesas variáveis · mês', snapshot?.variaveis],
+  ] as const;
   return (
-    <div className="min-h-screen bg-white">
-      <div className="p-4 md:p-5 space-y-5 max-w-7xl mx-auto">
-        {/* Header + Navegação Rápida */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
-              <p className="text-sm text-gray-500">Visão executiva em tempo real</p>
-            </div>
-            <ElegantPeriodButton 
-              value={periodFilter} 
-              onChange={setPeriodFilter} 
-              customStartDate={customStartDate}
-              customEndDate={customEndDate}
-              onCustomDateChange={(start, end) => {
-                setCustomStartDate(start);
-                setCustomEndDate(end);
-              }}
-            />
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto max-w-7xl space-y-8 p-4 md:p-8">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b pb-5">
+          <div><h1 className="text-2xl font-semibold">Financeiro</h1><p className="text-sm text-muted-foreground">Caixa realizado no Asaas · compromissos separados</p></div>
+          <Button variant="outline" size="icon" title="Atualizar indicadores" aria-label="Atualizar indicadores" onClick={() => { void refresh(); void fetchBalance(); }}><RefreshCw className="h-4 w-4" /></Button>
+        </header>
+        <section aria-label="Caixa realizado" className="grid gap-5 border-b pb-8 sm:grid-cols-2 lg:grid-cols-4">
+          {primary.map(([label, amount]) => <div key={label} className="space-y-2"><p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold tabular-nums">{executiveLoading && !snapshot ? 'Carregando…' : value(amount)}</p></div>)}
+        </section>
+        <section aria-label="Saúde da conciliação" className="space-y-3 border-b pb-8">
+          <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /><h2 className="text-lg font-semibold">Saúde da conciliação</h2></div>
+          <p role="status" className="text-sm text-destructive">{executiveLoading && !snapshot ? 'Verificando espelho…' : snapshot?.certified ? 'Conciliação por ID verificada neste espelho.' : snapshot?.warning || 'Não foi possível certificar o espelho financeiro; números indisponíveis.'}</p>
+          <p className="text-sm text-muted-foreground">Última sincronização: {snapshot?.lastSync ? new Date(snapshot.lastSync).toLocaleString('pt-BR') : 'Indisponível'} · Pendências/exceções: {snapshot ? snapshot.pendencias : 'Indisponível'} · {snapshot ? `${snapshot.total} movimentos` : 'Quantidade indisponível'}</p>
+          <Button variant="outline" onClick={() => navigate(buildPath('financeiro/extrato'))}>Abrir extrato <ArrowRight className="ml-2 h-4 w-4" /></Button>
+        </section>
+        <section aria-label="Contratado e obrigações" className="space-y-5">
+          <h2 className="text-lg font-semibold">Contratado, previsto e obrigações</h2>
+          <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+            {commitments.map(([label, amount]) => <div key={label} className="border-b pb-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-lg font-medium tabular-nums">{executiveLoading && !snapshot ? 'Carregando…' : value(amount)}</p></div>)}
           </div>
-          <FinanceiroQuickNav />
-        </div>
-
-        {/* CAMADA 1: Situação Atual + Projeção (Grid lado a lado) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <CashHealthHero
-            caixaDisponivel={balance?.available || 0}
-            diasOperacao={diasOperacao}
-            entradas={projecaoData.projecao30d.entradas}
-            saidas={projecaoData.projecao30d.saidas}
-            loading={loading}
-            onRefresh={handleRefresh}
-            lastUpdated={lastUpdated || undefined}
-          />
-          <ProjectionCard {...projecaoData} />
-        </div>
-
-        {/* CAMADA 2: Riscos Próximos */}
-        <RiskCards {...riskData} />
-
-        {/* CAMADA 4: Ações Imediatas */}
-        <ImmediateActions {...actionsData} />
-
-        {/* CAMADA 5: Performance */}
-        <PerformanceMetrics {...performanceData} />
+          <p className="text-xs text-muted-foreground">MRR e previsão não são dinheiro recebido. Movimentos bancários incluem transferências e taxas; correspondência por ID não dá baixa em obrigações.</p>
+        </section>
+        <section aria-label="Acesso às áreas financeiras"><FinanceiroQuickNav /></section>
       </div>
-    </div>
+    </main>
   );
 };
 
