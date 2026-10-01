@@ -1,1 +1,2 @@
 Use `devices` as the source of current provider connectivity, querying all non-deleted rows with pagination and a Realtime subscription plus 60-second refresh; history events describe outages, not live status.
+For provider outage start times, use an open offline event newer than the device's last online observation; fall back to labeled last-online time because stale open events can remain after recovery.
