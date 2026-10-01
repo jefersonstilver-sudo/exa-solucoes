@@ -1,15 +1,4 @@
-/**
- * DashboardFinanceiroV2 - Cockpit Executivo Financeiro
- * 
- * Dashboard organizado em 5 camadas cognitivas:
- * 1. Situação Atual (Hero)
- * 2. Riscos Próximos
- * 3. Projeções
- * 4. Ações Imediatas
- * 5. Performance
- * 
- * Design: Minimalista, neutro, cores apenas para semântica
- */
+/** Cockpit financeiro: caixa Asaas separado de contratado, previsto e obrigações. */
 
 import React from 'react';
 import { ShieldAlert, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';

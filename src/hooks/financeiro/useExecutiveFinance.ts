@@ -47,12 +47,12 @@ export function useExecutiveFinance() {
       const balance = !balanceResult.error && balanceResult.data?.balance?.source === 'asaas' ? Number(balanceResult.data.balance.available) : NaN;
       const lastBalance = lastResult.data?.saldo == null ? NaN : Number(lastResult.data.saldo);
       const current = !!run?.finished_at && Date.now() - new Date(run.finished_at).getTime() < 60 * 60 * 1000;
-      const certified = run?.state === 'completed' && current && total != null && total === run.items_count && Number.isFinite(balance) && Number.isFinite(lastBalance) && Math.abs(balance - lastBalance) < 0.005;
+      const certified = false; // Balance/count checks alone cannot certify ID-level reconciliation of every movement.
       const warning = !run || total == null ? 'Sem leitura completa do extrato.' : run.state !== 'completed' ? 'Última sincronização não concluída.' : !current ? 'Sincronização desatualizada.' : total !== run.items_count ? 'Quantidade de movimentos divergente.' : !Number.isFinite(balance) ? 'Saldo ao vivo indisponível.' : Math.abs(balance - lastBalance) >= 0.005 ? 'Saldo Asaas e extrato divergentes.' : 'Espelho conferido com saldo e quantidade; correspondências individuais ainda pendentes.';
       let entries = 0, exits = 0, received = 0, pending = 0;
       // The statement mirror is the only source for actual cash. Read every page; a partial page is never a zero.
       const nextMonth = `${today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear()}-${String((today.getMonth() + 1) % 12 + 1).padStart(2, '0')}-01`;
-      for (let offset = 0; offset < (total || 0); offset += BATCH) {
+      for (let offset = 0; ; offset += BATCH) {
         const { data, error: pageError } = await supabase.from('asaas_extrato_movimentos').select('valor,tipo,correspondencia_status').gte('data', first).lt('data', nextMonth).order('ordem_asaas', { ascending: true }).range(offset, offset + BATCH - 1);
         if (pageError) throw pageError;
         // A short page is the last page of this month's movements.
