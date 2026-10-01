@@ -43,18 +43,19 @@ export const useAutoPaymentVerifier = () => {
 
       return result;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('❌ [AUTO_VERIFIER] Erro na verificação:', error);
       const errorResult = {
         success: false,
         total_checked: 0,
         verified_count: 0,
         approved_count: 0,
-        errors: [error.message],
+        errors: [message],
         timestamp: new Date().toISOString()
       };
       setLastResult(errorResult);
-      toast.error(`Erro na verificação automática: ${error.message}`);
+      toast.error(`Erro na verificação automática: ${message}`);
       return errorResult;
     } finally {
       setIsRunning(false);
