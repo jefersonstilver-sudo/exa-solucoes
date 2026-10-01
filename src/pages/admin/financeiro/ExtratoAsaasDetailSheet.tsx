@@ -10,6 +10,7 @@ type Movement = { id: string; data: string; tipo: string; descricao: string | nu
 type Details = {
   id: string;
   references: Record<string, string | null>;
+  statementFields: Record<string, string | number | boolean | null>;
   details: Record<string, string | number | boolean | null>;
   available: string[];
   unavailable: { resource: string; status: number }[];
@@ -22,6 +23,7 @@ const labels: Record<string, string> = {
   recurrenceId: 'ID da recorrência', externalReference: 'Referência externa',
 };
 const referenceLabels: Record<string, string> = { transferId: 'Transferência', paymentId: 'Cobrança', billId: 'Conta', pixTransactionId: 'Transação Pix' };
+const statementLabels: Record<string, string> = { invoiceId: 'Fatura', splitId: 'Divisão', anticipationId: 'Antecipação', paymentDunningId: 'Cobrança de inadimplência', creditBureauReportId: 'Consulta de crédito' };
 const resourceLabels: Record<string, string> = { transfer: 'Transferência', payment: 'Cobrança', bill: 'Conta', pix: 'Pix' };
 const dateText = (s: string) => /^\d{4}-\d\d-\d\d/.test(s) ? new Date(s.length === 10 ? `${s}T12:00:00` : s).toLocaleString('pt-BR', s.length === 10 ? { dateStyle: 'short' } : { dateStyle: 'short', timeStyle: 'short' }) : s;
 const display = (key: string, value: string | number | boolean) => {
@@ -69,6 +71,7 @@ export default function ExtratoAsaasDetailSheet({ movement, onClose }: { movemen
             {receipt && <div className="flex flex-wrap gap-2"><Button asChild><a href={receipt} target="_blank" rel="noopener noreferrer">Visualizar comprovante <ExternalLink className="ml-2 h-4 w-4" /></a></Button><Button variant="outline" asChild><a href={receipt} target="_blank" rel="noopener noreferrer" download>Baixar <FileDown className="ml-2 h-4 w-4" /></a></Button></div>}
             {Object.entries(detail.details).some(([key, val]) => key !== 'receiptUrl' && val !== null && val !== '') && <section><h3 className="mb-3 text-sm font-semibold">Informações oficiais</h3><dl className="divide-y border-y">{Object.entries(detail.details).filter(([key, val]) => key !== 'receiptUrl' && val !== null && val !== '').map(([key, val]) => <div key={key} className="grid gap-1 py-3 sm:grid-cols-[150px_1fr]"><dt className="text-xs text-muted-foreground">{labels[key] || key}</dt><dd className="break-words text-sm font-medium">{display(key, val as string | number | boolean)}</dd></div>)}</dl></section>}
             {Object.values(detail.references).some(Boolean) && <section><h3 className="mb-3 text-sm font-semibold">Identificadores Asaas</h3><dl className="space-y-3">{Object.entries(detail.references).filter(([, val]) => !!val).map(([key, val]) => <div key={key}><dt className="text-xs text-muted-foreground">{referenceLabels[key] || key}</dt><dd className="break-all text-sm">{val}</dd></div>)}</dl></section>}
+            {Object.keys(detail.statementFields || {}).length > 0 && <section><h3 className="mb-3 text-sm font-semibold">Outras referências do extrato</h3><dl className="space-y-3">{Object.entries(detail.statementFields).map(([key, val]) => <div key={key}><dt className="text-xs text-muted-foreground">{statementLabels[key] || key}</dt><dd className="break-all text-sm">{String(val)}</dd></div>)}</dl></section>}
             {detail.unavailable.length > 0 && <p className="border-t pt-4 text-xs text-muted-foreground">Detalhes adicionais indisponíveis: {detail.unavailable.map(item => resourceLabels[item.resource] || item.resource).join(', ')}.</p>}
           </>}
         </div>}
