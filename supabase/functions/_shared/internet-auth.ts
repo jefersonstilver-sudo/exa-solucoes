@@ -13,7 +13,16 @@ export async function internetAdmin(req: Request) {
   const db = internetDb();
   const { data: { user }, error } = await db.auth.getUser(token);
   if (error || !user) return null;
-  const { data: allowed, error: roleError } = await db.rpc('has_role', { _user_id: user.id, _role: 'super_admin' });
-  if (roleError || !allowed) return null;
+
+  // There are legacy text and app_role overloads of has_role in this project.
+  // Calling it through PostgREST is ambiguous (PGRST203), so authorize against
+  // the canonical roles table with the server-only client instead.
+  const { data: role, error: roleError } = await db
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('role', 'super_admin')
+    .maybeSingle();
+  if (roleError || !role) return null;
   return { db, user };
 }
