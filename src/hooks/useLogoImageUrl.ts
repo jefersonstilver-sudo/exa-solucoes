@@ -13,13 +13,6 @@ export const useLogoImageUrl = (logo: { file_url: string; storage_bucket?: strin
 
     const generateSignedUrl = async () => {
       setLoading(true);
-      // Public URLs are already usable. Re-signing them adds a dependency on
-      // the same unavailable upstream service that supplied the logo list.
-      if (logo.file_url.includes('/storage/v1/object/public/')) {
-        setImageUrl(logo.file_url);
-        setLoading(false);
-        return;
-      }
       
       try {
         // Se tem informações de storage, SEMPRE gerar URL assinada (bucket privado)
