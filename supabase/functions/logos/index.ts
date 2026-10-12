@@ -1,6 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { PublicLogoCache, PUBLIC_LOGOS_TIMEOUT_MS } from './public-cache.ts';
+
+const publicLogoCache = new PublicLogoCache<Record<string, unknown>>();
+const publicHeaders = (savedAt: number) => ({
+  ...corsHeaders,
+  'Content-Type': 'application/json',
+  'Cache-Control': 'no-store',
+  'Access-Control-Expose-Headers': 'Age',
+  'Age': String(Math.max(0, Math.ceil((Date.now() - savedAt) / 1000))),
+});
 
 interface Logo {
   id: string;
@@ -18,9 +28,16 @@ serve(async (req) => {
   }
 
   try {
+    // Bound the entire public read, including private Storage signing.
+    // Administrative writes retain their existing behavior.
+    const publicDeadline = req.method === 'GET' ? AbortSignal.timeout(PUBLIC_LOGOS_TIMEOUT_MS) : null;
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      publicDeadline ? { global: { fetch: (input, init) => fetch(input, {
+        ...init,
+        signal: init?.signal ? AbortSignal.any([init.signal, publicDeadline]) : publicDeadline,
+      }) } } : {}
     );
 
     const url = new URL(req.url);
@@ -37,10 +54,12 @@ serve(async (req) => {
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
         .limit(20)
-        .abortSignal(AbortSignal.timeout(10000));
+        .abortSignal(publicDeadline ?? AbortSignal.timeout(PUBLIC_LOGOS_TIMEOUT_MS));
 
       if (error) {
-        console.error('❌ Error fetching logos:', error);
+        console.warn('Public logo upstream unavailable:', error.code);
+        const cached = publicLogoCache.read();
+        if (cached) return new Response(JSON.stringify(cached.data), { headers: publicHeaders(cached.savedAt) });
         return new Response(
           JSON.stringify({ error: 'Logos temporarily unavailable' }),
           { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } }
@@ -162,10 +181,12 @@ serve(async (req) => {
       }
 
       const validLogos = signedLogos.filter(logo => logo !== null);
+      // Do not cache a partial response caused by failed URL resolution.
+      if (validLogos.length === (logos || []).length) publicLogoCache.save(validLogos);
       console.log(`✅ Found ${validLogos?.length || 0} active logos in batches`);
       return new Response(
         JSON.stringify(validLogos || []), 
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: publicHeaders(Date.now()) }
       );
     }
 

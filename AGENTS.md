@@ -2,6 +2,7 @@ Use `devices` as the source of current provider connectivity, querying all non-d
 For provider connection cards and their detailed list, restrict devices to the IDs of the current Predios/Prédios device group; group membership is the source of truth, not building_id, so internal and ungrouped devices are excluded.
 For provider outage start times, use an open offline event newer than the device's last online observation; fall back to labeled last-online time because stale open events can remain after recovery.
 Cache only successful public logo responses for at most 24 hours and time-bound their upstream fetch; this preserves real previously loaded logos during transient Supabase outages without indefinite stale images.
+Public logo reads use a bounded request and a best-effort warm-isolate snapshot; propagate its Age to browser cache timestamps so failures never renew stale data.
 For Asaas ingestion, authenticate events and persist a unique provider/event ID before acknowledging; do not credit orders by name or amount, because those matches can credit the wrong client.
 Keep financial generation cron jobs and automatic finance-writing triggers disabled until the approved replacement is in place; preserve existing obligations and use only authorized manual Asaas mirror synchronization.
 Mirror Asaas bank movements separately from receivables and outflows using financialTransactions IDs; reconcile only by provider IDs and never trigger financial settlement from a statement line.
