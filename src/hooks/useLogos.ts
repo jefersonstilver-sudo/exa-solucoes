@@ -25,7 +25,7 @@ const readCachedLogos = (): Logo[] => {
     const raw = localStorage.getItem(LOGOS_CACHE_KEY);
     if (!raw) return [];
     const cached = JSON.parse(raw) as { savedAt: number; logos: Logo[] };
-    if (!Number.isFinite(cached.savedAt) || Date.now() - cached.savedAt > LOGOS_CACHE_MAX_AGE || !Array.isArray(cached.logos)) return [];
+    if (!Number.isFinite(cached.savedAt) || cached.savedAt > Date.now() || Date.now() - cached.savedAt >= LOGOS_CACHE_MAX_AGE || !Array.isArray(cached.logos)) return [];
     return cached.logos.filter(logo => typeof logo.id === 'string' && typeof logo.file_url === 'string');
   } catch {
     return [];
@@ -36,23 +36,26 @@ export const useLogos = () => {
   const [logos, setLogos] = useState<Logo[]>(readCachedLogos);
   const [loading, setLoading] = useState(() => readCachedLogos().length === 0);
   const [error, setError] = useState<string | null>(null);
+  const requestInFlight = useRef(false);
+  const retryNeeded = useRef(false);
 
   const fetchLogos = async () => {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
     try {
       if (logos.length === 0) setLoading(true);
       setError(null);
 
       // Usar a Edge Function para obter logos públicas
-      const { data, error } = await Promise.race([
-        supabase.functions.invoke('logos', { method: 'GET' }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Logo request timed out')), 15000))
-      ]);
-
-      if (error) {
-        console.error('❌ Error fetching logos:', error);
-        setError('Erro ao carregar logos');
-        return;
-      }
+      // Public endpoint: no session/credential needed. Abort the actual request
+      // instead of abandoning a promise while SDK retries continue in background.
+      const response = await fetch('https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/logos', {
+        signal: AbortSignal.timeout(60_000),
+      });
+      if (!response.ok) throw new Error(`Logo service unavailable (${response.status})`);
+      const data: Logo[] = await response.json();
+      if (!Array.isArray(data)) throw new Error('Invalid logo response');
+      retryNeeded.current = false;
 
       console.log('✅ Logos fetched successfully:', data?.length || 0);
       
@@ -64,14 +67,18 @@ export const useLogos = () => {
       
       setLogos(typedLogos);
       try {
-        localStorage.setItem(LOGOS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), logos: typedLogos }));
+        const age = Number(response.headers.get('Age') ?? 0);
+        const savedAt = Date.now() - (Number.isFinite(age) && age > 0 ? age * 1000 : 0);
+        localStorage.setItem(LOGOS_CACHE_KEY, JSON.stringify({ savedAt, logos: typedLogos }));
       } catch {
         // Storage can be unavailable (private browsing or full quota).
       }
     } catch (err) {
-      console.error('❌ Unexpected error fetching logos:', err);
+      retryNeeded.current = true;
+      console.warn('Logos temporarily unavailable; keeping the last successful response.');
       setError('Erro inesperado ao carregar logos');
     } finally {
+      requestInFlight.current = false;
       setLoading(false);
     }
   };
@@ -83,6 +90,10 @@ export const useLogos = () => {
   // Carregar logos na inicialização
   useEffect(() => {
     fetchLogos();
+    const retry = window.setInterval(() => {
+      if (retryNeeded.current) fetchLogos();
+    }, 60_000);
+    return () => window.clearInterval(retry);
   }, []);
 
   // Configurar real-time updates via Supabase
