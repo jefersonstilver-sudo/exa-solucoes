@@ -3,8 +3,8 @@ import { humanizeDate } from '../utils/formatters';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { Badge } from '@/components/ui/badge';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck, User, BellOff } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Wifi, MapPin, Activity, Building2, Check, Unlink, AlertTriangle, ClipboardCheck, User, BellOff, Copy } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { IncidentStatus } from '../hooks/useDeviceIncidentStatus';
 import { DeviceIncident } from '../hooks/useDeviceIncidents';
@@ -158,6 +158,52 @@ export const PanelCard = ({
   const displayEventsCount = periodEventsCount !== undefined ? periodEventsCount : (device.offline_count || 0);
   const eventsLabel = periodEventsCount !== undefined ? `${displayEventsCount} quedas ${periodLabel}` : `${displayEventsCount} quedas`;
 
+  // Copiar resumo do painel (prédio, endereço e internet)
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (copyTimer.current) window.clearTimeout(copyTimer.current); }, []);
+
+  const copyPanelSummary = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = [
+      `Prédio: ${assignedBuildingName || displayName}`,
+      `Endereço: ${assignedBuildingAddress || 'não definido'}`,
+      `Internet: ${provider}`,
+    ].join('\n');
+
+    let ok = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        ok = false;
+      }
+    }
+    if (ok) {
+      setCopied(true);
+      if (copyTimer.current) window.clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 1600);
+    }
+  };
+
+
   // Render incident badge with hover card
   const renderIncidentBadge = () => {
     if (device.status !== 'offline') return null;
@@ -257,7 +303,7 @@ export const PanelCard = ({
   return (
     <div 
       onClick={onClick} 
-      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-2 overflow-hidden group hover:scale-[1.03] flex flex-col ${hasCriticalAlert ? 'border-red-600 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}
+      className={`glass-card relative rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-2 overflow-hidden group hover:scale-[1.03] flex flex-col ${hasCriticalAlert ? 'border-red-600 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}
       style={{
         backgroundColor: hasCriticalAlert 
           ? undefined 
@@ -268,6 +314,21 @@ export const PanelCard = ({
               : undefined
       }}
     >
+      {/* Botão copiar: prédio, endereço e internet */}
+      <button
+        type="button"
+        onClick={copyPanelSummary}
+        title="Copiar prédio, endereço e internet"
+        aria-label="Copiar prédio, endereço e internet"
+        className={`absolute right-1.5 top-1.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm transition-opacity sm:h-6 sm:w-6 ${
+          copied
+            ? 'border-emerald-400 bg-emerald-100 text-emerald-700 opacity-100'
+            : 'border-gray-300 bg-white/85 text-gray-500 opacity-60 hover:bg-white hover:text-gray-900 hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-400'
+        }`}
+      >
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      </button>
+
       {/* Corpo do card */}
       <div className="p-2 sm:p-4 lg:p-6 text-center flex-1 flex flex-col">
         {/* Nome principal grande */}
