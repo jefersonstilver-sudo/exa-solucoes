@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-import { PublicLogoCache, PUBLIC_LOGOS_TIMEOUT_MS } from './public-cache.ts';
+import {
+  parsePublicLogoSnapshot,
+  PERSISTENT_LOGOS_TIMEOUT_MS,
+  PublicLogoCache,
+  PUBLIC_LOGOS_TIMEOUT_MS,
+} from './public-cache.ts';
 
 const publicLogoCache = new PublicLogoCache<Record<string, unknown>>();
+const PERSISTENT_CACHE_BUCKET = 'arquivos';
+const PERSISTENT_CACHE_PATH = '.cache/public-logos.json';
 const publicHeaders = (savedAt: number) => ({
   ...corsHeaders,
   'Content-Type': 'application/json',
@@ -11,6 +18,57 @@ const publicHeaders = (savedAt: number) => ({
   'Access-Control-Expose-Headers': 'Age',
   'Age': String(Math.max(0, Math.ceil((Date.now() - savedAt) / 1000))),
 });
+
+const unavailableHeaders = {
+  ...corsHeaders,
+  'Content-Type': 'application/json',
+  'Cache-Control': 'no-store',
+  'X-Logo-Status': 'unavailable',
+  'Access-Control-Expose-Headers': 'Age, X-Logo-Status',
+};
+
+const readPersistentSnapshot = async (supabaseUrl: string, serviceRoleKey: string) => {
+  if (!supabaseUrl || !serviceRoleKey) return null;
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/storage/v1/object/${PERSISTENT_CACHE_BUCKET}/${PERSISTENT_CACHE_PATH}`,
+      {
+        headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
+        signal: AbortSignal.timeout(PERSISTENT_LOGOS_TIMEOUT_MS),
+      },
+    );
+    if (!response.ok) return null;
+    return parsePublicLogoSnapshot<Record<string, unknown>>(await response.json());
+  } catch {
+    return null;
+  }
+};
+
+const savePersistentSnapshot = async (
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  snapshot: { data: Record<string, unknown>[]; savedAt: number },
+) => {
+  if (!supabaseUrl || !serviceRoleKey) return;
+  try {
+    await fetch(
+      `${supabaseUrl}/storage/v1/object/${PERSISTENT_CACHE_BUCKET}/${PERSISTENT_CACHE_PATH}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          apikey: serviceRoleKey,
+          'Content-Type': 'application/json',
+          'x-upsert': 'true',
+        },
+        body: JSON.stringify(snapshot),
+        signal: AbortSignal.timeout(PERSISTENT_LOGOS_TIMEOUT_MS),
+      },
+    );
+  } catch {
+    // The persistent snapshot is best-effort; the successful response remains valid.
+  }
+};
 
 interface Logo {
   id: string;
@@ -31,9 +89,11 @@ serve(async (req) => {
     // Bound the entire public read, including private Storage signing.
     // Administrative writes retain their existing behavior.
     const publicDeadline = req.method === 'GET' ? AbortSignal.timeout(PUBLIC_LOGOS_TIMEOUT_MS) : null;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      supabaseUrl,
+      serviceRoleKey,
       publicDeadline ? { global: { fetch: (input, init) => fetch(input, {
         ...init,
         signal: init?.signal ? AbortSignal.any([init.signal, publicDeadline]) : publicDeadline,
@@ -60,10 +120,14 @@ serve(async (req) => {
         console.warn('Public logo upstream unavailable:', error.code);
         const cached = publicLogoCache.read();
         if (cached) return new Response(JSON.stringify(cached.data), { headers: publicHeaders(cached.savedAt) });
-        return new Response(
-          JSON.stringify({ error: 'Logos temporarily unavailable' }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } }
-        );
+        const persistent = await readPersistentSnapshot(supabaseUrl, serviceRoleKey);
+        if (persistent) {
+          publicLogoCache.save(persistent.data, persistent.savedAt);
+          return new Response(JSON.stringify(persistent.data), { headers: publicHeaders(persistent.savedAt) });
+        }
+        // Logos are decorative. Return a non-cacheable empty result instead of
+        // turning a transient database timeout into a page-level runtime error.
+        return new Response(JSON.stringify([]), { status: 200, headers: unavailableHeaders });
       }
 
       const extractBucketAndPath = (urlOrPath: string): { bucket: string; pathDecoded: string; pathRaw: string } | null => {
@@ -182,7 +246,11 @@ serve(async (req) => {
 
       const validLogos = signedLogos.filter(logo => logo !== null);
       // Do not cache a partial response caused by failed URL resolution.
-      if (validLogos.length === (logos || []).length) publicLogoCache.save(validLogos);
+      if (validLogos.length === (logos || []).length) {
+        const savedAt = Date.now();
+        publicLogoCache.save(validLogos, savedAt);
+        await savePersistentSnapshot(supabaseUrl, serviceRoleKey, { data: validLogos, savedAt });
+      }
       console.log(`✅ Found ${validLogos?.length || 0} active logos in batches`);
       return new Response(
         JSON.stringify(validLogos || []), 

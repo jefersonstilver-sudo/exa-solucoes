@@ -53,6 +53,9 @@ export const useLogos = () => {
         signal: AbortSignal.timeout(60_000),
       });
       if (!response.ok) throw new Error(`Logo service unavailable (${response.status})`);
+      if (response.headers.get('X-Logo-Status') === 'unavailable') {
+        throw new Error('Logo service temporarily unavailable');
+      }
       const data: Logo[] = await response.json();
       if (!Array.isArray(data)) throw new Error('Invalid logo response');
       retryNeeded.current = false;

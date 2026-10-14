@@ -1,4 +1,10 @@
-import { PublicLogoCache, PUBLIC_LOGOS_MAX_AGE_MS, PUBLIC_LOGOS_TIMEOUT_MS } from './public-cache.ts';
+import {
+  parsePublicLogoSnapshot,
+  PERSISTENT_LOGOS_TIMEOUT_MS,
+  PublicLogoCache,
+  PUBLIC_LOGOS_MAX_AGE_MS,
+  PUBLIC_LOGOS_TIMEOUT_MS,
+} from './public-cache.ts';
 
 const equal = (actual: unknown, expected: unknown) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error('Unexpected cache result');
@@ -29,4 +35,18 @@ Deno.test('a successful empty response replaces old logos', () => {
 
 Deno.test('public upstream requests have a finite 45 second budget', () => {
   equal(PUBLIC_LOGOS_TIMEOUT_MS, 45_000);
+  equal(PERSISTENT_LOGOS_TIMEOUT_MS, 3_000);
+});
+
+Deno.test('persistent snapshots preserve the original successful timestamp', () => {
+  equal(parsePublicLogoSnapshot({ data: ['loaded-logo'], savedAt: 100 }, 200), {
+    data: ['loaded-logo'],
+    savedAt: 100,
+  });
+});
+
+Deno.test('persistent snapshots reject stale, future, and malformed responses', () => {
+  equal(parsePublicLogoSnapshot({ data: ['stale'], savedAt: 100 }, 100 + PUBLIC_LOGOS_MAX_AGE_MS), null);
+  equal(parsePublicLogoSnapshot({ data: ['future'], savedAt: 201 }, 200), null);
+  equal(parsePublicLogoSnapshot({ data: 'not-an-array', savedAt: 100 }, 200), null);
 });
