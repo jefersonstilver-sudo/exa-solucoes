@@ -303,7 +303,7 @@ export const PanelCard = ({
   return (
     <div 
       onClick={onClick} 
-      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-2 overflow-hidden group hover:scale-[1.03] flex flex-col ${hasCriticalAlert ? 'border-red-600 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}
+      className={`glass-card relative rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border-2 overflow-hidden group hover:scale-[1.03] flex flex-col ${hasCriticalAlert ? 'border-red-600 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}
       style={{
         backgroundColor: hasCriticalAlert 
           ? undefined 
@@ -314,6 +314,21 @@ export const PanelCard = ({
               : undefined
       }}
     >
+      {/* Botão copiar: prédio, endereço e internet */}
+      <button
+        type="button"
+        onClick={copyPanelSummary}
+        title="Copiar prédio, endereço e internet"
+        aria-label="Copiar prédio, endereço e internet"
+        className={`absolute right-1.5 top-1.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border shadow-sm transition-opacity sm:h-6 sm:w-6 ${
+          copied
+            ? 'border-emerald-400 bg-emerald-100 text-emerald-700 opacity-100'
+            : 'border-gray-300 bg-white/85 text-gray-500 opacity-60 hover:bg-white hover:text-gray-900 hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-400'
+        }`}
+      >
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      </button>
+
       {/* Corpo do card */}
       <div className="p-2 sm:p-4 lg:p-6 text-center flex-1 flex flex-col">
         {/* Nome principal grande */}
