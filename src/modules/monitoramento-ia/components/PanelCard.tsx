@@ -59,9 +59,14 @@ export const PanelCard = ({
       if (!error && data) {
         setAssignedBuildingName(data.nome);
         setAssignedBuildingStatus((data as any).status ?? null);
-        const bairro = (data as any).bairro || '';
-        const endereco = (data as any).endereco || '';
-        setAssignedBuildingAddress([endereco, bairro].filter(Boolean).join(' — ') || null);
+        // Rua e número primeiro (endereco); bairro só é acrescentado se ainda não estiver no endereço
+        const rawEndereco = ((data as any).endereco || '').trim();
+        const rawBairro = ((data as any).bairro || '').trim();
+        const placeholder = /n[ãa]o definid/i;
+        const endereco = placeholder.test(rawEndereco) ? '' : rawEndereco;
+        const bairro = placeholder.test(rawBairro) ? '' : rawBairro;
+        const jaContemBairro = endereco && bairro && endereco.toLowerCase().includes(bairro.toLowerCase());
+        setAssignedBuildingAddress(jaContemBairro || !bairro ? endereco : `${endereco} — ${bairro}` || null);
       }
     };
 
