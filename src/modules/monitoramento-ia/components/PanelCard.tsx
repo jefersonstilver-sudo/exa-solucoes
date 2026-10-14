@@ -38,6 +38,7 @@ export const PanelCard = ({
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
   const [assignedBuildingName, setAssignedBuildingName] = useState<string | null>(null);
   const [assignedBuildingStatus, setAssignedBuildingStatus] = useState<string | null>(null);
+  const [assignedBuildingAddress, setAssignedBuildingAddress] = useState<string | null>(null);
   const [elevatorCompanyName, setElevatorCompanyName] = useState<string | null>(null);
 
   // Carregar nome do prédio atribuído e empresa de elevador
@@ -45,18 +46,27 @@ export const PanelCard = ({
     const loadAssignedBuilding = async () => {
       if (!device.building_id) {
         setAssignedBuildingName(null);
+        setAssignedBuildingAddress(null);
         return;
       }
 
       const { data, error } = await supabase
         .from('buildings')
-        .select('nome, status')
+        .select('nome, status, endereco, bairro')
         .eq('id', device.building_id)
         .single();
 
       if (!error && data) {
         setAssignedBuildingName(data.nome);
         setAssignedBuildingStatus((data as any).status ?? null);
+        // Rua e número primeiro (endereco); bairro só é acrescentado se ainda não estiver no endereço
+        const rawEndereco = ((data as any).endereco || '').trim();
+        const rawBairro = ((data as any).bairro || '').trim();
+        const placeholder = /n[ãa]o definid/i;
+        const endereco = placeholder.test(rawEndereco) ? '' : rawEndereco;
+        const bairro = placeholder.test(rawBairro) ? '' : rawBairro;
+        const jaContemBairro = endereco && bairro && endereco.toLowerCase().includes(bairro.toLowerCase());
+        setAssignedBuildingAddress(jaContemBairro || !bairro ? endereco : `${endereco} — ${bairro}` || null);
       }
     };
 
@@ -268,10 +278,23 @@ export const PanelCard = ({
         </div>
 
         {/* Provedor - colorido */}
-        <div className="mb-2 sm:mb-3 lg:mb-4 min-h-[16px] sm:min-h-[20px] lg:min-h-[28px]">
+        <div className="mb-1 sm:mb-1.5 lg:mb-2 min-h-[16px] sm:min-h-[20px] lg:min-h-[28px]">
           <div className={`text-xs sm:text-sm lg:text-lg font-semibold tracking-wide ${getProviderColor(provider)}`}>
             {provider}
           </div>
+        </div>
+
+        {/* Endereço do prédio - logo abaixo do provedor */}
+        <div className="mb-2 sm:mb-3 lg:mb-4 min-h-[14px] sm:min-h-[16px] lg:min-h-[20px] px-1">
+          {assignedBuildingAddress && (
+            <div
+              className="flex items-start justify-center gap-1 text-[10px] sm:text-xs lg:text-sm text-gray-700 leading-snug"
+              title={assignedBuildingAddress}
+            >
+              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-3.5 lg:h-3.5 mt-0.5 shrink-0 text-gray-500" />
+              <span className="line-clamp-2">{assignedBuildingAddress}</span>
+            </div>
+          )}
         </div>
 
         {/* Nome do prédio (condomínio) - altura fixa */}
