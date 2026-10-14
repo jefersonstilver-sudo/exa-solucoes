@@ -61,7 +61,7 @@ export const PanelCard = ({
         setAssignedBuildingStatus((data as any).status ?? null);
         const bairro = (data as any).bairro || '';
         const endereco = (data as any).endereco || '';
-        setAssignedBuildingAddress([bairro, endereco].filter(Boolean).join(' — ') || null);
+        setAssignedBuildingAddress([endereco, bairro].filter(Boolean).join(' — ') || null);
       }
     };
 
