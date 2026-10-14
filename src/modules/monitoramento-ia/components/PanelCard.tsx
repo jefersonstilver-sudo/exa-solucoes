@@ -273,10 +273,27 @@ export const PanelCard = ({
         </div>
 
         {/* Provedor - colorido */}
-        <div className="mb-2 sm:mb-3 lg:mb-4 min-h-[16px] sm:min-h-[20px] lg:min-h-[28px]">
+        <div className="mb-1 sm:mb-1.5 lg:mb-2 min-h-[16px] sm:min-h-[20px] lg:min-h-[28px]">
           <div className={`text-xs sm:text-sm lg:text-lg font-semibold tracking-wide ${getProviderColor(provider)}`}>
             {provider}
           </div>
+        </div>
+
+        {/* Endereço do prédio - logo abaixo do provedor */}
+        <div className="mb-2 sm:mb-3 lg:mb-4 min-h-[14px] sm:min-h-[16px] lg:min-h-[20px] px-1">
+          {assignedBuildingAddress ? (
+            <div
+              className="flex items-start justify-center gap-1 text-[10px] sm:text-xs lg:text-sm text-gray-700 leading-snug"
+              title={assignedBuildingAddress}
+            >
+              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-3.5 lg:h-3.5 mt-0.5 shrink-0 text-gray-500" />
+              <span className="line-clamp-2">{assignedBuildingAddress}</span>
+            </div>
+          ) : (
+            <div className="text-[10px] sm:text-xs lg:text-sm text-gray-400">
+              Endereço não informado
+            </div>
+          )}
         </div>
 
         {/* Nome do prédio (condomínio) - altura fixa */}
