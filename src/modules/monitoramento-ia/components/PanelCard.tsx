@@ -38,6 +38,7 @@ export const PanelCard = ({
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
   const [assignedBuildingName, setAssignedBuildingName] = useState<string | null>(null);
   const [assignedBuildingStatus, setAssignedBuildingStatus] = useState<string | null>(null);
+  const [assignedBuildingAddress, setAssignedBuildingAddress] = useState<string | null>(null);
   const [elevatorCompanyName, setElevatorCompanyName] = useState<string | null>(null);
 
   // Carregar nome do prédio atribuído e empresa de elevador
@@ -45,18 +46,22 @@ export const PanelCard = ({
     const loadAssignedBuilding = async () => {
       if (!device.building_id) {
         setAssignedBuildingName(null);
+        setAssignedBuildingAddress(null);
         return;
       }
 
       const { data, error } = await supabase
         .from('buildings')
-        .select('nome, status')
+        .select('nome, status, endereco, bairro')
         .eq('id', device.building_id)
         .single();
 
       if (!error && data) {
         setAssignedBuildingName(data.nome);
         setAssignedBuildingStatus((data as any).status ?? null);
+        const bairro = (data as any).bairro || '';
+        const endereco = (data as any).endereco || '';
+        setAssignedBuildingAddress([bairro, endereco].filter(Boolean).join(' — ') || null);
       }
     };
 
