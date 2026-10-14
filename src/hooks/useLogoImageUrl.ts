@@ -15,6 +15,14 @@ export const useLogoImageUrl = (logo: { file_url: string; storage_bucket?: strin
       setLoading(true);
       
       try {
+        // URLs de bucket público já são utilizáveis diretamente. Tentar assiná-las
+        // cria uma chamada extra ao Storage e pode falhar durante indisponibilidade.
+        if (logo.file_url.includes('/storage/v1/object/public/')) {
+          setImageUrl(logo.file_url);
+          setLoading(false);
+          return;
+        }
+
         // Se tem informações de storage, SEMPRE gerar URL assinada (bucket privado)
         if (logo.storage_bucket && logo.storage_key) {
           // Pular direto para gerar signed URL abaixo
