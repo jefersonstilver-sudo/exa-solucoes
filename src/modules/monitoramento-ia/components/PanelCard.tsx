@@ -158,6 +158,52 @@ export const PanelCard = ({
   const displayEventsCount = periodEventsCount !== undefined ? periodEventsCount : (device.offline_count || 0);
   const eventsLabel = periodEventsCount !== undefined ? `${displayEventsCount} quedas ${periodLabel}` : `${displayEventsCount} quedas`;
 
+  // Copiar resumo do painel (prédio, endereço e internet)
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (copyTimer.current) window.clearTimeout(copyTimer.current); }, []);
+
+  const copyPanelSummary = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = [
+      `Prédio: ${assignedBuildingName || displayName}`,
+      `Endereço: ${assignedBuildingAddress || 'não definido'}`,
+      `Internet: ${provider}`,
+    ].join('\n');
+
+    let ok = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        ok = false;
+      }
+    }
+    if (ok) {
+      setCopied(true);
+      if (copyTimer.current) window.clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 1600);
+    }
+  };
+
+
   // Render incident badge with hover card
   const renderIncidentBadge = () => {
     if (device.status !== 'offline') return null;
