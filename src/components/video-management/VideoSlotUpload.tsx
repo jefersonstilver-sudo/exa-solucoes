@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { validateVideoFile } from '@/services/videoStorageService';
+import { getOrderDurationOverride } from '@/services/orderVideoDuration';
 import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal';
 import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
 import { useEffectiveAuth } from '@/hooks/useEffectiveAuth';
@@ -17,6 +18,7 @@ interface VideoSlotUploadProps {
   onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[], qrConfig?: VideoQRConfigData | null) => void;
   companyInfoComplete?: boolean;
   tipoProduto?: string;
+  orderId?: string;
 }
 export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   slotPosition,
@@ -24,7 +26,8 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   isUploading,
   onUpload,
   companyInfoComplete: companyInfoCompleteProp,
-  tipoProduto
+  tipoProduto,
+  orderId
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
@@ -134,7 +137,8 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
 
     // Run full validation to check duration
     const tipo = isVertical ? 'vertical' : 'horizontal';
-    const validation = await validateVideoFile(file, tipo);
+    const orderOverride = await getOrderDurationOverride(orderId);
+    const validation = await validateVideoFile(file, tipo, orderOverride);
 
     if (validation.needsTrimming && validation.maxDuration) {
       console.log('✂️ Vídeo excede duração, abrindo trimmer');

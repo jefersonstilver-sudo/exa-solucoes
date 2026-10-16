@@ -544,6 +544,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         onUpload={onUpload}
         companyInfoComplete={companyInfoComplete}
         tipoProduto={tipoProduto}
+        orderId={orderId}
       />
     )}
       </CardContent>

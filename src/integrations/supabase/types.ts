@@ -11387,6 +11387,7 @@ export type Database = {
           lista_paineis: string[] | null
           lista_predios: string[] | null
           log_pagamento: Json | null
+          max_video_duration_override: number | null
           mercadopago_subscription_id: string | null
           metodo_pagamento: string | null
           nome_pedido: string | null
@@ -11452,6 +11453,7 @@ export type Database = {
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
+          max_video_duration_override?: number | null
           mercadopago_subscription_id?: string | null
           metodo_pagamento?: string | null
           nome_pedido?: string | null
@@ -11517,6 +11519,7 @@ export type Database = {
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
+          max_video_duration_override?: number | null
           mercadopago_subscription_id?: string | null
           metodo_pagamento?: string | null
           nome_pedido?: string | null
