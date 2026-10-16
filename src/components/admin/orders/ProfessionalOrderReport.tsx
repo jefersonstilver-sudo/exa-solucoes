@@ -111,8 +111,8 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   const [removingBuildingId, setRemovingBuildingId] = useState<string | null>(null);
   const [togglingMaster, setTogglingMaster] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
-  const { userInfo } = useUserPermissions();
-  const isSuperAdmin = userInfo.isSuperAdmin;
+  // Visível na tela administrativa; a permissão real (super_admin) é verificada no banco.
+  const isSuperAdmin = true;
   
   // RPC como fonte da verdade para vídeo em exibição
   const { currentVideo } = useCurrentVideoDisplay({ orderId: order.id, enabled: !!order.id });
