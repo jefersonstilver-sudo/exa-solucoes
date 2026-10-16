@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { applyCardOrder, moveCard } from './orderCardOrdering';
+import { applyCardOrder, moveCard } from '../src/lib/orderCardOrdering';
 
 describe('order card positions', () => {
   test('moves a pressed card to the target position without losing orders', () => {

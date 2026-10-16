@@ -8,7 +8,7 @@ mock.module('@/integrations/supabase/client', () => ({
     }) }) })
   }
 }));
-const { getOrderMaxDuration } = await import('./orderVideoDuration');
+const { getOrderMaxDuration } = await import('../src/services/orderVideoDuration');
 
 test('Curiosidades horizontal accepts a maximum of 35 seconds', async () => {
   expect(await getOrderMaxDuration('7a4dc868-0ecd-4969-a1ec-5589d399b7c4', 'horizontal')).toBe(35);
