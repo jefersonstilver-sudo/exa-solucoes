@@ -200,12 +200,13 @@ export const uploadVideo = async (
       preTrimEnd > preTrimStart;
     const effectiveTrimDuration = hasTrimMetadata ? Math.round(preTrimEnd - preTrimStart) : null;
 
-    const validation = await validateVideoFile(file, videoTipo);
+    const orderMaxDuration = await getOrderMaxDuration(orderId, videoTipo);
+    const validation = await validateVideoFile(file, videoTipo, orderMaxDuration);
 
     // Se há metadados de corte, a duração efetiva é a do trecho — não a do arquivo físico.
     // Reaproveita o resto da validação (orientação, tamanho, formato).
     if (hasTrimMetadata && validation.needsTrimming && effectiveTrimDuration !== null) {
-      const maxDur = validation.maxDuration ?? (videoTipo === 'vertical' ? 15 : 10);
+      const maxDur = validation.maxDuration ?? orderMaxDuration;
       if (effectiveTrimDuration <= maxDur) {
         console.log('✂️ [VALIDATION] Vídeo com corte metadata-only — aceitando trecho:', {
           trimStart: preTrimStart,

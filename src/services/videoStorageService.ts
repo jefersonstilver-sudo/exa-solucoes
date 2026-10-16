@@ -17,7 +17,7 @@ export interface VideoValidationResult {
   };
 }
 
-export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 'horizontal'): Promise<VideoValidationResult> => {
+export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 'horizontal', maxDurationOverride?: number | null): Promise<VideoValidationResult> => {
   return new Promise((resolve) => {
     console.log('🔍 Iniciando validação do arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', tipo);
     
@@ -28,7 +28,7 @@ export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 
 
     // Defaults por tipo de produto
     const expectedOrientation = tipo === 'vertical' ? 'vertical' : 'horizontal';
-    const defaultMaxDuration = tipo === 'vertical' ? 15 : 10;
+    const defaultMaxDuration = maxDurationOverride ?? (tipo === 'vertical' ? 15 : 10);
 
     const clearAll = () => {
       try {
