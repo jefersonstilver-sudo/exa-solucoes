@@ -379,6 +379,8 @@ const AdvertiserOrders = () => {
       </div>
 
       {/* Section 3: Campaign List */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCardReorder}>
+      <SortableContext items={filteredItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
       {filteredItems.length === 0 ?
       <div className="bg-card border border-border/40 rounded-xl p-8 sm:p-12 text-center shadow-sm">
           <div className="mx-auto bg-muted rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
@@ -425,6 +427,7 @@ const AdvertiserOrders = () => {
                 {isExpanded && groupItems.length > 0 && (
                   <div className="space-y-3 pl-4">
                     {groupItems.map((item: any) => (
+                      <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
                       <AdvertiserOrderCard
                         key={`${item.type}-${item.id}`}
                         item={item}
@@ -442,6 +445,7 @@ const AdvertiserOrders = () => {
                         draggable
                         onDragStart={handleDragStart}
                       />
+                      </SortableOrderCard>
                     ))}
                   </div>
                 )}
@@ -469,6 +473,7 @@ const AdvertiserOrders = () => {
                 {isExpanded && (
                   <div className="space-y-3 pl-4">
                     {ungroupedItems.map((item: any) => (
+                      <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
                       <AdvertiserOrderCard
                         key={`${item.type}-${item.id}`}
                         item={item}
@@ -486,6 +491,7 @@ const AdvertiserOrders = () => {
                         draggable
                         onDragStart={handleDragStart}
                       />
+                      </SortableOrderCard>
                     ))}
                   </div>
                 )}
@@ -495,8 +501,6 @@ const AdvertiserOrders = () => {
         </div>
       ) : (
         /* Flat view */
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCardReorder}>
-        <SortableContext items={filteredItems.slice(0, visibleCount).map(item => item.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-3">
           {filteredItems.slice(0, visibleCount).map((item) =>
         <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
@@ -537,6 +541,8 @@ const AdvertiserOrders = () => {
       }
 
       {/* Dialogs & Modals */}
+      </SortableContext>
+      </DndContext>
       {videoDisplayPopup.orderId &&
       <VideoDisplayPopup
         orderId={videoDisplayPopup.orderId}
