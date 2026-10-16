@@ -1,4 +1,5 @@
 # Financeiro — etapas 0 e 1
+- [ ] Liberar 35 segundos para Curiosidades e reorganização por arraste nos cards de pedidos.
 - [x] Contas de Internet, fase 1: schema/RLS, bucket privado, funções administrativas e tela isolada com execução vazia real.
 - [ ] Contas de Internet, fase 2: worker externo, cofre e piloto LIGGA somente leitura — depende de infraestrutura externa aprovada; não solicitar credenciais na fase 1.
 - [x] Pausar agendamento mensal de parcelas e gatilhos de geração/espelhamento financeiro, sem alterar obrigações existentes.
