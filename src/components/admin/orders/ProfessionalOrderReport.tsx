@@ -111,7 +111,8 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   const [removingBuildingId, setRemovingBuildingId] = useState<string | null>(null);
   const [togglingMaster, setTogglingMaster] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
-  const { isSuperAdmin } = useUserPermissions();
+  const { userInfo } = useUserPermissions();
+  const isSuperAdmin = userInfo.isSuperAdmin;
   
   // RPC como fonte da verdade para vídeo em exibição
   const { currentVideo } = useCurrentVideoDisplay({ orderId: order.id, enabled: !!order.id });
