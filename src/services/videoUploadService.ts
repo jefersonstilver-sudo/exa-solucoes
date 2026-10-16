@@ -9,6 +9,7 @@ import {
   deleteVideoFromStorage
 } from '@/services/videoStorageService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
+import { getOrderMaxDuration } from '@/services/orderVideoDuration';
 import { validateScheduleConflicts, formatConflictMessage } from './videoScheduleValidationService';
 import type { ScheduleConflict } from './videoScheduleValidationService';
 import { uploadCache, getCacheKey } from './videoUploadCacheService';
