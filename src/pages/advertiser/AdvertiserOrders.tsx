@@ -25,6 +25,10 @@ import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
 import { AdvertiserDashboardHeader } from '@/components/advertiser/orders/AdvertiserDashboardHeader';
 import { AdvertiserOrderStats } from '@/components/advertiser/orders/AdvertiserOrderStats';
 import { AdvertiserOrderCard } from '@/components/advertiser/orders/AdvertiserOrderCard';
+import { SortableOrderCard } from '@/components/advertiser/orders/SortableOrderCard';
+import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { applyCardOrder, moveCard } from '@/lib/orderCardOrdering';
 
 const AdvertiserOrders = () => {
   const { userProfile } = useAuth();
@@ -32,6 +36,28 @@ const AdvertiserOrders = () => {
   const isMobile = useIsMobile();
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
   const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
+  const [savedCardOrder, setSavedCardOrder] = useState<string[]>([]);
+  const cardOrderKey = userProfile?.id ? `exa:order-cards:${userProfile.id}` : null;
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+  useEffect(() => {
+    try {
+      const saved: unknown = JSON.parse(cardOrderKey ? localStorage.getItem(cardOrderKey) || '[]' : '[]');
+      setSavedCardOrder(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : []);
+    } catch { setSavedCardOrder([]); }
+  }, [cardOrderKey]);
+  const handleCardReorder = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const ids = applyCardOrder(userOrdersAndAttempts, savedCardOrder).map(item => item.id);
+    const reordered = moveCard(ids, String(active.id), String(over.id));
+    setSavedCardOrder(reordered);
+    if (cardOrderKey) {
+      try { localStorage.setItem(cardOrderKey, JSON.stringify(reordered)); }
+      catch { toast.error('A ordem não pôde ser salva neste navegador'); }
+    }
+  };
 
   // Fetch company data from users table (not included in useAuth profile)
   const [companyData, setCompanyData] = useState<{
@@ -266,7 +292,7 @@ const AdvertiserOrders = () => {
   };
 
   // Filters
-  const filteredItems = userOrdersAndAttempts.filter((item) => {
+  const filteredItems = applyCardOrder(userOrdersAndAttempts, savedCardOrder).filter((item) => {
     const matchesSearch =
     item.type === 'order' && item.nome_pedido && item.nome_pedido.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -353,6 +379,8 @@ const AdvertiserOrders = () => {
       </div>
 
       {/* Section 3: Campaign List */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCardReorder}>
+      <SortableContext items={filteredItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
       {filteredItems.length === 0 ?
       <div className="bg-card border border-border/40 rounded-xl p-8 sm:p-12 text-center shadow-sm">
           <div className="mx-auto bg-muted rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
@@ -399,6 +427,7 @@ const AdvertiserOrders = () => {
                 {isExpanded && groupItems.length > 0 && (
                   <div className="space-y-3 pl-4">
                     {groupItems.map((item: any) => (
+                      <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
                       <AdvertiserOrderCard
                         key={`${item.type}-${item.id}`}
                         item={item}
@@ -416,6 +445,7 @@ const AdvertiserOrders = () => {
                         draggable
                         onDragStart={handleDragStart}
                       />
+                      </SortableOrderCard>
                     ))}
                   </div>
                 )}
@@ -443,6 +473,7 @@ const AdvertiserOrders = () => {
                 {isExpanded && (
                   <div className="space-y-3 pl-4">
                     {ungroupedItems.map((item: any) => (
+                      <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
                       <AdvertiserOrderCard
                         key={`${item.type}-${item.id}`}
                         item={item}
@@ -460,6 +491,7 @@ const AdvertiserOrders = () => {
                         draggable
                         onDragStart={handleDragStart}
                       />
+                      </SortableOrderCard>
                     ))}
                   </div>
                 )}
@@ -471,6 +503,7 @@ const AdvertiserOrders = () => {
         /* Flat view */
         <div className="space-y-3">
           {filteredItems.slice(0, visibleCount).map((item) =>
+        <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
         <AdvertiserOrderCard
           key={`${item.type}-${item.id}`}
           item={item}
@@ -485,6 +518,7 @@ const AdvertiserOrders = () => {
           groups={groups}
           onMoveToGroup={moveOrderToGroup}
           onCreateGroup={() => setCreateGroupDialogOpen(true)} />
+        </SortableOrderCard>
         )}
 
           {/* Load more + counter */}
@@ -507,6 +541,8 @@ const AdvertiserOrders = () => {
       }
 
       {/* Dialogs & Modals */}
+      </SortableContext>
+      </DndContext>
       {videoDisplayPopup.orderId &&
       <VideoDisplayPopup
         orderId={videoDisplayPopup.orderId}
