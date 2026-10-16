@@ -12,6 +12,8 @@ import { BuildingManagementDialog } from './BuildingManagementDialog';
 import { OrderNameEdit } from '@/components/order/OrderNameEdit';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { VideoDaysBadge } from '@/components/video-management/VideoDaysBadge';
+import { ExtendOrderDialog, isIndefiniteEnd } from './ExtendOrderDialog';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 interface Parcela {
   id: string;
   numero_parcela: number;
@@ -108,6 +110,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   const [showAddBuildingDialog, setShowAddBuildingDialog] = useState(false);
   const [removingBuildingId, setRemovingBuildingId] = useState<string | null>(null);
   const [togglingMaster, setTogglingMaster] = useState(false);
+  const [extendOpen, setExtendOpen] = useState(false);
+  const { userInfo } = useUserPermissions();
+  const isSuperAdmin = userInfo.isSuperAdmin;
   
   // RPC como fonte da verdade para vídeo em exibição
   const { currentVideo } = useCurrentVideoDisplay({ orderId: order.id, enabled: !!order.id });
@@ -389,7 +394,22 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               </div>
               <div>
                 <p className="text-gray-500 mb-1">Término da Vigência</p>
-                <p className="font-semibold text-gray-900">{formatSimpleDate(order.data_fim)}</p>
+                <p className="font-semibold text-gray-900">{isIndefiniteEnd(order.data_fim) ? 'Indeterminado' : formatSimpleDate(order.data_fim)}</p>
+                {isSuperAdmin && (
+                  <>
+                    <Button size="sm" variant="outline" className="mt-1.5 h-7 text-xs" onClick={() => setExtendOpen(true)}>
+                      <Clock className="h-3.5 w-3.5 mr-1" /> Estender / Reativar
+                    </Button>
+                    <ExtendOrderDialog
+                      open={extendOpen}
+                      onOpenChange={setExtendOpen}
+                      orderId={order.id}
+                      currentEnd={order.data_fim}
+                      status={order.status}
+                      onDone={() => onBuildingChanged?.()}
+                    />
+                  </>
+                )}
             </div>
             
             {/* Master Toggle */}

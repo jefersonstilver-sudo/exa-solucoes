@@ -16495,6 +16495,10 @@ export type Database = {
         Args: { user_email: string }
         Returns: boolean
       }
+      admin_extend_reactivate_order: {
+        Args: { p_new_end: string; p_pedido_id: string; p_reactivate?: boolean }
+        Returns: Json
+      }
       admin_get_all_user_ids: { Args: never; Returns: string[] }
       admin_insert_user: {
         Args: { user_email: string; user_id: string; user_role: string }
