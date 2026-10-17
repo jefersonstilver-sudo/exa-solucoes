@@ -68,18 +68,7 @@ Deno.serve(async (req) => {
         // Collect building IDs - for master orders, include child orders' buildings
         let buildingIds: string[] = order.lista_predios || []
 
-        if (order.is_master) {
-          console.log(`👑 [AUDIT] Master order ${order.id} - fetching child orders`)
-          const { data: childOrders, error: childError } = await supabase
-            .from('pedidos')
-            .select('lista_predios, status, data_fim')
-            .eq('master_pedido_id', order.id)
-            .in('status', ['ativo', 'video_aprovado'])
-
-          if (childError) throw childError
-          buildingIds = collectOrderBuildings(buildingIds, (childOrders || []).filter(child => eligibleForOrderSync(child, today)))
-          console.log(`👑 [AUDIT] Master order total buildings: ${buildingIds.length}`)
-        }
+        // Não há coluna de vínculo pai/filho em pedidos: usa os prédios do próprio pedido.
 
         if (buildingIds.length === 0) {
           details.push({ pedido_id: order.id, status: 'skipped', message: 'No buildings', buildings: 0 })
