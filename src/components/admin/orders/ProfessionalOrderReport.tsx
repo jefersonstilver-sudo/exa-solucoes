@@ -14,6 +14,7 @@ import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { VideoDaysBadge } from '@/components/video-management/VideoDaysBadge';
 import { ExtendOrderDialog, isIndefiniteEnd } from './ExtendOrderDialog';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { AwsMissingClientsWarning } from './AwsMissingClientsWarning';
 interface Parcela {
   id: string;
   numero_parcela: number;
@@ -438,6 +439,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 </Button>
               </div>
             </div>
+            <AwsMissingClientsWarning buildingIds={order.lista_predios || []} />
           </div>
         </div>
       </section>
