@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
         let issue: string | null = null
         if (res.presence === 'missing') issue = 'Prédio sem cliente na AWS'
         else if (res.presence === 'unknown') issue = `Não foi possível consultar a AWS (${res.detail || 'sem detalhe'})`
-        else if (!res.files.some((f) => f.replace(/\.[^/.]+$/, '').endsWith(entry.master_true))) issue = 'Vídeo base do pedido não encontrado na pasta do prédio na AWS'
+        // AWS file names use the storage name, not the title, and the API exposes no read of the master flag.
         if (issue) problems.push({ pedido_id: pedido.id, pedido: pedido.nome_pedido, building_id: buildingId, client_id: clientId, video: entry.master_true, issue })
       }
       // Recent master PATCH failures for this order also mean the flag may not be master=True.
