@@ -1,5 +1,6 @@
 # Financeiro — etapas 0 e 1
-- [ ] Corrigir envio imediato após extensão/reativação e executar revisão/reenvio AWS dos pedidos vigentes por todos os prédios vinculados, preservando vídeos, programações e financeiro.
+- [x] Corrigir envio imediato após extensão/reativação, cobertura master/filhos, preservação do vídeo base/programações e sinalização de envios parciais/pendentes; cinco testes passaram.
+- [ ] Executar e confirmar reenvio real AWS dos 20 pedidos vigentes (22 ativos, dois vencidos) — bloqueado: chamadas administrativas retornam 401 e Supabase externo não fornece sessão autenticada neste ambiente. Nenhum reenvio global foi confirmado.
 - [x] Liberar 35 segundos para Curiosidades e reorganização por arraste nos cards de pedidos; ordem salva por conta neste navegador, cinco testes passaram e build OK.
 - [ ] Validar upload e arraste com pedidos reais na sessão do proprietário — bloqueado: Supabase externo sem sessão de teste disponível.
 - [x] Contas de Internet, fase 1: schema/RLS, bucket privado, funções administrativas e tela isolada com execução vazia real.
