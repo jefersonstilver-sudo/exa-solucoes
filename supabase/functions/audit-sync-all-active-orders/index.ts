@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     let dryRun = false
     try {
       const body = await req.json()
-      source = body.source || 'audit'
+      source = ['manual', 'auto', 'cron', 'audit'].includes(body.source) ? body.source : 'manual'
       pedidoId = body.pedido_id || null
       dryRun = body.dry_run === true
     } catch { /* no body = cron call */ }
@@ -44,9 +44,6 @@ Deno.serve(async (req) => {
       if (!page || page.length < 100) break
       if (offset === 900) throw new Error('Audit exceeds the safe 1000-order limit')
     }
-    const ordersError = null
-
-    if (ordersError) throw ordersError
 
     if (!orders || orders.length === 0) {
       return new Response(JSON.stringify({
@@ -141,7 +138,8 @@ Deno.serve(async (req) => {
               pedido_id: order.id,
               building_id: bid,
               action: 'audit',
-              status: outcome,
+              status: outcome === 'pending' ? 'skipped' : outcome,
+              error_message: outcome === 'pending' ? 'AWS aceitou o envio; tarefa ainda pendente de confirmação' : null,
               source,
               executed_by: executedBy,
               aws_response: syncData

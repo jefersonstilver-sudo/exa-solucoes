@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
 
-export async function authorizeOrderSync(req: Request) {
+export async function authorizeOrderSync(req: Request, orderId?: string) {
   const url = Deno.env.get('SUPABASE_URL');
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) throw new Error('Service unavailable');
@@ -12,6 +12,11 @@ export async function authorizeOrderSync(req: Request) {
   if (error || !user) return null;
   const { data: role, error: roleError } = await db.from('user_roles').select('id')
     .eq('user_id', user.id).in('role', ['super_admin', 'admin']).limit(1).maybeSingle();
-  if (roleError || !role) return null;
+  if (roleError) return null;
+  if (!role) {
+    if (!orderId) return null;
+    const { data: order, error: orderError } = await db.from('pedidos').select('id').eq('id', orderId).eq('client_id', user.id).maybeSingle();
+    if (orderError || !order) return null;
+  }
   return { db, userId: user.id, key, url };
 }

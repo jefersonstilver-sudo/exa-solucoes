@@ -37,11 +37,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const auth = await authorizeOrderSync(req)
+    const { pedido_id, action, building_ids } = await req.json()
+    const auth = await authorizeOrderSync(req, pedido_id)
     if (!auth) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     const supabase = auth.db
-
-    const { pedido_id, action, building_ids } = await req.json()
 
     if (!pedido_id || !action || !building_ids?.length) {
       return new Response(JSON.stringify({ success: false, error: 'Missing required fields' }), {
@@ -80,20 +79,6 @@ Deno.serve(async (req) => {
         .single()
 
       const isVertical = pedido?.tipo_produto === 'vertical_premium'
-
-      // Use RPC to determine which video is currently active (dynamic scheduling)
-      let currentDisplayVideoId: string | null = null
-      try {
-        const { data: displayData } = await supabase.rpc('get_current_display_video', {
-          p_pedido_id: pedido_id
-        })
-        if (displayData && displayData.length > 0) {
-          currentDisplayVideoId = displayData[0].video_id
-        }
-        console.log(`🎯 [SYNC-BUILDINGS] Current display video from RPC: ${currentDisplayVideoId}`)
-      } catch (rpcError: any) {
-        console.error(`⚠️ [SYNC-BUILDINGS] RPC error, falling back to selected_for_display:`, rpcError.message)
-      }
 
       // Build client_ids: first 4 chars of each building UUID (no hyphens)
       const clientIds = building_ids.map((id: string) => id.replace(/-/g, '').substring(0, 4))
