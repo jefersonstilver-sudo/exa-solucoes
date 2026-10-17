@@ -64,11 +64,12 @@ export const ExtendOrderDialog: React.FC<Props> = ({ open, onOpenChange, orderId
     }
     setSaving(true);
     try {
-      const { data, error } = await (supabase as any).rpc('admin_extend_reactivate_order', {
+      const { data, error } = await supabase.rpc('admin_extend_reactivate_order', {
         p_pedido_id: orderId, p_new_end: newEnd, p_reactivate: true,
       });
       if (error) throw error;
-      const message = data?.reactivated
+      const reactivated = data && typeof data === 'object' && !Array.isArray(data) && data.reactivated === true;
+      const message = reactivated
         ? `Pedido reativado até ${fmt(newEnd)}`
         : `Vigência atualizada até ${fmt(newEnd)}`;
       // The database change is already committed. An AWS failure must never
@@ -91,8 +92,8 @@ export const ExtendOrderDialog: React.FC<Props> = ({ open, onOpenChange, orderId
       }
       onOpenChange(false);
       onDone?.();
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao estender pedido');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao estender pedido');
     } finally {
       setSaving(false);
     }
