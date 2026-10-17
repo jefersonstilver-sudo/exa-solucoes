@@ -101,7 +101,7 @@ export const selectVideoForDisplay = async (
           desativar_master: desativarTitulo,
         });
 
-        const { error: masterError } = await supabase.functions.invoke('update-video-master-aws', {
+        const { data: masterData, error: masterError } = await supabase.functions.invoke('update-video-master-aws', {
           body: {
             pedido_id: videoData.pedido_id,
             ativar_titulo: ativarTitulo,
@@ -113,11 +113,18 @@ export const selectVideoForDisplay = async (
           console.error('❌ [VIDEO_ACTION] Erro ao trocar master na AWS:', masterError);
           throw masterError;
         }
+        if ((masterData as any)?.success === false) {
+          throw new Error((masterData as any)?.error || 'PATCH /master falhou em alguns prédios');
+        }
+        const missingClients = ((masterData as any)?.missing_clients || []) as Array<{ client_id: string }>;
+        if (missingClients.length > 0) {
+          toast.warning(`Prédios sem cliente na AWS: ${missingClients.map((m) => m.client_id).join(', ')}`);
+        }
 
         console.log('🎉 [VIDEO_ACTION] Master trocado com sucesso na API externa');
       } catch (apiError) {
         console.error('💥 [VIDEO_ACTION] Erro crítico ao trocar master na API externa:', apiError);
-        toast.error('Erro ao sincronizar master com painéis físicos');
+        toast.error(`Erro ao sincronizar master com painéis físicos: ${(apiError as any)?.message || ''}`);
         throw apiError;
       }
       

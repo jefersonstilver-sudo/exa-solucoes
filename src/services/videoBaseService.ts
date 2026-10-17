@@ -411,6 +411,9 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         console.error('❌ [SET_BASE_VIDEO] Erro PATCH /master:', masterError);
         throw masterError;
       }
+      if ((masterData as any)?.success === false) {
+        throw new Error((masterData as any)?.error || 'PATCH /master falhou em alguns prédios');
+      }
 
       console.log('✅ [SET_BASE_VIDEO] Master trocado, task_ids:', (masterData as any)?.task_ids);
 
