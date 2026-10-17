@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { checkAwsClient, summarizeMasterResults } from "../_shared/aws-master.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -101,7 +102,7 @@ serve(async (req) => {
 
     const results: any[] = [];
     const task_ids: string[] = [];
-    for (const buildingUuid of lista) {
+    for (const buildingUuid of [...new Set(lista)]) {
       const clientId = buildingUuid.replace(/-/g, '').substring(0, 4);
       const endpoint = `${EXTERNAL_API_BASE}/master/${clientId}`;
       const body = {
@@ -125,14 +126,49 @@ serve(async (req) => {
         const task_id = extractTaskId(text);
         if (task_id) task_ids.push(task_id);
         console.log(`📥 [MASTER_AWS] ${clientId} -> ${resp.status} task_id=${task_id || 'n/a'} ${text.substring(0, 200)}`);
-        results.push({ clientId, status: resp.status, ok: resp.ok, task_id, body: text.substring(0, 200) });
+        results.push({ building_id: buildingUuid, clientId, status: resp.status, ok: resp.ok, task_id, body: text.substring(0, 200) });
       } catch (err: any) {
         console.error(`❌ [MASTER_AWS] erro em ${clientId}:`, err?.message);
-        results.push({ clientId, ok: false, error: err?.message });
+        results.push({ building_id: buildingUuid, clientId, ok: false, error: err?.message });
       }
     }
 
-    return new Response(JSON.stringify({ success: true, ativar, desativar, task_ids, results }), {
+    // Classify failed buildings: missing AWS client vs. real failure.
+    for (const r of results.filter((x) => !x.ok)) {
+      r.presence = (await checkAwsClient(r.clientId)).presence;
+    }
+    const summary = summarizeMasterResults(results);
+    const failed = results.filter((r) => !r.ok && r.presence !== 'missing');
+    const missing = results.filter((r) => r.presence === 'missing');
+
+    const source = typeof payload.source === 'string' ? payload.source.slice(0, 60) : 'update-video-master-aws';
+    const logs = [
+      ...failed.map((r) => ({
+        pedido_id, building_id: r.building_id, video_name: ativar, action: 'master_update', status: 'error', source,
+        aws_response: { client_id: r.clientId, http_status: r.status ?? null, body: r.body ?? null, ativar, desativar },
+        error_message: r.error || `PATCH /master/${r.clientId} retornou HTTP ${r.status}`,
+      })),
+      ...missing.map((r) => ({
+        pedido_id, building_id: r.building_id, video_name: ativar, action: 'master_update', status: 'warning', source,
+        aws_response: { client_id: r.clientId, ativar, desativar },
+        error_message: `Prédio sem cliente na AWS (${r.clientId})`,
+      })),
+    ];
+    if (logs.length === 0) {
+      logs.push({ pedido_id, building_id: null, video_name: ativar, action: 'master_update', status: 'success', source,
+        aws_response: { ativar, desativar, buildings: results.length, task_ids }, error_message: null } as any);
+    }
+    const { error: logErr } = await supabase.from('api_sync_logs').insert(logs);
+    if (logErr) console.warn('⚠️ [MASTER_AWS] falha ao gravar api_sync_logs:', logErr.message);
+
+    const failedLabels = failed.map((r) => r.clientId);
+    return new Response(JSON.stringify({
+      success: summary.success,
+      ativar, desativar, task_ids, results,
+      failed_buildings: failed.map((r) => ({ building_id: r.building_id, client_id: r.clientId, status: r.status ?? null, error: r.error ?? null })),
+      missing_clients: missing.map((r) => ({ building_id: r.building_id, client_id: r.clientId })),
+      error: summary.success ? null : `PATCH /master falhou em ${failed.length} de ${results.length} prédio(s): ${failedLabels.join(', ')}`,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
