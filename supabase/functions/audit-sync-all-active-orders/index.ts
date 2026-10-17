@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
+import { authorizeOrderSync } from '../_shared/order-sync-auth.ts'
+import { collectOrderBuildings, eligibleForOrderSync, orderSyncOutcome } from '../_shared/order-sync-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,28 +12,38 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const auth = await authorizeOrderSync(req)
+    if (!auth) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    const { db: supabase, key: supabaseKey, url: supabaseUrl, userId: executedBy } = auth
 
     // Parse optional params
     let source = 'audit'
-    let executedBy: string | null = null
+    let pedidoId: string | null = null
+    let dryRun = false
     try {
       const body = await req.json()
-      source = body.source || 'audit'
-      executedBy = body.executed_by || null
+      source = ['manual', 'auto', 'cron', 'audit'].includes(body.source) ? body.source : 'manual'
+      pedidoId = body.pedido_id || null
+      dryRun = body.dry_run === true
     } catch { /* no body = cron call */ }
 
     console.log(`🔍 [AUDIT] Starting full audit sync. Source: ${source}`)
 
     // 1. Fetch all active orders
-    const { data: orders, error: ordersError } = await supabase
+    let query = supabase
       .from('pedidos')
-      .select('id, lista_predios, is_master, status')
+      .select('id, lista_predios, is_master, status, data_fim')
       .in('status', ['ativo', 'video_aprovado'])
-
-    if (ordersError) throw ordersError
+      .order('id')
+    if (pedidoId) query = query.eq('id', pedidoId)
+    const orders: any[] = []
+    for (let offset = 0; offset < 1000; offset += 100) {
+      const { data: page, error } = await query.range(offset, offset + 99)
+      if (error) throw error
+      orders.push(...(page || []))
+      if (!page || page.length < 100) break
+      if (offset === 900) throw new Error('Audit exceeds the safe 1000-order limit')
+    }
 
     if (!orders || orders.length === 0) {
       return new Response(JSON.stringify({
@@ -45,26 +56,28 @@ Deno.serve(async (req) => {
     const details: any[] = []
     let synced = 0
     let failed = 0
+    let pending = 0
+    const today = new Date().toISOString().slice(0, 10)
 
     for (const order of orders) {
       try {
+        if (!eligibleForOrderSync(order, today)) {
+          details.push({ pedido_id: order.id, status: 'skipped', message: 'Vigência encerrada; não reenviado', buildings: 0 })
+          continue
+        }
         // Collect building IDs - for master orders, include child orders' buildings
         let buildingIds: string[] = order.lista_predios || []
 
         if (order.is_master) {
           console.log(`👑 [AUDIT] Master order ${order.id} - fetching child orders`)
-          const { data: childOrders } = await supabase
+          const { data: childOrders, error: childError } = await supabase
             .from('pedidos')
-            .select('lista_predios')
+            .select('lista_predios, status, data_fim')
             .eq('master_pedido_id', order.id)
             .in('status', ['ativo', 'video_aprovado'])
 
-          if (childOrders) {
-            for (const child of childOrders) {
-              const childBuildings: string[] = child.lista_predios || []
-              buildingIds = [...new Set([...buildingIds, ...childBuildings])]
-            }
-          }
+          if (childError) throw childError
+          buildingIds = collectOrderBuildings(buildingIds, (childOrders || []).filter(child => eligibleForOrderSync(child, today)))
           console.log(`👑 [AUDIT] Master order total buildings: ${buildingIds.length}`)
         }
 
@@ -83,6 +96,11 @@ Deno.serve(async (req) => {
           continue
         }
 
+        buildingIds = collectOrderBuildings(buildingIds, [])
+        if (dryRun) {
+          details.push({ pedido_id: order.id, status: 'planned', buildings: buildingIds.length, building_ids: buildingIds, is_master: order.is_master })
+          continue
+        }
         // Call sync-buildings-external-api
         const syncResponse = await fetch(`${supabaseUrl}/functions/v1/sync-buildings-external-api`, {
           method: 'POST',
@@ -101,11 +119,14 @@ Deno.serve(async (req) => {
         let syncData: any = {}
         try { syncData = JSON.parse(syncText) } catch { syncData = { raw: syncText } }
 
-        if (syncResponse.ok && syncData.success) {
-          synced++
+        const outcome = orderSyncOutcome(syncData.expected_videos ?? syncData.synced ?? 0, syncData.synced ?? 0, syncData.apiResponse || {})
+        if (syncResponse.ok && syncData.success && (syncData.synced || 0) > 0 && outcome !== 'error') {
+          if (outcome === 'pending') pending++
+          else synced++
           details.push({
             pedido_id: order.id,
-            status: 'success',
+            status: outcome,
+            task_ids: syncData.task_ids || [],
             buildings: buildingIds.length,
             synced_videos: syncData.synced || 0,
             is_master: order.is_master || false
@@ -117,12 +138,15 @@ Deno.serve(async (req) => {
               pedido_id: order.id,
               building_id: bid,
               action: 'audit',
-              status: 'success',
+              status: outcome === 'pending' ? 'skipped' : outcome,
+              error_message: outcome === 'pending' ? 'AWS aceitou o envio; tarefa ainda pendente de confirmação' : null,
               source,
               executed_by: executedBy,
               aws_response: syncData
             })
           }
+        } else if (syncResponse.ok && syncData.success && (syncData.synced || 0) === 0) {
+          details.push({ pedido_id: order.id, status: 'skipped', message: 'Sem vídeos aprovados para reenviar', buildings: buildingIds.length })
         } else {
           failed++
           details.push({
@@ -166,7 +190,9 @@ Deno.serve(async (req) => {
     console.log(`✅ [AUDIT] Complete. Total: ${orders.length}, Synced: ${synced}, Failed: ${failed}`)
 
     return new Response(JSON.stringify({
-      success: true,
+      success: failed === 0,
+      pending,
+      dry_run: dryRun,
       total_orders: orders.length,
       synced,
       failed,

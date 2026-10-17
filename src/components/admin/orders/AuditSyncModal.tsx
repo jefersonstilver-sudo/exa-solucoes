@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AuditDetail {
   pedido_id: string;
-  status: 'success' | 'error' | 'skipped';
+  status: 'success' | 'error' | 'skipped' | 'pending';
   message?: string;
   error?: string;
   buildings?: number;
@@ -21,6 +21,7 @@ interface AuditResult {
   total_orders: number;
   synced: number;
   failed: number;
+  pending?: number;
   details: AuditDetail[];
 }
 
@@ -62,7 +63,9 @@ const AuditSyncModal: React.FC<AuditSyncModalProps> = ({ open, onOpenChange }) =
 
       setResult(data as AuditResult);
       
-      if (data?.failed === 0) {
+      if (data?.pending) {
+        toast.warning(`${data.pending} pedido(s) aceitos pela AWS; processamento ainda pendente.`);
+      } else if (data?.failed === 0) {
         toast.success(`Auditoria concluída! ${data.synced} pedidos sincronizados.`);
       } else {
         toast.warning(`Auditoria concluída com ${data.failed} erro(s).`);
@@ -87,6 +90,7 @@ const AuditSyncModal: React.FC<AuditSyncModalProps> = ({ open, onOpenChange }) =
     switch (status) {
       case 'success': return <CheckCircle className="h-4 w-4 text-emerald-500" />;
       case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'pending': return <RefreshCw className="h-4 w-4 text-muted-foreground" />;
       case 'skipped': return <SkipForward className="h-4 w-4 text-muted-foreground" />;
       default: return null;
     }
@@ -136,6 +140,7 @@ const AuditSyncModal: React.FC<AuditSyncModalProps> = ({ open, onOpenChange }) =
                 </div>
               </div>
 
+              {!!result.pending && <p className="text-sm text-muted-foreground">{result.pending} pedido(s) aguardando confirmação da AWS.</p>}
               {/* Detail List */}
               <ScrollArea className="h-[250px] rounded-md border p-2">
                 <div className="space-y-1.5">

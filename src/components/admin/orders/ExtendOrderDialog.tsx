@@ -3,6 +3,7 @@ import { CalendarClock, Loader2, Infinity as InfinityIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -56,23 +57,43 @@ export const ExtendOrderDialog: React.FC<Props> = ({ open, onOpenChange, orderId
   const fmt = (iso: string) => isIndefiniteEnd(iso) ? 'Indeterminado' : iso.split('-').reverse().join('/');
 
   const handleSave = async () => {
+    if (saving) return;
     if (!newEnd || newEnd < todayISO) {
       toast.error('Escolha uma data final válida (hoje ou depois)');
       return;
     }
     setSaving(true);
     try {
-      const { data, error } = await (supabase as any).rpc('admin_extend_reactivate_order', {
+      const { data, error } = await supabase.rpc('admin_extend_reactivate_order', {
         p_pedido_id: orderId, p_new_end: newEnd, p_reactivate: true,
       });
       if (error) throw error;
-      toast.success(data?.reactivated
+      const reactivated = data && typeof data === 'object' && !Array.isArray(data) && data.reactivated === true;
+      const message = reactivated
         ? `Pedido reativado até ${fmt(newEnd)}`
-        : `Vigência atualizada até ${fmt(newEnd)}`);
+        : `Vigência atualizada até ${fmt(newEnd)}`;
+      // The database change is already committed. An AWS failure must never
+      // be presented as a failed extension or roll back confirmed schedules.
+      try {
+        const { data: sync, error: syncError } = await supabase.functions.invoke('audit-sync-all-active-orders', {
+          body: { pedido_id: orderId, source: 'order_extension' },
+        });
+        if (syncError) {
+          const details = syncError instanceof FunctionsHttpError ? await syncError.context.text() : syncError.message;
+          throw new Error(details);
+        }
+        if (sync?.failed || !sync?.success) throw new Error(sync?.details?.find((item: { error?: string }) => item.error)?.error || 'Reenvio não confirmado');
+        if (sync?.pending) toast.warning(`${message}. Envio aceito pela AWS; processamento ainda pendente.`);
+        else if (!sync?.synced) toast.warning(`${message}. Nenhum vídeo foi reenviado; confira os prédios e vídeos aprovados.`);
+        else toast.success(`${message}. Vídeos reenviados para os prédios vinculados.`);
+      } catch (syncError: unknown) {
+        console.error('[ORDER_EXTENSION] AWS sync failed:', syncError);
+        toast.error(`${message}, mas o reenvio AWS falhou. Tente novamente pela Auditoria Geral API (AWS).`);
+      }
       onOpenChange(false);
       onDone?.();
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao estender pedido');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao estender pedido');
     } finally {
       setSaving(false);
     }

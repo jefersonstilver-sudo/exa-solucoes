@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { authorizeOrderSync } from '../_shared/order-sync-auth.ts'
+import { orderSyncOutcome } from '../_shared/order-sync-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,11 +37,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
     const { pedido_id, action, building_ids } = await req.json()
+    const auth = await authorizeOrderSync(req, pedido_id)
+    if (!auth) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    const supabase = auth.db
 
     if (!pedido_id || !action || !building_ids?.length) {
       return new Response(JSON.stringify({ success: false, error: 'Missing required fields' }), {
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       // Get approved videos for this order
       const { data: videos, error: videoError } = await supabase
         .from('pedido_videos')
-        .select('video_id, slot_position, selected_for_display, qr_config, videos(nome, url, duracao, orientacao)')
+        .select('video_id, slot_position, selected_for_display, is_base_video, qr_config, videos(nome, url, duracao, orientacao)')
         .eq('pedido_id', pedido_id)
         .eq('approval_status', 'approved')
 
@@ -79,20 +79,6 @@ Deno.serve(async (req) => {
         .single()
 
       const isVertical = pedido?.tipo_produto === 'vertical_premium'
-
-      // Use RPC to determine which video is currently active (dynamic scheduling)
-      let currentDisplayVideoId: string | null = null
-      try {
-        const { data: displayData } = await supabase.rpc('get_current_display_video', {
-          p_pedido_id: pedido_id
-        })
-        if (displayData && displayData.length > 0) {
-          currentDisplayVideoId = displayData[0].video_id
-        }
-        console.log(`🎯 [SYNC-BUILDINGS] Current display video from RPC: ${currentDisplayVideoId}`)
-      } catch (rpcError: any) {
-        console.error(`⚠️ [SYNC-BUILDINGS] RPC error, falling back to selected_for_display:`, rpcError.message)
-      }
 
       // Build client_ids: first 4 chars of each building UUID (no hyphens)
       const clientIds = building_ids.map((id: string) => id.replace(/-/g, '').substring(0, 4))
@@ -170,12 +156,13 @@ Deno.serve(async (req) => {
           // Build programacao from campaign_video_schedules (same logic as update-video-schedule-aws)
           const programacao = emptyProgramacao();
           try {
-            const { data: schedules } = await supabase
+            const { data: schedules, error: scheduleError } = await supabase
               .from('campaign_video_schedules')
               .select('id, campaign_schedule_rules ( days_of_week, start_time, end_time, is_active, is_all_day )')
               .eq('video_id', pv.video_id)
               .eq('slot_position', (pv as any).slot_position);
 
+            if (scheduleError) throw scheduleError;
             const rules: any[] = [];
             (schedules || []).forEach((s: any) => {
               (s.campaign_schedule_rules || []).filter((r: any) => r.is_active).forEach((r: any) => rules.push(r));
@@ -193,14 +180,14 @@ Deno.serve(async (req) => {
             const total = Object.values(programacao).reduce((acc: number, arr: any) => acc + arr.length, 0);
             console.log(`📅 [SYNC-BUILDINGS] ${fileNameClean}: ${total} slot(s) de programação`);
           } catch (schedErr: any) {
-            console.error(`⚠️ [SYNC-BUILDINGS] Erro ao buscar programação de ${fileNameClean}:`, schedErr.message);
+            throw new Error(`Programação indisponível para ${fileNameClean}: ${schedErr.message}`);
           }
 
           metadados[fileNameClean] = {
             titulo: video.nome || 'Campanha',
             data_ini: dataIni,
             data_fim: dataFim,
-            master: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
+            master: pv.is_base_video === true,
             id_pedido: pedido_id,
             isPlus: isVertical,
             programacao,
@@ -233,7 +220,8 @@ Deno.serve(async (req) => {
       // POST to external API
       const response = await fetch(`${EXTERNAL_API_BASE}/propagandas/admin/add-to-specific-buildings`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: AbortSignal.timeout(90000)
       })
 
       const responseText = await response.text()
@@ -257,8 +245,13 @@ Deno.serve(async (req) => {
         })
       }
 
+      const outcome = orderSyncOutcome(videos.length, Object.keys(metadados).length, responseData)
       return new Response(JSON.stringify({ 
-        success: true, 
+        success: outcome !== 'error',
+        status: outcome,
+        expected_videos: videos.length,
+        task_ids: responseData.task_ids || (responseData.task_id ? [responseData.task_id] : []),
+        error: outcome === 'error' ? 'Reenvio parcial: nem todos os vídeos aprovados foram enviados' : undefined,
         synced: Object.keys(metadados).length,
         buildings: clientIds.length,
         apiResponse: responseData
