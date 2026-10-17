@@ -17454,6 +17454,15 @@ export type Database = {
       monitor_system_health: { Args: never; Returns: Json }
       normalize_phone: { Args: { phone: string }; Returns: string }
       notify_contracts_expiring_soon: { Args: never; Returns: Json }
+      notify_master_video_aws_sync: {
+        Args: {
+          p_pedido_id: string
+          p_pedido_video_id: string
+          p_previous_title: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
       process_mercadopago_webhook: {
         Args: { webhook_data: Json }
         Returns: Json
