@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { authorizeOrderSync } from '../_shared/order-sync-auth.ts'
+import { orderSyncOutcome } from '../_shared/order-sync-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,9 +37,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const auth = await authorizeOrderSync(req)
+    if (!auth) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    const supabase = auth.db
 
     const { pedido_id, action, building_ids } = await req.json()
 
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
       // Get approved videos for this order
       const { data: videos, error: videoError } = await supabase
         .from('pedido_videos')
-        .select('video_id, slot_position, selected_for_display, qr_config, videos(nome, url, duracao, orientacao)')
+        .select('video_id, slot_position, selected_for_display, is_base_video, qr_config, videos(nome, url, duracao, orientacao)')
         .eq('pedido_id', pedido_id)
         .eq('approval_status', 'approved')
 
@@ -170,12 +171,13 @@ Deno.serve(async (req) => {
           // Build programacao from campaign_video_schedules (same logic as update-video-schedule-aws)
           const programacao = emptyProgramacao();
           try {
-            const { data: schedules } = await supabase
+            const { data: schedules, error: scheduleError } = await supabase
               .from('campaign_video_schedules')
               .select('id, campaign_schedule_rules ( days_of_week, start_time, end_time, is_active, is_all_day )')
               .eq('video_id', pv.video_id)
               .eq('slot_position', (pv as any).slot_position);
 
+            if (scheduleError) throw scheduleError;
             const rules: any[] = [];
             (schedules || []).forEach((s: any) => {
               (s.campaign_schedule_rules || []).filter((r: any) => r.is_active).forEach((r: any) => rules.push(r));
@@ -193,14 +195,14 @@ Deno.serve(async (req) => {
             const total = Object.values(programacao).reduce((acc: number, arr: any) => acc + arr.length, 0);
             console.log(`📅 [SYNC-BUILDINGS] ${fileNameClean}: ${total} slot(s) de programação`);
           } catch (schedErr: any) {
-            console.error(`⚠️ [SYNC-BUILDINGS] Erro ao buscar programação de ${fileNameClean}:`, schedErr.message);
+            throw new Error(`Programação indisponível para ${fileNameClean}: ${schedErr.message}`);
           }
 
           metadados[fileNameClean] = {
             titulo: video.nome || 'Campanha',
             data_ini: dataIni,
             data_fim: dataFim,
-            master: currentDisplayVideoId ? (pv.video_id === currentDisplayVideoId) : (pv.selected_for_display === true),
+            master: pv.is_base_video === true,
             id_pedido: pedido_id,
             isPlus: isVertical,
             programacao,
@@ -233,7 +235,8 @@ Deno.serve(async (req) => {
       // POST to external API
       const response = await fetch(`${EXTERNAL_API_BASE}/propagandas/admin/add-to-specific-buildings`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: AbortSignal.timeout(90000)
       })
 
       const responseText = await response.text()
@@ -257,8 +260,13 @@ Deno.serve(async (req) => {
         })
       }
 
+      const outcome = orderSyncOutcome(videos.length, Object.keys(metadados).length, responseData)
       return new Response(JSON.stringify({ 
-        success: true, 
+        success: outcome !== 'error',
+        status: outcome,
+        expected_videos: videos.length,
+        task_ids: responseData.task_ids || (responseData.task_id ? [responseData.task_id] : []),
+        error: outcome === 'error' ? 'Reenvio parcial: nem todos os vídeos aprovados foram enviados' : undefined,
         synced: Object.keys(metadados).length,
         buildings: clientIds.length,
         apiResponse: responseData
