@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const DEPARTAMENTO_MODULES: Record<string, string[]> = {
   comercial: ['crm_hub', 'contatos', 'contatos_kanban', 'propostas', 'pedidos', 'juridico', 'vendas', 'posicoes'],
   marketing: ['ticker', 'videos_site', 'editor_videos', 'emails', 'homepage_config', 'logos'],
-  financeiro: ['financeiro', 'financeiro_mp', 'relatorios', 'assinaturas', 'cupons'],
+  financeiro: ['financeiro', 'relatorios', 'assinaturas', 'cupons'],
   operacao: ['predios', 'paineis', 'agenda', 'beneficios', 'processos', 'aprovacoes', 'sync_notion', 'videos_anunciantes', 'sindicos', 'leads'],
   tecnologia: ['configuracoes', 'seguranca'],
   ia_automacao: ['agentes_sofia'],

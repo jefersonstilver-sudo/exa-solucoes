@@ -141,6 +141,7 @@ const CheckoutFidelidade = () => {
       return;
     }
     
+    if (paymentMethod !== 'pix_fidelidade') { toast.error('Selecione Pix Automático; boleto indisponível'); return; }
     setIsProcessing(true);
     
     try {

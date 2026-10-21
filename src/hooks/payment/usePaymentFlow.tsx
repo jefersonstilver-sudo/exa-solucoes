@@ -63,7 +63,8 @@ export const usePaymentFlow = () => {
       
       if (!isValid) return;
       
-      const pedidoResult = await createPaymentOrder({
+      if (options.paymentMethod && options.paymentMethod !== 'pix') throw new Error('Selecione Pix Asaas');
+      const pedidoResult = createdOrderId ? { id: createdOrderId } : await createPaymentOrder({
         sessionUser: options.sessionUser,
         cartItems: options.cartItems,
         selectedPlan: options.selectedPlan,
@@ -76,15 +77,14 @@ export const usePaymentFlow = () => {
       });
       
       const pedido = unwrapData(pedidoResult) as any;
-      setCreatedOrderId(pedido.id);
-      
       if (!pedido?.id) throw new Error('Pedido não retornado');
-      if (options.paymentMethod && options.paymentMethod !== 'pix') throw new Error('Selecione Pix Asaas');
+      setCreatedOrderId(pedido.id);
       const data = await generateOrderPix(pedido.id, options.sessionUser);
       options.handleClearCart();
       options.onPixGenerated?.({ qrCodeBase64: data.qr_base64, qrCodeText: data.copia_cola, pedidoId: pedido.id });
       sonnerToast.success('Cobrança Pix Asaas criada');
-      return { success: true, pedidoId: pedido.id };
+      if (!options.onPixGenerated) navigate(`/pix-payment?pedido=${pedido.id}`);
+      return { success: true, pedidoId: pedido.id, pixData: { qrCodeBase64: data.qr_base64, qrCode: data.copia_cola, paymentId: data.payment_id, status: 'PENDING' } };
     } catch (error: any) {
       sonnerToast.error(error.message);
       return { success: false, error: error.message };

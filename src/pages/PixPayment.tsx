@@ -9,6 +9,7 @@ import { usePixPayment } from '@/hooks/payment/usePixPayment';
 import { formatCurrency } from '@/utils/formatters';
 import PixPaymentRealtimeWrapper from '@/components/checkout/payment/PixPaymentRealtimeWrapper';
 import { useAuth } from '@/hooks/useAuth';
+import { isAsaasPaid } from '@/services/asaasPaymentRules';
 
 const PixPayment = () => {
   const navigate = useNavigate();
@@ -132,7 +133,7 @@ const PixPayment = () => {
                     <span className="text-muted-foreground">Status</span>
                     <span className="font-semibold text-primary capitalize">
                       {paymentData.status === 'pending' ? 'Aguardando Pagamento' : 
-                       paymentData.status === 'approved' ? 'Aprovado' : 
+                       isAsaasPaid(paymentData.status) ? 'Aprovado' : 
                        paymentData.status}
                     </span>
                   </div>
@@ -147,7 +148,7 @@ const PixPayment = () => {
                   <li>Escolha pagar com PIX QR Code</li>
                   <li>Escaneie o código acima</li>
                   <li>Confirme o pagamento</li>
-                  <li>Aguarde a confirmação automática (até 30 segundos)</li>
+                  <li>Aguarde a confirmação oficial do Asaas</li>
                 </ol>
                 
                 <div className="mt-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
