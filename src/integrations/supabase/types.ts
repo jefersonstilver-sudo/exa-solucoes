@@ -11419,6 +11419,7 @@ export type Database = {
           updated_at: string | null
           valor_mensal: number | null
           valor_total: number | null
+          whatsapp: string | null
         }
         Insert: {
           asaas_authorization_id?: string | null
@@ -11485,6 +11486,7 @@ export type Database = {
           updated_at?: string | null
           valor_mensal?: number | null
           valor_total?: number | null
+          whatsapp?: string | null
         }
         Update: {
           asaas_authorization_id?: string | null
@@ -11551,6 +11553,7 @@ export type Database = {
           updated_at?: string | null
           valor_mensal?: number | null
           valor_total?: number | null
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -16818,6 +16821,15 @@ export type Database = {
       }
     }
     Views: {
+      crm_inconsistencias: {
+        Row: {
+          chave: string | null
+          detalhe: string | null
+          qtd: number | null
+          tipo: string | null
+        }
+        Relationships: []
+      }
       dashboard_metrics: {
         Row: {
           critical_alerts: number | null
@@ -17102,6 +17114,15 @@ export type Database = {
           p_valor_referencia?: number
         }
         Returns: string
+      }
+      crm_cliente_360: {
+        Args: {
+          p_contact?: string
+          p_email?: string
+          p_phone?: string
+          p_user?: string
+        }
+        Returns: Json
       }
       daily_financial_reconciliation: { Args: never; Returns: Json }
       detect_duplicate_payments: {
@@ -17904,6 +17925,7 @@ export type Database = {
       migrate_orphaned_payments: { Args: never; Returns: Json }
       monitor_coupon_security: { Args: never; Returns: Json }
       monitor_system_health: { Args: never; Returns: Json }
+      norm_fone: { Args: { t: string }; Returns: string }
       normalize_phone: { Args: { phone: string }; Returns: string }
       notify_contracts_expiring_soon: { Args: never; Returns: Json }
       notify_master_video_aws_sync: {
