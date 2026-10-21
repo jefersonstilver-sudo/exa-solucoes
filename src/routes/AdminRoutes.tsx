@@ -34,6 +34,8 @@ import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
 import SyncNotionPage from '@/pages/admin/SyncNotionPage';
 import AgendaPage from '@/pages/admin/AgendaPage';
 import UsersPage from '@/pages/admin/UsersPage';
+import CRM360Page from '@/pages/admin/crm/CRM360Page';
+import ConsolidacaoPage from '@/pages/admin/crm/ConsolidacaoPage';
 import TiposContaPage from '@/pages/admin/TiposContaPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import SecurityPage from '@/pages/admin/SecurityPage';
@@ -465,6 +467,8 @@ const AdminRoutes = () => {
           <UsersPage />
         </ProtectedModuleRoute>
       } />
+      <Route path="crm-360" element={<ProtectedModuleRoute moduleKey={MODULE_KEYS.usuarios}><CRM360Page /></ProtectedModuleRoute>} />
+      <Route path="consolidacao" element={<ProtectedModuleRoute moduleKey={MODULE_KEYS.usuarios}><ConsolidacaoPage /></ProtectedModuleRoute>} />
       <Route path="tipos-conta" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.usuarios}>
           <TiposContaPage />

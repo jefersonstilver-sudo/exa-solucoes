@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
 import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
 import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
+import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 
 interface Installment {
   installment: number;
@@ -308,6 +309,7 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
       </div>
 
       {/* Order Details */}
+      <OrderCRM360Fields userId={order.client_id} email={order.email} whatsapp={order.whatsapp} />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <p className="text-xs text-muted-foreground">Valor Total</p>

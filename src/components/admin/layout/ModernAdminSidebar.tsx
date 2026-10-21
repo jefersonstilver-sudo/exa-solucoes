@@ -410,6 +410,12 @@ export function ModernAdminSidebar() {
           moduleKey: MODULE_KEYS.usuarios
         },
         {
+          title: 'Consolidação',
+          href: buildPath('consolidacao'),
+          icon: UsersRound,
+          moduleKey: MODULE_KEYS.usuarios
+        },
+        {
           title: 'Notificações',
           href: buildPath('notificacoes'),
           icon: Bell,

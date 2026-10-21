@@ -42,10 +42,11 @@ export const useOrdersWithAttemptsRefactored = () => {
       // Buscar tipo_produto e is_master de cada pedido (não disponível na RPC)
       const pedidoIds = (pedidosComClientes || []).map((p: any) => p.id);
       const { data: pedidosExtra } = pedidoIds.length > 0 
-        ? await supabase.from('pedidos').select('id, tipo_produto, is_master').in('id', pedidoIds)
+        ? await supabase.from('pedidos').select('id, tipo_produto, is_master, email, whatsapp').in('id', pedidoIds)
         : { data: [] };
       const tipoProdutoMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.tipo_produto]));
       const isMasterMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.is_master]));
+      const contactMap = new Map((pedidosExtra || []).map(p => [p.id, p]));
       
       // Buscar IDs de pedidos que têm vídeos
       const { data: pedidosComVideo } = await supabase
@@ -80,6 +81,8 @@ export const useOrdersWithAttemptsRefactored = () => {
         data_inicio: pedido.data_inicio,
         data_fim: pedido.data_fim,
         client_id: pedido.client_id,
+        email: contactMap.get(pedido.id)?.email ?? null,
+        whatsapp: contactMap.get(pedido.id)?.whatsapp ?? null,
         client_email: pedido.client_email,
         client_name: pedido.client_name,
         video_status: pedido.video_status,

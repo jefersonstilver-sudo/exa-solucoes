@@ -27,6 +27,9 @@ export default {
 				'space-mono': ['Space Mono', 'monospace'],
 			},
 			colors: {
+				'crm-success': 'hsl(var(--crm-success) / <alpha-value>)',
+				'crm-warning': 'hsl(var(--crm-warning) / <alpha-value>)',
+				'crm-warning-foreground': 'hsl(var(--crm-warning-foreground) / <alpha-value>)',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

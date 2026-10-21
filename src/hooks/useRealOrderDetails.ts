@@ -28,6 +28,8 @@ interface OrderWithClient {
   data_fim: string;
   client_id: string;
   client_email: string;
+  email?: string | null;
+  whatsapp?: string | null;
   client_name: string;
   video_status: string;
   tipo_produto?: string;
@@ -123,6 +125,8 @@ export const useRealOrderDetails = (orderId: string) => {
             data_inicio,
             data_fim,
             client_id,
+            email,
+            whatsapp,
             client_name,
             nome_pedido,
             compliance_data,
@@ -208,6 +212,8 @@ export const useRealOrderDetails = (orderId: string) => {
           data_inicio: order.data_inicio,
           data_fim: order.data_fim,
           client_id: order.client_id,
+          email: order.email,
+          whatsapp: order.whatsapp,
           client_email: order.users?.email || 'Email não disponível',
           client_name: clientName,
           video_status: order.status,

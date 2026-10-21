@@ -1,6 +1,9 @@
 /* === EXA DESIGN SYSTEM - Apple-like Tokens === */
 
 :root {
+  --crm-success: 142 64% 30%;
+  --crm-warning: 43 90% 52%;
+  --crm-warning-foreground: 30 78% 28%;
   /* === SPACING (8px Grid) === */
   --space-0: 0;
   --space-1: 0.25rem;   /* 4px */
@@ -88,6 +91,8 @@
 }
 
 .dark {
+  --crm-success: 142 60% 65%;
+  --crm-warning-foreground: 43 90% 75%;
   /* Dark mode adjustments */
   --apple-gray-50: 220 13% 9%;
   --apple-gray-100: 240 4% 16%;
