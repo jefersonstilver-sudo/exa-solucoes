@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """EXA Motion Studio - renderizador. Uso: render.py job.json out.mp4 [--frames t1 t2 ...]
 job.json: {formato, briefing:{empresa, mensagem, subtitulo, cta, whatsapp_qr, hue?, logo_url?}}"""
-import sys, json, urllib.parse, pathlib, subprocess, shutil, tempfile, urllib.request
+import re, sys, json, urllib.parse, pathlib, subprocess, shutil, tempfile, urllib.request
 import segno
 from playwright.sync_api import sync_playwright
 
@@ -17,6 +17,13 @@ if not exa.exists():
     try: urllib.request.urlretrieve('https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-logo.png', exa)
     except Exception: pass
 if exa.exists(): shutil.copy(exa, tmp / 'exa.png'); assets['exa'] = 'exa.png'
+lu = b.get('logo_url')
+if lu:
+    try:
+        ext = lu.split('?')[0].rsplit('.', 1)[-1].lower()
+        if ext not in ('png', 'jpg', 'jpeg', 'webp', 'gif'): ext = 'png'
+        urllib.request.urlretrieve(lu, tmp / ('logo.' + ext)); assets['logo'] = 'logo.' + ext
+    except Exception as e: print('logo falhou', e)
 wa = ''.join(ch for ch in str(b.get('whatsapp_qr', '')) if ch.isdigit())
 qr = None; whats = ''
 if wa:
@@ -26,14 +33,18 @@ if wa:
     d = wa[2:] if wa.startswith('55') else wa
     whats = '(%s) %s-%s' % (d[:2], d[2:-4], d[-4:]) if len(d) >= 10 else d
 P = {'empresa': b.get('empresa', 'SUA MARCA'), 'mensagem': b.get('mensagem', 'ANUNCIE AQUI'), 'subtitulo': b.get('subtitulo', ''),
-     'cta': b.get('cta') or ('PECA AGORA' if qr else 'CONHECA'), 'formato': fmt, 'qr': qr, 'whats': whats, 'assets': assets}
-import re
+     'cta': b.get('cta') or ('PECA AGORA' if qr else 'CONHECA'), 'instagram': re.sub(r'[^A-Za-z0-9_.]', '', str(b.get('instagram', ''))), 'formato': fmt, 'qr': qr, 'whats': whats, 'assets': assets}
+def hue_from_text(s):
+    s = (s or '').lower()
+    for pat, h in [(r'vermelh|red', 4), (r'laranja|orange', 24), (r'amarel|dourad|ouro|gold|yellow', 46), (r'verde|green', 130), (r'turquesa|ciano', 175), (r'azul|blue', 215), (r'roxo|violeta|purple|lilas', 275), (r'rosa|pink|magenta', 325)]:
+        if re.search(pat, s): return h
+    return None
 def pick_hue(s):
     s = s.lower()
     for pat, h in [(r'pizza|burger|lanche|restaur|churras|padaria|doce|sorvet|cafe|bar\b|food|massa', 18), (r'clinic|odonto|saude|farm|medic|dent|fisio', 172), (r'academ|fit|crossfit|esporte', 130), (r'imobil|advog|contab|consult|seguro|banco|finan', 215), (r'beleza|salao|estetic|barbear|spa|nail', 325), (r'pet|vet|agro|jardim|verde', 95), (r'carro|auto|moto|oficina|pneu', 4)]:
         if re.search(pat, s): return h
     return None
-hh = b.get('hue') if b.get('hue') is not None else pick_hue(P['empresa'] + ' ' + P['mensagem'] + ' ' + b.get('segmento', ''))
+hh = b.get('hue') if b.get('hue') is not None else hue_from_text(b.get('cores_estilo')) if hue_from_text(b.get('cores_estilo')) is not None else pick_hue(P['empresa'] + ' ' + P['mensagem'] + ' ' + b.get('segmento', ''))
 if hh is not None: P['hue'] = hh
 shutil.copy(here / 'template.html', tmp / 'index.html')
 with sync_playwright() as p:
