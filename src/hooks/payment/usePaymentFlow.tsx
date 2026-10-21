@@ -5,7 +5,7 @@ import { Panel } from '@/types/panel';
 import { usePaymentValidator } from './flows/usePaymentValidator';
 import { useOrderCreation } from './useOrderCreation';
 import { unwrapData } from '@/utils/supabaseUtils';
-import { supabase } from '@/integrations/supabase/client';
+import { generateOrderPix } from '@/services/asaasPaymentService';
 
 interface CartItem {
   panel: Panel;
@@ -78,27 +78,13 @@ export const usePaymentFlow = () => {
       const pedido = unwrapData(pedidoResult) as any;
       setCreatedOrderId(pedido.id);
       
-      // Apenas PIX é processado aqui
-      // Cartão de crédito é processado pelo modal via useCheckoutPro
-      if (options.paymentMethod === 'pix') {
-        const { data, error } = await supabase.functions.invoke('process-payment', {
-          body: {
-            pedido_id: pedido.id,
-            payment_method: 'pix',
-            total_amount: options.totalPrice
-          }
-        });
-        
-        // Handle payment errors gracefully
-        if (error) {
-          console.error('❌ [PAYMENT_FLOW] Erro no process-payment:', error);
-          
-          const errorMessage = error.message || '';
-          
-          // Asaas credentials missing
-          if (errorMessage.includes('ASAAS_CREDENTIALS_MISSING')) {
-            sonnerToast.error('Configuração de pagamento incompleta. Entre em contato com o suporte.');
-            return { success: true, pedidoId: pedido.id, paymentPending: true };
+      if (!pedido?.id) throw new Error('Pedido não retornado');
+      if (options.paymentMethod && options.paymentMethod !== 'pix') throw new Error('Selecione Pix Asaas');
+      const data = await generateOrderPix(pedido.id, options.sessionUser);
+      options.handleClearCart();
+      options.onPixGenerated?.({ qrCodeBase64: data.qr_base64, qrCodeText: data.copia_cola, pedidoId: pedido.id });
+      sonnerToast.success('Cobrança Pix Asaas criada');
+      return { success: true, pedidoId: pedido.id, paymentPending: true };
           }
           
           // Asaas API error

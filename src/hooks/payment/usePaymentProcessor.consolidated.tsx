@@ -5,8 +5,8 @@ import { usePaymentFlow } from './usePaymentFlow';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast as sonnerToast } from 'sonner';
 import { CartItem, PaymentResponse } from '@/types/payment';
-import { supabase } from '@/integrations/supabase/client';
-import { prepareForInsert, unwrapData } from '@/utils/supabaseUtils';
+import { generateOrderPix } from '@/services/asaasPaymentService';
+
 
 interface PaymentOptions {
   totalPrice: number;
@@ -35,7 +35,7 @@ interface ProcessPaymentParams {
 /**
  * CONSOLIDATED Payment Processor Hook
  * This is the ONLY payment processor hook in the system
- * Handles both PIX and Stripe payments through a unified interface
+ * Handles authenticated Asaas PIX payments
  */
 export const usePaymentProcessor = () => {
   const { isCreatingPayment, processPayment } = usePaymentFlow();
@@ -63,7 +63,7 @@ export const usePaymentProcessor = () => {
   useEffect(() => {
     try {
       const savedMethod = sessionStorage.getItem('preferred_payment_method');
-      if (savedMethod && (savedMethod === 'credit_card' || savedMethod === 'pix')) {
+      if (savedMethod && savedMethod === 'pix') {
         setPaymentMethod(savedMethod);
       }
     } catch (e) {
@@ -125,129 +125,12 @@ export const usePaymentProcessor = () => {
     });
   };
 
-  /**
-   * Process payment with edge function (Mercado Pago PIX Native)
-   */
   const processPaymentWithEdgeFunction = async (params: ProcessPaymentParams) => {
-    const {
-      pedidoId,
-      cartItems,
-      selectedPlan,
-      totalPrice,
-      couponId,
-      sessionUser,
-      paymentMethod
-    } = params;
-
-    try {
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_PROCESSING,
-        LogLevel.INFO,
-        `Processando pagamento via Edge Function: ${paymentMethod}`,
-        { pedidoId, paymentMethod, totalPrice }
-      );
-
-      const paymentKey = `payment_${pedidoId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const correctTotalPrice = Number(totalPrice.toFixed(2));
-      
-      // Call process-payment edge function for native PIX
-      const { data: responseData, error } = await supabase.functions.invoke('process-payment', {
-        body: {
-          pedido_id: pedidoId,
-          payment_method: paymentMethod,
-          total_amount: correctTotalPrice,
-          cart_items: cartItems.map(item => ({
-            panel_id: item.panel.id,
-            duration: item.duration,
-            price: correctTotalPrice
-          })),
-          selected_plan: selectedPlan,
-          coupon_id: couponId,
-          user_id: sessionUser.id,
-          payment_key: paymentKey,
-          idempotency_key: paymentKey,
-          anti_duplicate_controls: {
-            original_total: totalPrice,
-            corrected_total: correctTotalPrice,
-            processing_timestamp: new Date().toISOString()
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      const pedido = unwrapData(responseData);
-      if (!pedido) {
-        throw new Error('Falha ao processar pagamento: resposta inválida');
-      }
-
-      // Get updated order data
-      const { data: updatedOrderData, error: fetchError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', pedidoId)
-        .single();
-
-      if (fetchError) {
-        console.error('Erro ao buscar pedido atualizado:', fetchError);
-        return responseData;
-      }
-
-      const updatedOrder = unwrapData(updatedOrderData);
-      if (!updatedOrder) return responseData;
-
-      const updatedOrderTyped = updatedOrder as any;
-
-      // Create campaigns for credit card payments
-      if (paymentMethod === 'credit_card' && updatedOrderTyped.lista_paineis) {
-        const panelIds = Array.isArray(updatedOrderTyped.lista_paineis) 
-          ? updatedOrderTyped.lista_paineis 
-          : [updatedOrderTyped.lista_paineis];
-
-        const { data: existingCampaigns } = await supabase
-          .from('campanhas')
-          .select('id')
-          .eq('client_id', sessionUser.id)
-          .in('painel_id', panelIds)
-          .gte('created_at', updatedOrderTyped.created_at);
-
-        if (!existingCampaigns || existingCampaigns.length === 0) {
-          for (const panelId of panelIds) {
-            const campaignData = prepareForInsert({
-              client_id: sessionUser.id,
-              painel_id: panelId,
-              video_id: 'default_video_id',
-              data_inicio: updatedOrderTyped.data_inicio,
-              data_fim: updatedOrderTyped.data_fim,
-              status: 'ativa'
-            });
-
-            const { error: campaignError } = await supabase
-              .from('campanhas')
-              .insert(campaignData as any);
-
-            if (campaignError) {
-              console.error('Erro ao criar campanha:', campaignError);
-            }
-          }
-        }
-      }
-
-      return responseData;
-
-    } catch (error: any) {
-      logCheckoutEvent(
-        CheckoutEvent.PAYMENT_ERROR,
-        LogLevel.ERROR,
-        'Erro ao processar pagamento via Edge Function',
-        { 
-          pedidoId,
-          paymentMethod,
-          error: error.message
-        }
-      );
-      throw error;
-    }
+    if (params.paymentMethod !== 'pix') throw new Error('Selecione Pix Asaas');
+    const data = await generateOrderPix(params.pedidoId, params.sessionUser);
+    return { success: true, pedidoId: params.pedidoId, pixData: {
+      qrCodeBase64: data.qr_base64, qrCode: data.copia_cola, paymentId: data.payment_id, status: 'PENDING'
+    } };
   };
 
   return {

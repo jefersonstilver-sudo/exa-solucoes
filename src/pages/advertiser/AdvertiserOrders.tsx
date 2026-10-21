@@ -4,7 +4,7 @@ import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
-import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
+import { generateOrderPix } from '@/services/asaasPaymentService';
 import { useOrderGroups } from '@/hooks/useOrderGroups';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import { Loader2, ShoppingBag, Search, FolderOpen, Plus } from 'lucide-react';
@@ -35,7 +35,7 @@ const AdvertiserOrders = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
-  const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
+  const isProcessingCheckout = false;
   const [savedCardOrder, setSavedCardOrder] = useState<string[]>([]);
   const cardOrderKey = userProfile?.id ? `exa:order-cards:${userProfile.id}` : null;
   const sensors = useSensors(
@@ -215,22 +215,8 @@ const AdvertiserOrders = () => {
   const handleGeneratePix = async (orderId: string) => {
     setIsGeneratingPix(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-pix-for-order', {
-        body: { pedidoId: orderId }
-      });
-      if (error) throw error;
-      if (data?.success && data?.pixData) {
-        setPixDialog({
-          isOpen: true,
-          pixData: {
-            qrCodeBase64: data.pixData.qrCodeBase64,
-            qrCodeText: data.pixData.qrCode,
-            pedidoId: orderId
-          }
-        });
-      } else {
-        throw new Error(data?.error || 'Erro ao gerar PIX');
-      }
+      const data = await generateOrderPix(orderId);
+      setPixDialog({ isOpen: true, pixData: { qrCodeBase64: data.qr_base64, qrCodeText: data.copia_cola, pedidoId: orderId } });
     } catch (error: any) {
       toast.error('Erro ao gerar QR Code PIX', { description: error.message || 'Tente novamente' });
     } finally {
@@ -238,38 +224,8 @@ const AdvertiserOrders = () => {
     }
   };
 
-  // Card payment via Mercado Pago
-  const handleStripePayment = async (orderId: string) => {
-    try {
-      const { data: pedido, error: pedidoError } = await supabase.
-      from('pedidos').
-      select('*, cupons:cupom_id(codigo)').
-      eq('id', orderId).
-      single();
-      if (pedidoError || !pedido) throw new Error('Pedido não encontrado');
-
-      const { data: buildings, error: buildingsError } = await supabase.
-      from('buildings').
-      select('*').
-      in('id', pedido.lista_paineis || []);
-      if (buildingsError) throw new Error('Erro ao buscar dados dos prédios');
-
-      const couponCode = (pedido as any).cupons?.codigo || null;
-      const result = await createCheckoutProSession({
-        sessionUser: userProfile,
-        cartItems: (buildings || []).map((b) => ({ panel: b as any, duration: pedido.plano_meses })),
-        selectedPlan: pedido.plano_meses,
-        totalPrice: pedido.valor_total,
-        couponId: pedido.cupom_id || null,
-        couponCode,
-        startDate: pedido.data_inicio ? new Date(pedido.data_inicio) : new Date(),
-        endDate: pedido.data_fim ? new Date(pedido.data_fim) : new Date()
-      });
-      if (!result?.success) throw new Error(result?.error || 'Erro ao criar checkout');
-    } catch (error: any) {
-      toast.error('Erro ao processar pagamento', { description: error.message || 'Tente novamente' });
-    }
-  };
+  // Existing card callback now opens the only supported payment method.
+  const handleStripePayment = handleGeneratePix;
 
   // Active period check
   const isWithinActivePeriod = (order: any) => {

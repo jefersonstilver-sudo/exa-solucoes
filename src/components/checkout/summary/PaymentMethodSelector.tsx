@@ -83,7 +83,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       badge: 'Contrato',
       badgeColor: 'bg-violet-500',
       description: 'Boletos enviados por email',
-      available: !is1MonthPlan
+      available: false
     }
     // 🚫 Cartão de crédito removido temporariamente
     // {

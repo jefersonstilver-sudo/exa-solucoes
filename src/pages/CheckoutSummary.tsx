@@ -17,10 +17,8 @@ import Layout from '@/components/layout/Layout';
 import { useCartValidation } from '@/hooks/useCartValidation';
 import { getValidPanels } from '@/utils/cleanupInvalidData';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
-import CreditCardCheckoutModal from '@/components/checkout/payment/CreditCardCheckoutModal';
 import ContractDataCollectionModal from '@/components/checkout/contract/ContractDataCollectionModal';
 import { supabase } from '@/integrations/supabase/client';
-import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
 import AdminCheckoutBlocker from '@/components/checkout/AdminCheckoutBlocker';
 
 const CheckoutSummary = () => {
@@ -49,15 +47,11 @@ const CheckoutSummary = () => {
     infoMessage?: string;
   } | null>(null);
   
-  // Estados para o modal de cartão
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   
   // Estados para o modal de contrato pós-pagamento
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   const [pendingContractOrderId, setPendingContractOrderId] = useState<string | null>(null);
   
-  // Hook para checkout direto com Mercado Pago
-  const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
 
   const {
     cartItems,
@@ -268,39 +262,6 @@ const CheckoutSummary = () => {
     }
   };
   
-  // 💳 Handler para checkout direto com cartão (via modal)
-  const handleCardCheckout = async () => {
-    if (!isLoggedIn || !user?.id) {
-      toast.error("Você precisa estar logado");
-      return;
-    }
-
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + (selectedPlan || 1));
-
-    console.log('[CheckoutSummary] Iniciando checkout direto com cartão');
-
-    await createCheckoutProSession({
-      sessionUser: user,
-      cartItems,
-      selectedPlan: selectedPlan || 1,
-      totalPrice: finalTotal,
-      couponId: couponValid ? couponId : null,
-      couponCode: couponValid ? couponCode : null,  // Pass couponCode for server-side price validation
-      startDate,
-      endDate
-    });
-
-    // Limpar carrinho após iniciar checkout
-    localStorage.removeItem('checkout_cart');
-    localStorage.removeItem('checkout_plan');
-    localStorage.removeItem('checkout_coupon');
-    
-    // Fechar modal
-    setIsCardModalOpen(false);
-  };
-  
   // 🎁 HANDLER PARA FINALIZAR PEDIDO CORTESIA
   const handleFinalizarCortesia = async () => {
     if (!isLoggedIn || !user?.id) {
@@ -447,7 +408,7 @@ const CheckoutSummary = () => {
                       ? 'Continuar para Contrato' 
                       : paymentMethod === 'pix_avista' 
                         ? 'Pagar com PIX' 
-                        : 'Pagar com Cartão'}
+                        : 'Pagar com PIX'}
                   </>
                 )}
               </Button>
@@ -478,15 +439,6 @@ const CheckoutSummary = () => {
         valorTotal={pixData?.valorTotal}
         totalMeses={pixData?.totalMeses}
         infoMessage={pixData?.infoMessage}
-      />
-      
-      {/* Modal de Cartão - checkout direto com Mercado Pago */}
-      <CreditCardCheckoutModal
-        isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
-        totalAmount={finalTotal}
-        itemCount={cartItems?.length || 0}
-        onProceedToCheckout={handleCardCheckout}
       />
       
       {/* Modal de Coleta de Dados do Contrato - pós pagamento */}

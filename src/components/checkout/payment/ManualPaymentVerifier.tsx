@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, RefreshCw, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { verifyAsaasOrder } from '@/services/asaasPaymentService';
 
 interface ManualPaymentVerifierProps {
   pedidoId: string;
@@ -28,28 +28,19 @@ export const ManualPaymentVerifier: React.FC<ManualPaymentVerifierProps> = ({
     try {
       console.log(`🔍 [MANUAL_VERIFY] Verificando pagamento para pedido: ${pedidoId}`);
 
-      // Chamar edge function para verificar pagamento
-      const { data, error } = await supabase.functions.invoke('verify-pix-payment', {
-        body: { pedido_id: pedidoId }
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log(`✅ [MANUAL_VERIFY] Resultado da verificação:`, data);
+      const data = await verifyAsaasOrder(pedidoId);
 
       setVerificationResult(data);
 
       if (data.payment_found && data.payment_approved) {
-        toast.success("Pagamento confirmado! Status atualizado com sucesso.");
+        toast.success("Pagamento confirmado no Asaas; a confirmação administrativa do pedido é separada.");
         if (onStatusUpdated) {
           onStatusUpdated();
         }
       } else if (data.payment_found && !data.payment_approved) {
         toast.warning(`Pagamento encontrado mas status: ${data.payment_status}`);
       } else {
-        toast.info("Pagamento ainda não encontrado no Mercado Pago. Tente novamente em alguns minutos.");
+        toast.info("Pagamento ainda não encontrado no Asaas. Tente novamente em alguns minutos.");
       }
 
     } catch (error: any) {
@@ -121,7 +112,7 @@ export const ManualPaymentVerifier: React.FC<ManualPaymentVerifierProps> = ({
                 {verificationResult.payment_found ? (
                   <div className="space-y-1 text-sm">
                     <p><strong>Pagamento encontrado:</strong> Sim</p>
-                    <p><strong>Status MP:</strong> 
+                    <p><strong>Status Asaas:</strong> 
                       <Badge className={`ml-2 ${getStatusColor(verificationResult.payment_status)}`}>
                         {verificationResult.payment_status}
                       </Badge>
@@ -134,7 +125,7 @@ export const ManualPaymentVerifier: React.FC<ManualPaymentVerifierProps> = ({
                 ) : (
                   <div className="flex items-center text-yellow-700">
                     <Clock className="h-4 w-4 mr-2" />
-                    <span>Pagamento ainda não processado pelo Mercado Pago</span>
+                    <span>Pagamento ainda não processado pelo Asaas</span>
                   </div>
                 )}
               </div>
@@ -149,9 +140,9 @@ export const ManualPaymentVerifier: React.FC<ManualPaymentVerifierProps> = ({
 
         <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
           <p><strong>ℹ️ Como funciona:</strong></p>
-          <p>• Consulta diretamente a API do Mercado Pago</p>
+          <p>• Consulta diretamente a API do Asaas</p>
           <p>• Verifica se o pagamento foi aprovado</p>
-          <p>• Atualiza automaticamente o status se confirmado</p>
+          <p>• Consulta sem alterar o status do pedido</p>
         </div>
       </CardContent>
     </Card>
