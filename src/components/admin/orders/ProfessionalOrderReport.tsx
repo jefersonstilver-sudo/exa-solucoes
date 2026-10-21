@@ -225,6 +225,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       currency: 'BRL'
     }).format(value);
   };
+  const fmtDay = (d?: string | null) => d ? new Date(d.length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('pt-BR') : '—';
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -613,7 +614,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               }
               return <div className="mt-4 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs">
                 <p className="font-bold text-primary">Pix Automático autorizado — cobranças mensais automáticas</p>
-                <p className="text-gray-600 mt-1">O cliente não precisa gerar um novo Pix a cada mês.{proximaData ? ` Próxima cobrança: ${formatDate(proximaData)}.` : ''}</p>
+                <p className="text-gray-600 mt-1">O cliente não precisa gerar um novo Pix a cada mês.{proximaData ? ` Próxima cobrança: ${fmtDay(proximaData)}.` : ''}</p>
               </div>;
             })()}
 
@@ -627,7 +628,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               {order.contrato && <div>
                   <p className="text-gray-500 mb-1">{order.contrato.status === 'assinado' ? 'Assinado em' : 'Enviado em'}</p>
                   <p className="font-semibold text-gray-900">
-                    {formatDate((order.contrato.status === 'assinado' ? (order.contrato.assinado_em || order.contrato.updated_at) : order.contrato.enviado_em) || '') || '—'}
+                    {fmtDay(order.contrato.status === 'assinado' ? (order.contrato.assinado_em || order.contrato.updated_at) : order.contrato.enviado_em)}
                   </p>
                 </div>}
               {order.contrato && <div>
@@ -656,7 +657,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 <p className="text-xs font-bold text-gray-700 mb-2">Cronograma do plano ({order.plano_meses} meses)</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-[11px]">
                   {linhas.map(l => <div key={l.n} className="rounded border border-gray-200 p-2 bg-white">
-                      <p className="font-semibold text-gray-900">{l.n}ª · {l.venc ? formatDate(l.venc) : '—'}</p>
+                      <p className="font-semibold text-gray-900">{l.n}ª · {fmtDay(l.venc)}</p>
                       <p className={l.status === 'pago' ? 'text-green-700 font-semibold' : 'text-gray-500'}>
                         {l.status === 'pago' ? 'Paga' : l.status === 'incluso' ? 'Quitada no pagamento único' : l.status === 'prevista' ? (order.sofia_charge?.kind === 'pix_automatico' ? 'Cobrança automática prevista' : 'Prevista') : l.status}
                       </p>
