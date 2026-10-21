@@ -2,12 +2,12 @@
 - [x] Criar seleção com cinco vídeos originais, visual independente e WhatsApp Sofia padrão; nenhuma alteração no banco.
 - [x] Testar seleção no celular/desktop, número padrão/substituição, noindex e ausência de erros; três testes passaram, compilação OK, cinco URLs retornam HTTP 200 com H.264.
 - [ ] Confirmar reprodução H.264 em navegador real — Chromium de teste não possui esse codec; URLs originais preservadas.
-- [ ] Solicitar publicação — decisão pendente sobre 51 alertas críticos de segurança preexistentes.
+- [x] Solicitar publicação — usuário autorizou publicar com os 51 alertas críticos preexistentes, sem alterar banco.
 
 # CRM 360
 - [x] Integrar ficha somente leitura via RPC existente em Sofia, usuários e pedidos, sem alterar banco ou dados.
 - [x] Adicionar Consolidação via view existente; 33 testes passaram e compilação automática OK.
-- [ ] Solicitar publicação — aguardando decisão sobre 51 alertas críticos preexistentes de segurança.
+- [x] Incluir alterações CRM 360 na publicação autorizada, mantendo os alertas preexistentes sem alterar banco.
 - [ ] Validar fluxo autenticado — Supabase externo não fornece sessão de teste neste ambiente.
 
 # Financeiro — etapas 0 e 1
