@@ -1,3 +1,8 @@
+# CRM 360
+- [ ] Integrar ficha somente leitura via RPC existente em Sofia, usuários e pedidos.
+- [ ] Adicionar Consolidação via view existente, verificar testes e solicitar publicação.
+- [ ] Validar fluxo autenticado — Supabase externo não fornece sessão de teste neste ambiente.
+
 # Financeiro — etapas 0 e 1
 - [x] Migrar chamadas frontend de pagamento ao Asaas existente, ocultar meios não suportados, retirar recuperações automáticas e preservar funções protegidas; 16 testes passaram e compilação OK.
 - [ ] Validar geração/retomada real de Pix e Pix Automático com sessão autenticada — bloqueado: Supabase externo sem sessão de teste disponível; contrato não oferece recuperação de QR já emitido após recarregar.
