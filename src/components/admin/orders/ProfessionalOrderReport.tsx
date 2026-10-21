@@ -37,6 +37,7 @@ interface OrderData {
   data_fim?: string;
   plano_meses: number;
   log_pagamento?: any;
+  asaas_payment?: { id: string; status: string; value: number };
   compliance_data?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
@@ -704,6 +705,12 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
         </section>
 
+        {order.asaas_payment && <section className="border border-border rounded p-4 text-sm space-y-2">
+          <h2 className="font-semibold">Cobrança Asaas · status oficial</h2>
+          <p className="break-all">{order.asaas_payment.id}</p>
+          <p>Status: {order.asaas_payment.status} · {formatCurrency(order.asaas_payment.value)}</p>
+          <p className="text-muted-foreground">Consulta não altera o pedido nem certifica conciliação bancária.</p>
+        </section>}
         {/* SEÇÃO: INFORMAÇÕES DE PAGAMENTO */}
         {order.log_pagamento && <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { findOrderCharge, readAsaasStatus } from '@/services/asaasPaymentService';
 
 interface Parcela {
   id: string;
@@ -32,6 +33,7 @@ interface OrderWithClient {
   tipo_produto?: string;
   nome_pedido?: string;
   log_pagamento?: any;
+  asaas_payment?: { id: string; status: string; value: number };
   compliance_data?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
@@ -244,6 +246,17 @@ export const useRealOrderDetails = (orderId: string) => {
             asaas_payment_id: undefined
           }));
           console.log('💰 [ORDER DETAILS] Parcelas encontradas:', parcelas.length);
+        }
+
+        try {
+          const charge = await findOrderCharge(orderId);
+          if (charge) {
+            const official = await readAsaasStatus(charge.asaas_id);
+            orderWithClient.asaas_payment = { id: charge.asaas_id, status: official.status, value: Number(charge.value) };
+          }
+        } catch {
+          // Failed status reads never fall back to legacy payment approval.
+          toast.warning('Status Asaas indisponível; histórico não confirma pagamento');
         }
 
         console.log('📦 [ORDER DETAILS] Order montado:', {
