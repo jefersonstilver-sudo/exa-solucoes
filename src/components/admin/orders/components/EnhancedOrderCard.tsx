@@ -636,8 +636,10 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
             </div>
           </div> : null}
         {item.type === 'order' && (
-          <SofiaSoldBadge pedidoId={item.id} className="self-start" />
+          <>
+          <SofiaSoldBadge pedidoId={item.id} className="mt-3" />
           <OrderPixActions className="mt-3" order={{ id: item.id, status: item.status, type: item.type, valor_total: item.valor_total, client_name: item.client_name, email: item.client_email, client_id: item.client_id }} />
+          </>
         )}
       </CardContent>
       
