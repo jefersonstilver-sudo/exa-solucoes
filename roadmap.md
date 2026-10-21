@@ -1,6 +1,7 @@
 # CRM 360
-- [ ] Integrar ficha somente leitura via RPC existente em Sofia, usuários e pedidos.
-- [ ] Adicionar Consolidação via view existente, verificar testes e solicitar publicação.
+- [x] Integrar ficha somente leitura via RPC existente em Sofia, usuários e pedidos, sem alterar banco ou dados.
+- [x] Adicionar Consolidação via view existente; 33 testes passaram e compilação automática OK.
+- [ ] Solicitar publicação — aguardando decisão sobre 51 alertas críticos preexistentes de segurança.
 - [ ] Validar fluxo autenticado — Supabase externo não fornece sessão de teste neste ambiente.
 
 # Financeiro — etapas 0 e 1
