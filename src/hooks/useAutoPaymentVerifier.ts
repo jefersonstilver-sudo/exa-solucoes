@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { readAsaasAudit } from '@/services/asaasAuditService';
+import { readAsaasStatus } from '@/services/asaasPaymentService';
 import { toast } from 'sonner';
 
 interface AutoVerificationResult {
@@ -15,83 +16,19 @@ interface AutoVerificationResult {
 export const useAutoPaymentVerifier = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [lastResult, setLastResult] = useState<AutoVerificationResult | null>(null);
-  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
-
-  // Executar verificação manual
   const runVerification = async (): Promise<AutoVerificationResult> => {
     setIsRunning(true);
-    
     try {
-      console.log('🔄 [AUTO_VERIFIER] Executando verificação manual');
-
-      const { data, error } = await supabase.functions.invoke('auto-verify-payments');
-
-      if (error) {
-        throw error;
+      const audit = await readAsaasAudit();
+      let approved = 0; const errors: string[] = [];
+      for (const charge of audit.charges.filter(c => c.asaas_id.startsWith('pay_'))) {
+        try { if ((await readAsaasStatus(charge.asaas_id)).paid) approved++; }
+        catch { errors.push(`Consulta indisponível: ${charge.asaas_id}`); }
       }
-
-      const result = data as AutoVerificationResult;
-      setLastResult(result);
-
-      if (result.success && result.approved_count > 0) {
-        toast.success(`${result.approved_count} pagamentos confirmados automaticamente!`);
-      } else if (result.success) {
-        toast.info(`Verificação concluída: ${result.verified_count} pagamentos verificados`);
-      } else {
-        toast.error(`Erro na verificação: ${result.errors?.[0] || 'Erro desconhecido'}`);
-      }
-
-      return result;
-
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      console.error('❌ [AUTO_VERIFIER] Erro na verificação:', error);
-      const errorResult = {
-        success: false,
-        total_checked: 0,
-        verified_count: 0,
-        approved_count: 0,
-        errors: [message],
-        timestamp: new Date().toISOString()
-      };
-      setLastResult(errorResult);
-      toast.error(`Erro na verificação automática: ${message}`);
-      return errorResult;
-    } finally {
-      setIsRunning(false);
-    }
+      const result = { success: errors.length === 0, total_checked: audit.charges.length, verified_count: audit.charges.length - errors.length, approved_count: approved, errors, timestamp: new Date().toISOString() };
+      setLastResult(result); return result;
+    } finally { setIsRunning(false); }
   };
-
-  // Suspenso durante a reconstrução financeira: a verificação legada pode baixar pedidos.
-  const startAutoVerification = () => {
-    toast.info('Verificação automática suspensa durante a reconstrução financeira.');
-  };
-
-  // Parar verificação automática
-  const stopAutoVerification = () => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      setIntervalId(null);
-      console.log('🛑 [AUTO_VERIFIER] Verificação automática parada');
-      toast.info('Sistema de verificação automática parado');
-    }
-  };
-
-  // Limpar intervalo ao desmontar
-  useEffect(() => {
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [intervalId]);
-
-  return {
-    isRunning,
-    lastResult,
-    isAutoRunning: !!intervalId,
-    runVerification,
-    startAutoVerification,
-    stopAutoVerification
-  };
+  return { isRunning, lastResult, runVerification, isAutoRunning: false,
+    startAutoVerification: () => toast.warning('Automação desativada'), stopAutoVerification: () => {} };
 };

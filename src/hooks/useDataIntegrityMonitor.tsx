@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { readAsaasAudit } from '@/services/asaasAuditService';
 
 export interface SystemIntegrityStatus {
   overall: 'healthy' | 'warning' | 'error';
@@ -105,21 +106,9 @@ export const useDataIntegrityMonitor = () => {
         isMockData: false
       });
 
-      // Check Stripe Integration (replaced MercadoPago)
-      checks.push({
-        name: 'Stripe',
-        status: 'healthy',
-        message: 'Integração Stripe ativa (PIX + Cartão)',
-        isMockData: false
-      });
-
-      // Mock Data Detection Check
-      checks.push({
-        name: 'Integridade de Dados',
-        status: 'healthy',
-        message: 'Todos os serviços mock foram removidos - Sistema usa apenas dados reais do Supabase',
-        isMockData: false
-      });
+      const audit = await readAsaasAudit();
+      checks.push({ name: 'Cobranças Asaas', status: 'warning',
+        message: `${audit.charges.length} cobranças, ${audit.events.length} eventos; conciliação bancária não certificada`, recordCount: audit.charges.length, isMockData: false });
 
     } catch (error) {
       console.error('Erro ao executar verificações:', error);

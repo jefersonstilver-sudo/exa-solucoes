@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { readAsaasAudit } from '@/services/asaasAuditService';
 import { toast } from 'sonner';
 
 export interface TransactionInvestigationResult {
@@ -33,127 +33,29 @@ export interface AutoFixResult {
 
 export const useTransactionRecovery = () => {
   const [loading, setLoading] = useState(false);
-  const [investigationResult, setInvestigationResult] = useState<TransactionInvestigationResult | null>(null);
   const [reconciliationResult, setReconciliationResult] = useState<ReconciliationResult | null>(null);
-  const [autoFixResult, setAutoFixResult] = useState<AutoFixResult | null>(null);
-
-  const investigateTransaction = async (email: string, amount: number) => {
-    try {
-      setLoading(true);
-      console.log('🔍 Investigating missing transaction:', { email, amount });
-      
-      const { data, error } = await supabase.rpc('investigate_missing_transaction', {
-        p_email: email,
-        p_amount: amount
-      });
-
-      if (error) {
-        console.error('❌ Error investigating transaction:', error);
-        throw error;
-      }
-
-      console.log('✅ Investigation result:', data);
-      const result = data as unknown as TransactionInvestigationResult;
-      setInvestigationResult(result);
-      
-      if (result.new_pedido_created) {
-        toast.success(`Transação recuperada! Novo pedido criado: ${result.new_pedido_created}`);
-      } else if (result.existing_pedido) {
-        toast.info('Pedido já existe no sistema');
-      } else {
-        toast.warning('Nenhuma ação necessária');
-      }
-
-      return result;
-    } catch (error) {
-      console.error('💥 Error in investigation:', error);
-      toast.error('Erro ao investigar transação');
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const runReconciliationCheck = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      console.log('🔄 Running MercadoPago reconciliation check...');
-      
-      const { data, error } = await supabase.rpc('mercadopago_reconciliation_check');
-
-      if (error) {
-        console.error('❌ Error in reconciliation check:', error);
-        throw error;
-      }
-
-      console.log('📊 Reconciliation result:', data);
-      const result = data as unknown as ReconciliationResult;
+      const audit = await readAsaasAudit();
+      const result: ReconciliationResult = {
+        reconciliation_date: audit.timestamp, supabase_total: audit.total,
+        webhook_transactions: audit.events.length, missing_transactions: audit.unmatched.length,
+        lost_revenue_estimate: 0, discrepancy_detected: audit.unmatched.length > 0,
+        reconciliation_status: audit.unmatched.length ? 'MAJOR_DISCREPANCY' : 'MINOR_DISCREPANCY', timestamp: audit.timestamp
+      };
       setReconciliationResult(result);
-      
-      const status = result.reconciliation_status;
-      if (status === 'RECONCILED') {
-        toast.success('✅ Sistema reconciliado com MercadoPago');
-      } else if (status === 'MINOR_DISCREPANCY') {
-        toast.warning(`⚠️ Pequena discrepância detectada: ${result.missing_transactions} transações`);
-      } else {
-        toast.error(`🚨 Discrepância crítica: ${result.missing_transactions} transações perdidas`);
-      }
-
+      toast.info('Consulta Asaas concluída; conciliação bancária não certificada');
       return result;
-    } catch (error) {
-      console.error('💥 Error in reconciliation:', error);
-      toast.error('Erro na reconciliação');
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
-
-  const autoFixLostTransactions = async () => {
-    try {
-      setLoading(true);
-      console.log('🔧 Running auto-fix for lost transactions...');
-      
-      const { data, error } = await supabase.rpc('auto_fix_lost_transactions');
-
-      if (error) {
-        console.error('❌ Error in auto-fix:', error);
-        throw error;
-      }
-
-      console.log('🛠️ Auto-fix result:', data);
-      const result = data as unknown as AutoFixResult;
-      setAutoFixResult(result);
-      
-      if (result.transactions_fixed > 0) {
-        toast.success(`🎉 ${result.transactions_fixed} transações recuperadas automaticamente! Total: R$ ${result.total_recovered.toFixed(2)}`);
-      } else {
-        toast.info('Nenhuma transação perdida encontrada para correção');
-      }
-
-      return result;
-    } catch (error) {
-      console.error('💥 Error in auto-fix:', error);
-      toast.error('Erro na correção automática');
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  const blocked = async (): Promise<AutoFixResult> => {
+    toast.warning('Correções automáticas desativadas. Revise a cobrança pelo identificador Asaas.');
+    return { success: false, transactions_fixed: 0, total_recovered: 0, recovery_timestamp: new Date().toISOString() };
   };
-
-  const fixSpecificTransaction = async () => {
-    // Fix the specific R$0.19 transaction we identified
-    return await investigateTransaction('patagoniadafronteira@gmail.com', 0.19);
+  const investigateTransaction = async (_email: string, _amount: number): Promise<TransactionInvestigationResult> => {
+    throw new Error('Informe o identificador oficial da cobrança Asaas; nome ou valor não identifica um pagamento');
   };
-
-  return {
-    loading,
-    investigationResult,
-    reconciliationResult,
-    autoFixResult,
-    investigateTransaction,
-    runReconciliationCheck,
-    autoFixLostTransactions,
-    fixSpecificTransaction
-  };
+  return { loading, investigationResult: null, reconciliationResult, autoFixResult: null,
+    investigateTransaction, runReconciliationCheck, autoFixLostTransactions: blocked, fixSpecificTransaction: blocked };
 };
