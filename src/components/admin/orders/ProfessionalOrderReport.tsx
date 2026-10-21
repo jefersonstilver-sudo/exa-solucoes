@@ -66,6 +66,10 @@ interface OrderData {
   versao_termo?: string;
   // Parcelas
   parcelas?: Parcela[];
+  is_sofia?: boolean;
+  payment_method_label?: string;
+  sofia_charge?: { kind: string; status: string; value: number; due_date: string | null; paid_at: string | null; meses: number | null } | null;
+  contrato?: { id: string; numero_contrato: string | null; status: string; enviado_em: string | null; assinado_em: string | null; updated_at: string | null; clicksign_download_url: string | null } | null;
 }
 interface PanelData {
   id: string;
@@ -561,6 +565,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Tipo de Pagamento</p>
                 <p className="font-semibold text-gray-900">
+                  {order.payment_method_label ? order.payment_method_label : <>
                   {order.tipo_pagamento === 'personalizado' && '💳 Condição Personalizada'}
                   {order.metodo_pagamento === 'personalizado' && !order.tipo_pagamento && '💳 Condição Personalizada'}
                   {order.tipo_pagamento === 'pix_avista' && 'PIX à Vista'}
@@ -568,6 +573,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                   {order.tipo_pagamento === 'boleto_fidelidade' && 'Boleto Fidelidade'}
                   {order.tipo_pagamento === 'cartao' && 'Cartão de Crédito'}
                   {!order.tipo_pagamento && order.metodo_pagamento !== 'personalizado' && (order.log_pagamento?.method === 'pix' ? 'PIX' : order.metodo_pagamento || 'Não informado')}
+                  </>}
                 </p>
               </div>
               <div>
@@ -589,12 +595,76 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                   <div>
                     <p className="text-gray-500 mb-1">Dia de Vencimento</p>
                     <p className="font-semibold text-gray-900">
-                      Dia {order.dia_vencimento || 'N/A'}
+                      {order.dia_vencimento ? `Dia ${order.dia_vencimento}` : 'N/A'}
                     </p>
                   </div>
                 </>}
             </div>
             
+            {/* Pix Automático + Contrato + Cronograma */}
+            {order.sofia_charge?.kind === 'pix_automatico' && (() => {
+              const parcelasOrd = [...(order.parcelas || [])].sort((a, b) => a.numero_parcela - b.numero_parcela);
+              const proxima = parcelasOrd.find(p => p.status !== 'pago');
+              let proximaData: string | null = proxima?.data_vencimento || null;
+              if (!proximaData && order.data_inicio && parcelasOrd.length < (order.plano_meses || 0)) {
+                const d = new Date(order.data_inicio + 'T12:00:00');
+                d.setMonth(d.getMonth() + parcelasOrd.length);
+                proximaData = d.toISOString().slice(0, 10);
+              }
+              return <div className="mt-4 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs">
+                <p className="font-bold text-primary">Pix Automático autorizado — cobranças mensais automáticas</p>
+                <p className="text-gray-600 mt-1">O cliente não precisa gerar um novo Pix a cada mês.{proximaData ? ` Próxima cobrança: ${formatDate(proximaData)}.` : ''}</p>
+              </div>;
+            })()}
+
+            <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div>
+                <p className="text-gray-500 mb-1">Contrato</p>
+                {order.contrato ? <p className="font-semibold text-gray-900">
+                    {order.contrato.numero_contrato || order.contrato.id.slice(0, 8)} · {order.contrato.status === 'assinado' ? 'Assinado' : order.contrato.status === 'enviado' ? 'Enviado' : order.contrato.status}
+                  </p> : <p className="font-semibold text-gray-500">Sem contrato vinculado</p>}
+              </div>
+              {order.contrato && <div>
+                  <p className="text-gray-500 mb-1">{order.contrato.status === 'assinado' ? 'Assinado em' : 'Enviado em'}</p>
+                  <p className="font-semibold text-gray-900">
+                    {formatDate((order.contrato.status === 'assinado' ? (order.contrato.assinado_em || order.contrato.updated_at) : order.contrato.enviado_em) || '') || '—'}
+                  </p>
+                </div>}
+              {order.contrato && <div>
+                  <p className="text-gray-500 mb-1">Documento</p>
+                  <div className="flex flex-wrap gap-2">
+                    <a href={`/super_admin/juridico/${order.contrato.id}`} className="font-semibold text-primary underline">Abrir contrato</a>
+                    {order.contrato.clicksign_download_url && <a href={order.contrato.clicksign_download_url} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">Baixar PDF assinado</a>}
+                  </div>
+                </div>}
+            </div>
+
+            {(order.plano_meses || 0) > 1 && (order.parcelas?.length || 0) < (order.plano_meses || 0) && (() => {
+              const existentes = [...(order.parcelas || [])].sort((a, b) => a.numero_parcela - b.numero_parcela);
+              const pagoUnico = order.sofia_charge && order.sofia_charge.kind !== 'pix_automatico' && existentes.length === 1 && existentes[0].status === 'pago';
+              const linhas = Array.from({ length: order.plano_meses }, (_, i) => {
+                const ex = existentes.find(p => p.numero_parcela === i + 1);
+                let venc = ex?.data_vencimento || null;
+                if (!venc && order.data_inicio) {
+                  const d = new Date(order.data_inicio + 'T12:00:00');
+                  d.setMonth(d.getMonth() + i);
+                  venc = d.toISOString().slice(0, 10);
+                }
+                return { n: i + 1, venc, status: ex ? ex.status : (pagoUnico ? 'incluso' : 'prevista') };
+              });
+              return <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-xs font-bold text-gray-700 mb-2">Cronograma do plano ({order.plano_meses} meses)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-[11px]">
+                  {linhas.map(l => <div key={l.n} className="rounded border border-gray-200 p-2 bg-white">
+                      <p className="font-semibold text-gray-900">{l.n}ª · {l.venc ? formatDate(l.venc) : '—'}</p>
+                      <p className={l.status === 'pago' ? 'text-green-700 font-semibold' : 'text-gray-500'}>
+                        {l.status === 'pago' ? 'Paga' : l.status === 'incluso' ? 'Quitada no pagamento único' : l.status === 'prevista' ? (order.sofia_charge?.kind === 'pix_automatico' ? 'Cobrança automática prevista' : 'Prevista') : l.status}
+                      </p>
+                    </div>)}
+                </div>
+              </div>;
+            })()}
+
             {/* Badge de Status de Adimplência - Corrigido */}
             {order.is_fidelidade && <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center gap-3">
@@ -723,7 +793,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 <div>
                   <p className="text-gray-500 mb-1">Método de Pagamento</p>
                   <p className="font-semibold text-gray-900">
-                    {order.log_pagamento.method === 'pix' ? 'PIX' : order.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito'}
+                    {order.payment_method_label || (order.log_pagamento.method === 'pix' ? 'PIX' : order.log_pagamento.payment_method === 'pix' ? 'PIX' : order.log_pagamento.method || order.log_pagamento.payment_method || 'Não informado')}
                   </p>
                 </div>
                 <div>
