@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { isAsaasPaid, requireAsaasPaymentId } from '../src/services/asaasPaymentRules.ts';
 

@@ -28,6 +28,10 @@ export async function createAsaasPix(customer_id: string, value: number, descrip
   return data;
 }
 
+export async function createAsaasRecurringPix(customer_id: string, value: number, meses: number, description: string, externalReference: string) {
+  return callAsaas<Record<string, unknown>>({ action: 'pix_automatico', customer_id, value, meses, description, externalReference });
+}
+
 export async function readAsaasStatus(payment_id: string) {
   requireAsaasPaymentId(payment_id);
   const data = await callAsaas<{ status: string }>({ action: 'status', payment_id });
@@ -52,7 +56,11 @@ export async function verifyAsaasOrder(pedidoId: string) {
 }
 
 const inflight = new Map<string, Promise<AsaasPix>>();
+// Ephemeral QR data is not a financial status or browser-storage credential.
+const issuedPix = new Map<string, AsaasPix>();
 export function generateOrderPix(pedidoId: string, profile?: Record<string, any>): Promise<AsaasPix> {
+  const issued = issuedPix.get(pedidoId);
+  if (issued) return Promise.resolve(issued);
   const existing = inflight.get(pedidoId);
   if (existing) return existing;
   const task = (async () => {
@@ -68,8 +76,34 @@ export function generateOrderPix(pedidoId: string, profile?: Record<string, any>
       cpf_cnpj: user.empresa_documento || user.cpf || profile?.empresa_documento || profile?.cpf_cnpj || '',
       telefone: user.telefone || profile?.telefone || ''
     });
-    return createAsaasPix(customer_id, Number(order.valor_total), order.nome_pedido || `Pedido EXA ${pedidoId}`, pedidoId);
+    const pix = await createAsaasPix(customer_id, Number(order.valor_total), order.nome_pedido || `Pedido EXA ${pedidoId}`, pedidoId);
+    issuedPix.set(pedidoId, pix);
+    return pix;
   })().finally(() => inflight.delete(pedidoId));
   inflight.set(pedidoId, task);
+  return task;
+}
+
+export async function generateInstallmentPix(parcelaId: string) {
+  const issued = issuedPix.get(parcelaId);
+  if (issued) return issued;
+  const active = inflight.get(parcelaId);
+  if (active) return active;
+  const task = (async () => {
+    const { data: installment, error } = await supabase.from('parcelas').select('*').eq('id', parcelaId).single();
+    if (error || !installment || installment.status === 'pago') throw new Error('Parcela indisponível ou já paga');
+    const { data: prior, error: priorError } = await supabase.from('sofia_cobrancas').select('asaas_id').eq('external_reference', parcelaId).limit(1).maybeSingle();
+    if (priorError) throw new Error('Não foi possível conferir a cobrança anterior');
+    if (prior) throw new Error(`Cobrança Asaas já emitida: ${prior.asaas_id}. Consulte o pagamento existente.`);
+    const { data: order, error: orderError } = await supabase.from('pedidos').select('client_id').eq('id', installment.pedido_id).single();
+    if (orderError || !order) throw new Error('Pedido da parcela indisponível');
+    const { data: user, error: userError } = await supabase.from('users').select('nome,email,cpf,empresa_documento,telefone').eq('id', order.client_id).single();
+    if (userError || !user) throw new Error('Dados do titular indisponíveis');
+    const customer = await createAsaasCustomer({ nome: user.nome || '', email: user.email || '', cpf_cnpj: user.empresa_documento || user.cpf || '', telefone: user.telefone || '' });
+    const pix = await createAsaasPix(customer, Number(installment.valor_final), `Parcela ${installment.numero_parcela} · EXA`, parcelaId);
+    issuedPix.set(parcelaId, pix);
+    return pix;
+  })().finally(() => inflight.delete(parcelaId));
+  inflight.set(parcelaId, task);
   return task;
 }
