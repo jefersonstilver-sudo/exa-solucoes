@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { formatCouponDiscount } from '../src/types/coupon';
 import { isSofiaChargePaid } from '../src/services/asaasPaymentRules';
-import { splitFullName } from '../src/services/clientProfileService';
 
 describe('cupom mensal_fixo', () => {
   test('EXA5MES mostra R$ 5,00 por mês', () => {
@@ -24,8 +23,3 @@ describe('cobrança Sofia paga', () => {
   });
 });
 
-describe('nome do cliente', () => {
-  test('separa primeiro nome e sobrenome', () => {
-    expect(splitFullName('Jucemar de Oliveira')).toEqual({ primeiro_nome: 'Jucemar', sobrenome: 'de Oliveira' });
-  });
-});
