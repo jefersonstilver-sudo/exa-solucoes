@@ -1,0 +1,25 @@
+name: render-contract
+on:
+  workflow_dispatch:
+    inputs:
+      contrato_id:
+        description: contratos_legais id
+        required: true
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: |
+          sudo apt-get update && sudo apt-get install -y fonts-inter fonts-dejavu
+          pip install playwright
+          playwright install chromium --with-deps
+      - run: python tools/contract-pdf/worker.py
+        env:
+          CONTRATO_ID: ${{ inputs.contrato_id }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SOFIA_WEBHOOK_TOKEN: ${{ secrets.SOFIA_WEBHOOK_TOKEN }}
