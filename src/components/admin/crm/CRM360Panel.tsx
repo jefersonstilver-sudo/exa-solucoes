@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ResponsiveTable } from '@/components/admin/common/ResponsiveTable';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
-import { activeOrdersFirst, crmDate, crmPhone, fetchCRM360, type CRM360Lookup, type CRM360Order } from '@/services/crm360';
+import { activeOrdersFirst, crmDate, crmPhone, crm360HeaderPhone, fetchCRM360, type CRM360Lookup, type CRM360Order } from '@/services/crm360';
 
 const money = (value: number | null | undefined) => value == null ? 'Não informado' : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 export default function CRM360Panel({ lookup }: { lookup: CRM360Lookup }) {
@@ -28,7 +28,7 @@ export default function CRM360Panel({ lookup }: { lookup: CRM360Lookup }) {
     <header className="space-y-2">
       <h2 className="text-xl font-semibold break-words">{contato?.nome || first?.nome || 'Nome não informado'}</h2>
       <p className="text-sm text-muted-foreground break-words">{contato?.empresa || first?.empresa || 'Empresa não informada'}</p>
-      <p className="text-sm">{crmPhone(data.fone_normalizado || contato?.telefone || first?.whatsapp || first?.telefone)}</p>
+      <p className="text-sm">{crm360HeaderPhone(data)}</p>
       <div className="flex flex-wrap gap-2">
         <Badge variant="secondary">{resumo.total_pedidos > 0 || contato?.papel === 'cliente' ? 'Cliente' : 'Lead'}</Badge>
         <Badge variant="outline" className={resumo.pedidos_ativos > 0 ? 'bg-crm-success/10 text-crm-success border-crm-success/30' : 'text-muted-foreground'}>{resumo.pedidos_ativos > 0 ? 'Pedido ativo' : 'Sem pedido ativo'}</Badge>
