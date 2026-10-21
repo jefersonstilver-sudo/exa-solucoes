@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { verifyAsaasOrder } from '@/services/asaasPaymentService';
 import { toast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 
@@ -15,7 +15,7 @@ export const usePixPaymentPolling = ({
   pedidoId,
   isActive,
   onPaymentApproved,
-  intervalMs = 10000 // 10 segundos por padrão - menos frequente
+  intervalMs = 60000 // 10 segundos por padrão - menos frequente
 }: UsePixPaymentPollingProps) => {
   const [isPolling, setIsPolling] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
@@ -29,46 +29,8 @@ export const usePixPaymentPolling = ({
       
       console.log("🔄 POLLING: Verificando status do pagamento:", pedidoId);
       
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('status, log_pagamento')
-        .eq('id', pedidoId)
-        .single();
-      
-      if (error) {
-        console.error("❌ POLLING: Erro ao verificar status:", error);
-        return;
-      }
-      
-      if (data) {
-        const logPagamento = data.log_pagamento as any;
-        const paymentStatus = logPagamento?.payment_status;
-        
-        console.log("📊 POLLING: Status atual:", {
-          pedidoStatus: data.status,
-          paymentStatus,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Se o pagamento foi aprovado
-        if (paymentStatus === 'approved' || data.status === 'pago_pendente_video') {
-          console.log("🎉 POLLING: Pagamento aprovado detectado!");
-          
-          logCheckoutEvent(
-            CheckoutEvent.PAYMENT_PROCESSING,
-            LogLevel.INFO,
-            "Pagamento PIX aprovado detectado via polling",
-            { pedidoId, status: data.status, paymentStatus }
-          );
-          
-          toast.success("🎉 Pagamento aprovado!", {
-            description: "Seu pedido foi confirmado com sucesso!",
-            duration: 5000
-          });
-          
-          onPaymentApproved();
-        }
-      }
+      const data = await verifyAsaasOrder(pedidoId);
+      if (data.payment_approved) onPaymentApproved();
     } catch (error) {
       console.error("💥 POLLING: Erro crítico:", error);
     } finally {
@@ -86,7 +48,7 @@ export const usePixPaymentPolling = ({
     const initialTimeout = setTimeout(checkPaymentStatus, 5000);
     
     // Intervalo regular
-    const interval = setInterval(checkPaymentStatus, intervalMs);
+    const interval = setInterval(checkPaymentStatus, Math.max(60000, intervalMs));
     
     return () => {
       console.log("🛑 POLLING: Parando polling automático");

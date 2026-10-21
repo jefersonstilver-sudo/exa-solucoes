@@ -196,7 +196,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   };
 
   // Verificar se os dados de auditoria estão incompletos
-  const hasIncompleteAuditData = !order.compliance_data || !order.compliance_data.payer || order.log_pagamento?.pixData?.mpResponse?.status === 'pending';
+  const hasIncompleteAuditData = order.log_pagamento?.provider !== 'asaas';
 
   // Calcular status correto baseado em vídeos
   const getCorrectStatus = (orderStatus: string, videosCount: number) => {

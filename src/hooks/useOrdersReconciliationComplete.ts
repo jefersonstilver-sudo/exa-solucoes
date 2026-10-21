@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { readAsaasAudit } from '@/services/asaasAuditService';
 import { toast } from 'sonner';
 
 export interface ReconciliationResult {
@@ -44,33 +44,12 @@ export const useOrdersReconciliationComplete = () => {
     try {
       console.log('🔄 [RECONCILE] Iniciando reconciliação completa...');
       
-      const { data, error } = await supabase.functions.invoke('reconcile-orders-complete', {
-        method: 'POST'
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const reconciliationResult = data as ReconciliationResult;
+      const audit = await readAsaasAudit();
+      const reconciliationResult: ReconciliationResult = { success: true, timestamp: audit.timestamp,
+        summary: { pedidosCorrigidos: 0, parcelasCorrigidas: 0, erros: audit.unmatched.length, pagamentosAsaas: audit.charges.length, pedidosPendentesAntes: audit.unmatched.length },
+        detalhes: { pedidos: [], parcelas: [], erros: audit.unmatched.map(c => ({ tipo: 'evento_ausente', mensagem: `Cobrança ${c.asaas_id} sem evento correspondente` })) } };
       setResult(reconciliationResult);
-
-      if (reconciliationResult.success) {
-        const { pedidosCorrigidos, parcelasCorrigidas, erros } = reconciliationResult.summary;
-        
-        if (pedidosCorrigidos > 0 || parcelasCorrigidas > 0) {
-          toast.success(
-            `Reconciliação concluída: ${pedidosCorrigidos} pedidos e ${parcelasCorrigidas} parcelas corrigidos`,
-            { duration: 5000 }
-          );
-        } else if (erros === 0) {
-          toast.info('Nenhuma divergência encontrada - tudo sincronizado!');
-        }
-
-        if (erros > 0) {
-          toast.warning(`${erros} erros encontrados durante a reconciliação`);
-        }
-      }
+      toast.info('Consulta Asaas concluída, sem corrigir pedidos ou parcelas; conciliação não certificada');
 
       return reconciliationResult;
 

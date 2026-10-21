@@ -102,7 +102,7 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
             : p
         ));
       } else {
-        throw new Error(data?.error || 'Erro ao gerar PIX');
+        throw new Error('Erro ao gerar Pix Asaas');
       }
     } catch (error: any) {
       console.error('Erro ao gerar PIX:', error);

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { toast } from 'sonner';
 import { filterEq, unwrapData } from '@/utils/supabaseUtils';
+import { verifyAsaasOrder } from '@/services/asaasPaymentService';
 
 // Define a type for the payment log data structure
 interface PaymentLogData {
@@ -89,7 +90,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         
         // Process payment data - treat log_pagamento as PaymentLogData with safe typing
         const logPagamento = (orderTyped.log_pagamento || {}) as PaymentLogData;
-        const paymentMethod = logPagamento.payment_method || 'credit_card';
+        const paymentMethod = 'pix';
         
         setPaymentData({
           orderId: orderTyped.id,
@@ -135,39 +136,10 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
     if (!pedidoId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('log_pagamento')
-        .eq('id', filterEq(pedidoId))
-        .limit(1);
-      
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error("Pedido não encontrado");
-      
-      const orderData = unwrapData(data[0]);
-      if (!orderData) throw new Error("Erro ao processar os dados do pedido");
-      
-      const orderDataTyped = orderData as any;
-      const logPagamento = (orderDataTyped.log_pagamento || {}) as PaymentLogData;
-      const paymentMethod = logPagamento.payment_method || 'credit_card';
-      
-      if (paymentMethod === 'pix' && logPagamento.pix_data) {
-        setPaymentData(prev => ({
-          ...prev,
-          pixData: {
-            ...prev?.pixData,
-            status: logPagamento.payment_status || 'pending'
-          }
-        }));
-      }
-      
-      // Redirect if payment approved
-      if (logPagamento.payment_status === 'approved') {
-        toast.success("Pagamento aprovado! Redirecionando...");
-        setTimeout(() => {
-          navigate(`/pedido-confirmado?id=${pedidoId}`);
-        }, 1500);
-      }
+      const data = await verifyAsaasOrder(pedidoId);
+      if (!data.payment_found) throw new Error('Cobrança Asaas não localizada');
+      setPaymentData(prev => ({ ...prev, asaasStatus: data.payment_status }));
+      if (data.payment_approved) toast.success('Pagamento confirmado no Asaas; liberação do pedido depende da confirmação administrativa');
     } catch (err: any) {
       console.error("Erro ao atualizar status do pagamento:", err);
       toast.error("Erro ao atualizar status do pagamento");

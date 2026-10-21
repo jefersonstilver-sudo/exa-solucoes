@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isAsaasPaid } from '@/services/asaasPaymentService';
 
 export interface ConversationTypeStats {
   conversas: number;
@@ -399,29 +400,19 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           }
         });
 
-        // Buscar parcelas pagas e pendentes desses pedidos
+        // Billing status is operational, distinct from bank-statement cash.
         const pedidoIdsConvertidos = pedidosConvertidos?.map(p => p.id) || [];
         if (pedidoIdsConvertidos.length > 0) {
-          const { data: parcelasRankingPagas } = await supabase
-            .from('parcelas')
-            .select('pedido_id, valor_final')
-            .in('pedido_id', pedidoIdsConvertidos)
-            .eq('status', 'pago');
-
-          const { data: parcelasRankingPendentes } = await supabase
-            .from('parcelas')
-            .select('pedido_id, valor_final')
-            .in('pedido_id', pedidoIdsConvertidos)
-            .in('status', ['pendente', 'atrasado']);
-
-          parcelasRankingPagas?.forEach(p => {
-            parcelasPagasPorPedidoRanking[p.pedido_id] = (parcelasPagasPorPedidoRanking[p.pedido_id] || 0) + (p.valor_final || 0);
-          });
-
-          parcelasRankingPendentes?.forEach(p => {
-            parcelasPendentesPorPedidoRanking[p.pedido_id] = (parcelasPendentesPorPedidoRanking[p.pedido_id] || 0) + (p.valor_final || 0);
+          const { data: charges, error: chargeError } = await supabase.from('sofia_cobrancas')
+            .select('pedido_id,value,status').in('pedido_id', pedidoIdsConvertidos);
+          if (chargeError) throw chargeError;
+          charges?.forEach(charge => {
+            if (!charge.pedido_id) return;
+            const map = isAsaasPaid(charge.status) ? parcelasPagasPorPedidoRanking : parcelasPendentesPorPedidoRanking;
+            map[charge.pedido_id] = (map[charge.pedido_id] || 0) + Number(charge.value);
           });
         }
+
       }
 
       // Agrupar por vendedor com receita efetiva e projetada
@@ -462,17 +453,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           // Verificar se tem pedido convertido com parcelas
           const pedidoConvertido = pedidosPorPropostaMap[p.id];
           
-          if (pedidoConvertido && (pedidoConvertido.is_fidelidade || pedidoConvertido.total_parcelas > 1)) {
-            // Pedido parcelado: usar valores das parcelas
-            const valorPago = parcelasPagasPorPedidoRanking[pedidoConvertido.id] || 0;
-            const valorPendente = parcelasPendentesPorPedidoRanking[pedidoConvertido.id] || 0;
-            
-            vendedoresMap[vendedorId].valorRecebido += valorPago;
-            vendedoresMap[vendedorId].valorProjetado += valorPendente;
-          } else {
-            // Pagamento único (PIX à vista): usar valor cheio como recebido
-            vendedoresMap[vendedorId].valorRecebido += p.cash_total_value || 0;
+          if (pedidoConvertido) {
+            vendedoresMap[vendedorId].valorRecebido += parcelasPagasPorPedidoRanking[pedidoConvertido.id] || 0;
+            vendedoresMap[vendedorId].valorProjetado += parcelasPendentesPorPedidoRanking[pedidoConvertido.id] || 0;
           }
+
         }
       });
 
