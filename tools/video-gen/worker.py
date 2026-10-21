@@ -93,7 +93,13 @@ def main():
         brief0 = gerar_cena(job)
     spec = {"formato": job.get("formato") or "horizontal", "briefing": brief0}
     json.dump(spec, open(jp, "w"))
-    subprocess.run([sys.executable, os.path.join(HERE, "render.py"), jp, out], check=True)
+    pr = subprocess.run([sys.executable, os.path.join(HERE, "render.py"), jp, out], check=True, stdout=subprocess.PIPE, text=True)
+    print(pr.stdout[-3000:])
+    frame_report = None
+    for ln in pr.stdout.splitlines():
+        if ln.startswith("FRAMEREPORT "):
+            try: frame_report = json.loads(ln[12:])
+            except Exception: pass
     with open(out, "rb") as f: blob = f.read()
     path = f"{JOB}.mp4"
     req("POST", f"/storage/v1/object/{BUCKET}/{path}", raw=blob,
@@ -103,7 +109,7 @@ def main():
     qa = []
     try:
         dur = 15 if "vertical" in (job.get("formato") or "") else 10
-        for i, f in enumerate([0.9, 2.3, 3.7, 5.1, 6.5, 7.9, 9.2]):
+        for i, f in enumerate([0.5, 1.3, 2.1, 2.9, 3.7, 4.5, 5.3, 6.1, 6.9, 7.7, 8.5, 9.4]):
             t = f * dur / 10.0
             fp = f"/tmp/qa_{JOB}_{i}.jpg"
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", out, "-frames:v", "1", "-vf", "scale=800:-2", "-q:v", "4", fp], check=True)
@@ -114,6 +120,7 @@ def main():
         print("qa frames falhou", e)
     brief = dict(brief0)
     brief["qa_frames"] = qa
+    if frame_report: brief["frame_report"] = frame_report
     req("PATCH", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}", {"status": "ready", "output_url": pub, "briefing": brief})
     notify({"job_id": JOB})
 

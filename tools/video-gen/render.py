@@ -10,7 +10,7 @@ job = json.load(open(sys.argv[1])); out = pathlib.Path(sys.argv[2])
 frames_only = [float(x) for x in sys.argv[4:]] if len(sys.argv) > 3 and sys.argv[3] == '--frames' else None
 VALIDATE = len(sys.argv) > 3 and sys.argv[3] == '--validate'
 b = job.get('briefing', {}); fmt = job.get('formato', 'horizontal_10s')
-vert = fmt == 'vertical_premium_15s'; FPS = 30; DUR = 15 if vert else 10
+vert = fmt == 'vertical_premium_15s'; FPS = 60; DUR = 15 if vert else 10
 W, H = (1080, 1920) if vert else (1920, 1080)
 tmp = pathlib.Path(tempfile.mkdtemp(prefix='exa_motion_'))
 assets = {}
@@ -147,9 +147,23 @@ with sync_playwright() as p:
         res['seg_por_quadro'] = round(per, 2); print('VALIDATE ' + json.dumps(res)); br.close(); shutil.rmtree(tmp, ignore_errors=True); sys.exit(0)
     times = frames_only if frames_only else [i / FPS for i in range(DUR * FPS)]
     fd = tmp / 'f'; fd.mkdir()
+    import hashlib
+    hashes = []
     for i, t in enumerate(times):
-        open(str(fd / ('f_%05d.png' % i)), 'wb').write(shot(t))
+        png = shot(t); open(str(fd / ('f_%05d.png' % i)), 'wb').write(png); hashes.append(hashlib.md5(png).hexdigest())
     br.close()
+    try:
+        # relatorio de quadros: trechos parados (mesmo quadro repetido), movimento medio e quadros em branco
+        runs = []; cur = 1
+        for i in range(1, len(hashes)):
+            if hashes[i] == hashes[i - 1]: cur += 1
+            else:
+                if cur >= int(FPS * .5): runs.append((round((i - cur) / FPS, 2), round(cur / FPS, 2)))
+                cur = 1
+        if cur >= int(FPS * .5): runs.append((round((len(hashes) - cur) / FPS, 2), round(cur / FPS, 2)))
+        uniq = len(set(hashes)); rep = {'fps': FPS, 'quadros': len(hashes), 'unicos': uniq, 'pct_unicos': round(100.0 * uniq / max(1, len(hashes)), 1), 'paradas_longas': [{'inicio_s': a, 'dur_s': d} for a, d in runs], 'tem_midia': bool(media), 'estilo': ESTILO or 'canvas'}
+        print('FRAMEREPORT ' + json.dumps(rep))
+    except Exception as e: print('framereport falhou', e)
 if frames_only:
     out.mkdir(parents=True, exist_ok=True)
     for i, t in enumerate(times): shutil.copy(fd / ('f_%05d.png' % i), out / ('t_%05.2f.png' % t))
@@ -160,8 +174,20 @@ else:
         is_vid = media.rsplit('.', 1)[-1] in ('mp4', 'mov', 'webm')
         pre = ['-stream_loop', '-1', '-i', str(tmp / media)] if is_vid else ['-loop', '1', '-framerate', str(FPS), '-i', str(tmp / media)]
         zoom = '' if is_vid else ',zoompan=z=\'min(1+0.0012*on,1.18)\':d=1:s=%dx%d:fps=%d' % (W, H, FPS)
-        bgf = '[0:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d%s,fps=%d,eq=brightness=-0.06:saturation=1.08,format=yuv420p[bg]' % (W * (1 if is_vid else 2), H * (1 if is_vid else 2), W * (1 if is_vid else 2), H * (1 if is_vid else 2), zoom, FPS)
-        if not is_vid: bgf = bgf.replace('crop=%d:%d' % (W * 2, H * 2), 'crop=%d:%d' % (W * 2, H * 2))
+        if is_vid:
+            mw = mh = 0
+            try:
+                pr = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', str(tmp / media)], capture_output=True, text=True).stdout.strip().split(',')
+                mw, mh = int(pr[0]), int(pr[1])
+            except Exception: pass
+            same = mw and mh and abs((mw / mh) / (W / H) - 1) < .25
+            if same:
+                bgf = '[0:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,fps=%d,eq=brightness=-0.06:saturation=1.08,format=yuv420p[bg]' % (W, H, W, H, FPS)
+            else:
+                # proporcao diferente (ex: video de celular em tela horizontal): fundo desfocado + video nitido inteiro no centro
+                bgf = '[0:v]split=2[a][b];[a]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,boxblur=36:3,eq=brightness=-0.16:saturation=1.1[bgb];[b]scale=%d:%d:force_original_aspect_ratio=decrease[fg];[bgb][fg]overlay=(W-w)/2:(H-h)/2,fps=%d,format=yuv420p[bg]' % (W, H, W, H, W, H, FPS)
+        else:
+            bgf = '[0:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d%s,fps=%d,eq=brightness=-0.06:saturation=1.08,format=yuv420p[bg]' % (W * 2, H * 2, W * 2, H * 2, zoom, FPS)
         fc = bgf + ';[bg][1:v]overlay=format=auto,' + fade + ',format=yuv420p[v]'
         cmd = ['ffmpeg', '-y', '-loglevel', 'error'] + pre + ['-framerate', str(FPS), '-i', str(fd / 'f_%05d.png'), '-filter_complex', fc, '-map', '[v]', '-t', str(DUR), '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', str(out)]
     else:
