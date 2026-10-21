@@ -133,6 +133,15 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
     fetchBuildings();
   }, []);
 
+  // Vertical Premium: todos os prédios automaticamente
+  useEffect(() => {
+    if (formData.tipoProduto !== 'vertical_premium' || buildings.length === 0) return;
+    const all = buildings.map(b => b.id);
+    if (all.some(id => !formData.listaPredios.includes(id))) {
+      updateField('listaPredios', Array.from(new Set([...formData.listaPredios, ...all])));
+    }
+  }, [formData.tipoProduto, buildings]);
+
   const filteredBuildings = buildings.filter(b =>
     !buildingSearch || b.nome.toLowerCase().includes(buildingSearch.toLowerCase()) || b.bairro?.toLowerCase().includes(buildingSearch.toLowerCase())
   );
@@ -272,9 +281,7 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="1">1 mês</SelectItem>
-              <SelectItem value="3">3 meses</SelectItem>
               <SelectItem value="6">6 meses</SelectItem>
-              <SelectItem value="12">12 meses</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -340,31 +347,13 @@ const OrderConfigSection: React.FC<OrderConfigSectionProps> = ({ formData, updat
         )}
 
         <div>
-          <Label className="text-sm">Método Pagamento</Label>
-          <Select value={formData.metodoPagamento} onValueChange={v => updateField('metodoPagamento', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pix_avista">PIX à Vista</SelectItem>
-              <SelectItem value="cartao">Cartão</SelectItem>
-              <SelectItem value="boleto">Boleto</SelectItem>
-              <SelectItem value="transferencia">Transferência</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label className="text-sm">Pagamento</Label>
+          <div className="h-10 px-3 flex items-center rounded-md border bg-muted/40 text-sm">PIX via Asaas</div>
         </div>
         <div>
           <Label className="text-sm">Status Inicial</Label>
-          <Select value={formData.statusInicial} onValueChange={handleStatusChange}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="pago_pendente_video">
-                <span className="flex items-center gap-1.5">
-                  <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
-                  Pago (Aguard. Vídeo)
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="h-10 px-3 flex items-center rounded-md border bg-muted/40 text-sm">Pendente</div>
+          <p className="text-[11px] text-muted-foreground mt-1">Só muda para pago após confirmação do Asaas.</p>
         </div>
       </div>
 
