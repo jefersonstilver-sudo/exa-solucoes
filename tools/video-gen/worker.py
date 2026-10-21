@@ -39,7 +39,22 @@ def main():
     req("POST", f"/storage/v1/object/{BUCKET}/{path}", raw=blob,
         headers={"Content-Type": "video/mp4", "x-upsert": "true"})
     pub = f"{URL}/storage/v1/object/public/{BUCKET}/{path}"
-    req("PATCH", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}", {"status": "ready", "output_url": pub})
+    # quadros para o editor-chefe (revisao automatica)
+    qa = []
+    try:
+        dur = 15 if "vertical" in (job.get("formato") or "") else 10
+        for i, f in enumerate([0.9, 2.3, 3.7, 5.1, 6.5, 7.9, 9.2]):
+            t = f * dur / 10.0
+            fp = f"/tmp/qa_{JOB}_{i}.jpg"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", out, "-frames:v", "1", "-vf", "scale=800:-2", "-q:v", "4", fp], check=True)
+            with open(fp, "rb") as fh: jb = fh.read()
+            req("POST", f"/storage/v1/object/{BUCKET}/qa/{JOB}-{i}.jpg", raw=jb, headers={"Content-Type": "image/jpeg", "x-upsert": "true"})
+            qa.append({"t": round(t, 1), "url": f"{URL}/storage/v1/object/public/{BUCKET}/qa/{JOB}-{i}.jpg"})
+    except Exception as e:
+        print("qa frames falhou", e)
+    brief = dict(job.get("briefing") or {})
+    brief["qa_frames"] = qa
+    req("PATCH", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}", {"status": "ready", "output_url": pub, "briefing": brief})
     notify({"job_id": JOB})
 
 if __name__ == "__main__":

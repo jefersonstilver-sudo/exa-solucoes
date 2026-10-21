@@ -43,7 +43,7 @@ if wa:
     d = wa[2:] if wa.startswith('55') else wa
     whats = '(%s) %s-%s' % (d[:2], d[2:-4], d[-4:]) if len(d) >= 10 else d
 P = {'empresa': b.get('empresa', 'SUA MARCA'), 'segmento': b.get('segmento', ''), 'cores_estilo': b.get('cores_estilo', ''), 'mensagem': b.get('mensagem', 'ANUNCIE AQUI'), 'subtitulo': b.get('subtitulo', ''),
-     'cta': b.get('cta') or ('PECA AGORA' if qr else 'CONHECA'), 'instagram': re.sub(r'[^A-Za-z0-9_.]', '', str(b.get('instagram', ''))), 'formato': fmt, 'qr': qr, 'whats': whats, 'assets': assets, 'media': bool(media)}
+     'cta': b.get('cta') or ('PECA AGORA' if qr else 'CONHECA'), 'instagram': re.sub(r'[^A-Za-z0-9_.]', '', str(b.get('instagram', ''))), 'formato': fmt, 'qr': qr, 'whats': whats, 'assets': assets, 'media': bool(media), 'pedido': b.get('pedido_cliente', '') + ' ' + b.get('observacoes', ''), 'tema': b.get('tema'), 'elementos': b.get('elementos') or [], 'elementos_txt': b.get('estilo_extra', '')}
 def hue_from_text(s):
     s = (s or '').lower()
     for pat, h in [(r'vermelh|red', 4), (r'laranja|orange', 24), (r'amarel|dourad|ouro|gold|yellow', 46), (r'verde|green', 130), (r'turquesa|ciano', 175), (r'azul|blue', 215), (r'roxo|violeta|purple|lilas', 275), (r'rosa|pink|magenta', 325)]:
