@@ -1,0 +1,25 @@
+name: render-video
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: sofia_video_jobs id
+        required: true
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg fonts-inter fonts-dejavu
+          pip install playwright segno
+          playwright install chromium --with-deps
+      - run: python tools/video-gen/worker.py
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SOFIA_WEBHOOK_TOKEN: ${{ secrets.SOFIA_WEBHOOK_TOKEN }}
