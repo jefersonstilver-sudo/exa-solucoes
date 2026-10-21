@@ -31,6 +31,9 @@ def notify(action, payload):
     except Exception as e: print("notify failed", e)
 
 def render(html):
+    import re
+    banner = '<div style="background:linear-gradient(90deg,#4f0401,#760501 55%,#570602);color:#fff;padding:22px 30px;border-radius:6px;font-family:Inter,DejaVu Sans,sans-serif"><div style="font-size:44px;font-weight:700;letter-spacing:-1px;line-height:1">exa</div><div style="font-size:12px;opacity:.9;margin-top:4px">Ecossistema de m\u00eddia e tecnologia</div></div>'
+    html = re.sub(r'<img[^>]*exa-contract-header[^>]*>', lambda m: banner, html)
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         b = p.chromium.launch(); pg = b.new_page()
