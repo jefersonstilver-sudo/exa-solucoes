@@ -34,3 +34,13 @@
 - [x] Ampliar visualização do extrato por período/tipo/categoria, sem modificar sincronização ou dar baixa.
 - [ ] Certificar conciliação fim a fim por IDs de todas as obrigações, testes e operações internas — bloqueado: espelho contém movimentos sem correspondência e falta vínculo comercial inequívoco.
 - [ ] Validar telas financeiras autenticadas na prévia — bloqueado: conexão Supabase externa sem sessão administrativa injetada.
+
+# Sofia — correções do CEO (21/10)
+- [x] Acessar como cliente: visão interna mantém a sessão e mostra os dados do cliente (sem redirecionar ao painel do CEO).
+- [x] Ranking: "Sofia (IA)" com propostas/pedidos pagos/valor vendido; selo "Vendido pela Sofia" na lista e no detalhe.
+- [x] Detalhe do pedido: método real (PIX/PIX Automático), termos via contrato assinado, dia de vencimento das parcelas, contrato e cronograma.
+- [x] Perfil único em users.nome com sincronização de pedidos.client_name; aba "Perfil do cliente" e campos de marca.
+- [x] Faturas: não fica mais preso no carregamento; mostra cobranças Asaas.
+- [x] Cupons: tipo "Valor fixo por mês".
+- [ ] Validar com sessão real do CEO o pedido 7ce35fb8 — bloqueado: Supabase externo sem sessão de teste neste ambiente.
+- [ ] sofia_aceites sem regra de leitura no navegador — aceite por código não é lido diretamente; usar contrato assinado/cobranças da Sofia até liberar leitura (mudança de banco não autorizada).
