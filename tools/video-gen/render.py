@@ -24,6 +24,9 @@ for f in ('gsap.min.js', 'lib.js'): shutil.copy(here / f, tmp / f)
 shutil.copytree(here / 'fonts', tmp / 'fonts')
 assets = {}
 exa = here / 'exa-logo-branca.png'
+if not exa.exists():
+    try: urllib.request.urlretrieve('https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-logo.png', exa)
+    except Exception as e: print('logo EXA indisponivel', e)
 if exa.exists(): shutil.copy(exa, tmp / 'exa.png'); assets['exa'] = 'exa.png'
 
 def fetch(url, stem):

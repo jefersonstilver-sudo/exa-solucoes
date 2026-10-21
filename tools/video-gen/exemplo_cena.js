@@ -2,9 +2,12 @@
 const tl = K.init(); const P = K.P, V = K.vert, C = K.C;
 // Cena 1 - gancho: roda de bicicleta girando (SVG proprio) + headline
 K.scene(tl, 0, V ? 3.4 : 2.6, (L, t) => {
-  const box = V ? { x: 140, y: 300, w: 800, h: 800 } : { x: 1060, y: 160, w: 760, h: 760 };
+  const box = V ? { x: 140, y: 290, w: 800, h: 1000 } : { x: 1060, y: 160, w: 760, h: 820 };
+  if (P.media) K.media(tl, t + .1, { parent: L, rect: box }); // video/foto do cliente e o protagonista
+  else {
   const wheel = K.el(K.R(box), `<svg viewBox="0 0 200 200" width="100%" height="100%"><circle cx="100" cy="100" r="88" fill="none" stroke="${C.accent}" stroke-width="10"/><circle cx="100" cy="100" r="12" fill="#fff"/>${Array.from({ length: 16 }, (_, i) => `<line x1="100" y1="100" x2="${100 + 84 * Math.cos(i * Math.PI / 8)}" y2="${100 + 84 * Math.sin(i * Math.PI / 8)}" stroke="#fff" stroke-width="2.5" opacity=".7"/>`).join('')}</svg>`, L);
   tl.from(wheel, { scale: .2, opacity: 0, duration: .7, ease: 'back.out(1.6)' }, t + .1).to(wheel, { rotation: 540, duration: 3.2, ease: 'power1.inOut' }, t + .1);
+  }
   const h = K.text(L, P.mensagem, V ? K.zone('text') : K.zone('left'), { font: 'black', size: V ? 116 : 132, align: V ? 'center' : 'left', accentLast: true });
   K.reveal(tl, h, t + .35);
 });
