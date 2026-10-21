@@ -1,0 +1,92 @@
+# Migração frontend Asaas — 21/10/2026
+
+## Resultado e limites
+- Pagamentos usam a função existente `asaas-cobranca`, sem alterar essa função ou as outras funções protegidas.
+- Cartão/boleto sem suporte ocultados; ações de reparo automático substituídas por consulta.
+- Status oficial pago: somente RECEIVED/CONFIRMED. Nenhuma baixa financeira automática ou reativação de cron.
+- Duas migrações adicionaram leitura RLS de sofia_cobrancas por administradores financeiros e titulares de pedidos/parcelas vinculados explicitamente; nenhum dado financeiro alterado. Tipos Supabase foram regenerados automaticamente pela ferramenta de migração, não editados manualmente.
+- 16 testes passaram; tela Pix sem pedido mostra erro controlado, login carrega, zero erros JavaScript no teste público.
+- Teste autenticado real de criação/status/retomada NÃO realizado: Supabase externo sem sessão disponível. Nenhuma cobrança foi criada para teste.
+- Contrato não oferece leitura de QR previamente emitido: recarga mostra ID/status, sem criar segunda cobrança; QR da sessão corrente é reutilizado. Proteção no navegador não garante idempotência entre dispositivos; função existente não foi alterada.
+- Busca final: zero chamadas frontend às funções legadas listadas; zero nomes financeiros Mercado Pago/mercadopago/mp_ fora dos tipos gerados. Busca literal `mercado` NÃO zera: textos editoriais/comerciais preservados, além do esquema histórico em tipos gerados.
+- Lint completo das telas preexistentes ainda acusa usos de any; lint dos novos serviços/painel passou com exceções documentadas para any/variáveis não usadas.
+- Banco apresentou 531 avisos de segurança preexistentes, nenhum introduzido nestas migrações; revisão separada não executada.
+- Não publicado; nenhuma Edge Function removida ou alterada.
+
+## Arquivos criados/alterados
+- `src/services/asaasPaymentRules.ts`
+- `src/services/asaasPaymentService.ts`
+- `src/services/asaasAuditService.ts`
+- `src/components/admin/AsaasPaymentAuditPanel.tsx`
+- `src/pages/CheckoutSummary.tsx`
+- `src/pages/CheckoutFidelidade.tsx`
+- `src/pages/public/PropostaPublicaPage.tsx`
+- `src/pages/advertiser/AdvertiserOrders.tsx`
+- `src/pages/advertiser/AdvertiserInvoices.tsx`
+- `src/pages/PixPayment.tsx`
+- `src/components/checkout/summary/PaymentMethodSelector.tsx`
+- `src/components/checkout/summary/PixPaymentButton.tsx`
+- `src/components/checkout/payment/PaymentGateway.tsx`
+- `src/components/checkout/payment/ManualPaymentVerifier.tsx`
+- `src/components/checkout/payment/PixPaymentContent.tsx`
+- `src/components/checkout/payment/PixPaymentDetails.tsx`
+- `src/components/checkout/payment/PixPaymentRealtimeWrapper.tsx`
+- `src/components/checkout/payment/PixQrCodeDialog.tsx`
+- `src/components/order/PurchaseInfoCard.tsx`
+- `src/components/order/OrderInstallmentsSection.tsx`
+- `src/hooks/payment/usePaymentFlow.tsx`
+- `src/hooks/payment/usePaymentProcessor.consolidated.tsx`
+- `src/hooks/payment/usePixPayment.tsx`
+- `src/hooks/payment/useCardPayment.tsx`
+- `src/hooks/payment/usePaymentData.tsx`
+- `src/hooks/payment/useRealtimePaymentStatus.tsx`
+- `src/hooks/payment/usePixPaymentPolling.tsx`
+- `src/hooks/useUnifiedCheckout.tsx`
+- `src/hooks/admin/useTransactionRecovery.tsx`
+- `src/hooks/admin/useFixAuditData.tsx`
+- `src/hooks/admin/useEnhancedFinancialIntegrityData.tsx`
+- `src/hooks/admin/useFinancialIntegrityData.tsx`
+- `src/hooks/usePaymentFixer.tsx`
+- `src/hooks/useAutoPaymentVerifier.ts`
+- `src/hooks/useDataIntegrityMonitor.tsx`
+- `src/hooks/useRealOrderDetails.ts`
+- `src/hooks/useDashboardUnifiedStats.ts`
+- `src/hooks/useOrderStatus.ts`
+- `src/hooks/useOrderReconciliation.tsx`
+- `src/hooks/useOrdersReconciliationComplete.ts`
+- `src/components/admin/FinancialIntegrityDashboard.tsx`
+- `src/components/admin/PaymentFixerPanel.tsx`
+- `src/components/admin/EmergencyRecoveryPanel.tsx`
+- `src/components/admin/AutoPaymentVerifier.tsx`
+- `src/components/admin/DataIntegrityMonitor.tsx`
+- `src/components/admin/financial-integrity/TransactionRecoveryCard.tsx`
+- `src/components/admin/financial-integrity/MissingWebhooksAlert.tsx`
+- `src/components/admin/financial-integrity/LostTransactionsAlert.tsx`
+- `src/components/admin/orders/ProfessionalOrderReport.tsx`
+- `src/components/admin/financeiro/FinancialKPIsRow.tsx`
+- `src/components/admin/financeiro/TransactionsTable.tsx`
+- `src/components/admin/account-types/ModulePermissionsModal.tsx`
+- `src/hooks/useDepartmentContext.ts`
+- `src/hooks/useDynamicModulePermissions.ts`
+- `src/pages/admin/PaymentFixerPage.tsx`
+- `src/pages/admin/financeiro/ContasReceberPage.tsx`
+- `src/types/financeiro.ts`
+- `src/utils/webhookProcessor.ts`
+- `src/utils/pixDebugUtils.ts`
+- `src/utils/paymentDuplicationMonitor.ts`
+- `src/utils/emergencyRecoverySystem.ts`
+- `src/utils/transactionRecoveryManager.ts`
+- `src/services/realtimeCleanupService.ts`
+- `tests/asaasPaymentRules.test.ts`
+- `tests/asaasRecovery.test.ts`
+- `AGENTS.md`
+- `roadmap.md`
+
+## Arquivos excluídos
+- `src/hooks/payment/useCheckoutPro.tsx`
+- `src/services/cardWebhookService.ts`
+- `src/services/pixWebhookService.ts`
+
+## Migrações
+- `supabase/migrations/20261021023817_7293f325-db78-4c70-b0a5-ba739d30116b.sql`
+- `supabase/migrations/20261021024131_2542d190-6f2b-4014-8b6f-dfc10e3d1cb0.sql`
