@@ -46,7 +46,7 @@ def gerar_cena(job):
             rows = req("GET", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}&select=briefing")
             b = (rows[0]["briefing"] if rows else {}) or {}
             if b.get("scene_status") in ("ready", "failed"): break
-        if b.get("scene_status") != "ready" or not b.get("scene_code"):
+        if b.get("scene_status") != "ready" or not (b.get("scene_code") or b.get("scene_js")):
             erro = b.get("scene_err") or "sem codigo"; print("cena nao gerada:", erro); continue
         vj = f"/tmp/val_{JOB}.json"
         json.dump({"formato": job.get("formato") or "horizontal", "briefing": b}, open(vj, "w"))
@@ -65,7 +65,7 @@ def gerar_cena(job):
     try:
         rows = req("GET", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}&select=briefing"); b = (rows[0]["briefing"] if rows else b) or b
     except Exception: pass
-    b["scene_code"] = None; b["scene_fallback"] = True; b["scene_err"] = (erro or "")[:200]
+    b["scene_code"] = None; b["scene_js"] = None; b["estilo"] = b.get("estilo") or 2; b["scene_fallback"] = True; b["scene_err"] = (erro or "")[:200]
     return b
 
 def estilos():
@@ -89,7 +89,7 @@ def main():
     req("PATCH", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}", {"status": "rendering"})
     jp, out = f"/tmp/job_{JOB}.json", f"/tmp/{JOB}.mp4"
     brief0 = dict(job.get("briefing") or {})
-    if brief0.get("gen_scene") and not brief0.get("scene_code"):
+    if brief0.get("gen_scene") and not (brief0.get("scene_code") or brief0.get("scene_js")):
         brief0 = gerar_cena(job)
     spec = {"formato": job.get("formato") or "horizontal", "briefing": brief0}
     json.dump(spec, open(jp, "w"))

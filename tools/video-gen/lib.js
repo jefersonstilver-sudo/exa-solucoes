@@ -1,0 +1,108 @@
+(function () {
+  const P0 = { empresa: 'Sua Marca', segmento: 'comercio', mensagem: 'Anuncie aqui', subtitulo: 'Dentro do elevador do seu publico', cta: 'Peca agora', instagram: 'suamarca', whats: '(45) 99999-0000', formato: 'horizontal_10s', cor: '#e11d48', cor2: '#facc15', escuro: '#0b0b10', claro: '#f2efe9', frases: ['Sua marca', 'dentro do elevador', 'vista todo dia', 'por quem decide', 'Anuncie na EXA'], numeros: [], assets: {}, media: false, qr: null };
+  const P = Object.assign({}, P0, window.P || {}); if (!P.frases || !P.frases.length) P.frases = P0.frases; window.P = P;
+  const hx=(h)=>{h=String(h||'#d92d3a').replace('#','');if(h.length==3)h=h.split('').map(c=>c+c).join('');return [parseInt(h.slice(0,2),16)/255,parseInt(h.slice(2,4),16)/255,parseInt(h.slice(4,6),16)/255]};
+  const toHsl=(c)=>{const [r,g,b]=hx(c),mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0,l=(mx+mn)/2;if(mx!=mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx==r?(g-b)/d+(g<b?6:0):mx==g?(b-r)/d+2:(r-g)/d+4;h*=60}return [h,s,l]};
+  P.corD = (()=>{const [h,s,l]=toHsl(P.cor);return l>.42?`hsl(${h},${Math.round(s*100)}%,38%)`:P.cor})();
+  const vert = P.formato === 'vertical_premium_15s', W = vert ? 1080 : 1920, H = vert ? 1920 : 1080, DUR = vert ? 15 : 10, U = Math.min(W, H) / 1080;
+  const F = 'Inter, "DejaVu Sans", Arial, sans-serif', SERIF = '"DejaVu Serif", Georgia, serif';
+  document.documentElement.style.cssText = 'margin:0;background:' + (P.media ? 'transparent' : '#000');
+  document.body.style.cssText = 'margin:0;overflow:hidden;background:' + (P.media ? 'transparent' : '#000');
+  const st = document.createElement('div'); st.id = 'stage'; st.style.cssText = `position:relative;width:${W}px;height:${H}px;overflow:hidden;transform-origin:0 0;font-family:${F};color:#fff`; document.body.appendChild(st);
+  const fit = () => { const k = window.__RENDER ? 1 : Math.min(innerWidth / W, innerHeight / H); st.style.transform = 'scale(' + k + ')'; };
+  fit(); addEventListener('resize', fit);
+  const u = n => (n * U) + 'px', tt = x => x * DUR / 10;
+  function el(css, html, parent) { const d = document.createElement('div'); d.style.cssText = 'position:absolute;' + (css || ''); if (html != null) d.innerHTML = html; (parent || st).appendChild(d); return d; }
+  function center(css, html, parent) { return el('left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;' + (css || ''), html, parent); }
+  function words(parent, text, size, o) { o = o || {}; const row = el(`left:0;width:100%;text-align:${o.align || 'center'};top:${o.top || '50%'};transform:translateY(-50%);font-weight:${o.weight || 900};font-size:${u(size)};line-height:1.02;letter-spacing:-.02em;color:${o.color || '#fff'};text-transform:${o.upper ? 'uppercase' : 'none'};padding:0 ${u(o.pad || 90)};box-sizing:border-box;${o.css || ''}`, '', parent); const ws = String(text).split(/\s+/), spans = []; ws.forEach((w, i) => { const wrap = document.createElement('span'); wrap.style.cssText = 'display:inline-block;overflow:hidden;vertical-align:top;padding:.08em .12em .12em;margin:-.08em -.12em -.12em'; const sp = document.createElement('span'); sp.style.cssText = 'display:inline-block;will-change:transform'; sp.textContent = w + (i < ws.length - 1 ? ' ' : ''); wrap.appendChild(sp); row.appendChild(wrap); spans.push(sp); }); return { row, spans }; }
+  function reveal(tl, spans, at, o) { o = o || {}; tl.from(spans, { yPercent: o.y || 115, rotation: o.rot || 0, duration: o.d || .55, ease: o.ease || 'power4.out', stagger: o.s || .09 }, at); return at + (o.d || .55) + (spans.length - 1) * (o.s || .09); }
+  function echo(tl, node, from, at, dur, ease, n) { const par = node.parentNode; for (let i = n || 3; i >= 1; i--) { const c = node.cloneNode(true); c.style.pointerEvents = 'none'; par.insertBefore(c, node); tl.from(c, Object.assign({}, from, { duration: dur, ease: ease || 'power3.out' }), at + i * .045); tl.set(c, { opacity: .38 / i }, at); tl.to(c, { opacity: 0, duration: .2 }, at + dur + i * .045); } tl.from(node, Object.assign({}, from, { duration: dur, ease: ease || 'power3.out' }), at); }
+  function logoNode(size, parent, css) { const a = P.assets || {}; if (a.logo) return el('width:' + u(size * 1.6) + ';height:' + u(size) + ';' + (css || ''), '<img src="' + a.logo + '" style="width:100%;height:100%;object-fit:contain">', parent); return el((css || '') + ';white-space:nowrap;font-weight:900;font-size:' + u(size * .62) + ';letter-spacing:-.03em', String(P.empresa).replace(/</g, '&lt;') + '<span style="color:' + P.cor + '">.</span>', parent); }
+  function qrNode(size, parent, css) { if (!P.qr) return null; const q = P.qr, n = q.length, cv = document.createElement('canvas'); cv.width = cv.height = 400; const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 400, 400); c.fillStyle = '#000'; const pad = 24, cs = (400 - pad * 2) / n; for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q[r][k]) c.fillRect(pad + k * cs, pad + r * cs, cs + .6, cs + .6); cv.style.cssText = 'width:100%;height:100%;border-radius:' + u(size * .08); return el('width:' + u(size) + ';height:' + u(size) + ';' + (css || ''), '', parent).appendChild(cv) && cv.parentNode; }
+  function endCard(tl, at, o) { o = o || {}; const bg = o.bg || P.escuro; const root = el('left:0;top:0;width:100%;height:100%;z-index:50;background:' + bg + ';opacity:1'); tl.from(root, { clipPath: 'circle(0% at 50% 50%)', duration: .7, ease: 'power3.inOut' }, at);
+    const col = el('left:0;top:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:' + u(vert ? 46 : 30), '', root);
+    const lg = logoNode(vert ? 190 : 150, col, 'position:relative;color:' + (o.fg || '#fff')); const sp = el('position:relative;font-size:' + u(vert ? 64 : 56) + ';font-weight:800;text-align:center;line-height:1.1;max-width:' + u(vert ? 900 : 1300) + ';color:' + (o.fg || '#fff'), String(P.mensagem).replace(/</g, '&lt;'), col);
+    const pill = el('position:relative;padding:' + u(26) + ' ' + u(64) + ';border-radius:999px;background:' + (o.pillbg || (bg === P.cor ? '#0b0b10' : P.cor)) + ';color:' + (o.pillfg || '#fff') + ';font-weight:900;font-size:' + u(vert ? 56 : 50) + ';text-transform:uppercase;letter-spacing:.02em', String(P.cta || 'Fale conosco').replace(/</g, '&lt;'), col);
+    const row = el('position:relative;display:flex;align-items:center;gap:' + u(40) + ';font-size:' + u(vert ? 44 : 40) + ';font-weight:700;color:' + (o.fg || '#fff') + ';opacity:.92', '', col); const q = qrNode(vert ? 230 : 190, row, 'position:relative'); const txt = el('position:relative;display:flex;flex-direction:column;gap:' + u(10), (P.instagram ? '<div>@' + String(P.instagram).replace(/</g, '') + '</div>' : '') + (P.whats ? '<div>' + String(P.whats).replace(/</g, '') + '</div>' : ''), row);
+    tl.from(lg, { y: u(40), opacity: 0, scale: .8, duration: .6, ease: 'back.out(1.6)' }, at + .35).from(sp, { y: u(30), opacity: 0, duration: .5, ease: 'power3.out' }, at + .55).from(pill, { scale: 0, duration: .55, ease: 'back.out(2.2)' }, at + .75).from(row, { y: u(30), opacity: 0, duration: .5 }, at + .95).to(pill, { scale: 1.06, duration: .5, yoyo: true, repeat: 3, ease: 'sine.inOut' }, at + 1.5); return root; }
+
+  // ===== v7: elementos tematicos, camera e modo midia =====
+  const rnd = (seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; })(11);
+  const ICONS = {
+    paw: (a, b) => `<g fill="${a}"><ellipse cx="50" cy="66" rx="22" ry="18"/><ellipse cx="21" cy="43" rx="9" ry="12"/><ellipse cx="40" cy="27" rx="9" ry="13"/><ellipse cx="60" cy="27" rx="9" ry="13"/><ellipse cx="79" cy="43" rx="9" ry="12"/></g>`,
+    bone: (a, b) => `<g fill="${a}" transform="rotate(-35 50 50)"><circle cx="20" cy="38" r="12"/><circle cx="20" cy="62" r="12"/><circle cx="80" cy="38" r="12"/><circle cx="80" cy="62" r="12"/><rect x="20" y="38" width="60" height="24" rx="6"/></g>`,
+    heart: (a, b) => `<path fill="${a}" d="M50 90 C8 60 10 26 32 22 C42 20 50 28 50 36 C50 28 58 20 68 22 C90 26 92 60 50 90Z"/>`,
+    star: (a, b) => `<polygon fill="${a}" points="50,6 62,38 96,38 69,58 80,92 50,72 20,92 31,58 4,38 38,38"/>`,
+    sparkle: (a, b) => `<path fill="${a}" d="M50 4 C54 34 66 46 96 50 C66 54 54 66 50 96 C46 66 34 54 4 50 C34 46 46 34 50 4Z"/>`,
+    dog: (a, b) => `<ellipse cx="18" cy="44" rx="13" ry="27" fill="${b}" transform="rotate(14 18 44)"/><ellipse cx="82" cy="44" rx="13" ry="27" fill="${b}" transform="rotate(-14 82 44)"/><circle cx="50" cy="52" r="32" fill="${a}"/><ellipse cx="50" cy="66" rx="18" ry="14" fill="#fff"/><ellipse cx="50" cy="58" rx="8" ry="5.5" fill="#222"/><circle cx="37" cy="46" r="4.5" fill="#222"/><circle cx="63" cy="46" r="4.5" fill="#222"/><path d="M44 72 q6 14 12 0z" fill="#ff6b81"/>`,
+    cat: (a, b) => `<polygon fill="${a}" points="20,42 24,6 46,26"/><polygon fill="${a}" points="80,42 76,6 54,26"/><polygon fill="${b}" points="26,36 28,16 40,28"/><polygon fill="${b}" points="74,36 72,16 60,28"/><circle cx="50" cy="56" r="32" fill="${a}"/><ellipse cx="38" cy="50" rx="4.5" ry="6" fill="#222"/><ellipse cx="62" cy="50" rx="4.5" ry="6" fill="#222"/><polygon points="46,62 54,62 50,67" fill="#ff7b9c"/><g stroke="#222" stroke-width="1.6"><line x1="14" y1="60" x2="36" y2="64"/><line x1="14" y1="70" x2="36" y2="68"/><line x1="86" y1="60" x2="64" y2="64"/><line x1="86" y1="70" x2="64" y2="68"/></g>`,
+    fish: (a, b) => `<ellipse cx="42" cy="50" rx="32" ry="21" fill="${a}"/><polygon points="68,50 96,26 96,74" fill="${b}"/><circle cx="26" cy="44" r="4" fill="#fff"/><circle cx="25" cy="44" r="2" fill="#222"/>`,
+    flame: (a, b) => `<path fill="${a}" d="M50 4 C60 28 86 38 82 66 C79 86 64 96 50 96 C36 96 20 86 20 64 C20 48 32 40 38 26 C42 36 46 40 50 4Z"/><path fill="${b}" d="M50 44 C56 58 68 62 66 76 C65 86 58 90 50 90 C42 90 34 86 34 76 C34 66 46 62 50 44Z"/>`,
+    bolt: (a, b) => `<polygon fill="${a}" points="58,4 20,56 46,56 38,96 82,40 54,40"/>`,
+    house: (a, b) => `<polygon fill="${a}" points="50,8 6,48 16,48 16,90 84,90 84,48 94,48"/><rect x="42" y="62" width="16" height="28" fill="${b}"/>`
+  };
+  const THEMES = [
+    ['pet', /\bpet|\bcao\b|cachorr|gatinh|\bgato|vet\b|veterin|racao|tosa|animal|canil|\bdog|\bcat\b|filhote|banho/, ['dog', 'cat', 'paw', 'bone', 'heart', 'fish']],
+    ['food', /pizza|burger|lanche|restaur|churras|padaria|doce|sorvet|cafe|food|massa|comida|hamburg/, ['flame', 'star', 'heart', 'sparkle']],
+    ['fit', /academ|fit|crossfit|esporte|treino|muscula/, ['bolt', 'flame', 'star', 'sparkle']],
+    ['beauty', /beleza|salao|estetic|barbear|spa|nail|cabelo|unha/, ['sparkle', 'heart', 'star']],
+    ['health', /clinic|odonto|saude|farm|medic|dent|fisio|terapia/, ['heart', 'sparkle', 'star']],
+    ['auto', /auto|carro|mecanic|oficina|moto|lava/, ['bolt', 'star', 'sparkle']],
+    ['home', /imobil|casa|apart|condom|constru|material|reforma/, ['house', 'star', 'sparkle']]
+  ];
+  function iconList() {
+    const asked = (P.elementos || []).filter(x => ICONS[x]);
+    if (asked.length) return asked;
+    const txt = (String(P.empresa) + ' ' + P.segmento + ' ' + P.mensagem + ' ' + (P.pedido || '') + ' ' + (P.tema || '')).toLowerCase();
+    const th = THEMES.find(t => (P.tema && t[0] === P.tema) || t[1].test(txt));
+    return th ? th[2] : ['sparkle', 'star'];
+  }
+  function iconSvg(name, size, a, b) { return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block;overflow:visible">${(ICONS[name] || ICONS.sparkle)(a || P.cor, b || P.cor2)}</svg>`; }
+  // flutuam de baixo para cima, deterministico (sem Math.random)
+  function sprites(tl, from, to, o) {
+    o = o || {}; const list = iconList(), n = o.n || (vert ? 9 : 12), layer = el('left:0;top:0;width:100%;height:100%;z-index:' + (o.z == null ? 1 : o.z) + ';pointer-events:none', '', o.parent), out = [];
+    for (let i = 0; i < n; i++) {
+      const name = list[i % list.length], size = (o.size || (vert ? 150 : 130)) * (0.65 + rnd() * 0.8), x = rnd() * (W - size * U), dur = 3.2 + rnd() * 2.6, t0 = from + (to - from - dur * .6) * (i / n) + rnd() * .4;
+      const col = i % 3 === 0 ? (o.c2 || P.cor2) : (o.c1 || P.cor), nd = el(`left:${x}px;top:${H + 40}px;opacity:0`, iconSvg(name, size * U, col, o.c3 || P.corD), layer);
+      tl.set(nd, { opacity: 1, rotation: (rnd() - .5) * 50 }, t0).to(nd, { y: -(H + size * U + 120), duration: dur, ease: 'sine.inOut' }, t0).to(nd, { x: (rnd() - .5) * 140 * U, rotation: '+=' + ((rnd() - .5) * 90), duration: dur, ease: 'sine.inOut' }, t0).to(nd, { opacity: 0, duration: .01 }, t0 + dur);
+      out.push(nd);
+    }
+    return out;
+  }
+  // mascote que espia pelo canto e balanca (cachorro/gato do ramo pet; senao estrela)
+  function mascot(tl, at, o) {
+    o = o || {}; const list = iconList(), name = list.includes('dog') ? (o.name || 'dog') : list[0], size = (o.size || (vert ? 420 : 360)) * U, side = o.side || 'right';
+    const nd = el(`${side}:${u(60)};bottom:${u(-size / U)};z-index:${o.z == null ? 3 : o.z}`, iconSvg(name, size, o.c1 || P.cor, o.c2 || P.corD));
+    tl.to(nd, { bottom: u(40), duration: .7, ease: 'back.out(1.8)' }, at).to(nd, { rotation: side === 'right' ? -8 : 8, duration: .45, yoyo: true, repeat: 3, ease: 'sine.inOut', transformOrigin: '50% 100%' }, at + .7).to(nd, { bottom: u(-size / U), duration: .5, ease: 'power3.in' }, at + (o.stay || 3));
+    return nd;
+  }
+  // camera: zoom/deslize lento em todo o filme (da vida de cinema, evita cara de slide)
+  function camera(tl, o) { o = o || {}; const g = st.firstElementChild; tl.fromTo(st, { scale: 1 }, { scale: o.zoom || 1.06, transformOrigin: o.origin || '50% 50%', duration: DUR, ease: 'none' }, 0); return g; }
+  // modo midia do cliente: tira a opacidade total dos fundos cheios para o video aparecer por tras
+  function mediaFix() {
+    if (!P.media) return;
+    const all = st.querySelectorAll('*');
+    all.forEach(n => {
+      if (n.closest('[data-keep]')) return;
+      const cs = getComputedStyle(n); if (cs.position !== 'absolute') return;
+      const full = n.offsetWidth >= W * .95 && n.offsetHeight >= H * .95;
+      const m = cs.backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+      if (full && m && (m[4] === undefined || parseFloat(m[4]) > .6) && n.style.zIndex !== '50') n.style.backgroundColor = `rgba(${m[1]},${m[2]},${m[3]},.46)`;
+    });
+    st.style.background = 'transparent';
+    // legibilidade: texto escuro sem fundo opaco atras vira branco com contorno escuro
+    const lumOf = (c) => { const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return m ? (0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3]) : 255; };
+    const opaqueBgAbove = (n) => { for (let p = n; p && p !== st; p = p.parentElement) { const m = getComputedStyle(p).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/); if (m && (m[4] === undefined || parseFloat(m[4]) > .8)) return m; } return null; };
+    st.querySelectorAll('*').forEach(n => {
+      if (!n.childNodes.length || ![...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim())) return;
+      if (n.closest('[data-ink]')) return; const cs = getComputedStyle(n); if (lumOf(cs.color) > 150) return;
+      const bg = opaqueBgAbove(n); if (bg && bg !== null && (parseFloat(bg[4] === undefined ? 1 : bg[4]) > .8) && (0.299 * bg[1] + 0.587 * bg[2] + 0.114 * bg[3]) > 120) return;
+      n.style.color = '#ffffff'; n.style.textShadow = '0 0 3px rgba(0,0,0,.9),0 2px 10px rgba(0,0,0,.75)'; n.style.webkitTextStroke = (P.split ? '1.5px' : '1px') + ' rgba(0,0,0,.55)';
+    });
+    const sc = document.createElement('div'); sc.setAttribute('data-keep', '1'); sc.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;background:' + (P.split ? 'rgba(0,0,0,.45)' : 'linear-gradient(180deg,rgba(0,0,0,.34),rgba(0,0,0,.24) 50%,rgba(0,0,0,.4))') + ';pointer-events:none'; st.insertBefore(sc, st.firstChild);
+    st.style.textShadow = '0 2px 18px rgba(0,0,0,.28)';
+  }
+  function init() { const tl = gsap.timeline({ paused: true }); window.tl = tl; return tl; }
+  function finish(tl) { mediaFix(); if (P.split) { st.style.transform = 'none'; st.style.borderRadius = u(46); st.style.boxShadow = '0 30px 90px rgba(0,0,0,.55)'; tl.fromTo(st, { scale: .70, xPercent: 0, yPercent: 0, transformOrigin: '0% 50%' }, { scale: .72, duration: DUR, ease: 'none' }, 0); } else if (!P.nocam) tl.fromTo(st, { scale: 1 }, { scale: 1.045, transformOrigin: '50% 50%', duration: DUR, ease: 'none' }, 0); if (tl.duration() < DUR) tl.to({}, { duration: DUR - tl.duration() }); tl.time(0); if (!window.__RENDER) { tl.play(); tl.eventCallback('onComplete', () => tl.restart()); } }
+  window.K = { P, W, H, DUR, U, vert, F, SERIF, st, u, tt, el, center, words, reveal, echo, logoNode, qrNode, endCard, init, finish, sprites, mascot, camera, iconSvg, ICONS, rnd, mediaFix };
+})();

@@ -122,11 +122,17 @@ P['numeros']=b.get('numeros') or []
 
 SCENE = (b.get('scene_code') or '').strip()
 SCENE_HTML = (b.get('scene_html') or '').strip(); ESTILO = int(b.get('estilo') or 0)
-HTMLMODE = bool(SCENE_HTML) or ESTILO in (1,2,3,4,5)
+SCENE_JS = (b.get('scene_js') or '').strip()
+if SCENE_JS: SCENE = ''
+HTMLMODE = bool(SCENE_HTML) or bool(SCENE_JS) or ESTILO in (1,2,3,4,5)
 if HTMLMODE: SCENE=''
 if HTMLMODE:
     shutil.copy(here / 'gsap.min.js', tmp / 'gsap.min.js')
-    if SCENE_HTML: (tmp / 'index.html').write_text(SCENE_HTML, encoding='utf-8')
+    if SCENE_JS:
+        _lib = (here / 'lib.js').read_text(encoding='utf-8')
+        _safe = SCENE_JS.replace('</script', '<\\/script')
+        (tmp / 'index.html').write_text('<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}</style></head><body><script src="gsap.min.js"></script><script>' + _lib + '</script><script>window.ERRS=[];try{\n' + _safe + '\n}catch(e){window.ERRS.push(String(e&&e.message||e))}</script></body></html>', encoding='utf-8')
+    elif SCENE_HTML: (tmp / 'index.html').write_text(SCENE_HTML, encoding='utf-8')
     else: shutil.copy(here / ('estilo%d.html' % ESTILO), tmp / 'index.html')
 else:
     shutil.copy(here / ('gen_harness.html' if SCENE else 'template4.html'), tmp / 'index.html')
@@ -142,7 +148,12 @@ with sync_playwright() as p:
     if SCENE: pg.add_init_script('window.SCENE_CODE = %s;' % json.dumps(SCENE))
     pg.goto('file://%s/index.html' % tmp)
     if HTMLMODE:
-        pg.wait_for_function('window.tl && window.tl.duration() > 1', timeout=15000); pg.evaluate('document.fonts && document.fonts.ready'); pg.wait_for_timeout(300)
+        try: pg.wait_for_function('window.tl && window.tl.duration() > 1', timeout=15000)
+        except Exception as _e:
+            _er = (pg.evaluate('window.ERRS || []') + perr) or ['timeline nao criada (K.init/K.finish ausentes?)']
+            if VALIDATE: print('VALIDATE ' + json.dumps({'ok': False, 'problemas': ['erros JS: ' + ' | '.join(_er[:4])]})); sys.exit(0)
+            raise
+        pg.evaluate('document.fonts && document.fonts.ready'); pg.wait_for_timeout(300)
     else: pg.evaluate('window.ready()')
     def shot(t):
         if HTMLMODE:
