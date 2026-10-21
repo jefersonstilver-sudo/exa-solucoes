@@ -83,6 +83,8 @@ export const SofiaChatPanel: React.FC = () => {
   const [showInfo, setShowInfo] = useState(false);
   const [fichaConversationId, setFichaConversationId] = useState<string | null>(null);
   const [contact, setContact] = useState<Contact | null>(null);
+  const [contactConversationId, setContactConversationId] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', company: '', role: 'lead', manual: '' });
   const [saving, setSaving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -136,14 +138,18 @@ export const SofiaChatPanel: React.FC = () => {
   useEffect(() => {
     if (!selId) return;
     setContact(null);
+    setContactError(null);
+    setContactConversationId(null);
     call('contact', { conversation_id: selId })
       .then((d) => {
         if (selRef.current !== selId) return;
         const c: Contact = d.contact;
+        if (!c?.id) { setContactError('Contato não encontrado.'); return; }
         setContact(c);
+        setContactConversationId(selId);
         setForm({ name: c.name || '', company: c.company || '', role: c.role || 'lead', manual: c.manual || '' });
       })
-      .catch((e) => console.error('sofia contact', e));
+      .catch(() => { if (selRef.current === selId) setContactError('Não foi possível carregar o contato. Feche a ficha e tente novamente.'); });
   }, [selId]);
 
   const saveContact = async () => {
@@ -200,7 +206,7 @@ export const SofiaChatPanel: React.FC = () => {
   }
 
   return (
-    <><Sheet open={Boolean(fichaConversationId)} onOpenChange={open => { if (!open) setFichaConversationId(null); }}><SheetContent side="right" className="w-full sm:max-w-5xl overflow-y-auto h-dvh"><SheetHeader className="mb-6"><SheetTitle>Ficha 360</SheetTitle></SheetHeader>{contact?.id && fichaConversationId === selId ? <CRM360Panel lookup={{ contact: contact.id }} /> : <div className="flex items-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" />Carregando contato...</div>}</SheetContent></Sheet>
+    <><Sheet open={Boolean(fichaConversationId)} onOpenChange={open => { if (!open) setFichaConversationId(null); }}><SheetContent side="right" className="w-full sm:max-w-5xl overflow-y-auto h-dvh"><SheetHeader className="mb-6"><SheetTitle>Ficha 360</SheetTitle></SheetHeader>{contactError ? <p role="alert">{contactError}</p> : contact?.id && fichaConversationId === contactConversationId ? <CRM360Panel lookup={{ contact: contact.id }} /> : <div className="flex items-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" />Carregando contato...</div>}</SheetContent></Sheet>
     <div className={`grid grid-cols-1 ${showInfo ? "md:grid-cols-[320px_1fr_320px]" : "md:grid-cols-[320px_1fr]"} h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden`}>
       <div className="border-r border-gray-200 overflow-y-auto">
         <div className="px-4 py-3 flex items-center justify-between border-b bg-gray-50">
