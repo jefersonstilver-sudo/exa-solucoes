@@ -17,9 +17,23 @@ import type { UserProfile } from '@/types/userTypes';
  */
 export const useEffectiveAuth = () => {
   const auth = useAuth();
-  const { isImpersonating, effectiveUserProfile } = useImpersonation();
+  const { isImpersonating, effectiveUserProfile, impersonationRequested, loading: impLoading, impersonationFailed } = useImpersonation();
 
   return useMemo(() => {
+    // An impersonate session was requested: never expose the admin's own
+    // profile to advertiser pages (that made them query/redirect as the CEO).
+    if (impersonationRequested && (!isImpersonating || !effectiveUserProfile)) {
+      return {
+        ...auth,
+        userProfile: null,
+        user: null,
+        isLoading: impLoading || auth.isLoading || !impersonationFailed,
+        isLoggedIn: true,
+        isSuperAdmin: false,
+        isAdmin: false,
+        isImpersonating: false,
+      } as any;
+    }
     if (!isImpersonating || !effectiveUserProfile) {
       return { ...auth, isImpersonating: false } as const;
     }
@@ -60,7 +74,7 @@ export const useEffectiveAuth = () => {
       isAdmin: false,
       isImpersonating: true,
     } as const;
-  }, [auth, isImpersonating, effectiveUserProfile]);
+  }, [auth, isImpersonating, effectiveUserProfile, impersonationRequested, impLoading, impersonationFailed]);
 };
 
 export default useEffectiveAuth;
