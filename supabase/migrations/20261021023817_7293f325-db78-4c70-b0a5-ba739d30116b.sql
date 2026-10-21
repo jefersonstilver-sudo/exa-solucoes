@@ -1,0 +1,4 @@
+GRANT SELECT ON public.sofia_cobrancas TO authenticated;
+GRANT ALL ON public.sofia_cobrancas TO service_role;
+CREATE POLICY "Asaas billing admins read" ON public.sofia_cobrancas FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = auth.uid() AND r.role::text IN ('super_admin','admin','admin_financeiro')));
+CREATE POLICY "Asaas billing owners read explicit order" ON public.sofia_cobrancas FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.pedidos p WHERE p.client_id = auth.uid() AND (p.id::text = sofia_cobrancas.pedido_id OR p.id::text = sofia_cobrancas.external_reference)));
