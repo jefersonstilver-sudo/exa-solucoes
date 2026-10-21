@@ -13,6 +13,7 @@ import { CouponBadge } from '@/components/admin/orders/CouponBadge';
 import { toast } from 'sonner';
 import { formatPhoneBR, cleanPhone, getWhatsAppLink, copyToClipboard } from '@/utils/whatsapp';
 import { ClientTrackingModal } from '@/components/admin/crm/ClientTrackingModal';
+import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
 import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
@@ -633,6 +634,9 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                 </Badge>}
             </div>
           </div> : null}
+        {item.type === 'order' && (
+          <OrderPixActions className="mt-3" order={{ id: item.id, status: item.status, type: item.type, valor_total: item.valor_total, client_name: item.client_name, email: item.client_email, client_id: item.client_id }} />
+        )}
       </CardContent>
       
       {/* Modal de Rastreabilidade */}

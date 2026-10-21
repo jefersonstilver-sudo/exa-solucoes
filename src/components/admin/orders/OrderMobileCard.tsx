@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
+import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
 
 interface Installment {
   installment: number;
@@ -345,6 +346,7 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
 
       {/* Actions */}
       <div className="pt-3 border-t space-y-2">
+        <OrderPixActions className="[&>button]:flex-1" order={{ id: order.id, status: order.status, valor_total: order.valor_total, client_name: order.client_name, email: order.email || order.client_email, client_id: order.client_id }} />
         {order.lista_predios?.length > 0 && (
           <SyncApiButtonMobile orderId={order.id} buildingIds={order.lista_predios} />
         )}

@@ -1,4 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { toast } from 'sonner';
+import { isValidCpfCnpj } from '@/utils/cpfCnpjValidator';
+import { generateOrderPix, AdminPixData } from '@/services/adminOrderPix';
+import AsaasPixPanel from '../pix/AsaasPixPanel';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +17,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShoppingCart } from 'lucide-react';
+import { Loader2, ShoppingCart, QrCode, Save } from 'lucide-react';
 import { useAdminCreateOrder } from '@/hooks/useAdminCreateOrder';
 import ClientSearchSection from './ClientSearchSection';
 import ProductSelectSection from './ProductSelectSection';
@@ -38,9 +42,13 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
     submitOrder, isSubmitting,
   } = useAdminCreateOrder();
 
-  const isValid = formData.clientName && formData.clientEmail && formData.listaPredios.length > 0 && formData.valorTotal > 0;
+  const [pixOrder, setPixOrder] = useState<{ id: string; pix: AdminPixData } | null>(null);
+  const [generatingPix, setGeneratingPix] = useState(false);
 
-  const handleSubmit = async () => {
+  const docValid = isValidCpfCnpj(formData.clientDocument);
+  const isValid = formData.clientName && formData.clientEmail && docValid && formData.listaPredios.length > 0 && formData.valorTotal > 0;
+
+  const handleSavePending = async () => {
     try {
       await submitOrder();
       onOpenChange(false);
@@ -50,8 +58,37 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
     }
   };
 
+  const handleGeneratePix = async () => {
+    let pedidoId: string | null = null;
+    try {
+      const pedido = await submitOrder({ keepForm: true });
+      pedidoId = pedido.id;
+      onSuccess?.();
+    } catch {
+      return;
+    }
+    setGeneratingPix(true);
+    try {
+      const pix = await generateOrderPix({
+        pedidoId: pedidoId!,
+        name: formData.clientName,
+        cpfCnpj: formData.clientDocument,
+        email: formData.clientEmail,
+        phone: formData.clientPhone,
+        value: formData.valorTotal,
+        description: `Pedido EXA ${pedidoId!.slice(0, 8)} - ${formData.tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal'} ${formData.planoMeses} mes(es)`,
+      });
+      setPixOrder({ id: pedidoId!, pix });
+      toast.success('PIX gerado no Asaas');
+    } catch (e: any) {
+      toast.error(`Pedido salvo como pendente, mas o PIX falhou: ${e?.message || 'erro'}. Use "Gerar PIX" na lista.`);
+    } finally {
+      setGeneratingPix(false);
+    }
+  };
+
   const handleClose = (open: boolean) => {
-    if (!open) resetForm();
+    if (!open) { resetForm(); setPixOrder(null); }
     onOpenChange(open);
   };
 
@@ -126,7 +163,11 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
           <div className="border-l bg-muted/30 flex flex-col">
             <ScrollArea className="flex-1">
               <div className="px-5 py-4">
-                <OrderSummary formData={formData} />
+                {pixOrder ? (
+                  <AsaasPixPanel pedidoId={pixOrder.id} pix={pixOrder.pix} onPaid={onSuccess} />
+                ) : (
+                  <OrderSummary formData={formData} />
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -134,17 +175,20 @@ const AdminCreateOrderDialog: React.FC<AdminCreateOrderDialogProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-background shrink-0">
-          <Button
-            onClick={handleSubmit}
-            disabled={!isValid || isSubmitting}
-            className="w-full bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
-          >
-            {isSubmitting ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Criando...</>
-            ) : (
-              'Confirmar Pedido'
-            )}
-          </Button>
+          {pixOrder ? (
+            <Button variant="outline" className="w-full" onClick={() => handleClose(false)}>Fechar</Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={handleSavePending} disabled={!isValid || isSubmitting || generatingPix} className="flex-1 border-[#9C1E1E]/40 text-[#9C1E1E] hover:bg-[#9C1E1E]/10">
+                {isSubmitting && !generatingPix ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Salvar pedido pendente
+              </Button>
+              <Button onClick={handleGeneratePix} disabled={!isValid || isSubmitting || generatingPix} className="flex-1 bg-[#9C1E1E] hover:bg-[#7D1818] text-white">
+                {generatingPix ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <QrCode className="h-4 w-4 mr-2" />}
+                Gerar PIX via Asaas
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

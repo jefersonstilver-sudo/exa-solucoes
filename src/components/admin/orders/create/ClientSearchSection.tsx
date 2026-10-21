@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
+import { formatCpfCnpj, isValidCpfCnpj } from '@/utils/cpfCnpjValidator';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -295,8 +296,11 @@ const ClientSearchSection: React.FC<ClientSearchSectionProps> = ({
           <Input value={formData.clientPhone} onChange={e => updateField('clientPhone', e.target.value)} />
         </div>
         <div>
-          <Label className="text-sm">CPF/CNPJ</Label>
-          <Input value={formData.clientDocument} onChange={e => updateField('clientDocument', e.target.value)} />
+          <Label className="text-sm">CPF/CNPJ *</Label>
+          <Input value={formData.clientDocument} placeholder="000.000.000-00" onChange={e => updateField('clientDocument', formatCpfCnpj(e.target.value))} />
+          {formData.clientDocument && !isValidCpfCnpj(formData.clientDocument) && (
+            <p className="text-xs text-destructive mt-1">CPF/CNPJ inválido</p>
+          )}
         </div>
       </div>
 

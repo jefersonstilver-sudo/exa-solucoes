@@ -1,17 +1,19 @@
 import React from 'react';
 import { AdminOrderFormData } from '@/hooks/useAdminCreateOrder';
 import { CheckCircle, AlertCircle } from 'lucide-react';
+import { isValidCpfCnpj } from '@/utils/cpfCnpjValidator';
 
 interface OrderSummaryProps {
   formData: AdminOrderFormData;
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({ formData }) => {
-  const isValid = formData.clientName && formData.clientEmail && formData.listaPredios.length > 0 && formData.valorTotal > 0;
+  const isValid = formData.clientName && formData.clientEmail && isValidCpfCnpj(formData.clientDocument) && formData.listaPredios.length > 0 && formData.valorTotal > 0;
 
   const items = [
     { label: 'Cliente', value: formData.clientName || '—', ok: !!formData.clientName },
     { label: 'Email', value: formData.clientEmail || '—', ok: !!formData.clientEmail },
+    { label: 'CPF/CNPJ', value: formData.clientDocument || '—', ok: isValidCpfCnpj(formData.clientDocument) },
     { label: 'Produto', value: formData.tipoProduto === 'vertical_premium' ? 'Vertical Premium' : 'Horizontal', ok: true },
     { label: 'Prédios', value: `${formData.listaPredios.length} selecionado(s)`, ok: formData.listaPredios.length > 0 },
     { label: 'Plano', value: `${formData.planoMeses} mês(es)`, ok: true },
@@ -23,8 +25,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ formData }) => {
       ok: true,
     },
     { label: 'Valor Total', value: `R$ ${formData.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, ok: formData.valorTotal > 0 },
-    { label: 'Pagamento', value: formData.metodoPagamento, ok: true },
-    { label: 'Status', value: formData.statusInicial, ok: true },
+    { label: 'Pagamento', value: 'PIX via Asaas', ok: true },
+    { label: 'Status', value: 'pendente', ok: true },
     { label: 'Logo', value: formData.logoFile ? formData.logoFile.name : 'Não enviada', ok: true },
   ];
 

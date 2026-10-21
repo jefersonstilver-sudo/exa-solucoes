@@ -14256,6 +14256,59 @@ export type Database = {
         }
         Relationships: []
       }
+      sofia_video_jobs: {
+        Row: {
+          briefing: Json
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string | null
+          error: string | null
+          formato: string
+          id: string
+          kind: string
+          output_url: string | null
+          pedido_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          briefing?: Json
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          error?: string | null
+          formato: string
+          id?: string
+          kind?: string
+          output_url?: string | null
+          pedido_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          briefing?: Json
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          error?: string | null
+          formato?: string
+          id?: string
+          kind?: string
+          output_url?: string | null
+          pedido_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_video_jobs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_runs: {
         Row: {
           created_at: string | null
