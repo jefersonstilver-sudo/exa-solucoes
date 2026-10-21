@@ -1,4 +1,5 @@
 CRM 360 must use the existing `crm_cliente_360` RPC and paginated `crm_inconsistencias` view through a shared read-only service; this preserves the database's identity matching and authorization as the source of truth.
+CRM 360 displays original contact/account phone values before falling back to the RPC normalized key; normalization is for identity matching and can distort country-prefixed eight-digit subscriber numbers.
 The standalone /estilos entry is rendered before App providers in main.tsx with its own HelmetProvider and scoped styles; this keeps public video selection independent of authentication, storage and site/admin chrome.
 Use `devices` as the source of current provider connectivity, querying all non-deleted rows with pagination and a Realtime subscription plus 60-second refresh; history events describe outages, not live status.
 After order extension/reactivation, invoke the existing order-scoped AWS audit with current dates and all confirmed master/child buildings; preserve base-video and schedule state, and distinguish accepted tasks from completed uploads to avoid false delivery claims.

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { activeOrdersFirst, crm360Params, crmDate, crmPhone, inconsistencyLookup } from '../src/services/crm360Rules';
+import { activeOrdersFirst, crm360Params, crmDate, crmPhone, crm360HeaderPhone, inconsistencyLookup } from '../src/services/crm360Rules';
 
 test('ficha Sofia usa o ID do contato, não o da conversa', () => {
   expect(crm360Params({ contact: 'sofia-contact-id' })).toEqual({ p_contact: 'sofia-contact-id', p_user: null, p_phone: null, p_email: null });
@@ -15,6 +15,12 @@ test('pedidos ativos vêm antes dos demais sem modificar os dados', () => {
 test('telefone brasileiro com código de país ou local tem o mesmo formato', () => {
   expect(crmPhone('5545998323225')).toBe('+55 45 99832-3225');
   expect(crmPhone('45998323225')).toBe('+55 45 99832-3225');
+});
+test('ficha usa telefone original +55 45 91132351 sem o 5 extra da chave normalizada', () => {
+  expect(crm360HeaderPhone({ contato: { telefone: '554591132351' }, contas: [], fone_normalizado: '5554591132351' })).toBe('+55 45 9113-2351');
+});
+test('ficha sem contato usa telefone original da conta antes da chave normalizada', () => {
+  expect(crm360HeaderPhone({ contato: null, contas: [{ whatsapp: '554591132351', telefone: null }], fone_normalizado: '5554591132351' })).toBe('+55 45 9113-2351');
 });
 test('datas usam dd/mm/aaaa sem deslocar datas de contrato', () => {
   expect(crmDate('2026-10-21')).toBe('21/10/2026');

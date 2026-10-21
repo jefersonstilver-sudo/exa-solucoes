@@ -19,6 +19,15 @@ export function crmPhone(phone?: string | null) {
   if (local.length === 10) return `+55 ${local.slice(0, 2)} ${local.slice(2, 6)}-${local.slice(6)}`;
   return phone;
 }
+export function crm360HeaderPhone(data: {
+  contato: { telefone: string | null } | null;
+  contas: { whatsapp: string | null; telefone: string | null }[];
+  fone_normalizado: string | null;
+}) {
+  // Display original data; the RPC's normalized key is for identity matching.
+  const account = data.contas[0];
+  return crmPhone(data.contato?.telefone || account?.whatsapp || account?.telefone || data.fone_normalizado);
+}
 export function crmDate(value?: string | null) {
   if (!value) return 'Não informado';
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
