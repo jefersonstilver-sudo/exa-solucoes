@@ -17115,6 +17115,10 @@ export type Database = {
         }
         Returns: string
       }
+      crm_apagar_contato: {
+        Args: { p_confirm: string; p_contact: string }
+        Returns: Json
+      }
       crm_cliente_360: {
         Args: {
           p_contact?: string
