@@ -57,6 +57,11 @@ interface OrderWithClient {
   versao_termo?: string;
   // Parcelas do pedido
   parcelas?: Parcela[];
+  // Venda pela Sofia / cobrança Asaas real / contrato
+  is_sofia?: boolean;
+  payment_method_label?: string;
+  sofia_charge?: { kind: string; status: string; value: number; due_date: string | null; paid_at: string | null; meses: number | null } | null;
+  contrato?: { id: string; numero_contrato: string | null; status: string; enviado_em: string | null; assinado_em: string | null; updated_at: string | null; clicksign_download_url: string | null } | null;
 }
 
 interface OrderVideo {
@@ -136,7 +141,9 @@ export const useRealOrderDetails = (orderId: string) => {
             status_adimplencia,
             users!pedidos_client_id_fkey (
               email,
-              nome
+              nome,
+              primeiro_nome,
+              sobrenome
             )
           `)
           .eq('id', orderId)
@@ -150,7 +157,10 @@ export const useRealOrderDetails = (orderId: string) => {
         }
 
         // Priorizar client_name do pedido, depois nome do usuário, depois email
-        let clientName = order.client_name || order.users?.nome || order.users?.email?.split('@')[0] || 'Cliente';
+        // Fonte única da verdade: users.nome (fallback primeiro_nome + sobrenome, depois pedido)
+        const u: any = (order as any).users || {};
+        const userFullName = u.nome || [u.primeiro_nome, u.sobrenome].filter(Boolean).join(' ').trim() || null;
+        let clientName = userFullName || order.client_name || u.email?.split('@')[0] || 'Cliente';
         
         // Fallback: se ainda não tiver nome, buscar via edge function
         if (!order.client_name && !order.users?.nome) {
@@ -246,6 +256,50 @@ export const useRealOrderDetails = (orderId: string) => {
             asaas_payment_id: undefined
           }));
           console.log('💰 [ORDER DETAILS] Parcelas encontradas:', parcelas.length);
+        }
+
+        // Cobrança Sofia/Asaas, aceite e contrato — somente leitura
+        try {
+          const db: any = supabase;
+          const [{ data: charges }, { data: aceite }, { data: contratos }] = await Promise.all([
+            db.from('sofia_cobrancas').select('kind,status,value,due_date,paid_at,meses,external_reference,created_at').eq('pedido_id', orderId).order('created_at', { ascending: false }),
+            db.from('sofia_aceites').select('accepted_at').eq('pedido_id', orderId).maybeSingle(),
+            db.from('contratos_legais').select('id,numero_contrato,status,enviado_em,assinado_em,updated_at,clicksign_download_url').eq('pedido_id', orderId).order('created_at', { ascending: false }).limit(1),
+          ]);
+          const chargeRow = (charges || [])[0] || null;
+          const autoRow = (charges || []).find((c: any) => c.kind === 'pix_automatico') || null;
+          const mainCharge = autoRow || chargeRow;
+          if (mainCharge) {
+            orderWithClient.sofia_charge = {
+              kind: mainCharge.kind, status: mainCharge.status, value: Number(mainCharge.value),
+              due_date: mainCharge.due_date, paid_at: mainCharge.paid_at, meses: mainCharge.meses,
+            };
+          }
+          orderWithClient.is_sofia = !!aceite || (charges || []).some((c: any) => String(c.external_reference || '').startsWith('sofia:'));
+          const contrato = (contratos || [])[0] || null;
+          orderWithClient.contrato = contrato;
+          const acceptedAt = aceite?.accepted_at || null;
+          const signed = contrato?.status === 'assinado';
+          if (acceptedAt || signed) {
+            orderWithClient.termos_aceitos = true;
+            orderWithClient.termo_aceito_em = orderWithClient.termo_aceito_em || acceptedAt || contrato?.assinado_em || contrato?.updated_at || undefined;
+          }
+          // Método real
+          const tp = String(order.tipo_pagamento || '').toLowerCase();
+          const mp = String(order.metodo_pagamento || '').toLowerCase();
+          if (autoRow || tp === 'pix_automatico') orderWithClient.payment_method_label = 'PIX Automático';
+          else if (chargeRow || mp === 'pix' || tp.startsWith('pix')) orderWithClient.payment_method_label = 'PIX';
+          else if (tp === 'boleto_fidelidade' || mp === 'boleto') orderWithClient.payment_method_label = 'Boleto';
+          else if (tp === 'cartao' || mp === 'cartao' || mp === 'credit_card') orderWithClient.payment_method_label = 'Cartão de Crédito';
+        } catch (e) {
+          console.warn('[ORDER DETAILS] dados Sofia/contrato indisponíveis', e);
+        }
+
+        // Dia de vencimento derivado das parcelas quando ausente
+        if (!orderWithClient.dia_vencimento && orderWithClient.parcelas && orderWithClient.parcelas.length > 0) {
+          const d = orderWithClient.parcelas[0].data_vencimento;
+          const day = d ? Number(String(d).slice(8, 10)) : NaN;
+          if (!Number.isNaN(day) && day > 0) orderWithClient.dia_vencimento = day;
         }
 
         try {

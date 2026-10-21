@@ -47,12 +47,13 @@ interface Pedido {
 
 interface PedidoComParcelas extends Pedido {
   parcelas: Parcela[];
+  cobrancas?: Array<{ id: string; kind: string; status: string; value: number; due_date: string | null; paid_at: string | null }>;
 }
 
 const AdvertiserInvoices = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, isLoading: authLoading } = useAuth() as any;
   const pedidoIdFromUrl = searchParams.get('pedido');
 
   const [loading, setLoading] = useState(true);
@@ -76,7 +77,11 @@ const AdvertiserInvoices = () => {
   // Carregar dados de TODOS os pedidos fidelidade e suas parcelas
   useEffect(() => {
     const loadData = async () => {
-      if (!userProfile?.id) return;
+      if (!userProfile?.id) {
+        // Sem perfil resolvido: não ficar preso no carregamento.
+        if (!authLoading) setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
@@ -86,11 +91,12 @@ const AdvertiserInvoices = () => {
           .from('pedidos')
           .select('*')
           .eq('client_id', userProfile.id)
-          .eq('is_fidelidade', true)
           .order('created_at', { ascending: false });
         
         if (pedidosError) {
           console.error('Erro ao buscar pedidos:', pedidosError);
+          toast.error('Erro ao carregar faturas');
+          setPedidos([]);
           return;
         }
         
@@ -111,11 +117,20 @@ const AdvertiserInvoices = () => {
           console.error('Erro ao buscar parcelas:', parcelasError);
         }
         
-        // Agrupar parcelas por pedido
-        const pedidosComParcelas: PedidoComParcelas[] = pedidosData.map(pedido => ({
-          ...pedido,
-          parcelas: (parcelasData || []).filter(p => p.pedido_id === pedido.id)
-        }));
+        // Cobranças Asaas (Pix / Pix Automático) vinculadas aos pedidos — somente leitura
+        const { data: cobrancasData } = await (supabase as any)
+          .from('sofia_cobrancas')
+          .select('id, kind, status, value, due_date, paid_at, pedido_id, meses')
+          .in('pedido_id', pedidoIds);
+
+        // Agrupar parcelas por pedido (inclui planos fidelidade e pedidos com parcelas/cobranças)
+        const pedidosComParcelas: PedidoComParcelas[] = (pedidosData as any[])
+          .map(pedido => ({
+            ...pedido,
+            parcelas: (parcelasData || []).filter((p: any) => p.pedido_id === pedido.id),
+            cobrancas: (cobrancasData || []).filter((c: any) => c.pedido_id === pedido.id),
+          }))
+          .filter((p: any) => p.is_fidelidade || p.parcelas.length > 0 || p.cobrancas.length > 0);
         
         setPedidos(pedidosComParcelas);
         
@@ -135,7 +150,7 @@ const AdvertiserInvoices = () => {
     };
     
     loadData();
-  }, [userProfile?.id, pedidoIdFromUrl]);
+  }, [userProfile?.id, pedidoIdFromUrl, authLoading]);
 
   const togglePedido = (pedidoId: string) => {
     setExpandedPedidos(prev => {
@@ -333,6 +348,21 @@ const AdvertiserInvoices = () => {
                 
                 <CollapsibleContent>
                   <CardContent className="pt-0 space-y-3">
+                    {(pedido.cobrancas || []).map((c) => (
+                      <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border bg-muted/20 text-sm">
+                        <div className="font-medium">
+                          {c.kind === 'pix_automatico'
+                            ? 'Pix Automático autorizado — cobranças mensais automáticas'
+                            : 'Cobrança Pix (Asaas)'}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>{formatCurrency(Number(c.value) || 0)}</span>
+                          <Badge variant="outline">
+                            {['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(c.status).toUpperCase()) ? 'Pago' : c.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
                     {/* Resumo */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg mb-4">
                       <div>

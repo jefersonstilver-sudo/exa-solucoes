@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Trophy, TrendingUp, Users, ChevronDown, ChevronUp, Eye, Send, CheckCircle } from 'lucide-react';
+import { Trophy, TrendingUp, Users, ChevronDown, ChevronUp, Eye, Send, CheckCircle, Bot, Wallet } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { VendedorProposalStats } from '@/hooks/useDashboardUnifiedStats';
@@ -34,7 +34,7 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
   // Filtrar vendedores com propostas e ordenar por valor recebido
   const filteredVendedores = useMemo(() => {
     return vendedores
-      .filter(v => v.enviadas > 0)
+      .filter(v => v.enviadas > 0 || (v.pedidosPagos || 0) > 0)
       .sort((a, b) => b.valorRecebido - a.valorRecebido);
   }, [vendedores]);
 
@@ -122,6 +122,17 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
               {getRankingBadge(index)}
             </div>
             
+            {/* Avatar */}
+            <div className="h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center bg-primary/10 text-primary text-xs font-bold overflow-hidden">
+              {vendedor.avatarUrl ? (
+                <img src={vendedor.avatarUrl} alt={vendedor.vendedorNome} className="h-full w-full object-cover" />
+              ) : vendedor.isAI ? (
+                <Bot className="h-4 w-4" />
+              ) : (
+                (vendedor.vendedorNome || '?').charAt(0).toUpperCase()
+              )}
+            </div>
+
             {/* Info + Métricas */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate mb-1">{vendedor.vendedorNome}</p>
@@ -143,6 +154,11 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
                   <span className="font-medium">{vendedor.aceitas}</span>
                   <span className="text-muted-foreground">ace</span>
                 </div>
+                <div className="flex items-center gap-1 text-primary">
+                  <Wallet className="h-3 w-3" />
+                  <span className="font-medium">{vendedor.pedidosPagos || 0}</span>
+                  <span className="text-muted-foreground">pagos</span>
+                </div>
               </div>
             </div>
             
@@ -156,6 +172,9 @@ const SellersRankingCard: React.FC<SellersRankingCardProps> = ({ vendedores, loa
                   +{formatCurrency(vendedor.valorProjetado)} proj.
                 </p>
               )}
+              <p className="text-[10px] text-muted-foreground">
+                vendido {renderCurrency(vendedor.valorVendido || 0)}
+              </p>
               {/* Barra de progresso */}
               <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
                 <div

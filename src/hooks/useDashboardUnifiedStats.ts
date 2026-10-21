@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { isAsaasPaid } from '@/services/asaasPaymentService';
+import { isSofiaChargePaid } from '@/services/asaasPaymentRules';
 
 export interface ConversationTypeStats {
   conversas: number;
@@ -26,6 +27,9 @@ export interface VendedorProposalStats {
   valorProjetado: number;    // Receita PROJETADA (parcelas pendentes)
   valorVendido: number;      // Soma total (recebido + projetado)
   taxaConversao: number;
+  pedidosPagos?: number;     // Pedidos com cobrança Asaas paga (status oficial)
+  avatarUrl?: string | null;
+  isAI?: boolean;
 }
 
 export interface CadastroDetalhado {
@@ -359,7 +363,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       // 7. Propostas do Período
       const { data: propostasData } = await supabase
         .from('proposals')
-        .select('id, status, cash_total_value, created_by, seller_name, payment_type')
+        .select('id, status, cash_total_value, created_by, seller_name, payment_type, metadata')
         .gte('created_at', start)
         .lte('created_at', end);
 
@@ -384,6 +388,38 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       let parcelasPagasPorPedidoRanking: Record<string, number> = {};
       let parcelasPendentesPorPedidoRanking: Record<string, number> = {};
 
+      // Pedidos fechados pela Sofia (sofia_aceites.pedido_id) — atribuídos a "Sofia (IA)"
+      const { data: sofiaAceitesRows } = await (supabase as any)
+        .from('sofia_aceites')
+        .select('pedido_id, proposal_id, accepted_at')
+        .not('pedido_id', 'is', null)
+        .gte('created_at', start)
+        .lte('created_at', end);
+      // sofia_aceites pode não ser legível pelo navegador; cobranças criadas pela Sofia
+      // (external_reference 'sofia:<aceite>') identificam o mesmo pedido.
+      const { data: sofiaChargeRows } = await supabase.from('sofia_cobrancas')
+        .select('pedido_id, created_at')
+        .like('external_reference', 'sofia:%')
+        .not('pedido_id', 'is', null)
+        .gte('created_at', start)
+        .lte('created_at', end);
+      const aceitesMerged: any[] = [...(sofiaAceitesRows || [])];
+      (sofiaChargeRows || []).forEach((c: any) => {
+        if (!aceitesMerged.some(a => a.pedido_id === c.pedido_id)) aceitesMerged.push({ pedido_id: c.pedido_id, accepted_at: c.created_at });
+      });
+      const sofiaPedidoIds: string[] = Array.from(new Set(aceitesMerged.map((r: any) => r.pedido_id).filter(Boolean)));
+      const sofiaChargePaid: Record<string, number> = {};
+      const sofiaChargePending: Record<string, number> = {};
+      if (sofiaPedidoIds.length > 0) {
+        const { data: sCharges } = await supabase.from('sofia_cobrancas')
+          .select('pedido_id,value,status,paid_at').in('pedido_id', sofiaPedidoIds);
+        sCharges?.forEach((c: any) => {
+          if (!c.pedido_id) return;
+          const m = isSofiaChargePaid(c.status, c.paid_at) ? sofiaChargePaid : sofiaChargePending;
+          m[c.pedido_id] = (m[c.pedido_id] || 0) + Number(c.value);
+        });
+      }
+
       if (propostasAceitasIds.length > 0) {
         const { data: pedidosConvertidos } = await supabase
           .from('pedidos')
@@ -404,11 +440,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         const pedidoIdsConvertidos = pedidosConvertidos?.map(p => p.id) || [];
         if (pedidoIdsConvertidos.length > 0) {
           const { data: charges, error: chargeError } = await supabase.from('sofia_cobrancas')
-            .select('pedido_id,value,status').in('pedido_id', pedidoIdsConvertidos);
+            .select('pedido_id,value,status,paid_at').in('pedido_id', pedidoIdsConvertidos);
           if (chargeError) throw chargeError;
           charges?.forEach(charge => {
             if (!charge.pedido_id) return;
-            const map = isAsaasPaid(charge.status) ? parcelasPagasPorPedidoRanking : parcelasPendentesPorPedidoRanking;
+            const map = isSofiaChargePaid(charge.status, (charge as any).paid_at) ? parcelasPagasPorPedidoRanking : parcelasPendentesPorPedidoRanking;
             map[charge.pedido_id] = (map[charge.pedido_id] || 0) + Number(charge.value);
           });
         }
@@ -417,9 +453,14 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
 
       // Agrupar por vendedor com receita efetiva e projetada
       const vendedoresMap: Record<string, VendedorProposalStats> = {};
-      propostasData?.forEach(p => {
-        const vendedorId = p.created_by || 'unknown';
-        const vendedorNome = p.seller_name || 'Vendedor';
+      const SOFIA_ID = 'sofia-ia';
+      const countedPedidos = new Set<string>();
+      propostasData?.forEach((p: any) => {
+        const isSofia = p?.metadata?.origem === 'sofia';
+        // Modelos de proposta (status 'modelo') não são envios reais
+        if (p.status === 'modelo') return;
+        const vendedorId = isSofia ? SOFIA_ID : (p.created_by || 'unknown');
+        const vendedorNome = isSofia ? 'Sofia (IA)' : (p.seller_name || 'Vendedor');
         
         if (!vendedoresMap[vendedorId]) {
           vendedoresMap[vendedorId] = {
@@ -453,13 +494,41 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           // Verificar se tem pedido convertido com parcelas
           const pedidoConvertido = pedidosPorPropostaMap[p.id];
           
-          if (pedidoConvertido) {
+          if (pedidoConvertido && !countedPedidos.has(pedidoConvertido.id)) {
+            countedPedidos.add(pedidoConvertido.id);
+            if ((parcelasPagasPorPedidoRanking[pedidoConvertido.id] || 0) > 0) {
+              vendedoresMap[vendedorId].pedidosPagos = (vendedoresMap[vendedorId].pedidosPagos || 0) + 1;
+            }
             vendedoresMap[vendedorId].valorRecebido += parcelasPagasPorPedidoRanking[pedidoConvertido.id] || 0;
             vendedoresMap[vendedorId].valorProjetado += parcelasPendentesPorPedidoRanking[pedidoConvertido.id] || 0;
           }
 
         }
       });
+
+      // Pedidos da Sofia (sofia_aceites) ainda não contados via proposta
+      if (sofiaPedidoIds.length > 0) {
+        if (!vendedoresMap[SOFIA_ID]) {
+          vendedoresMap[SOFIA_ID] = {
+            vendedorId: SOFIA_ID, vendedorNome: 'Sofia (IA)', enviadas: 0, visualizadas: 0,
+            aguardando: 0, aceitas: 0, valorRecebido: 0, valorProjetado: 0, valorVendido: 0, taxaConversao: 0,
+          };
+        }
+        const sofia = vendedoresMap[SOFIA_ID];
+        aceitesMerged.forEach((r: any) => {
+          if (!r.pedido_id || countedPedidos.has(r.pedido_id)) return;
+          countedPedidos.add(r.pedido_id);
+          if (r.accepted_at) sofia.aceitas++;
+          if ((sofiaChargePaid[r.pedido_id] || 0) > 0) sofia.pedidosPagos = (sofia.pedidosPagos || 0) + 1;
+          sofia.valorRecebido += sofiaChargePaid[r.pedido_id] || 0;
+          sofia.valorProjetado += sofiaChargePending[r.pedido_id] || 0;
+        });
+        if (sofia.enviadas < sofia.aceitas) sofia.enviadas = sofia.aceitas;
+      }
+      if (vendedoresMap[SOFIA_ID]) {
+        vendedoresMap[SOFIA_ID].isAI = true;
+        vendedoresMap[SOFIA_ID].avatarUrl = null;
+      }
 
       // Calcular taxa de conversão e ordenar por valor RECEBIDO (não projetado)
       const propostasPorVendedor = Object.values(vendedoresMap)

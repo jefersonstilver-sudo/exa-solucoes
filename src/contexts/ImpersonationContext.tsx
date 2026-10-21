@@ -16,6 +16,9 @@ interface ImpersonationContextValue {
   impersonation: ImpersonationData | null;
   loading: boolean;
   isImpersonating: boolean;
+  /** True while an impersonate session id was requested but not yet verified (or failed). */
+  impersonationRequested: boolean;
+  impersonationFailed: boolean;
   effectiveUserId: string | null;
   /** Full effective user profile when impersonating (target client), null otherwise. */
   effectiveUserProfile: any | null;
@@ -27,6 +30,8 @@ const ImpersonationContext = createContext<ImpersonationContextValue>({
   impersonation: null,
   loading: false,
   isImpersonating: false,
+  impersonationRequested: false,
+  impersonationFailed: false,
   effectiveUserId: null,
   effectiveUserProfile: null,
   endSession: async () => {},
@@ -36,17 +41,39 @@ const ImpersonationContext = createContext<ImpersonationContextValue>({
 export const ImpersonationProvider: React.FC<{ children: React.ReactNode; fallbackUserId: string | null }> = ({ children, fallbackUserId }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const sessionId = searchParams.get('impersonate');
+  const urlSessionId = searchParams.get('impersonate');
+  const urlEmbedded = searchParams.get('embedded');
+  // Keep the session id across in-portal navigations (links drop the query string).
+  const [sessionId, setSessionId] = useState<string | null>(urlSessionId);
+  const [embedded, setEmbedded] = useState<string | null>(urlEmbedded);
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(!!urlSessionId);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (urlSessionId && urlSessionId !== sessionId) setSessionId(urlSessionId);
+    if (urlEmbedded && urlEmbedded !== embedded) setEmbedded(urlEmbedded);
+  }, [urlSessionId, urlEmbedded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-append impersonate/embedded params when an internal link removed them.
+  useEffect(() => {
+    if (sessionId && !urlSessionId) {
+      const next = new URLSearchParams(searchParams);
+      next.set('impersonate', sessionId);
+      if (embedded) next.set('embedded', embedded);
+      setSearchParams(next, { replace: true });
+    }
+  }, [sessionId, urlSessionId, embedded, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!sessionId) {
       setImpersonation(null);
+      setLoading(false);
       return;
     }
     (async () => {
       setLoading(true);
+      setFailed(false);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const accessToken = session?.access_token;
@@ -60,6 +87,7 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode; fallba
         if (!resp.ok) {
           console.warn('Impersonation inválida:', await resp.text());
           setImpersonation(null);
+          setFailed(true);
         } else {
           const data = await resp.json();
           setImpersonation(data);
@@ -67,6 +95,7 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode; fallba
       } catch (e) {
         console.error('Erro ao verificar impersonação', e);
         setImpersonation(null);
+        setFailed(true);
       } finally {
         setLoading(false);
       }
@@ -81,12 +110,14 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode; fallba
       });
     } catch (e) { console.warn(e); }
     setImpersonation(null);
+    setSessionId(null);
     if (reason === 'expired') {
       window.alert('Sessão de impersonação expirada (30min). Voltando ao painel admin.');
     }
-    // Navigate back to super admin orders, dropping the impersonate param.
+    // Embedded (iframe) view: the parent sheet handles closing.
+    if (embedded === '1' && window.parent !== window) return;
     navigate('/super_admin/pedidos', { replace: true });
-  }, [impersonation, navigate]);
+  }, [impersonation, navigate, embedded]);
 
   // Auto-expire timer
   useEffect(() => {
@@ -121,7 +152,7 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode; fallba
   const effectiveUserProfile = isImpersonating ? impersonation!.target_user : null;
 
   return (
-    <ImpersonationContext.Provider value={{ impersonation, loading, isImpersonating, effectiveUserId, effectiveUserProfile, endSession, logAction }}>
+    <ImpersonationContext.Provider value={{ impersonation, loading, isImpersonating, impersonationRequested: !!sessionId, impersonationFailed: failed, effectiveUserId, effectiveUserProfile, endSession, logAction }}>
       {children}
     </ImpersonationContext.Provider>
   );

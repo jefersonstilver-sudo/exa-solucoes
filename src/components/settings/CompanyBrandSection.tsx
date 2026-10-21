@@ -18,14 +18,24 @@ import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
 import { ClientLogoUploadModal } from '@/components/admin/proposals/ClientLogoUploadModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useCNPJConsult } from '@/hooks/useCNPJConsult';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 
 interface CompanyBrandSectionProps {
   isEditing?: boolean;
   onLogoScaleChange?: (scale: number) => void;
+  /** Quando informado (CEO editando em nome do cliente), edita este usuário. */
+  userId?: string | null;
 }
 
-export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEditing = false, onLogoScaleChange }) => {
+export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEditing = false, onLogoScaleChange, userId }) => {
   const { refreshUserProfile } = useAuth();
+  const { isImpersonating, effectiveUserProfile } = useImpersonation();
+  const targetUserId: string | null = userId || (isImpersonating ? effectiveUserProfile?.id : null) || null;
+  const resolveUser = async (): Promise<any> => {
+    if (targetUserId) return { id: targetUserId, user_metadata: {} };
+    const user: any = await resolveUser();
+    return user;
+  };
   const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();
   const [loading, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState('');
@@ -53,11 +63,11 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
 
   React.useEffect(() => {
     loadCompanyData();
-  }, []);
+  }, [targetUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCompanyData = async (skipScaleReload = false) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user: any = await resolveUser();
       if (!user) return;
       const { data, error } = await supabase
         .from('users')
@@ -99,7 +109,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
 
   const handleLogoProcessed = async (url: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user: any = await resolveUser();
       if (!user) throw new Error('Usuário não autenticado');
       const { error: updateError } = await supabase.from('users').update({ avatar_url: url }).eq('id', user.id);
       if (updateError) throw updateError;
@@ -119,7 +129,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
 
   const handleRemoveLogo = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user: any = await resolveUser();
       if (!user) return;
       await supabase.from('users').update({ avatar_url: null }).eq('id', user.id);
       setLogoUrl(null);
@@ -155,7 +165,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
 
   const handleLogoScaleSave = async () => {
     try {
-      await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
+      if (!targetUserId) await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
       toast.success('Tamanho da logo salvo!');
     } catch (error) {
       console.error('Erro ao salvar tamanho da logo:', error);
@@ -170,7 +180,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
         return;
       }
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const user: any = await resolveUser();
       if (!user) throw new Error('Usuário não autenticado');
       const { error } = await supabase
         .from('users')
@@ -205,7 +215,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
       if (!termsAccepted) { toast.error('Você deve aceitar o termo de responsabilidade'); return; }
 
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const user: any = await resolveUser();
       if (!user) throw new Error('Usuário não autenticado');
 
       const updateData: any = {
@@ -226,7 +236,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
       if (error) throw error;
 
       // Save logo scale to user_metadata
-      await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
+      if (!targetUserId) await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
 
       await loadCompanyData(true);
       toast.success('Informações da empresa salvas com sucesso!');

@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MoreHorizontal, Edit, Trash, Eye, Copy, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { Coupon, CouponUsageDetail } from '@/types/coupon';
+import { Coupon, CouponUsageDetail, formatCouponDiscount } from '@/types/coupon';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CouponDetailsHoverCard from './CouponDetailsHoverCard';
@@ -199,7 +199,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                 {/* Info compacta */}
                 <div className="flex items-center justify-between text-xs mb-2">
                   {getCategoryBadge(coupon.categoria)}
-                  <span className="font-semibold text-emerald-600">{coupon.desconto_percentual}% OFF</span>
+                  <span className="font-semibold text-emerald-600">{formatCouponDiscount(coupon)}</span>
                 </div>
                 
                 {/* Barra de uso */}
@@ -437,7 +437,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {coupon.desconto_percentual}%
+                    {formatCouponDiscount(coupon)}
                     {coupon.min_meses > 1 && (
                       <div className="text-xs text-muted-foreground">
                         Min. {coupon.min_meses} meses

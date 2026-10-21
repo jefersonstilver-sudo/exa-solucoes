@@ -200,7 +200,7 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
               <Label>Tipo de Desconto</Label>
               <Select 
                 value={formData.tipo_desconto} 
-                onValueChange={(value: 'percentual' | 'valor_fixo' | 'preco_final') => setFormData(prev => ({ ...prev, tipo_desconto: value }))}
+                onValueChange={(value: 'percentual' | 'valor_fixo' | 'preco_final' | 'mensal_fixo') => setFormData(prev => ({ ...prev, tipo_desconto: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -209,6 +209,7 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
                   <SelectItem value="percentual">Percentual (%)</SelectItem>
                   <SelectItem value="valor_fixo">Desconto Fixo (R$)</SelectItem>
                   <SelectItem value="preco_final">Preço Final (R$)</SelectItem>
+                  <SelectItem value="mensal_fixo">Valor fixo por mês (R$)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -216,15 +217,16 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
               <Label htmlFor="desconto">
                 {formData.tipo_desconto === 'percentual' ? 'Desconto (%)' : 
                  formData.tipo_desconto === 'valor_fixo' ? 'Desconto (R$)' : 
+                 formData.tipo_desconto === 'mensal_fixo' ? 'Valor cobrado por mês (R$)' :
                  'Preço Final (R$)'}
               </Label>
               <Input
                 id="desconto"
                 type="number"
-                step={formData.tipo_desconto === 'preco_final' ? '0.01' : '1'}
+                step={formData.tipo_desconto === 'preco_final' || formData.tipo_desconto === 'mensal_fixo' ? '0.01' : '1'}
                 value={formData.desconto_percentual}
                 onChange={(e) => setFormData(prev => ({ ...prev, desconto_percentual: parseFloat(e.target.value) || 0 }))}
-                min={formData.tipo_desconto === 'preco_final' ? '0' : '1'}
+                min={formData.tipo_desconto === 'preco_final' || formData.tipo_desconto === 'mensal_fixo' ? '0' : '1'}
                 max={formData.tipo_desconto === 'percentual' ? '100' : undefined}
                 required
               />

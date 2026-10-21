@@ -9,6 +9,9 @@ import { ProfessionalPDFExporter } from '@/components/admin/orders/ProfessionalP
 import AccessAsClientButton from '@/components/impersonation/AccessAsClientButton';
 import PurgePedidoVideosDialog from '@/components/impersonation/PurgePedidoVideosDialog';
 import ClientOrderViewSheet from '@/components/impersonation/ClientOrderViewSheet';
+import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
+import ClientProfilePanel from '@/components/admin/orders/ClientProfilePanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -70,6 +73,7 @@ const OrderDetails = () => {
           </Button>
 
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <SofiaSoldBadge pedidoId={id} className="text-xs px-3 py-1" />
             {orderDetails?.client_id && (
               <AccessAsClientButton
                 targetUserId={orderDetails.client_id}
@@ -102,13 +106,26 @@ const OrderDetails = () => {
           </div>
         </div>
 
-        {/* Relatório Profissional */}
-        <ProfessionalOrderReport 
-          order={orderDetails}
-          panels={panelData}
-          videos={orderVideos}
-          onBuildingChanged={refetch}
-        />
+        <Tabs defaultValue="pedido" className="w-full">
+          <TabsList>
+            <TabsTrigger value="pedido">Pedido</TabsTrigger>
+            {orderDetails?.client_id && <TabsTrigger value="perfil">Perfil do cliente</TabsTrigger>}
+          </TabsList>
+          <TabsContent value="pedido">
+            {/* Relatório Profissional */}
+            <ProfessionalOrderReport 
+              order={orderDetails}
+              panels={panelData}
+              videos={orderVideos}
+              onBuildingChanged={refetch}
+            />
+          </TabsContent>
+          {orderDetails?.client_id && (
+            <TabsContent value="perfil">
+              <ClientProfilePanel userId={orderDetails.client_id} onSaved={refetch} />
+            </TabsContent>
+          )}
+        </Tabs>
 
         {id && (
           <PurgePedidoVideosDialog

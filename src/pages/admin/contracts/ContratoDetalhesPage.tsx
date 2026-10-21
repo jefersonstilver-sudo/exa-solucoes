@@ -870,7 +870,7 @@ const ContratoDetalhesPage = () => {
             <div className="p-4">
               <ContractPreview
                 data={{
-                  ...contrato,
+                  ...(contrato as any),
                   lista_predios: listaPredios,
                   parcelas: parcelas
                 }}

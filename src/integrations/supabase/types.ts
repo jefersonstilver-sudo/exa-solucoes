@@ -4227,9 +4227,11 @@ export type Database = {
           gatilhos_condicionais: Json | null
           health_score: number | null
           id: string
+          itens_permuta: Json | null
           lista_predios: Json | null
           meses_cortesia: number | null
           metodo_pagamento: string | null
+          modalidade_proposta: string | null
           modo_entrada: string | null
           multa_rescisao_ativa: boolean | null
           multa_rescisao_exa_ativa: boolean | null
@@ -4268,6 +4270,7 @@ export type Database = {
           travamento_telas_limite: number | null
           updated_at: string | null
           valor_mensal: number | null
+          valor_referencia_permuta: number | null
           valor_total: number | null
           venda_futura: boolean | null
           visualizado_em: string | null
@@ -4314,9 +4317,11 @@ export type Database = {
           gatilhos_condicionais?: Json | null
           health_score?: number | null
           id?: string
+          itens_permuta?: Json | null
           lista_predios?: Json | null
           meses_cortesia?: number | null
           metodo_pagamento?: string | null
+          modalidade_proposta?: string | null
           modo_entrada?: string | null
           multa_rescisao_ativa?: boolean | null
           multa_rescisao_exa_ativa?: boolean | null
@@ -4355,6 +4360,7 @@ export type Database = {
           travamento_telas_limite?: number | null
           updated_at?: string | null
           valor_mensal?: number | null
+          valor_referencia_permuta?: number | null
           valor_total?: number | null
           venda_futura?: boolean | null
           visualizado_em?: string | null
@@ -4401,9 +4407,11 @@ export type Database = {
           gatilhos_condicionais?: Json | null
           health_score?: number | null
           id?: string
+          itens_permuta?: Json | null
           lista_predios?: Json | null
           meses_cortesia?: number | null
           metodo_pagamento?: string | null
+          modalidade_proposta?: string | null
           modo_entrada?: string | null
           multa_rescisao_ativa?: boolean | null
           multa_rescisao_exa_ativa?: boolean | null
@@ -4442,6 +4450,7 @@ export type Database = {
           travamento_telas_limite?: number | null
           updated_at?: string | null
           valor_mensal?: number | null
+          valor_referencia_permuta?: number | null
           valor_total?: number | null
           venda_futura?: boolean | null
           visualizado_em?: string | null
