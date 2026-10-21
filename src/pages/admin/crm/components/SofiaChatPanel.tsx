@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Send, UserCheck, Bot, RefreshCw } from 'lucide-react';
+import { Loader2, Send, UserCheck, Bot, RefreshCw, X, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -9,10 +9,48 @@ type Conv = {
   name: string;
   phone: string | null;
   role: string | null;
+  avatar_url: string | null;
   mode: 'auto' | 'humano';
   human_until: string | null;
   last_message_at: string | null;
   preview: string;
+};
+type Contact = {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  lid: string | null;
+  role: string | null;
+  company: string | null;
+  avatar_url: string | null;
+  manual: string;
+  extra: Record<string, unknown>;
+  jid: string;
+};
+const ROLES: { v: string; l: string }[] = [
+  { v: 'ceo', l: 'CEO' },
+  { v: 'equipe', l: 'Equipe' },
+  { v: 'cliente', l: 'Cliente' },
+  { v: 'sindico', l: 'Sindico' },
+  { v: 'lead', l: 'Lead' },
+  { v: 'bloqueado', l: 'Bloqueado' },
+];
+const roleLabel = (r: string | null) => ROLES.find((x) => x.v === r)?.l || r || '';
+const Avatar: React.FC<{ url: string | null; name: string; size?: number }> = ({ url, name, size = 40 }) => {
+  const [bad, setBad] = useState(false);
+  const ini = (name || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  return (
+    <div
+      className="rounded-full bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden flex items-center justify-center font-semibold text-gray-600 flex-shrink-0"
+      style={{ width: size, height: size, fontSize: size / 3 }}
+    >
+      {url && !bad ? (
+        <img src={url} alt={name} className="w-full h-full object-cover" onError={() => setBad(true)} />
+      ) : (
+        ini
+      )}
+    </div>
+  );
 };
 type Msg = {
   id: string;
@@ -40,6 +78,10 @@ export const SofiaChatPanel: React.FC = () => {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [contact, setContact] = useState<Contact | null>(null);
+  const [form, setForm] = useState({ name: '', company: '', role: 'lead', manual: '' });
+  const [saving, setSaving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const selRef = useRef<string | null>(null);
   selRef.current = selId;
@@ -88,6 +130,34 @@ export const SofiaChatPanel: React.FC = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [msgs.length]);
 
+  useEffect(() => {
+    if (!selId) return;
+    setContact(null);
+    call('contact', { conversation_id: selId })
+      .then((d) => {
+        const c: Contact = d.contact;
+        setContact(c);
+        setForm({ name: c.name || '', company: c.company || '', role: c.role || 'lead', manual: c.manual || '' });
+      })
+      .catch((e) => console.error('sofia contact', e));
+  }, [selId]);
+
+  const saveContact = async () => {
+    if (!selId) return;
+    setSaving(true);
+    try {
+      await call('update_contact', { conversation_id: selId, ...form });
+      toast.success('Contato atualizado');
+      loadConvs();
+      const d = await call('contact', { conversation_id: selId });
+      setContact(d.contact);
+    } catch (e: any) {
+      toast.error('Erro ao salvar: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const sel = convs.find((c) => c.id === selId) || null;
 
   const setMode = async (mode: 'auto' | 'humano') => {
@@ -126,7 +196,7 @@ export const SofiaChatPanel: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden">
+    <div className={`grid grid-cols-1 ${showInfo ? "md:grid-cols-[320px_1fr_320px]" : "md:grid-cols-[320px_1fr]"} h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden`}>
       <div className="border-r border-gray-200 overflow-y-auto">
         <div className="px-4 py-3 flex items-center justify-between border-b bg-gray-50">
           <span className="text-sm font-semibold text-gray-800">Conversas da Sofia</span>
@@ -141,6 +211,9 @@ export const SofiaChatPanel: React.FC = () => {
             onClick={() => setSelId(c.id)}
             className={`w-full text-left px-4 py-3 border-b hover:bg-gray-50 ${c.id === selId ? 'bg-red-50' : ''}`}
           >
+            <div className="flex items-start gap-3">
+            <Avatar url={c.avatar_url} name={c.name} size={40} />
+            <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium text-sm text-gray-900 truncate">{c.name}</span>
               <span className="text-[11px] text-gray-400 flex-shrink-0">{hhmm(c.last_message_at)}</span>
@@ -149,8 +222,10 @@ export const SofiaChatPanel: React.FC = () => {
               {c.mode === 'humano' && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Humano</span>
               )}
-              {c.role && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{c.role}</span>}
+              {c.role && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{roleLabel(c.role)}</span>}
               <span className="text-xs text-gray-500 truncate">{c.preview}</span>
+            </div>
+            </div>
             </div>
           </button>
         ))}
@@ -162,14 +237,21 @@ export const SofiaChatPanel: React.FC = () => {
         ) : (
           <>
             <div className="px-4 py-3 border-b flex items-center justify-between gap-3">
+              <button className="flex items-center gap-3 min-w-0 text-left" onClick={() => setShowInfo((v) => !v)}>
+              <Avatar url={contact?.avatar_url ?? sel.avatar_url} name={sel.name} size={40} />
               <div className="min-w-0">
-                <div className="font-semibold text-gray-900 truncate">{sel.name}</div>
+                <div className="font-semibold text-gray-900 truncate">{sel.name} {sel.role && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 align-middle">{roleLabel(sel.role)}</span>}</div>
                 <div className="text-xs text-gray-500">
                   {sel.mode === 'humano'
                     ? `Atendimento humano ate ${hhmm(sel.human_until)} (Sofia pausada)`
                     : 'Sofia atendendo'}
                 </div>
               </div>
+              </button>
+              <div className="flex items-center gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setShowInfo((v) => !v)} title="Detalhes do contato">
+                <Info className="w-4 h-4" />
+              </Button>
               {sel.mode === 'auto' ? (
                 <Button size="sm" onClick={() => setMode('humano')} className="bg-red-700 hover:bg-red-800 text-white">
                   <UserCheck className="w-4 h-4 mr-1.5" /> Assumir atendimento
@@ -179,6 +261,7 @@ export const SofiaChatPanel: React.FC = () => {
                   <Bot className="w-4 h-4 mr-1.5" /> Devolver para a Sofia
                 </Button>
               )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#faf8f5]">
@@ -226,6 +309,80 @@ export const SofiaChatPanel: React.FC = () => {
           </>
         )}
       </div>
+
+      {showInfo && sel && (
+        <div className="border-l border-gray-200 overflow-y-auto p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-800">Detalhes do contato</span>
+            <Button variant="ghost" size="sm" onClick={() => setShowInfo(false)}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          {!contact ? (
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          ) : (
+            <>
+              <div className="flex flex-col items-center gap-2">
+                <Avatar url={contact.avatar_url} name={contact.name || sel.name} size={96} />
+                <div className="text-xs text-gray-500">
+                  {contact.phone ? `+${contact.phone}` : 'Telefone nao identificado'}
+                </div>
+                {contact.lid && <div className="text-[10px] text-gray-400">LID {contact.lid}</div>}
+              </div>
+              <label className="block text-xs font-medium text-gray-600">
+                Quem e este contato
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                >
+                  {ROLES.map((r) => (
+                    <option key={r.v} value={r.v}>
+                      {r.l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-xs font-medium text-gray-600">
+                Nome
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-xs font-medium text-gray-600">
+                Empresa / predio
+                <input
+                  value={form.company}
+                  onChange={(e) => setForm({ ...form, company: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-xs font-medium text-gray-600">
+                Observacoes
+                <textarea
+                  value={form.manual}
+                  onChange={(e) => setForm({ ...form, manual: e.target.value })}
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm resize-none"
+                />
+              </label>
+              <Button onClick={saveContact} disabled={saving} className="w-full bg-red-700 hover:bg-red-800 text-white">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
+              </Button>
+              {Object.keys(contact.extra || {}).length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-gray-600 mb-1">Dados coletados pela Sofia</div>
+                  <pre className="text-[11px] bg-gray-50 border rounded-lg p-2 whitespace-pre-wrap break-words">
+                    {JSON.stringify(contact.extra, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };
