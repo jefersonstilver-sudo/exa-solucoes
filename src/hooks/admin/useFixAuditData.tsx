@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { verifyAsaasOrder } from '@/services/asaasPaymentService';
+import { readAsaasAudit } from '@/services/asaasAuditService';
 import { toast } from 'sonner';
 
 interface FixAuditResult {
@@ -12,109 +13,20 @@ interface FixAuditResult {
 
 export const useFixAuditData = () => {
   const [isFixing, setIsFixing] = useState(false);
-
   const fixOrderAuditData = async (orderId: string): Promise<FixAuditResult> => {
     setIsFixing(true);
-    
     try {
-      console.log('🔧 [FIX-AUDIT] Iniciando correção de dados de auditoria para pedido:', orderId);
-
-      // Buscar dados do pedido
-      const { data: pedido, error: pedidoError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-
-      if (pedidoError || !pedido) {
-        throw new Error('Pedido não encontrado');
-      }
-
-      const paymentId = (pedido.log_pagamento as any)?.pixData?.paymentId;
-
-      if (!paymentId) {
-        throw new Error('PaymentID não encontrado no pedido');
-      }
-
-      console.log('🔍 [FIX-AUDIT] PaymentID encontrado:', paymentId);
-
-      // Buscar dados atualizados do Mercado Pago via edge function
-      const { data, error } = await supabase.functions.invoke('fix-audit-data', {
-        body: { orderId }
-      });
-
-      if (error) {
-        console.error('❌ [FIX-AUDIT] Erro ao chamar função:', error);
-        throw error;
-      }
-
-      console.log('✅ [FIX-AUDIT] Dados atualizados:', data);
-
-      if (data.success) {
-        toast.success('✅ Dados de auditoria atualizados com sucesso!');
-        
-        // Recarregar a página para mostrar os dados atualizados
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-        
-        return data;
-      } else {
-        toast.error(`❌ Erro ao atualizar: ${data.error || 'Erro desconhecido'}`);
-        return data;
-      }
-
-    } catch (error: any) {
-      console.error('❌ [FIX-AUDIT] Erro:', error);
-      const errorMessage = error.message || 'Erro ao atualizar dados de auditoria';
-      toast.error(`Erro: ${errorMessage}`);
-      
-      return {
-        success: false,
-        message: errorMessage
-      };
-    } finally {
-      setIsFixing(false);
-    }
+      const result = await verifyAsaasOrder(orderId);
+      const message = result.payment_found ? `Status Asaas: ${result.payment_status}. Pedido não alterado.` : 'Sem cobrança Asaas vinculada';
+      toast.info(message);
+      return { success: result.payment_found, updated: 0, message };
+    } catch (e) { return { success: false, message: e instanceof Error ? e.message : 'Consulta indisponível' }; }
+    finally { setIsFixing(false); }
   };
-
   const fixAllOrders = async (): Promise<FixAuditResult> => {
     setIsFixing(true);
-    
-    try {
-      console.log('🔧 [FIX-AUDIT] Iniciando correção de todos os pedidos');
-
-      const { data, error } = await supabase.functions.invoke('fix-audit-data');
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.success) {
-        toast.success(`✅ ${data.updated} pedidos atualizados com sucesso!`);
-        return data;
-      } else {
-        toast.error(`❌ Erro ao atualizar pedidos`);
-        return data;
-      }
-
-    } catch (error: any) {
-      console.error('❌ [FIX-AUDIT] Erro:', error);
-      const errorMessage = error.message || 'Erro ao atualizar pedidos';
-      toast.error(`Erro: ${errorMessage}`);
-      
-      return {
-        success: false,
-        message: errorMessage
-      };
-    } finally {
-      setIsFixing(false);
-    }
+    try { await readAsaasAudit(); toast.info('Consulta Asaas concluída, sem alterar pedidos'); return { success: true, updated: 0 }; }
+    finally { setIsFixing(false); }
   };
-
-  return {
-    fixOrderAuditData,
-    fixAllOrders,
-    isFixing
-  };
+  return { fixOrderAuditData, fixAllOrders, isFixing };
 };

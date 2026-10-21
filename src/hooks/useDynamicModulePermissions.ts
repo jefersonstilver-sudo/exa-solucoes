@@ -55,7 +55,6 @@ export const MODULE_KEYS = {
   
   // === GOVERNANÇA ===
   financeiro: 'financeiro',
-  financeiro_mp: 'financeiro_mp',
   relatorios: 'relatorios',
   usuarios: 'usuarios',
   tipos_conta: 'tipos_conta',

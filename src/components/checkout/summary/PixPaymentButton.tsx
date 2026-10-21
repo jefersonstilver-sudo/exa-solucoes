@@ -22,8 +22,8 @@ const PixPaymentButton: React.FC<PixPaymentButtonProps> = ({
     setIsProcessing(true);
     
     try {
-      // REMOVED: n8n webhook - PIX handled by process-payment edge function
-      console.log('[PixPaymentButton] Usando Mercado Pago SDK nativo');
+      // Pix via Asaas
+      
       
       // Iniciar processo de pagamento
       await onPaymentInitiate();
@@ -51,7 +51,7 @@ const PixPaymentButton: React.FC<PixPaymentButtonProps> = ({
         <Button
           onClick={handlePixPayment}
           disabled={disabled || isProcessing}
-          className="w-full h-12 sm:h-14 text-sm sm:text-base font-semibold bg-green-600 hover:bg-green-700 text-white shadow-sm border-0"
+          className="w-full h-12 sm:h-14 text-sm sm:text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm border-0"
         >
           <div className="flex items-center justify-center gap-2 sm:gap-3">
             {isProcessing ? (
@@ -78,9 +78,9 @@ const PixPaymentButton: React.FC<PixPaymentButtonProps> = ({
           <div className="text-[9px] sm:text-xs text-gray-700">
             <div className="font-medium mb-1">Pagamento Seguro</div>
             <ul className="space-y-0.5 text-gray-600">
-              <li>• Aprovação instantânea</li>
-              <li>• QR Code válido 30 min</li>
-              <li>• Campanha ativa imediatamente</li>
+              <li>• Confirmação pelo Asaas</li>
+              <li>• Validade informada pelo Asaas</li>
+              <li>• Ativação conforme contrato e aprovação</li>
             </ul>
           </div>
         </div>

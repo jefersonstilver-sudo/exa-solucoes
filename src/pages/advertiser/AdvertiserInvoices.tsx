@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, Download, QrCode, CheckCircle, Clock, AlertTriangle, ArrowLeft, Calendar, Building2, ChevronDown, ChevronUp, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
+import { generateInstallmentPix } from '@/services/asaasPaymentService';
 import { formatCurrency } from '@/utils/priceUtils';
 import { cn } from '@/lib/utils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
@@ -149,108 +150,14 @@ const AdvertiserInvoices = () => {
   };
 
   // Gerar boleto para parcela
-  const handleGenerateBoleto = async (parcela: Parcela, pedido: PedidoComParcelas) => {
-    if (!userProfile) return;
-    
-    setGeneratingBoleto(parcela.id);
-    
-    try {
-      // Buscar dados completos do usuário para o boleto
-      const { data: userData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userProfile.id)
-        .single();
-      
-      const userDataAny = userData as any;
-      
-      // Validar dados obrigatórios para boleto
-      const documento = userData?.empresa_documento?.replace(/\D/g, '') || userDataAny?.cpf?.replace(/\D/g, '');
-      
-      if (!documento || documento.length < 11) {
-        toast.error('Dados incompletos', {
-          description: 'Para gerar boleto, é necessário ter CPF ou CNPJ cadastrado no seu perfil.'
-        });
-        setGeneratingBoleto(null);
-        return;
-      }
-      
-      // Determinar tipo de documento (CPF ou CNPJ)
-      const tipoDocumento = documento.length === 11 ? 'CPF' : 'CNPJ';
-      const nomeCompleto = userData?.empresa_nome || userDataAny?.nome || userProfile.email?.split('@')[0] || 'Cliente';
-      const nomeParts = nomeCompleto.split(' ');
-      
-      const { data, error } = await supabase.functions.invoke('generate-boleto-payment', {
-        body: {
-          parcela_id: parcela.id,
-          valor: parcela.valor_final,
-          vencimento: parcela.data_vencimento,
-          descricao: `Parcela ${parcela.numero_parcela}/${pedido.total_parcelas} - Plano Fidelidade EXA`,
-          payer: {
-            email: userData?.email || userProfile.email || 'cliente@exapaineis.com.br',
-            first_name: nomeParts[0] || 'Cliente',
-            last_name: nomeParts.slice(1).join(' ') || 'EXA',
-            identification: {
-              type: tipoDocumento,
-              number: documento
-            },
-            address: {
-              zip_code: (userDataAny?.cep || '01310100').replace(/\D/g, ''),
-              street_name: userDataAny?.endereco || 'Av. Paulista',
-              street_number: userDataAny?.numero || '1000',
-              neighborhood: userDataAny?.bairro || 'Bela Vista',
-              city: userDataAny?.cidade || 'São Paulo',
-              federal_unit: userDataAny?.estado || 'SP'
-            }
-          }
-        }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.success && data?.boleto_url) {
-        toast.success('Boleto gerado com sucesso!');
-        
-        // Atualizar parcela localmente
-        setPedidos(prev => prev.map(p => ({
-          ...p,
-          parcelas: p.parcelas.map(parc => 
-            parc.id === parcela.id 
-              ? { ...parc, boleto_url: data.boleto_url, boleto_barcode: data.boleto_barcode }
-              : parc
-          )
-        })));
-        
-        // Abrir boleto em nova aba
-        window.open(data.boleto_url, '_blank');
-      } else {
-        throw new Error(data?.error || 'Erro ao gerar boleto');
-      }
-    } catch (error: any) {
-      console.error('Erro ao gerar boleto:', error);
-      toast.error('Erro ao gerar boleto', {
-        description: error.message
-      });
-    } finally {
-      setGeneratingBoleto(null);
-    }
-  };
+  const handleGenerateBoleto = async () => { toast.info('Boleto indisponível; utilize Pix Asaas'); };
 
-  // Gerar PIX para parcela
   const handleGeneratePix = async (parcela: Parcela, pedido: PedidoComParcelas) => {
     setGeneratingPix(parcela.id);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-pix-for-parcela', {
-        body: {
-          parcela_id: parcela.id,
-          valor: parcela.valor_final,
-          descricao: `Parcela ${parcela.numero_parcela}/${pedido.total_parcelas} - EXA`
-        }
-      });
-      
-      if (error) throw error;
-      
+      const pix = await generateInstallmentPix(parcela.id);
+      const data = { success: true, qrCodeBase64: pix.qr_base64, qrCode: pix.copia_cola };
       if (data?.success) {
         setPixDialog({
           isOpen: true,
@@ -271,7 +178,7 @@ const AdvertiserInvoices = () => {
           )
         })));
       } else {
-        throw new Error(data?.error || 'Erro ao gerar PIX');
+        throw new Error('Erro ao gerar Pix Asaas');
       }
     } catch (error: any) {
       console.error('Erro ao gerar PIX:', error);
@@ -505,33 +412,7 @@ const AdvertiserInvoices = () => {
                             {/* Botões de Ação */}
                             {isPendente && (
                               <div className="flex gap-2">
-                                {isBoleto ? (
-                                  <>
-                                    {parcela.boleto_url ? (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => window.open(parcela.boleto_url!, '_blank')}
-                                      >
-                                        <Download className="h-4 w-4 mr-1" />
-                                        Baixar Boleto
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleGenerateBoleto(parcela, pedido)}
-                                        disabled={generatingBoleto === parcela.id}
-                                      >
-                                        {generatingBoleto === parcela.id ? (
-                                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                        ) : (
-                                          <FileText className="h-4 w-4 mr-1" />
-                                        )}
-                                        Gerar Boleto
-                                      </Button>
-                                    )}
-                                  </>
-                                ) : (
-                                  <Button
+                                <Button
                                     size="sm"
                                     onClick={() => handleGeneratePix(parcela, pedido)}
                                     disabled={generatingPix === parcela.id}
@@ -543,7 +424,6 @@ const AdvertiserInvoices = () => {
                                     )}
                                     Pagar com PIX
                                   </Button>
-                                )}
                               </div>
                             )}
 

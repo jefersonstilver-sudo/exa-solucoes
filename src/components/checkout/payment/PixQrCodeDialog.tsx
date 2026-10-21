@@ -8,6 +8,7 @@ import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDe
 import { clearAllCarts } from '@/utils/cartUtils';
 import { useRealtimePaymentStatus } from '@/hooks/payment/useRealtimePaymentStatus';
 import { motion } from 'framer-motion';
+import { verifyAsaasOrder } from '@/services/asaasPaymentService';
 
 interface PixQrCodeDialogProps {
   isOpen: boolean;
@@ -83,13 +84,14 @@ const PixQrCodeDialog = ({
     }
   };
 
-  const handlePaymentConfirmed = () => {
-    logCheckoutEvent(CheckoutEvent.PAYMENT_EVENT, LogLevel.SUCCESS, "Usuário confirmou pagamento PIX", {
-      timestamp: new Date().toISOString()
-    });
-    clearAllCarts();
-    toast.success("Redirecionando para seus pedidos...");
-    navigate('/anunciante/pedidos');
+  const handlePaymentConfirmed = async () => {
+    if (!pedidoId) return;
+    try {
+      const result = await verifyAsaasOrder(pedidoId);
+      if (!result.payment_approved) { toast.info('Pagamento ainda não confirmado no Asaas'); return; }
+      toast.success('Pagamento confirmado no Asaas; acompanhe a liberação em Meus Pedidos');
+      navigate('/anunciante/pedidos');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Status indisponível'); }
   };
 
   // Processar imagem QR Code
@@ -171,7 +173,7 @@ const PixQrCodeDialog = ({
             <div className="px-6 pb-4">
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mx-auto w-fit">
                 <img 
-                  src={getQrCodeSrc()!} 
+                  src={getQrCodeSrc() || undefined} 
                   alt="QR Code PIX" 
                   className="w-48 h-48 object-contain"
                 />
@@ -229,7 +231,7 @@ const PixQrCodeDialog = ({
           <div className="px-6 pb-6">
             <Button
               onClick={handlePaymentConfirmed}
-              className="w-full h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-2xl font-semibold text-base shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/30"
+              className="w-full h-14 font-semibold text-base"
             >
               <CheckCircle className="h-5 w-5 mr-2" />
               Já realizei o pagamento

@@ -5,7 +5,7 @@ import { Panel } from '@/types/panel';
 import { usePaymentValidator } from './flows/usePaymentValidator';
 import { useOrderCreation } from './useOrderCreation';
 import { unwrapData } from '@/utils/supabaseUtils';
-import { supabase } from '@/integrations/supabase/client';
+import { generateOrderPix } from '@/services/asaasPaymentService';
 
 interface CartItem {
   panel: Panel;
@@ -63,7 +63,8 @@ export const usePaymentFlow = () => {
       
       if (!isValid) return;
       
-      const pedidoResult = await createPaymentOrder({
+      if (options.paymentMethod && options.paymentMethod !== 'pix') throw new Error('Selecione Pix Asaas');
+      const pedidoResult = createdOrderId ? { id: createdOrderId } : await createPaymentOrder({
         sessionUser: options.sessionUser,
         cartItems: options.cartItems,
         selectedPlan: options.selectedPlan,
@@ -76,70 +77,14 @@ export const usePaymentFlow = () => {
       });
       
       const pedido = unwrapData(pedidoResult) as any;
+      if (!pedido?.id) throw new Error('Pedido não retornado');
       setCreatedOrderId(pedido.id);
-      
-      // Apenas PIX é processado aqui
-      // Cartão de crédito é processado pelo modal via useCheckoutPro
-      if (options.paymentMethod === 'pix') {
-        const { data, error } = await supabase.functions.invoke('process-payment', {
-          body: {
-            pedido_id: pedido.id,
-            payment_method: 'pix',
-            total_amount: options.totalPrice
-          }
-        });
-        
-        // Handle payment errors gracefully
-        if (error) {
-          console.error('❌ [PAYMENT_FLOW] Erro no process-payment:', error);
-          
-          const errorMessage = error.message || '';
-          
-          // Asaas credentials missing
-          if (errorMessage.includes('ASAAS_CREDENTIALS_MISSING')) {
-            sonnerToast.error('Configuração de pagamento incompleta. Entre em contato com o suporte.');
-            return { success: true, pedidoId: pedido.id, paymentPending: true };
-          }
-          
-          // Asaas API error
-          if (errorMessage.includes('ASAAS_API_ERROR') || errorMessage.includes('Asaas')) {
-            sonnerToast.error('Erro temporário no sistema de pagamentos. Tente novamente em alguns minutos.');
-            return { success: false, pedidoId: pedido.id, error: errorMessage };
-          }
-          
-          throw error;
-        }
-        
-        // Check for error in response body
-        if (data?.success === false) {
-          const errorCode = data.error || '';
-          
-          if (errorCode === 'ASAAS_CREDENTIALS_MISSING' || errorCode === 'ASAAS_API_ERROR') {
-            sonnerToast.error(data.support_message || 'Erro no sistema de pagamentos. Tente novamente.');
-            return { success: false, pedidoId: pedido.id, error: data.message };
-          }
-          
-          throw new Error(data.message || 'Erro ao processar pagamento');
-        }
-        
-        options.handleClearCart();
-        sonnerToast.success("Pedido criado! Dados de pagamento serão enviados por e-mail.");
-        
-        if (options.onPixGenerated && data?.qrCodeBase64) {
-          options.onPixGenerated({
-            qrCodeBase64: data.qrCodeBase64 || '',
-            qrCodeText: data.qrCode || '',
-            pedidoId: pedido.id,
-            isSubscription: data.isSubscription || data.isPixParcelado || false,
-            valorMensal: data.valor,
-            valorTotal: data.valorTotal,
-            totalMeses: data.totalMeses,
-            infoMessage: data.infoMessage
-          });
-        }
-      }
-      
-      return { success: true, pedidoId: pedido.id };
+      const data = await generateOrderPix(pedido.id, options.sessionUser);
+      options.handleClearCart();
+      options.onPixGenerated?.({ qrCodeBase64: data.qr_base64, qrCodeText: data.copia_cola, pedidoId: pedido.id });
+      sonnerToast.success('Cobrança Pix Asaas criada');
+      if (!options.onPixGenerated) navigate(`/pix-payment?pedido=${pedido.id}`);
+      return { success: true, pedidoId: pedido.id, pixData: { qrCodeBase64: data.qr_base64, qrCode: data.copia_cola, paymentId: data.payment_id, status: 'PENDING' } };
     } catch (error: any) {
       sonnerToast.error(error.message);
       return { success: false, error: error.message };

@@ -8,6 +8,8 @@ import PixActiveState from './PixActiveState';
 import PixExpiredState from './PixExpiredState';
 import PixQrCodeMissing from './PixQrCodeMissing';
 import PixPaymentFooter from './PixPaymentFooter';
+import { isAsaasPaid } from '@/services/asaasPaymentRules';
+import { Button } from '@/components/ui/button';
 
 interface PixPaymentDetailsProps {
   qrCodeBase64?: string;
@@ -91,7 +93,7 @@ const PixPaymentDetails = ({
         await onRefreshStatus();
         setIsQrExpired(false);
         
-        toast.success("Novo QR Code gerado com sucesso!");
+        toast.info("Status consultado; nenhum novo QR foi gerado");
       } else {
         await onRefreshStatus();
         toast.success("Status atualizado");
@@ -106,7 +108,7 @@ const PixPaymentDetails = ({
       );
       
       // If status is approved, redirect to the order confirmation page
-      if (status === 'approved' && pedidoId) {
+      if (isAsaasPaid(status) && pedidoId) {
         localStorage.setItem('lastCompletedOrderId', pedidoId);
       }
     } catch (error) {
@@ -146,7 +148,7 @@ const PixPaymentDetails = ({
   }
   
   // If payment is approved, show success screen
-  if (status === 'approved') {
+  if (isAsaasPaid(status)) {
     return (
       <div className="space-y-6 text-center">
         <PaymentSuccessAnimation 
@@ -173,10 +175,10 @@ const PixPaymentDetails = ({
           isRefreshing={isRefreshing}
         />
       ) : !qrCodeBase64 && !qrCodeText ? (
-        <PixQrCodeMissing
-          onRefresh={handleRefreshStatus}
-          isRefreshing={isRefreshing}
-        />
+        <div className="text-sm text-muted-foreground space-y-3">
+          <p>Cobrança Asaas já emitida. O código Pix não está disponível nesta sessão; consulte o pagamento existente. Nenhuma segunda cobrança será gerada.</p>
+          <Button variant="outline" onClick={handleRefreshStatus}>Consultar status Asaas</Button>
+        </div>
       ) : (
         <PixActiveState
           qrCodeBase64={qrCodeBase64 || ''}

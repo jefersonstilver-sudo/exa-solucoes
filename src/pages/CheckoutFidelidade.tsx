@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { supabase } from '@/integrations/supabase/client';
+import { createAsaasCustomer, createAsaasRecurringPix } from '@/services/asaasPaymentService';
+import { useOrderCreation } from '@/hooks/payment/useOrderCreation';
 import CheckoutLayout from '@/components/checkout/CheckoutLayout';
 import FidelitySuccessModal from '@/components/checkout/FidelitySuccessModal';
 import { formatCurrency } from '@/utils/priceUtils';
@@ -27,6 +29,8 @@ const CheckoutFidelidade = () => {
   const { user, isLoggedIn, isLoading: authLoading } = useUserSession();
   const { cartItems, selectedPlan, calculateTotalPrice, couponId, couponValid, isCartLoading } = useCheckout();
   
+  const { createPaymentOrder } = useOrderCreation();
+  const [recurringResult, setRecurringResult] = useState<Record<string, unknown> | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [diaVencimento, setDiaVencimento] = useState<'5' | '10' | '15'>('10');
@@ -52,7 +56,7 @@ const CheckoutFidelidade = () => {
   
   // Recuperar método de pagamento do localStorage
   const paymentMethod = localStorage.getItem('checkout_payment_method') as 'pix_fidelidade' | 'boleto_fidelidade' || 'pix_fidelidade';
-  const isPix = paymentMethod === 'pix_fidelidade';
+  const isPix = true;
   
   // Calcular valores
   const totalAmount = calculateTotalPrice();
@@ -137,6 +141,7 @@ const CheckoutFidelidade = () => {
       return;
     }
     
+    if (paymentMethod !== 'pix_fidelidade') { toast.error('Selecione Pix Automático; boleto indisponível'); return; }
     setIsProcessing(true);
     
     try {
@@ -144,45 +149,13 @@ const CheckoutFidelidade = () => {
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + (selectedPlan || 1));
       
-      const { data, error } = await supabase.functions.invoke('process-fidelity-checkout', {
-        body: {
-          cartItems,
-          selectedPlan: selectedPlan || 1,
-          paymentMethod,
-          diaVencimento: parseInt(diaVencimento),
-          totalAmount,
-          monthlyAmount,
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-          couponId: couponValid ? couponId : null,
-          userData: {
-            nomeEmpresa: userProfile.empresa_nome,
-            cnpj: userProfile.empresa_documento
-          }
-        }
-      });
-      
-      if (error) throw error;
-      
-      console.log('✅ Checkout fidelidade processado:', data);
-      
-      // Limpar carrinho
-      localStorage.removeItem('checkout_cart');
-      localStorage.removeItem('checkout_plan');
-      localStorage.removeItem('checkout_coupon');
-      localStorage.removeItem('checkout_payment_method');
-      
-      // Mostrar modal de sucesso
-      setSuccessModal({
-        isOpen: true,
-        pedidoId: data.pedidoId,
-        totalParcelas: data.totalParcelas,
-        valorMensal: data.valorMensal,
-        proximoVencimento: data.proximoVencimento,
-        boletoUrl: data.boletoUrl,
-        boletoBarcode: data.boletoBarcode
-      });
-      
+      if (!user?.id || !userProfile) throw new Error('Entre na sua conta');
+      const customer = await createAsaasCustomer({ nome: userProfile.empresa_nome || user.nome || '', email: user.email || '', cpf_cnpj: userProfile.empresa_documento || '', telefone: user.telefone || '' });
+      const order = await createPaymentOrder({ sessionUser: user, cartItems, selectedPlan: selectedPlan || 1, totalPrice: totalAmount, couponId: couponValid ? couponId : null, startDate, endDate, paymentMethod: 'pix_automatico' });
+      if (!order?.id) throw new Error('Pedido não retornado');
+      const data = await createAsaasRecurringPix(customer, monthlyAmount, selectedPlan || 1, `Plano EXA ${selectedPlan} meses`, order.id);
+      setRecurringResult(data);
+      toast.info('Solicitação Pix Automático recebida pelo Asaas; aguarde a autorização e confirmação oficial');
     } catch (error: any) {
       console.error('❌ Erro no checkout fidelidade:', error);
       toast.error(error.message || 'Erro ao processar fidelidade');
@@ -409,7 +382,7 @@ const CheckoutFidelidade = () => {
         <div className="space-y-3">
           <Button
             onClick={handleProcessarFidelidade}
-            disabled={!termoAceito || !hasCompanyData || isProcessing}
+            disabled={!termoAceito || !hasCompanyData || isProcessing || !!recurringResult}
             className="w-full h-14 text-lg font-semibold bg-[#9C1E1E] hover:bg-[#7A1818] disabled:opacity-50"
             size="lg"
           >
@@ -435,6 +408,11 @@ const CheckoutFidelidade = () => {
         </div>
       </motion.div>
       
+      {recurringResult && <div role="status" className="p-4 border rounded-lg text-sm">
+        <p>Pix Automático · autorização/confirmacão pendente no Asaas</p>
+        {typeof recurringResult.payment_id === 'string' && <p>ID: {recurringResult.payment_id}</p>}
+        {typeof recurringResult.subscription_id === 'string' && <p>ID: {recurringResult.subscription_id}</p>}
+      </div>}
       {/* Modal de Sucesso */}
       <FidelitySuccessModal
         isOpen={successModal.isOpen}

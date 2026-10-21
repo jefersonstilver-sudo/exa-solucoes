@@ -1,0 +1,1 @@
+CREATE POLICY "Asaas billing owners read explicit installment" ON public.sofia_cobrancas FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.parcelas installment JOIN public.pedidos order_row ON order_row.id = installment.pedido_id WHERE order_row.client_id = auth.uid() AND installment.id::text = sofia_cobrancas.external_reference));

@@ -67,23 +67,6 @@ const PaymentMethodSelector = ({
           </Label>
         </div>
         
-        <div className="flex items-center space-x-2 border p-4 rounded-md hover:bg-gray-50 transition-colors">
-          <RadioGroupItem value="credit_card" id="credit_card" />
-          <Label htmlFor="credit_card" className="flex-1 flex items-center justify-between cursor-pointer">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-100 p-2 rounded-full">
-                <CreditCard className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-medium">Cartão de Crédito</p>
-                <p className="text-sm text-gray-500">Visa, Mastercard, Elo, American Express</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-medium">{formatCurrency(totalAmount)}</p>
-            </div>
-          </Label>
-        </div>
       </RadioGroup>
     </motion.div>
   );

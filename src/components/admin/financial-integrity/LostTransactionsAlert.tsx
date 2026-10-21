@@ -25,12 +25,12 @@ const LostTransactionsAlert: React.FC<LostTransactionsAlertProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center text-green-700">
             <DollarSign className="h-5 w-5 mr-2" />
-            Sistema Integro
+            Conciliação não certificada
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-green-700">
-            Todas as transações do MercadoPago estão reconciliadas com o sistema.
+            A ausência de pendências neste espelho não certifica a conciliação bancária.
           </p>
         </CardContent>
       </Card>
@@ -42,26 +42,26 @@ const LostTransactionsAlert: React.FC<LostTransactionsAlertProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center text-red-700">
           <AlertTriangle className="h-5 w-5 mr-2" />
-          Transações Perdidas Detectadas
+          Cobranças Asaas sem evento correspondente
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-2xl font-bold text-red-600">{missingCount}</div>
-            <p className="text-sm text-red-600">Transações perdidas</p>
+            <p className="text-sm text-red-600">Pendências de correspondência</p>
           </div>
           <div>
             <div className="text-2xl font-bold text-red-600">
               R$ {estimatedLoss.toFixed(2)}
             </div>
-            <p className="text-sm text-red-600">Receita estimada perdida</p>
+            <p className="text-sm text-red-600">Perda financeira não certificada</p>
           </div>
         </div>
         
         <p className="text-red-700">
-          Foram detectadas {missingCount} transação(ões) aprovada(s) no MercadoPago 
-          que não possuem pedidos correspondentes no sistema.
+          Foram detectadas {missingCount} cobrança(s) Asaas 
+          sem evento identificado pelo ID oficial.
         </p>
         
         <div className="flex space-x-3">
@@ -77,7 +77,7 @@ const LostTransactionsAlert: React.FC<LostTransactionsAlertProps> = ({
           
           <Button 
             onClick={onAutoFix}
-            disabled={loading}
+            disabled
             variant="destructive"
             size="sm"
           >

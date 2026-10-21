@@ -14,3 +14,4 @@ Executive finance must derive realized cash from paginated Asaas statement movem
 Statement categories are display-only until an official provider ID verifies the corresponding obligation; this prevents approximate matching from changing financial state.
 Keep internet account billing in dedicated internet_* tables and private document storage, separate from devices and Asaas; portal payment status is not bank reconciliation.
 Dispatch internet collections through the service-only atomic RPC with a request key and per-account jobs; Phase 1 ingest stays closed until a separately authenticated worker and vault exist.
+Route frontend payment creation and status through the shared Asaas payment service and existing billing function; keep audit reads separate from settlement to prevent approximate or client-driven financial corrections.

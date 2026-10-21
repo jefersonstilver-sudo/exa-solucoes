@@ -5,7 +5,8 @@ import { useRealtimePaymentStatus } from '@/hooks/payment/useRealtimePaymentStat
 import { usePixPaymentPolling } from '@/hooks/payment/usePixPaymentPolling';
 import PaymentSuccessAnimation from './PaymentSuccessAnimation';
 import PaymentApprovedOverlay from '@/components/payment/PaymentApprovedOverlay';
-import PixPaymentTimer from './PixPaymentTimer';
+import { isAsaasPaid } from '@/services/asaasPaymentRules';
+import { useNavigate } from 'react-router-dom';
 
 interface PixPaymentRealtimeWrapperProps {
   qrCodeBase64?: string;
@@ -18,6 +19,7 @@ interface PixPaymentRealtimeWrapperProps {
 }
 
 const PixPaymentRealtimeWrapper = (props: PixPaymentRealtimeWrapperProps) => {
+  const navigate = useNavigate();
   const [paymentApproved, setPaymentApproved] = useState(false);
   const [qrExpired, setQrExpired] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -52,9 +54,9 @@ const PixPaymentRealtimeWrapper = (props: PixPaymentRealtimeWrapperProps) => {
   // Configurar polling como fallback
   const { isPolling, lastChecked, checkPaymentStatus } = usePixPaymentPolling({
     pedidoId: props.pedidoId,
-    isActive: !paymentApproved && props.status !== 'approved',
+    isActive: !paymentApproved && !isAsaasPaid(props.status),
     onPaymentApproved: handlePaymentApproved,
-    intervalMs: 5000 // Verificar a cada 5 segundos
+    intervalMs: 60000 // Verificar a cada 5 segundos
   });
 
   // Show professional overlay when payment is approved via realtime
@@ -68,17 +70,17 @@ const PixPaymentRealtimeWrapper = (props: PixPaymentRealtimeWrapperProps) => {
   }
 
   // Show old animation for polling-detected approvals
-  if (paymentApproved || props.status === 'approved') {
+  if (paymentApproved || isAsaasPaid(props.status)) {
     return (
       <div className="text-center py-8">
         <PaymentSuccessAnimation 
           onContinue={() => {
-            // Navegação será feita automaticamente pelo hook
+            navigate('/anunciante/pedidos');
           }}
           autoRedirectTimeout={3000}
         />
         <div className="mt-4 text-sm text-gray-500">
-          ✅ Pagamento confirmado com sucesso!
+          Pagamento confirmado no Asaas · liberação do pedido sujeita à confirmação administrativa
         </div>
       </div>
     );
@@ -86,18 +88,6 @@ const PixPaymentRealtimeWrapper = (props: PixPaymentRealtimeWrapperProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Timer para QR Code */}
-      <PixPaymentTimer
-        initialSeconds={600} // 10 minutos
-        onExpire={() => setQrExpired(true)}
-        onRefresh={async () => {
-          setQrExpired(false);
-          await props.onRefreshStatus();
-        }}
-        isActive={!paymentApproved && props.status !== 'approved'}
-        isRefreshing={false}
-      />
-      
       {/* Detalhes do pagamento PIX */}
       <PixPaymentDetails {...props} />
       

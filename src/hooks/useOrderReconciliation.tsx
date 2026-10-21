@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { verifyAsaasOrder } from '@/services/asaasPaymentService';
 
 interface PendingOrder {
   id: string;
@@ -59,42 +60,11 @@ export const useOrderReconciliation = () => {
         errors: []
       };
 
-      // Para cada pedido pendente, verificar se há evidência de pagamento
       for (const order of pendingOrders || []) {
-        try {
-          // Verificar se existe log de pagamento válido
-          const paymentLog = order.log_pagamento as any;
-          
-          if (paymentLog?.payment_status === 'approved' || paymentLog?.pix_data?.status === 'approved') {
-            // Atualizar status para pago
-            const { error: updateError } = await supabase
-              .from('pedidos')
-              .update({ 
-                status: 'pago_pendente_video',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', order.id);
-
-            if (updateError) {
-              reconciliationResult.errors.push(`Erro ao atualizar pedido ${order.id}: ${updateError.message}`);
-            } else {
-              reconciliationResult.correctedOrders++;
-              console.log(`✅ [RECONCILIATION] Pedido ${order.id} corrigido para pago_pendente_video`);
-            }
-          }
-
-          // Log da auditoria
-          await supabase
-            .from('log_eventos_sistema')
-            .insert({
-              tipo_evento: 'ORDER_RECONCILIATION_AUDIT',
-              descricao: `Pedido auditado: ${order.id} - Status: ${order.status} - Valor: ${order.valor_total}`
-            });
-
-        } catch (orderError: any) {
-          reconciliationResult.errors.push(`Erro no pedido ${order.id}: ${orderError.message}`);
-        }
+        try { await verifyAsaasOrder(order.id); }
+        catch { reconciliationResult.errors.push(`Consulta Asaas indisponível: ${order.id}`); }
       }
+      toast.info('Consulta concluída; nenhuma baixa automática');
 
       setResult(reconciliationResult);
       

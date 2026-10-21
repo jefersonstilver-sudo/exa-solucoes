@@ -1,4 +1,7 @@
 # Financeiro — etapas 0 e 1
+- [x] Migrar chamadas frontend de pagamento ao Asaas existente, ocultar meios não suportados, retirar recuperações automáticas e preservar funções protegidas; 16 testes passaram e compilação OK.
+- [ ] Validar geração/retomada real de Pix e Pix Automático com sessão autenticada — bloqueado: Supabase externo sem sessão de teste disponível; contrato não oferece recuperação de QR já emitido após recarregar.
+- [ ] Zerar busca literal de "mercado" em todo src — bloqueado por campos históricos em tipos gerados que não podem ser editados manualmente; textos editoriais sem relação com pagamento preservados.
 - [x] Corrigir envio imediato após extensão/reativação, cobertura master/filhos, preservação do vídeo base/programações e sinalização de envios parciais/pendentes; cinco testes passaram.
 - [ ] Executar e confirmar reenvio real AWS dos 20 pedidos vigentes (22 ativos, dois vencidos) — bloqueado: chamadas administrativas retornam 401 e Supabase externo não fornece sessão autenticada neste ambiente. Nenhum reenvio global foi confirmado.
 - [x] Liberar 35 segundos para Curiosidades e reorganização por arraste nos cards de pedidos; ordem salva por conta neste navegador, cinco testes passaram e build OK.

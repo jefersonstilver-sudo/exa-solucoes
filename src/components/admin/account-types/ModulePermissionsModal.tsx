@@ -105,7 +105,6 @@ const MODULE_SECTIONS = [
     color: '#9C1E1E',
     modules: [
       { key: 'financeiro', label: 'Financeiro', icon: Landmark },
-      { key: 'financeiro_mp', label: 'Financeiro MP', icon: CreditCard },
       { key: 'relatorios', label: 'Relatórios', icon: BarChart3 },
       { key: 'usuarios', label: 'Usuários', icon: Users },
       { key: 'tipos_conta', label: 'Tipos de Conta', icon: Shield },

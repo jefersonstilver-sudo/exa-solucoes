@@ -14,6 +14,7 @@ import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { VideoDaysBadge } from '@/components/video-management/VideoDaysBadge';
 import { ExtendOrderDialog, isIndefiniteEnd } from './ExtendOrderDialog';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
 import { AwsMissingClientsWarning } from './AwsMissingClientsWarning';
 interface Parcela {
   id: string;
@@ -36,6 +37,7 @@ interface OrderData {
   data_fim?: string;
   plano_meses: number;
   log_pagamento?: any;
+  asaas_payment?: { id: string; status: string; value: number };
   compliance_data?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
@@ -195,7 +197,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   };
 
   // Verificar se os dados de auditoria estão incompletos
-  const hasIncompleteAuditData = !order.compliance_data || !order.compliance_data.payer || order.log_pagamento?.pixData?.mpResponse?.status === 'pending';
+  const hasIncompleteAuditData = order.log_pagamento?.provider !== 'asaas';
 
   // Calcular status correto baseado em vídeos
   const getCorrectStatus = (orderStatus: string, videosCount: number) => {
@@ -703,10 +705,16 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
         </section>
 
+        {order.asaas_payment && <section className="border border-border rounded p-4 text-sm space-y-2">
+          <h2 className="font-semibold">Cobrança Asaas · status oficial</h2>
+          <p className="break-all">{order.asaas_payment.id}</p>
+          <p>Status: {order.asaas_payment.status} · {formatCurrency(order.asaas_payment.value)}</p>
+          <p className="text-muted-foreground">Consulta não altera o pedido nem certifica conciliação bancária.</p>
+        </section>}
         {/* SEÇÃO: INFORMAÇÕES DE PAGAMENTO */}
         {order.log_pagamento && <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Informações de Pagamento e Auditoria</h2>
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Histórico de Pagamento · não é confirmação Asaas</h2>
             </div>
             
             <div className="p-4 space-y-4">
@@ -757,12 +765,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                           {formatCurrency(order.log_pagamento.pixData.transactionAmount)}
                         </p>
                       </div>}
-                    {order.log_pagamento.pixData.mpResponse?.status && <div>
-                        <p className="text-gray-500 mb-1">Status Mercado Pago</p>
-                        <p className={`font-semibold capitalize inline-flex items-center gap-1 ${order.log_pagamento.pixData.mpResponse.status === 'approved' ? 'text-green-700' : order.log_pagamento.pixData.mpResponse.status === 'pending' ? 'text-yellow-700' : 'text-gray-900'}`}>
-                          {order.log_pagamento.pixData.mpResponse.status === 'pending' ? <>⏳ Pendente</> : order.log_pagamento.pixData.mpResponse.status === 'approved' ? <>✅ Aprovado</> : order.log_pagamento.pixData.mpResponse.status}
-                        </p>
-                      </div>}
+
                   </div>
                   
                   {/* Alerta de dados incompletos */}
@@ -777,7 +780,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                           </h4>
                           <p className="text-xs text-yellow-700 mb-3">
                             Este pedido foi criado antes da implementação do sistema de auditoria completo. 
-                            Clique no botão abaixo para buscar e atualizar os dados do Mercado Pago.
+                            Consulte a cobrança Asaas pelo identificador oficial; esta consulta não altera o pedido.
                           </p>
                           <Button size="sm" onClick={() => fixOrderAuditData(order.id)} disabled={isFixing} className="bg-yellow-600 hover:bg-yellow-700 text-white">
                             {isFixing ? <>
@@ -785,13 +788,15 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                                 Atualizando...
                               </> : <>
                                 <RefreshCw className="h-4 w-4 mr-2" />
-                                Atualizar Dados de Auditoria
+                                Consultar Status Asaas
                               </>}
                           </Button>
                         </div>
                       </div>
                     </div>}
                 </div>}
+
+              <ManualPaymentVerifier pedidoId={order.id} currentStatus={order.status} />
 
               {/* 🔐 AUDITORIA FINANCEIRA COMPLETA */}
               {order.compliance_data && Object.keys(order.compliance_data).length > 0}

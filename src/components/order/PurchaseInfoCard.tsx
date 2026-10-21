@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { isAsaasPaid } from '@/services/asaasPaymentService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CreditCard, Calendar, Clock, DollarSign, ChevronDown, ChevronUp, CheckCircle, Hash } from 'lucide-react';
@@ -40,87 +41,14 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
     };
   };
   const getPaymentMethod = () => {
-    const logPagamento = orderDetails.log_pagamento;
-    
-    console.log('[PurchaseInfoCard] Detectando método de pagamento:', {
-      payment_type_id: logPagamento?.payment_type_id,
-      payment_method_id: logPagamento?.payment_method_id,
-      payment_method: logPagamento?.payment_method,
-      metodo_pagamento: orderDetails.metodo_pagamento,
-      tipo: logPagamento?.tipo
-    });
-    
-    // Verificar se é pedido cortesia
-    if (logPagamento?.tipo === 'CORTESIA' || orderDetails.metodo_pagamento === 'cortesia') {
-      return 'Cortesia';
-    }
-    
-    // PRIORIDADE 1: Verificar payment_type_id do Mercado Pago (campo mais confiável)
-    if (logPagamento?.payment_type_id) {
-      switch(logPagamento.payment_type_id.toLowerCase()) {
-        case 'pix':
-          return 'PIX';
-        case 'credit_card':
-          return 'Cartão de Crédito';
-        case 'debit_card':
-          return 'Cartão de Débito';
-        case 'bank_transfer':
-          return 'Transferência Bancária';
-        default:
-          return logPagamento.payment_type_id.replace(/_/g, ' ').toUpperCase();
-      }
-    }
-    
-    // PRIORIDADE 2: Verificar payment_method_id (método específico do MP)
-    if (logPagamento?.payment_method_id) {
-      if (logPagamento.payment_method_id === 'pix') {
-        return 'PIX';
-      }
-      // Se não for PIX, verificar o tipo
-      return logPagamento.payment_method_id.replace(/_/g, ' ').toUpperCase();
-    }
-    
-    // PRIORIDADE 3: Verificar metodo_pagamento do pedido
-    if (orderDetails.metodo_pagamento) {
-      if (orderDetails.metodo_pagamento.toLowerCase() === 'pix') {
-        return 'PIX';
-      }
-      if (orderDetails.metodo_pagamento.toLowerCase().includes('credit')) {
-        return 'Cartão de Crédito';
-      }
-      return orderDetails.metodo_pagamento;
-    }
-    
-    // Fallback: PIX (default mais comum)
-    console.warn('[PurchaseInfoCard] Nenhum campo de método de pagamento encontrado, usando PIX como fallback');
-    return 'PIX';
+    if (orderDetails.log_pagamento?.tipo === 'CORTESIA' || orderDetails.metodo_pagamento === 'cortesia') return 'Cortesia';
+    return orderDetails.log_pagamento?.provider === 'asaas' ? 'Pix · Asaas' : 'Histórico / confirmação administrativa';
   };
-  const getTransactionId = () => {
-    const logPagamento = orderDetails.log_pagamento;
-    if (!logPagamento) return 'N/A';
-    return logPagamento.payment_id || logPagamento.external_reference || logPagamento.preferenceId || 'N/A';
-  };
-  const getPaymentStatus = () => {
-    if (orderDetails.log_pagamento?.payment_status === 'approved') {
-      return {
-        label: 'Pagamento Aprovado',
-        color: 'text-green-600'
-      };
-    }
-
-    // Status que indicam pagamento confirmado
-    const paidStatuses = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'];
-    if (paidStatuses.includes(orderDetails.status) || orderDetails.status.includes('pago')) {
-      return {
-        label: 'Pagamento Confirmado',
-        color: 'text-green-600'
-      };
-    }
-    return {
-      label: 'Processando',
-      color: 'text-yellow-600'
-    };
-  };
+  const getTransactionId = () => orderDetails.log_pagamento?.asaas_payment_id || 'Não informado';
+  const getPaymentStatus = () => ({
+    label: isAsaasPaid(orderDetails.log_pagamento?.asaas_status) ? 'Confirmado no Asaas' : 'Confirmação Asaas não verificada',
+    color: 'text-muted-foreground'
+  });
   const getContractPeriod = () => {
     // Verificar se tem vídeo aprovado antes de mostrar datas
     const hasApprovedVideo = orderDetails.status === 'video_aprovado' || orderDetails.status === 'ativo';
@@ -243,90 +171,8 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
                     </div>
                   </div>
                   
-                  {/* Status do Mercado Pago */}
-                  {orderDetails.log_pagamento?.status && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status MP:</span>
-                      <span className="font-medium text-xs capitalize">
-                        {orderDetails.log_pagamento.status}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Bandeira do Cartão */}
-                  {orderDetails.log_pagamento?.payment_method_id && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Bandeira:</span>
-                      <span className="font-medium text-xs uppercase">
-                        {orderDetails.log_pagamento.payment_method_id}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Últimos 4 dígitos do cartão */}
-                  {orderDetails.log_pagamento?.card?.last_four_digits && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Final do Cartão:</span>
-                      <span className="font-mono text-xs">
-                        •••• {orderDetails.log_pagamento.card.last_four_digits}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Parcelas */}
-                  {orderDetails.log_pagamento?.installments && orderDetails.log_pagamento.installments > 1 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Parcelas:</span>
-                      <span className="font-medium text-xs">
-                        {orderDetails.log_pagamento.installments}x
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Data de processamento */}
-                  {orderDetails.log_pagamento?.date_approved && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Aprovado em:</span>
-                      <span className="text-xs">
-                        {new Date(orderDetails.log_pagamento.date_approved).toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Taxa do Mercado Pago */}
-                  {orderDetails.log_pagamento?.fee_details && orderDetails.log_pagamento.fee_details.length > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Taxa MP:</span>
-                      <span className="text-xs text-red-600">
-                        - {formatCurrency(
-                          orderDetails.log_pagamento.fee_details.reduce((sum: number, fee: any) => sum + (fee.amount || 0), 0)
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Valor líquido */}
-                  {orderDetails.log_pagamento?.transaction_amount_refunded !== undefined && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Valor Líquido:</span>
-                      <span className="font-medium text-green-600">
-                        {formatCurrency(
-                          (orderDetails.log_pagamento.transaction_amount || 0) - 
-                          (orderDetails.log_pagamento.transaction_amount_refunded || 0)
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* ID do pagador */}
-                  {orderDetails.log_pagamento?.payer?.id && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">ID Pagador:</span>
-                      <span className="font-mono text-xs">
-                        {orderDetails.log_pagamento.payer.id}
-                      </span>
-                    </div>
-                  )}
+                  {orderDetails.log_pagamento?.provider === 'asaas' && <div className="flex justify-between"><span>Status Asaas:</span><span>{orderDetails.log_pagamento.asaas_status || 'Não verificado'}</span></div>}
+
                 </div>
               </div>
 
