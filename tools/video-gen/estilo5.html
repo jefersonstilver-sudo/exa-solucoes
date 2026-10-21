@@ -90,11 +90,20 @@
       if (full && m && (m[4] === undefined || parseFloat(m[4]) > .6) && n.style.zIndex !== '50') n.style.backgroundColor = `rgba(${m[1]},${m[2]},${m[3]},.46)`;
     });
     st.style.background = 'transparent';
-    const sc = document.createElement('div'); sc.setAttribute('data-keep', '1'); sc.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.18) 50%,rgba(0,0,0,.34));pointer-events:none'; st.insertBefore(sc, st.firstChild);
+    // legibilidade: texto escuro sem fundo opaco atras vira branco com contorno escuro
+    const lumOf = (c) => { const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return m ? (0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3]) : 255; };
+    const opaqueBgAbove = (n) => { for (let p = n; p && p !== st; p = p.parentElement) { const m = getComputedStyle(p).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/); if (m && (m[4] === undefined || parseFloat(m[4]) > .8)) return m; } return null; };
+    st.querySelectorAll('*').forEach(n => {
+      if (!n.childNodes.length || ![...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim())) return;
+      if (n.closest('[data-ink]')) return; const cs = getComputedStyle(n); if (lumOf(cs.color) > 150) return;
+      const bg = opaqueBgAbove(n); if (bg && bg !== null && (parseFloat(bg[4] === undefined ? 1 : bg[4]) > .8) && (0.299 * bg[1] + 0.587 * bg[2] + 0.114 * bg[3]) > 120) return;
+      n.style.color = '#ffffff'; n.style.textShadow = '0 0 3px rgba(0,0,0,.9),0 2px 10px rgba(0,0,0,.75)'; n.style.webkitTextStroke = (P.split ? '1.5px' : '1px') + ' rgba(0,0,0,.55)';
+    });
+    const sc = document.createElement('div'); sc.setAttribute('data-keep', '1'); sc.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;background:' + (P.split ? 'rgba(0,0,0,.45)' : 'linear-gradient(180deg,rgba(0,0,0,.34),rgba(0,0,0,.24) 50%,rgba(0,0,0,.4))') + ';pointer-events:none'; st.insertBefore(sc, st.firstChild);
     st.style.textShadow = '0 2px 18px rgba(0,0,0,.28)';
   }
   function init() { const tl = gsap.timeline({ paused: true }); window.tl = tl; return tl; }
-  function finish(tl) { mediaFix(); if (!P.nocam) tl.fromTo(st, { scale: 1 }, { scale: 1.045, transformOrigin: '50% 50%', duration: DUR, ease: 'none' }, 0); if (tl.duration() < DUR) tl.to({}, { duration: DUR - tl.duration() }); tl.time(0); if (!window.__RENDER) { tl.play(); tl.eventCallback('onComplete', () => tl.restart()); } }
+  function finish(tl) { mediaFix(); if (P.split) { st.style.transform = 'none'; st.style.borderRadius = u(46); st.style.boxShadow = '0 30px 90px rgba(0,0,0,.55)'; tl.fromTo(st, { scale: .70, xPercent: 0, yPercent: 0, transformOrigin: '0% 50%' }, { scale: .72, duration: DUR, ease: 'none' }, 0); } else if (!P.nocam) tl.fromTo(st, { scale: 1 }, { scale: 1.045, transformOrigin: '50% 50%', duration: DUR, ease: 'none' }, 0); if (tl.duration() < DUR) tl.to({}, { duration: DUR - tl.duration() }); tl.time(0); if (!window.__RENDER) { tl.play(); tl.eventCallback('onComplete', () => tl.restart()); } }
   window.K = { P, W, H, DUR, U, vert, F, SERIF, st, u, tt, el, center, words, reveal, echo, logoNode, qrNode, endCard, init, finish, sprites, mascot, camera, iconSvg, ICONS, rnd, mediaFix };
 })();
 </script><script>// ESTILO 5 - Apresentacao da marca (preto alternando com a cor, italico serifado, iris, count-up)
@@ -102,8 +111,9 @@ const {P,W,H,DUR,U,vert,u,tt,el,center,words,reveal,echo,logoNode,endCard,init,f
 st.style.background='#000'; const A=P.cor;
 K.sprites(tl,.2,tt(1.8),{n:3,size:100,z:0,c1:P.cor,c2:'#ffffff'});
 // linha vira pilula
-const line=el(`left:50%;top:${vert?'30%':'50%'};height:${u(10)};width:${u(vert?760:1300)};margin-left:${u(vert?-380:-650)};border-radius:99px;background:#fff`); tl.from(line,{scaleX:0,duration:.5,ease:'power3.out'},.1).to(line,{height:u(vert?170:200),duration:.5,ease:'back.out(1.6)'},.65);
+const line=el(`left:50%;top:${vert?'30%':'50%'};height:${u(10)};width:${u(vert?760:1300)};margin-left:${u(vert?-380:-650)};border-radius:99px;background:#fff`); gsap.set(line,{yPercent:-50}); tl.from(line,{scaleX:0,duration:.5,ease:'power3.out'},.1).to(line,{height:u(vert?170:200),duration:.5,ease:'back.out(1.6)'},.65);
 const nm=el(`left:0;width:100%;top:${vert?'30%':'50%'};transform:translateY(-50%);text-align:center;font-size:${u(vert?96:130)};font-weight:900;color:#000;letter-spacing:-.03em;white-space:nowrap`,String(P.empresa).replace(/</g,'').toUpperCase().replace(/(.)$/,'<span style="color:'+A+'">$1</span>')); tl.from(nm,{opacity:0,y:u(30),duration:.4},.95).to([line,nm],{scale:.5,y:u(vert?-420:-380),duration:.5,ease:'power3.inOut'},tt(1.7));
+nm.setAttribute('data-ink','1');
 // cena 2: circulo (logo) com texto girando + frase de impacto (fundo cor)
 const sc2=el('left:0;top:0;width:100%;height:100%;background:'+A); tl.from(sc2,{clipPath:'circle(0% at 50% 50%)',duration:.7,ease:'power3.inOut'},tt(1.8)); const R=u(vert?300:270);
 K.sprites(tl,tt(1.9),tt(4.4),{n:5,size:115,z:0,c1:'#000000',c2:'#ffffff'});

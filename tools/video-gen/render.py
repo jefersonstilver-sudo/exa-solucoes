@@ -35,6 +35,29 @@ if mu and not frames_only or (mu and frames_only):
     try:
         media = fetch(mu, 'media'); print('midia ok', media)
     except Exception as e: print('midia falhou', e)
+
+def media_dims(path):
+    """tamanho REAL exibido (considera rotacao de celular)"""
+    import json as _j
+    try:
+        o = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height:stream_tags=rotate:stream_side_data=rotation', '-of', 'json', path], capture_output=True, text=True).stdout
+        st_ = _j.loads(o)['streams'][0]; w, h = int(st_['width']), int(st_['height']); rot = 0
+        try: rot = int(float((st_.get('tags') or {}).get('rotate', 0)))
+        except Exception: pass
+        for sd in st_.get('side_data_list') or []:
+            if 'rotation' in sd: rot = int(float(sd['rotation']))
+        if abs(rot) % 180 == 90: w, h = h, w
+        return w, h
+    except Exception:
+        try:
+            from PIL import Image, ImageOps
+            im = ImageOps.exif_transpose(Image.open(path)); return im.size
+        except Exception: return 0, 0
+SPLIT = False; MW = MH = 0
+if media:
+    MW, MH = media_dims(str(tmp / media))
+    SPLIT = bool(MW and MH and (MW / MH) < 0.8 and fmt != 'vertical_premium_15s')
+    print('midia dims', MW, MH, 'split', SPLIT)
 wa = ''.join(ch for ch in str(b.get('whatsapp_qr', '')) if ch.isdigit())
 qr = None; whats = ''
 if wa:
@@ -44,7 +67,7 @@ if wa:
     d = wa[2:] if wa.startswith('55') else wa
     whats = '(%s) %s-%s' % (d[:2], d[2:-4], d[-4:]) if len(d) >= 10 else d
 P = {'empresa': b.get('empresa', 'SUA MARCA'), 'segmento': b.get('segmento', ''), 'cores_estilo': b.get('cores_estilo', ''), 'mensagem': b.get('mensagem', 'ANUNCIE AQUI'), 'subtitulo': b.get('subtitulo', ''),
-     'cta': b.get('cta') or ('PECA AGORA' if qr else 'CONHECA'), 'instagram': re.sub(r'[^A-Za-z0-9_.]', '', str(b.get('instagram', ''))), 'formato': fmt, 'qr': qr, 'whats': whats, 'assets': assets, 'media': bool(media), 'pedido': b.get('pedido_cliente', '') + ' ' + b.get('observacoes', ''), 'tema': b.get('tema'), 'elementos': b.get('elementos') or [], 'elementos_txt': b.get('estilo_extra', '')}
+     'cta': b.get('cta') or ('PECA AGORA' if qr else 'CONHECA'), 'instagram': re.sub(r'[^A-Za-z0-9_.]', '', str(b.get('instagram', ''))), 'formato': fmt, 'qr': qr, 'whats': whats, 'assets': assets, 'media': bool(media), 'split': SPLIT, 'pedido': b.get('pedido_cliente', '') + ' ' + b.get('observacoes', ''), 'tema': b.get('tema'), 'elementos': b.get('elementos') or [], 'elementos_txt': b.get('estilo_extra', '')}
 def hue_from_text(s):
     s = (s or '').lower()
     for pat, h in [(r'vermelh|red', 4), (r'laranja|orange', 24), (r'amarel|dourad|ouro|gold|yellow', 46), (r'verde|green', 130), (r'turquesa|ciano', 175), (r'azul|blue', 215), (r'roxo|violeta|purple|lilas', 275), (r'rosa|pink|magenta', 325)]:
@@ -174,17 +197,21 @@ else:
         is_vid = media.rsplit('.', 1)[-1] in ('mp4', 'mov', 'webm')
         pre = ['-stream_loop', '-1', '-i', str(tmp / media)] if is_vid else ['-loop', '1', '-framerate', str(FPS), '-i', str(tmp / media)]
         zoom = '' if is_vid else ',zoompan=z=\'min(1+0.0012*on,1.18)\':d=1:s=%dx%d:fps=%d' % (W, H, FPS)
-        if is_vid:
-            mw = mh = 0
-            try:
-                pr = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', str(tmp / media)], capture_output=True, text=True).stdout.strip().split(',')
-                mw, mh = int(pr[0]), int(pr[1])
-            except Exception: pass
+        mw, mh = MW, MH
+        vf_pre = 'autorotate' # ffmpeg rotaciona sozinho
+        if SPLIT:
+            ph = int(H * 0.84) // 2 * 2; pw = int(ph * mw / mh) // 2 * 2; r = max(18, pw // 14)
+            cx = int(W * 0.855)
+            geq = "geq=lum='p(X,Y)':cb='p(X,Y)':cr='p(X,Y)':a='if(gt(abs(X-W/2),W/2-%d)*gt(abs(Y-H/2),H/2-%d)*gt(hypot(abs(X-W/2)-(W/2-%d),abs(Y-H/2)-(H/2-%d)),%d),0,255)'" % (r, r, r, r, r)
+            bz = max(8, pw // 36)
+            bgf = ('[0:v]split=2[a][b];[a]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,boxblur=40:4,eq=brightness=-0.32:saturation=1.05[bgb];'
+                   '[b]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,pad=%d:%d:%d:%d:color=0x0d0d10,format=yuva420p,%s[ph];'
+                   '[bgb][ph]overlay=%d-w/2:(H-h)/2,fps=%d,format=yuv420p[bg]') % (W, H, W, H, pw, ph, pw, ph, pw + 2 * bz, ph + 2 * bz, bz, bz, geq, cx, FPS)
+        elif is_vid:
             same = mw and mh and abs((mw / mh) / (W / H) - 1) < .25
             if same:
                 bgf = '[0:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,fps=%d,eq=brightness=-0.06:saturation=1.08,format=yuv420p[bg]' % (W, H, W, H, FPS)
             else:
-                # proporcao diferente (ex: video de celular em tela horizontal): fundo desfocado + video nitido inteiro no centro
                 bgf = '[0:v]split=2[a][b];[a]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,boxblur=36:3,eq=brightness=-0.16:saturation=1.1[bgb];[b]scale=%d:%d:force_original_aspect_ratio=decrease[fg];[bgb][fg]overlay=(W-w)/2:(H-h)/2,fps=%d,format=yuv420p[bg]' % (W, H, W, H, W, H, FPS)
         else:
             bgf = '[0:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d%s,fps=%d,eq=brightness=-0.06:saturation=1.08,format=yuv420p[bg]' % (W * 2, H * 2, W * 2, H * 2, zoom, FPS)
