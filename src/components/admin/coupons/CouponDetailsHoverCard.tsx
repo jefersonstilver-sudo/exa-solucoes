@@ -1,7 +1,7 @@
 import React from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
-import { Coupon } from '@/types/coupon';
+import { Coupon, formatCouponDiscount } from '@/types/coupon';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
