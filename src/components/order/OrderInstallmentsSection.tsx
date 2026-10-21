@@ -9,7 +9,7 @@ import { generateInstallmentPix } from '@/services/asaasPaymentService';
 import { formatCurrency } from '@/utils/priceUtils';
 import { cn } from '@/lib/utils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 
 interface Parcela {
   id: string;
