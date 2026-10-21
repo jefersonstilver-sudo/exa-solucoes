@@ -41,7 +41,7 @@ def gerar_cena(job):
             print("codegen request falhou", e); erro = "falha ao pedir codigo"; continue
         b = {}
         t0 = time.time()
-        while time.time() - t0 < 420:
+        while time.time() - t0 < 240:
             time.sleep(6)
             rows = req("GET", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}&select=briefing")
             b = (rows[0]["briefing"] if rows else {}) or {}
