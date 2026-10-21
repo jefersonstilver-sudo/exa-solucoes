@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Loader2, QrCode, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AsaasPixPanel from './AsaasPixPanel';
 import { AdminPixData, checkPixStatus, findExistingPix, generateOrderPix, getCachedPix, markOrderPaidFromAsaas } from '@/services/adminOrderPix';
@@ -16,7 +17,12 @@ interface Props {
   className?: string;
 }
 
-export const OrderPixActions: React.FC<Props> = ({ order, onChanged, className }) => {
+export const OrderPixActions: React.FC<Props> = ({ order, onChanged: onChangedProp, className }) => {
+  const queryClient = useQueryClient();
+  const onChanged = () => {
+    ['orders', 'orders-attempts-refactored', 'enhanced-orders', 'real-orders', 'pedidos'].forEach(k => queryClient.invalidateQueries({ queryKey: [k] }));
+    onChangedProp?.();
+  };
   const [open, setOpen] = useState(false);
   const [pix, setPix] = useState<AdminPixData | null>(() => getCachedPix(order.id));
   const [loading, setLoading] = useState(false);
