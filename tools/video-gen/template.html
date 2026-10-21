@@ -61,6 +61,7 @@ function kinetic(txt, cx, cy, sz, t, t0, o = {}) {
         const hot = o.accentWords && o.accentWords.includes(wi);
         if (hot) { const g = ctx.createLinearGradient(x, 0, x + ww[i], 0); g.addColorStop(0, C.a); g.addColorStop(1, C.b); ctx.fillStyle = g; ctx.shadowColor = C.a; ctx.shadowBlur = 40 * U * (1 - p0 * .6); }
         else ctx.fillStyle = o.color || C.text;
+        if (o.blur && p0 < 1) { const ba = ctx.globalAlpha; for (let k = 1; k <= 4; k++) { ctx.globalAlpha = ba * .16 / k * 2; ctx.fillText(wd, x, yy + (1 - q) * sz * .16 * k); } ctx.globalAlpha = ba; }
         ctx.fillText(wd, x, yy); ctx.restore();
       }
       x += ww[i] + space; wi++;
@@ -72,30 +73,95 @@ function kinetic(txt, cx, cy, sz, t, t0, o = {}) {
 /* ---------- fundo vivo: gradiente + blobs + particulas + grade em perspectiva ---------- */
 function bg(t) {
   const g = ctx.createLinearGradient(0, 0, W * .6, H); g.addColorStop(0, C.bg1); g.addColorStop(1, C.bg0); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // blobs luminosos em orbita
+  // metaballs luminosos
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  const blobs = [[C.a, .22, .30, 520, 0], [C.b, .78, .70, 620, 1.7], [C.c, .55, .15, 460, 3.1]];
+  const blobs = [[C.a, .22, .30, 560, 0], [C.b, .78, .70, 680, 1.7], [C.c, .55, .15, 500, 3.1], [C.b, .12, .85, 420, 4.4]];
   for (const [col, bx, by, r, ph] of blobs) {
-    const x = W * bx + Math.cos(t * .5 + ph) * W * .08, y = H * by + Math.sin(t * .42 + ph * 1.3) * H * .07, rr = r * U * (1 + .12 * Math.sin(t * .8 + ph));
-    const rg = ctx.createRadialGradient(x, y, 0, x, y, rr); rg.addColorStop(0, col.replace(/[\d.]+\)$/, '.34)')); rg.addColorStop(1, col.replace(/[\d.]+\)$/, '0)')); ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    const x = W * bx + Math.cos(t * .5 + ph) * W * .09, y = H * by + Math.sin(t * .42 + ph * 1.3) * H * .08, rr = r * U * (1 + .14 * Math.sin(t * .8 + ph));
+    const rg = ctx.createRadialGradient(x, y, 0, x, y, rr); rg.addColorStop(0, col.replace(/[\d.]+\)$/, '.38)')); rg.addColorStop(1, col.replace(/[\d.]+\)$/, '0)')); ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
   }
   ctx.restore();
-  // grade em perspectiva (chao)
-  ctx.save(); ctx.globalAlpha = .18; ctx.strokeStyle = C.a; ctx.lineWidth = 1.5 * U;
-  const hz = H * .58, vx = W / 2; const sp = ((t * .35) % 1);
-  for (let i = -14; i <= 14; i++) { ctx.beginPath(); ctx.moveTo(vx + i * 30 * U, hz); ctx.lineTo(vx + i * 330 * U, H); ctx.stroke(); }
-  for (let k = 0; k < 14; k++) { const z = (k + sp) / 14; const y = hz + (H - hz) * z * z; ctx.globalAlpha = .18 * z; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-  ctx.restore();
-  // particulas
+  // fitas fluidas (ondas senoidais empilhadas, preenchimento em gradiente)
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 90; i++) {
-    const sp2 = .02 + rnd(i) * .05; const x = ((rnd(i + 9) + t * sp2 * (VERT ? .6 : 1)) % 1) * W, y = H - (((rnd(i + 3) * 1 + t * (.03 + rnd(i + 5) * .06)) % 1) * H);
-    const r = (1 + rnd(i + 7) * 3.2) * U, tw = .35 + .65 * Math.abs(Math.sin(t * 2 + i));
-    ctx.fillStyle = (i % 3 ? C.a : C.b).replace(/[\d.]+\)$/, (.55 * tw) + ')'); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  for (let k = 0; k < 4; k++) {
+    const base = H * (.25 + k * .17), amp = (70 + k * 28) * U, sp = .5 + k * .18, ph = k * 1.9;
+    const gr = ctx.createLinearGradient(0, base - amp, W, base + amp); const col = [C.a, C.b, C.c, C.a][k];
+    gr.addColorStop(0, col.replace(/[\d.]+\)$/, '0)')); gr.addColorStop(.5, col.replace(/[\d.]+\)$/, '.13)')); gr.addColorStop(1, col.replace(/[\d.]+\)$/, '0)'));
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 24) { const y = base + Math.sin(x / W * 5.2 + t * sp + ph) * amp + Math.sin(x / W * 11 - t * sp * 1.4) * amp * .35; ctx.lineTo(x, y); }
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = col.replace(/[\d.]+\)$/, '.35)'); ctx.lineWidth = 2.2 * U; ctx.beginPath();
+    for (let x = 0; x <= W; x += 24) { const y = base + Math.sin(x / W * 5.2 + t * sp + ph) * amp + Math.sin(x / W * 11 - t * sp * 1.4) * amp * .35; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
   }
   ctx.restore();
-  // vinheta
+  // raios de luz girando
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(W * .5, H * .42); ctx.rotate(t * .06);
+  for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, L = Math.max(W, H) * 1.1; const gr = ctx.createLinearGradient(0, 0, Math.cos(a) * L, Math.sin(a) * L); gr.addColorStop(0, 'rgba(255,255,255,.07)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, L, a, a + .09); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+  // grade em perspectiva
+  ctx.save(); ctx.globalAlpha = .16; ctx.strokeStyle = C.a; ctx.lineWidth = 1.5 * U;
+  const hz = H * .6, vx = W / 2; const sp = ((t * .35) % 1);
+  for (let i = -14; i <= 14; i++) { ctx.beginPath(); ctx.moveTo(vx + i * 30 * U, hz); ctx.lineTo(vx + i * 330 * U, H); ctx.stroke(); }
+  for (let k = 0; k < 14; k++) { const z = (k + sp) / 14; const y = hz + (H - hz) * z * z; ctx.globalAlpha = .16 * z; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.restore();
+  // cacos de vidro flutuando (parallax)
+  ctx.save();
+  for (let i = 0; i < 9; i++) {
+    const dep = .4 + rnd(i + 40) * .9, x = ((rnd(i + 50) + t * .012 * dep) % 1) * (W + 300 * U) - 150 * U, y = H * (.1 + rnd(i + 60) * .8) + Math.sin(t * .7 * dep + i) * 30 * U;
+    const s = (60 + rnd(i + 70) * 120) * U * dep; ctx.save(); ctx.translate(x, y); ctx.rotate(t * .25 * (i % 2 ? 1 : -1) * dep + i);
+    ctx.fillStyle = 'rgba(255,255,255,.035)'; ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1.6 * U; ctx.beginPath();
+    if (i % 3 === 0) { ctx.moveTo(0, -s); ctx.lineTo(s * .9, s * .7); ctx.lineTo(-s * .9, s * .7); ctx.closePath(); } else ctx.roundRect(-s / 2, -s / 2, s, s, s * .22);
+    ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+  ctx.restore();
+  // particulas / bokeh
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 130; i++) {
+    const sp2 = .02 + rnd(i) * .05; const x = ((rnd(i + 9) + t * sp2 * (VERT ? .6 : 1)) % 1) * W, y = H - (((rnd(i + 3) + t * (.03 + rnd(i + 5) * .06)) % 1) * H);
+    const big = i % 11 === 0; const r = (big ? 9 + rnd(i + 7) * 16 : 1 + rnd(i + 7) * 3.2) * U, tw = .35 + .65 * Math.abs(Math.sin(t * 2 + i));
+    ctx.fillStyle = (i % 3 ? C.a : C.b).replace(/[\d.]+\)$/, ((big ? .13 : .55) * tw) + ')'); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  }
+  ctx.restore();
   const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.55)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+}
+/* explosao de particulas com rastro + ondas de choque */
+function burst(cx, cy, t, t0, n = 70) {
+  const p = prog(t, t0, t0 + 1.6); if (p <= 0 || p >= 1) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < n; i++) {
+    const a = rnd(i + 200) * 6.283, sp = (240 + rnd(i + 210) * 700) * U, d = eoc(p) * sp, x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    const al = (1 - p) * (.5 + rnd(i + 220) * .5); const tl = (1 - p) * 40 * U * (.5 + rnd(i + 230));
+    ctx.strokeStyle = (i % 2 ? C.a : C.b).replace(/[\d.]+\)$/, al + ')'); ctx.lineWidth = (2 + rnd(i + 240) * 4) * U; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - Math.cos(a) * tl, y - Math.sin(a) * tl); ctx.stroke();
+  }
+  for (let k = 0; k < 3; k++) { const q = prog(t, t0 + k * .18, t0 + k * .18 + 1.1); if (q > 0 && q < 1) { ctx.strokeStyle = [C.a, C.b, C.c][k].replace(/[\d.]+\)$/, (.7 * (1 - q)) + ')'); ctx.lineWidth = (10 - k * 2.5) * U * (1 - q) + 1; ctx.beginPath(); ctx.arc(cx, cy, eoc(q) * (520 + k * 160) * U, 0, 7); ctx.stroke(); } }
+  ctx.restore();
+}
+/* logo do cliente sobre placa de vidro */
+function logoCard(cx, cy, maxW, maxH, t, t0) {
+  const im = IM.logo; if (!im) return false; const p = eob(prog(t, t0, t0 + .9)); if (p <= 0) return true;
+  const sc = Math.min(maxW / im.width, maxH / im.height); const w = im.width * sc, h = im.height * sc, pad = 36 * U;
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(p, p); ctx.globalAlpha = clamp(p * 1.6);
+  ctx.shadowColor = C.a; ctx.shadowBlur = 70 * U; ctx.fillStyle = 'rgba(255,255,255,.94)'; ctx.beginPath(); ctx.roundRect(-w / 2 - pad, -h / 2 - pad, w + pad * 2, h + pad * 2, 34 * U); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.drawImage(im, -w / 2, -h / 2, w, h);
+  const sw = eio(prog(t, t0 + .5, t0 + 1.4)); if (sw > 0 && sw < 1) { ctx.save(); ctx.beginPath(); ctx.roundRect(-w / 2 - pad, -h / 2 - pad, w + pad * 2, h + pad * 2, 34 * U); ctx.clip(); const x = lerp(-w, w, sw); const g = ctx.createLinearGradient(x - 90 * U, 0, x + 90 * U, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(-w, -h, w * 2, h * 2); ctx.restore(); }
+  ctx.restore(); return true;
+}
+function igChip(cx, cy, sz, t, t0) {
+  if (!P.instagram) return; const p = eob(prog(t, t0, t0 + .7)); if (p <= 0) return;
+  const txt = '@' + P.instagram.replace(/^@/, ''), tw = wid(txt, sz, 700, sz * .04), iw = sz * 1.5, pw = tw + iw + sz * 1.6, ph = sz * 2.2;
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(p, p); ctx.globalAlpha = clamp(p * 1.5);
+  ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 2 * U; ctx.beginPath(); ctx.roundRect(-pw / 2, -ph / 2, pw, ph, ph / 2); ctx.fill(); ctx.stroke();
+  const ix = -pw / 2 + sz * .8 + sz * .6; const gr = ctx.createLinearGradient(ix - sz * .7, sz * .7, ix + sz * .7, -sz * .7); gr.addColorStop(0, '#feda75'); gr.addColorStop(.35, '#fa7e1e'); gr.addColorStop(.65, '#d62976'); gr.addColorStop(1, '#4f5bd5');
+  ctx.strokeStyle = gr; ctx.lineWidth = sz * .13; ctx.beginPath(); ctx.roundRect(ix - sz * .62, -sz * .62, sz * 1.24, sz * 1.24, sz * .36); ctx.stroke(); ctx.beginPath(); ctx.arc(ix, 0, sz * .27, 0, 7); ctx.stroke(); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(ix + sz * .4, -sz * .4, sz * .07, 0, 7); ctx.fill();
+  ctx.fillStyle = C.text; setFont(sz, 700, sz * .04); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(txt, ix + sz * .95, 2 * U); ctx.restore();
+}
+/* cartao de vidro com texto */
+function glass(cx, cy, w, h, t, t0) {
+  const p = eob(prog(t, t0, t0 + .8)); if (p <= 0) return 0; ctx.save(); ctx.translate(cx, cy + (1 - p) * 60 * U); ctx.scale(.9 + .1 * p, .9 + .1 * p); ctx.globalAlpha = clamp(p * 1.4);
+  ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 80 * U; ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 40 * U); ctx.fill(); ctx.shadowBlur = 0;
+  const g = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(.4, 'rgba(255,255,255,.08)'); g.addColorStop(1, C.a.replace(/[\d.]+\)$/, '.5)')); ctx.strokeStyle = g; ctx.lineWidth = 3 * U; ctx.stroke(); ctx.restore(); return p;
 }
 
 /* ---------- elementos ---------- */
@@ -132,61 +198,73 @@ function exaSign(t, t0, cx, y) {
 const NOME = (P.empresa || '').toUpperCase();
 const MSG = (P.mensagem || '').toUpperCase();
 const SUB = P.subtitulo || '';
-const T1 = 0, T2 = 2.4 * S, T3 = 5.6 * S, T4 = 7.7 * S;     // cenas (escalam com a duracao)
+const HAS_LOGO = !!(P.assets && P.assets.logo);
+const T1 = 0, T2 = 2.8 * S, T3 = 5.8 * S, T4 = 7.9 * S;
 function sceneAlpha(t, a, b, fi = .35, fo = .45) { return eio(prog(t, a, a + fi)) * (1 - eio(prog(t, b - fo, b))); }
-
+function wipe(t, t0) { const p = prog(t, t0, t0 + .7); if (p <= 0 || p >= 1) return; const r = eio(p) * Math.hypot(W, H) * .75; ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(W / 2, H / 2, r * .86, W / 2, H / 2, r); g.addColorStop(0, C.a.replace(/[\d.]+\)$/, '0)')); g.addColorStop(.85, C.b.replace(/[\d.]+\)$/, (.55 * (1 - p)) + ')')); g.addColorStop(1, C.a.replace(/[\d.]+\)$/, '0)')); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore(); }
 function render(t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.clearRect(0, 0, W, H);
-  // movimento de camera sutil
-  ctx.save(); const z = 1 + .035 * (t / DUR), pan = Math.sin(t * .4) * 8 * U; ctx.translate(W / 2 + pan, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2);
+  ctx.save(); const z = 1.02 + .06 * (t / DUR), pan = Math.sin(t * .4) * 12 * U; ctx.translate(W / 2 + pan, H / 2 + Math.cos(t * .33) * 8 * U); ctx.scale(z, z); ctx.rotate(Math.sin(t * .25) * .004); ctx.translate(-W / 2, -H / 2);
   bg(t);
   const cx = W / 2, cy = H / 2;
 
-  // CENA 1 - apresentacao da marca
+  // CENA 1 - marca (logo + nome + instagram)
   { const a = sceneAlpha(t, T1, T2 + .1, .01, .45); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
-      ring(cx, VERT ? H * .30 : H * .30, 150 * U, t, .1, C.b, 4);
-      pill('APRESENTA', cx, VERT ? H * .30 : H * .30, 22 * U, t, .25);
+      const ly = VERT ? H * .27 : H * .30;
+      burst(cx, ly, t, .2);
+      if (HAS_LOGO) logoCard(cx, ly, (VERT ? 520 : 460) * U, (VERT ? 300 : 240) * U, t, .35);
+      else { ring(cx, ly, 150 * U, t, .1, C.b, 4); pill('APRESENTA', cx, ly, 22 * U, t, .25); }
       const sz = fitSize(NOME, W * .86, VERT ? 170 * U : 200 * U);
-      kinetic(NOME, cx, VERT ? H * .47 : H * .52, sz, t, .45, { maxW: W * .86, accentWords: [0] });
-      bar(cx - 160 * U, VERT ? H * .60 : H * .70, 320 * U, 9 * U, t, 1.3);
+      kinetic(NOME, cx, VERT ? H * .50 : H * .56, sz, t, .8, { maxW: W * .86, accentWords: [0], blur: true });
+      bar(cx - 160 * U, VERT ? H * .63 : H * .72, 320 * U, 9 * U, t, 1.6);
+      igChip(cx, VERT ? H * .70 : H * .82, (VERT ? 40 : 34) * U, t, 1.7);
       ctx.restore(); } }
+  wipe(t, T2 - .35);
 
-  // CENA 2 - mensagem principal (<=5 palavras)
+  // CENA 2 - mensagem principal
   { const a = sceneAlpha(t, T2 + .1, T3 + .1); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
       const sz = VERT ? 190 * U : 210 * U; const nw = MSG.split(' ').length;
-      kinetic(MSG, cx, cy, sz, t, T2 + .15, { maxW: W * .88, stag: .16, accentWords: [nw - 1], lh: 1.02 });
-      lightSweep(t, T2 + .8, cy - sz * 1.4, sz * 2.8);
+      const gp = glass(cx, cy, W * .92, (VERT ? 1180 : 560) * U, t, T2 + .05);
+      kinetic(MSG, cx, cy, sz, t, T2 + .25, { maxW: W * .84, stag: .16, accentWords: [nw - 1], lh: 1.02, blur: true });
+      lightSweep(t, T2 + 1, cy - sz * 1.4, sz * 2.8);
+      burst(cx, cy, t, T2 + .3, 40);
       ctx.restore(); } }
+  wipe(t, T3 - .35);
 
   // CENA 3 - subtitulo / beneficio
   { const a = sceneAlpha(t, T3 + .1, T4 + .1); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
-      if (SUB) { const sz = VERT ? 96 * U : 100 * U; kinetic(SUB.toUpperCase(), cx, cy, sz, t, T3 + .1, { w: 800, maxW: W * .84, stag: .09, accentWords: [], color: C.text }); }
-      pill('EXIBIDO NO ELEVADOR DO SEU PREDIO', cx, VERT ? H * .80 : H * .85, 24 * U, t, T3 + .5);
-      bar(cx - 220 * U, VERT ? H * .30 : H * .20, 440 * U, 9 * U, t, T3 + .2);
+      if (SUB) { const sz = VERT ? 96 * U : 100 * U; kinetic(SUB.toUpperCase(), cx, cy, sz, t, T3 + .15, { w: 800, maxW: W * .84, stag: .09, accentWords: [], color: C.text, blur: true }); }
+      else kinetic(NOME, cx, cy, fitSize(NOME, W * .8, 150 * U), t, T3 + .15, { maxW: W * .86, accentWords: [0], blur: true });
+      for (let k = 0; k < 3; k++) ring(cx, cy, (VERT ? 520 : 420) * U + k * 60 * U, t, T3 + .1 + k * .15, [C.a, C.b, C.c][k], 3);
+      pill('EXIBIDO NO ELEVADOR DO SEU PREDIO', cx, VERT ? H * .80 : H * .86, 24 * U, t, T3 + .5);
+      bar(cx - 220 * U, VERT ? H * .30 : H * .18, 440 * U, 9 * U, t, T3 + .2);
       ctx.restore(); } }
+  wipe(t, T4 - .35);
 
-  // CENA 4 - chamada final + QR + assinatura EXA
+  // CENA 4 - chamada final + QR + logo + instagram + assinatura EXA
   { const a = eio(prog(t, T4 + .1, T4 + .55)); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
-      const qs = VERT ? 560 * U : 470 * U;
-      const hasQR = !!P.qr;
+      const qs = VERT ? 520 * U : 450 * U; const hasQR = !!P.qr;
+      burst(VERT ? cx : (hasQR ? W * .76 : cx), VERT ? H * .5 : H * .47, t, T4 + .2, 50);
       if (VERT) {
-        kinetic(P.cta ? P.cta.toUpperCase() : 'CHAME AGORA', cx, H * .27, 150 * U, t, T4 + .1, { maxW: W * .86, accentWords: [1] });
-        if (hasQR) qrCard(cx, H * .53, qs, t, T4 + .5);
-        if (P.whats) pill(P.whats, cx, H * .76, 40 * U, t, T4 + 1.1, { color: C.text });
-        kinetic(NOME, cx, H * .85, fitSize(NOME, W * .8, 70 * U), t, T4 + .8, { w: 800, maxW: W * .86, color: C.mute });
-        exaSign(t, T4 + 1.4, cx, H * .93);
+        kinetic(P.cta ? P.cta.toUpperCase() : 'CHAME AGORA', cx, H * .22, 150 * U, t, T4 + .1, { maxW: W * .86, accentWords: [1], blur: true });
+        if (hasQR) qrCard(cx, H * .47, qs, t, T4 + .5);
+        if (P.whats) pill(P.whats, cx, H * .68, 40 * U, t, T4 + 1.1, { color: C.text });
+        igChip(cx, H * .75, 34 * U, t, T4 + 1.2);
+        if (!logoCard(cx, H * .85, 300 * U, 110 * U, t, T4 + 1.0)) kinetic(NOME, cx, H * .85, fitSize(NOME, W * .8, 70 * U), t, T4 + .8, { w: 800, maxW: W * .86, color: C.mute });
+        exaSign(t, T4 + 1.5, cx, H * .93);
       } else {
         const lx = hasQR ? W * .30 : W * .5;
-        kinetic(P.cta ? P.cta.toUpperCase() : 'CHAME AGORA', lx, H * .42, 150 * U, t, T4 + .1, { maxW: W * (hasQR ? .52 : .8), accentWords: [1] });
-        if (P.whats) pill(P.whats, lx, H * .66, 38 * U, t, T4 + .9);
-        kinetic(NOME, lx, H * .79, fitSize(NOME, W * .46, 62 * U), t, T4 + .7, { w: 800, maxW: W * .5, color: C.mute });
+        kinetic(P.cta ? P.cta.toUpperCase() : 'CHAME AGORA', lx, H * .36, 150 * U, t, T4 + .1, { maxW: W * (hasQR ? .52 : .8), accentWords: [1], blur: true });
+        if (P.whats) pill(P.whats, lx, H * .58, 38 * U, t, T4 + .9);
+        igChip(lx, H * .69, 30 * U, t, T4 + 1.0);
+        if (!logoCard(lx, H * .82, 260 * U, 90 * U, t, T4 + .8)) kinetic(NOME, lx, H * .82, fitSize(NOME, W * .46, 62 * U), t, T4 + .7, { w: 800, maxW: W * .5, color: C.mute });
         if (hasQR) qrCard(W * .76, H * .47, qs, t, T4 + .4);
         exaSign(t, T4 + 1.3, hasQR ? W * .76 : W * .5, H * .88);
       }
       ctx.restore(); } }
   ctx.restore();
 
-  // grao de filme + fade final
+  // aberracao cromatica leve nas transicoes nao e viavel em 2D; usamos grao + flash + fade
   ctx.save(); ctx.globalAlpha = .045; for (let i = 0; i < 420; i++) { ctx.fillStyle = rnd(i + Math.floor(t * 24) * 7) > .5 ? '#fff' : '#000'; ctx.fillRect(rnd(i * 3 + Math.floor(t * 24)) * W, rnd(i * 5 + 2 + Math.floor(t * 24)) * H, 2, 2); } ctx.restore();
   const fi = 1 - eio(prog(t, 0, .35)), fo = eio(prog(t, DUR - .3, DUR)); const fa = Math.max(fi, fo); if (fa > 0) { ctx.fillStyle = `rgba(0,0,0,${fa})`; ctx.fillRect(0, 0, W, H); }
 }
