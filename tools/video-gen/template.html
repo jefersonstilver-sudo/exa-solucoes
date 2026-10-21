@@ -268,6 +268,44 @@ function render(t) {
   ctx.save(); ctx.globalAlpha = .045; for (let i = 0; i < 420; i++) { ctx.fillStyle = rnd(i + Math.floor(t * 24) * 7) > .5 ? '#fff' : '#000'; ctx.fillRect(rnd(i * 3 + Math.floor(t * 24)) * W, rnd(i * 5 + 2 + Math.floor(t * 24)) * H, 2, 2); } ctx.restore();
   const fi = 1 - eio(prog(t, 0, .35)), fo = eio(prog(t, DUR - .3, DUR)); const fa = Math.max(fi, fo); if (fa > 0) { ctx.fillStyle = `rgba(0,0,0,${fa})`; ctx.fillRect(0, 0, W, H); }
 }
-window.render = render; window.DUR = DUR; window.W = W; window.H = H;
+
+/* ---------- POS-PRODUCAO (estilo editor profissional): bloom, aberracao cromatica, light leaks, flare, shake, scanlines ---------- */
+const SNAP = document.createElement('canvas'); SNAP.width = W; SNAP.height = H; const sx = SNAP.getContext('2d');
+const TINT = document.createElement('canvas'); TINT.width = W; TINT.height = H; const tx = TINT.getContext('2d');
+const IMPACTS = (VERT ? [2.8, 5.8, 7.9] : [2.8, 5.8, 7.9]).map(v => v * S);
+function impact(t) { let m = 0; for (const k of IMPACTS) { const d = t - k; if (d > -.05 && d < .5) m = Math.max(m, Math.exp(-d * 7) * (d < 0 ? 1 + d * 20 : 1)); } return m; }
+function post(t) {
+  const imp = impact(t);
+  sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, W, H); sx.drawImage(cv, 0, 0);
+  // bloom: versao borrada somada por cima
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .10 + .14 * imp; ctx.filter = `blur(${20 * U}px)`; ctx.drawImage(SNAP, 0, 0); ctx.filter = 'none';
+  ctx.globalAlpha = .07; ctx.filter = `blur(${60 * U}px)`; ctx.drawImage(SNAP, 0, 0); ctx.restore();
+  // aberracao cromatica (canais deslocados, mais forte no impacto e nas bordas)
+  const ab = (1.6 + 9 * imp) * U;
+  for (const [col, dx] of [['#ff0000', -ab], ['#0000ff', ab]]) {
+    tx.globalCompositeOperation = 'source-over'; tx.clearRect(0, 0, W, H); tx.drawImage(SNAP, 0, 0);
+    tx.globalCompositeOperation = 'multiply'; tx.fillStyle = col; tx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .2 * imp; ctx.drawImage(TINT, dx, 0); ctx.restore();
+  }
+  // light leak varrendo
+  const lk = ((t * .11) % 1); ctx.save(); ctx.globalCompositeOperation = 'screen'; const lg = ctx.createLinearGradient(W * (lk * 1.6 - .5), 0, W * (lk * 1.6 - .1), H);
+  lg.addColorStop(0, 'rgba(255,120,60,0)'); lg.addColorStop(.5, C.b.replace(/[\d.]+\)$/, '0.06)')); lg.addColorStop(1, 'rgba(255,120,60,0)'); ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H); ctx.restore();
+  // lens flare anamorfico no impacto
+  if (imp > .02) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const fy = H * .5, g = ctx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, `rgba(255,255,255,${.55 * imp})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, fy - 3 * U, W, 6 * U);
+    const rg = ctx.createRadialGradient(W / 2, fy, 0, W / 2, fy, 420 * U); rg.addColorStop(0, `rgba(255,255,255,${.35 * imp})`); rg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+  // speed lines nas transicoes
+  for (const k of IMPACTS) { const d = (t - k + .35) / .7; if (d > 0 && d < 1) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 2 * U; for (let i = 0; i < 26; i++) { const y = rnd(i + 300) * H, L = (200 + rnd(i + 310) * 700) * U, x = ((d * 2.2 + rnd(i + 320)) % 1.4 - .2) * W; ctx.globalAlpha = Math.sin(d * Math.PI) * (.2 + rnd(i + 330) * .5); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - L, y); ctx.stroke(); } ctx.restore(); } }
+  // scanlines sutis + letterbox cinema nas bordas
+  ctx.save(); ctx.globalAlpha = .05; ctx.fillStyle = '#000'; for (let y = 0; y < H; y += 4 * U) ctx.fillRect(0, y, W, 1.4 * U); ctx.restore();
+  const bl = ctx.createLinearGradient(0, 0, 0, H); bl.addColorStop(0, 'rgba(0,0,0,.35)'); bl.addColorStop(.12, 'rgba(0,0,0,0)'); bl.addColorStop(.88, 'rgba(0,0,0,0)'); bl.addColorStop(1, 'rgba(0,0,0,.35)'); ctx.fillStyle = bl; ctx.fillRect(0, 0, W, H);
+}
+
+const renderBase = render;
+function render2(t) {
+  const imp = impact(t); renderBase(t);
+  if (imp > .02) { /* shake aplicado reaproveitando o quadro */ sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, W, H); sx.drawImage(cv, 0, 0); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.drawImage(SNAP, (rnd(Math.floor(t * 60)) - .5) * 16 * U * imp, (rnd(Math.floor(t * 60) + 9) - .5) * 16 * U * imp); ctx.restore(); }
+  post(t);
+}
+window.render = render2; window.DUR = DUR; window.W = W; window.H = H;
 window.ready = () => Promise.all([document.fonts.load('900 100px Inter'), document.fonts.load('700 100px Inter'), loadAll()]);
 </script></body></html>
