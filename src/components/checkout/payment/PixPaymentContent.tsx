@@ -8,7 +8,7 @@ import { QRCodeDisplay } from './QRCodeDisplay';
 import { toast } from 'sonner';
 import PixCountdownTimer from './PixCountdownTimer';
 import PaymentStatusBadge from './PaymentStatusBadge';
-import { supabase } from '@/integrations/supabase/client';
+import { generateOrderPix } from '@/services/asaasPaymentService';
 
 interface PixPaymentContentProps {
   paymentData: {
@@ -41,10 +41,10 @@ const PixPaymentContent = ({
 
   // Auto-refresh status every 10 seconds
   useEffect(() => {
-    if (paymentData.status === 'pending') {
+    if (['pending', 'PENDING'].includes(paymentData.status || '')) {
       const interval = setInterval(async () => {
         await handleRefreshStatus();
-      }, 10000);
+      }, 60000);
 
       return () => clearInterval(interval);
     }
@@ -68,14 +68,8 @@ const PixPaymentContent = ({
     try {
       console.log("🔄 [PixPaymentContent] Regenerando QR Code para pedido:", pedidoId);
       
-      const { data, error } = await supabase.functions.invoke('process-pix-payment', {
-        body: { pedidoId }
-      });
-
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error);
-
-      toast.success("QR Code regenerado com sucesso!");
+      await generateOrderPix(pedidoId);
+      toast.info('Confira os dados do pagamento Asaas existente');
       await onRefreshStatus();
       
     } catch (error: any) {
@@ -147,19 +141,6 @@ const PixPaymentContent = ({
               <PaymentStatusBadge status={paymentData.status || 'pending'} />
             </div>
 
-            {/* Timer */}
-            {paymentData.status === 'pending' && (
-              <PixCountdownTimer
-                initialSeconds={600} // 10 minutes
-                onExpire={() => {
-                  toast.error("QR Code expirado. Clique em regenerar para criar um novo.");
-                }}
-                isActive={paymentData.status === 'pending'}
-                paymentStatus={paymentData.status || 'pending'}
-                createdAt={paymentData.createdAt}
-              />
-            )}
-
             {/* QR Code - CORRIGIDO */}
             <div className="flex justify-center">
               <QRCodeDisplay 
@@ -198,7 +179,7 @@ const PixPaymentContent = ({
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <p className="text-sm text-gray-600">Valor a pagar:</p>
                 <p className="text-2xl font-bold text-green-600">
-                  R$ {(paymentData.valorTotal * 0.95).toFixed(2)}
+                  R$ {paymentData.valorTotal.toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-500">
                   <span className="line-through">R$ {paymentData.valorTotal.toFixed(2)}</span>

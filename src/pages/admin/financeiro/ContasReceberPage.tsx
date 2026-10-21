@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
+import { generateInstallmentPix } from '@/services/asaasPaymentService';
 
 interface ContaReceber {
   id: string;
@@ -114,16 +115,9 @@ const ContasReceberPage: React.FC = () => {
   const handleGerarPix = async (parcelaId: string) => {
     setGeneratingPix(parcelaId);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-pix-for-parcela', {
-        body: { parcela_id: parcelaId }
-      });
-
-      if (error) throw error;
-
-      if (data.qrCode) {
-        toast.success('PIX gerado com sucesso! QR Code copiado.');
-        navigator.clipboard.writeText(data.qrCodeText || data.copyPaste);
-      }
+      const data = await generateInstallmentPix(parcelaId);
+      await navigator.clipboard.writeText(data.copia_cola);
+      toast.success('Código Pix Asaas copiado');
     } catch (error: any) {
       console.error('Erro ao gerar PIX:', error);
       toast.error(error.message || 'Erro ao gerar PIX');
@@ -132,24 +126,7 @@ const ContasReceberPage: React.FC = () => {
     }
   };
 
-  const handleGerarBoleto = async (parcelaId: string) => {
-    toast.info('Gerando boleto...');
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-boleto-for-parcela', {
-        body: { parcela_id: parcelaId }
-      });
-
-      if (error) throw error;
-
-      if (data.bankSlipUrl) {
-        window.open(data.bankSlipUrl, '_blank');
-        toast.success('Boleto gerado com sucesso!');
-      }
-    } catch (error: any) {
-      console.error('Erro ao gerar boleto:', error);
-      toast.error(error.message || 'Erro ao gerar boleto');
-    }
-  };
+  const handleGerarBoleto = async (_parcelaId: string) => { toast.info('Boleto indisponível; utilize Pix Asaas'); };
 
   const contasFiltradas = useMemo(() => {
     return contas.filter(conta => {
@@ -353,7 +330,7 @@ const ContasReceberPage: React.FC = () => {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => handleGerarBoleto(conta.id)}
+                              disabled onClick={() => handleGerarBoleto(conta.id)}
                               className="h-9 bg-white shadow-sm"
                             >
                               <FileText className="h-4 w-4 mr-1" />

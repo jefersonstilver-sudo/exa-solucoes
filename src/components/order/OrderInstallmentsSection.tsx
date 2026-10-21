@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, Download, QrCode, CheckCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generateInstallmentPix } from '@/services/asaasPaymentService';
 import { formatCurrency } from '@/utils/priceUtils';
 import { cn } from '@/lib/utils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
@@ -77,100 +78,14 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
     }
   };
 
-  const handleGenerateBoleto = async (parcela: Parcela) => {
-    if (!userProfile?.id) {
-      toast.error('Usuário não autenticado');
-      return;
-    }
-    
-    setGeneratingBoleto(parcela.id);
-    
-    try {
-      // Buscar dados do usuário
-      const { data: userData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userProfile.id)
-        .single();
-      
-      const userDataAny = userData as any;
-      
-      // Validar documento
-      const documento = userData?.empresa_documento?.replace(/\D/g, '') || userDataAny?.cpf?.replace(/\D/g, '');
-      
-      if (!documento || documento.length < 11) {
-        toast.error('Dados incompletos', {
-          description: 'Para gerar boleto, é necessário ter CPF ou CNPJ cadastrado no seu perfil.'
-        });
-        setGeneratingBoleto(null);
-        return;
-      }
-      
-      const tipoDocumento = documento.length === 11 ? 'CPF' : 'CNPJ';
-      const nomeCompleto = userData?.empresa_nome || userDataAny?.nome || userProfile.email?.split('@')[0] || 'Cliente';
-      const nomeParts = nomeCompleto.split(' ');
-      
-      const { data, error } = await supabase.functions.invoke('generate-boleto-payment', {
-        body: {
-          parcela_id: parcela.id,
-          valor: parcela.valor_final,
-          vencimento: parcela.data_vencimento,
-          descricao: `Parcela ${parcela.numero_parcela}/${totalParcelas} - EXA`,
-          payer: {
-            email: userData?.email || userProfile.email || 'cliente@exapaineis.com.br',
-            first_name: nomeParts[0] || 'Cliente',
-            last_name: nomeParts.slice(1).join(' ') || 'EXA',
-            identification: { 
-              type: tipoDocumento, 
-              number: documento 
-            },
-            address: {
-              zip_code: (userDataAny?.cep || '01310100').replace(/\D/g, ''),
-              street_name: userDataAny?.endereco || 'Av. Paulista',
-              street_number: userDataAny?.numero || '1000',
-              neighborhood: userDataAny?.bairro || 'Bela Vista',
-              city: userDataAny?.cidade || 'São Paulo',
-              federal_unit: userDataAny?.estado || 'SP'
-            }
-          }
-        }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.success && data?.boleto_url) {
-        toast.success('Boleto gerado com sucesso!');
-        setParcelas(prev => prev.map(p => 
-          p.id === parcela.id 
-            ? { ...p, boleto_url: data.boleto_url, boleto_barcode: data.boleto_barcode }
-            : p
-        ));
-        window.open(data.boleto_url, '_blank');
-      } else {
-        throw new Error(data?.error || 'Erro ao gerar boleto');
-      }
-    } catch (error: any) {
-      console.error('Erro ao gerar boleto:', error);
-      toast.error('Erro ao gerar boleto', { description: error.message });
-    } finally {
-      setGeneratingBoleto(null);
-    }
-  };
+  const handleGenerateBoleto = async () => { toast.info('Boleto indisponível; utilize Pix Asaas'); };
 
   const handleGeneratePix = async (parcela: Parcela) => {
     setGeneratingPix(parcela.id);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-pix-for-parcela', {
-        body: {
-          parcela_id: parcela.id,
-          valor: parcela.valor_final,
-          descricao: `Parcela ${parcela.numero_parcela}/${totalParcelas} - EXA`
-        }
-      });
-      
-      if (error) throw error;
-      
+      const pix = await generateInstallmentPix(parcela.id);
+      const data = { success: true, qrCodeBase64: pix.qr_base64, qrCode: pix.copia_cola };
       if (data?.success) {
         setPixDialog({
           isOpen: true,
@@ -294,21 +209,9 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
 
                   {isPendente && (
                     <div className="flex gap-1">
-                      {isBoleto ? (
-                        parcela.boleto_url ? (
-                          <Button size="sm" variant="outline" onClick={() => window.open(parcela.boleto_url!, '_blank')}>
-                            <Download className="h-3 w-3" />
-                          </Button>
-                        ) : (
-                          <Button size="sm" onClick={() => handleGenerateBoleto(parcela)} disabled={generatingBoleto === parcela.id}>
-                            {generatingBoleto === parcela.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
-                          </Button>
-                        )
-                      ) : (
-                        <Button size="sm" onClick={() => handleGeneratePix(parcela)} disabled={generatingPix === parcela.id}>
+                      <Button size="sm" onClick={() => handleGeneratePix(parcela)} disabled={generatingPix === parcela.id}>
                           {generatingPix === parcela.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <QrCode className="h-3 w-3" />}
                         </Button>
-                      )}
                     </div>
                   )}
                 </div>

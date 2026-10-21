@@ -11,7 +11,7 @@ import { useUnifiedOrderCreator } from './payment/order/useUnifiedOrderCreator';
 import { useUserSession } from './useUserSession';
 import { useCouponValidator } from './useCouponValidator';
 import { useCartManager } from './useCartManager';
-import { supabase } from '@/integrations/supabase/client';
+import { generateOrderPix } from '@/services/asaasPaymentService';
 import { toast } from 'sonner';
 import { logSystemEvent } from '@/utils/auditLogger';
 import { PlanKey } from '@/types/checkout';
@@ -99,9 +99,10 @@ export const useUnifiedCheckout = () => {
       setCurrentStep('order');
 
       // Passo 3: Criar pedido unificado
+      if (!attemptResult.tentativaId) throw new Error('Tentativa não retornada');
       const orderResult = await createUnifiedOrder(
         sessionResult.transactionId,
-        attemptResult.tentativaId!,
+        attemptResult.tentativaId,
         cartItems,
         planKey,
         sessionResult.price,
@@ -163,20 +164,7 @@ export const useUnifiedCheckout = () => {
         pedido_id: pedidoId
       });
 
-      const { data, error } = await supabase.functions.invoke('process-pix-payment', {
-        body: {
-          transactionId: currentTransactionId,
-          pedidoId: pedidoId
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Falha ao processar pagamento PIX');
-      }
+      await generateOrderPix(pedidoId);
 
       handleClearCart();
       navigate(`/pix-payment?pedido=${pedidoId}`);
