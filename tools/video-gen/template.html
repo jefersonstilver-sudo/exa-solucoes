@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script>
+/* EXA Motion Studio - gerador de motion graphics (canvas 2D deterministico).
+   render(t) desenha o quadro no instante t (segundos). Parametros em window.P (injetados pelo renderizador). */
+const P = window.P;
+const VERT = P.formato === 'vertical_premium_15s';
+const W = VERT ? 1080 : 1920, H = VERT ? 1920 : 1080, DUR = VERT ? 15 : 10;
+const cv = document.getElementById('c'); cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+const U = Math.min(W, H) / 1080;               // unidade de escala
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const eoc = x => 1 - Math.pow(1 - x, 3);
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eob = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const S = DUR / 10;                              // escala de tempo das cenas
+
+/* ---------- paleta ---------- */
+function hsl(h, s, l, a = 1) { return `hsla(${((h % 360) + 360) % 360},${s}%,${l}%,${a})`; }
+const hue = P.hue ?? (() => { let h = 0; for (const c of P.empresa) h = (h * 31 + c.charCodeAt(0)) % 360; return h; })();
+const C = {
+  bg0: hsl(hue, 45, 6), bg1: hsl(hue + 18, 55, 12), a: hsl(hue, 92, 58), b: hsl(hue + 38, 95, 62), c: hsl(hue - 40, 85, 55),
+  text: '#F7F2EA', mute: 'rgba(247,242,234,.62)'
+};
+const IM = {};
+const loadAll = () => Promise.all(Object.entries(P.assets || {}).map(([k, s]) => new Promise(r => { const i = new Image(); i.onload = () => { IM[k] = i; r(); }; i.onerror = r; i.src = s; })));
+
+/* ---------- texto ---------- */
+const FONT = (sz, w = 800, it = false) => `${it ? 'italic ' : ''}${w} ${sz}px Inter, Poppins, Arial, sans-serif`;
+function setFont(sz, w, ls = 0) { ctx.font = FONT(sz, w); ctx.letterSpacing = ls + 'px'; }
+function wid(txt, sz, w, ls) { setFont(sz, w, ls); return ctx.measureText(txt).width; }
+function fitSize(txt, maxW, maxSz, w = 900, lsr = -.02) { const m = wid(txt, 100, w, 100 * lsr); return Math.min(maxSz, 100 * maxW / m); }
+/* quebra em linhas pelo maximo de largura */
+function wrap(txt, sz, w, maxW, lsr) {
+  const words = txt.split(' '); const lines = []; let cur = '';
+  for (const wd of words) { const t = cur ? cur + ' ' + wd : wd; if (wid(t, sz, w, sz * lsr) > maxW && cur) { lines.push(cur); cur = wd; } else cur = t; }
+  if (cur) lines.push(cur); return lines;
+}
+/* palavra a palavra: sobe de uma mascara, com leve blur de movimento e brilho */
+function kinetic(txt, cx, cy, sz, t, t0, o = {}) {
+  const w = o.w || 900, lsr = o.lsr ?? -.03, maxW = o.maxW || W * .86, lh = o.lh || 1.04, stag = o.stag ?? .11, out = o.out;
+  const lines = wrap(txt, sz, w, maxW, lsr); const total = lines.length * sz * lh;
+  let wi = 0;
+  lines.forEach((ln, li) => {
+    const ws = ln.split(' '); const space = wid(' ', sz, w, sz * lsr);
+    const ww = ws.map(x => wid(x, sz, w, sz * lsr)); const lw = ww.reduce((a, b) => a + b, 0) + space * (ws.length - 1);
+    let x = (o.left !== undefined ? o.left : cx - lw / 2); const y = cy - total / 2 + li * sz * lh + sz * .82;
+    ws.forEach((wd, i) => {
+      const p0 = prog(t, t0 + wi * stag, t0 + wi * stag + .75); const q = eo(p0);
+      let a = clamp(p0 * 4); if (out) a *= 1 - eio(prog(t, out, out + .5));
+      if (a > 0) {
+        ctx.save(); ctx.beginPath(); ctx.rect(x - sz * .2, y - sz * 1.02, ww[i] + sz * .4, sz * 1.3); ctx.clip();
+        setFont(sz, w, sz * lsr); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.globalAlpha = a;
+        const yy = y + (1 - q) * sz * 1.15;
+        const hot = o.accentWords && o.accentWords.includes(wi);
+        if (hot) { const g = ctx.createLinearGradient(x, 0, x + ww[i], 0); g.addColorStop(0, C.a); g.addColorStop(1, C.b); ctx.fillStyle = g; ctx.shadowColor = C.a; ctx.shadowBlur = 40 * U * (1 - p0 * .6); }
+        else ctx.fillStyle = o.color || C.text;
+        ctx.fillText(wd, x, yy); ctx.restore();
+      }
+      x += ww[i] + space; wi++;
+    });
+  });
+  return { h: total };
+}
+
+/* ---------- fundo vivo: gradiente + blobs + particulas + grade em perspectiva ---------- */
+function bg(t) {
+  const g = ctx.createLinearGradient(0, 0, W * .6, H); g.addColorStop(0, C.bg1); g.addColorStop(1, C.bg0); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // blobs luminosos em orbita
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const blobs = [[C.a, .22, .30, 520, 0], [C.b, .78, .70, 620, 1.7], [C.c, .55, .15, 460, 3.1]];
+  for (const [col, bx, by, r, ph] of blobs) {
+    const x = W * bx + Math.cos(t * .5 + ph) * W * .08, y = H * by + Math.sin(t * .42 + ph * 1.3) * H * .07, rr = r * U * (1 + .12 * Math.sin(t * .8 + ph));
+    const rg = ctx.createRadialGradient(x, y, 0, x, y, rr); rg.addColorStop(0, col.replace(/[\d.]+\)$/, '.34)')); rg.addColorStop(1, col.replace(/[\d.]+\)$/, '0)')); ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+  }
+  ctx.restore();
+  // grade em perspectiva (chao)
+  ctx.save(); ctx.globalAlpha = .18; ctx.strokeStyle = C.a; ctx.lineWidth = 1.5 * U;
+  const hz = H * .58, vx = W / 2; const sp = ((t * .35) % 1);
+  for (let i = -14; i <= 14; i++) { ctx.beginPath(); ctx.moveTo(vx + i * 30 * U, hz); ctx.lineTo(vx + i * 330 * U, H); ctx.stroke(); }
+  for (let k = 0; k < 14; k++) { const z = (k + sp) / 14; const y = hz + (H - hz) * z * z; ctx.globalAlpha = .18 * z; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.restore();
+  // particulas
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 90; i++) {
+    const sp2 = .02 + rnd(i) * .05; const x = ((rnd(i + 9) + t * sp2 * (VERT ? .6 : 1)) % 1) * W, y = H - (((rnd(i + 3) * 1 + t * (.03 + rnd(i + 5) * .06)) % 1) * H);
+    const r = (1 + rnd(i + 7) * 3.2) * U, tw = .35 + .65 * Math.abs(Math.sin(t * 2 + i));
+    ctx.fillStyle = (i % 3 ? C.a : C.b).replace(/[\d.]+\)$/, (.55 * tw) + ')'); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+  // vinheta
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.55)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- elementos ---------- */
+function ring(cx, cy, r, t, t0, col, lw = 6) { const p = eo(prog(t, t0, t0 + 1.1)); if (p <= 0) return; ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = lw * U; ctx.lineCap = 'round'; ctx.globalAlpha = .9; ctx.shadowColor = col; ctx.shadowBlur = 30 * U; ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2 + t * .6, -Math.PI / 2 + t * .6 + Math.PI * 2 * p); ctx.stroke(); ctx.restore(); }
+function bar(x, y, w, h, t, t0, col) { const p = eo(prog(t, t0, t0 + .9)); if (p <= 0) return; const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, C.a); g.addColorStop(1, C.b); ctx.save(); ctx.fillStyle = col || g; ctx.shadowColor = C.a; ctx.shadowBlur = 24 * U; ctx.beginPath(); ctx.roundRect(x, y, w * p, h, h / 2); ctx.fill(); ctx.restore(); }
+function pill(txt, cx, cy, sz, t, t0, o = {}) {
+  const p = eob(prog(t, t0, t0 + .7)); if (p <= 0) return; const a = clamp(prog(t, t0, t0 + .3));
+  const pw = wid(txt, sz, 700, sz * .12) + sz * 1.6, ph = sz * 2.1;
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, cy); ctx.scale(p, p);
+  ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2 * U; ctx.beginPath(); ctx.roundRect(-pw / 2, -ph / 2, pw, ph, ph / 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = o.color || C.text; setFont(sz, 700, sz * .12); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, 0, 2 * U); ctx.restore();
+}
+function lightSweep(t, t0, y, h) { const p = prog(t, t0, t0 + 1.2); if (p <= 0 || p >= 1) return; const x = lerp(-W * .3, W * 1.1, eio(p)); ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createLinearGradient(x - 200 * U, 0, x + 200 * U, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.22)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.transform(1, 0, -.35, 1, 0, 0); ctx.fillRect(x - 200 * U, y, 400 * U, h); ctx.restore(); }
+function qrCard(cx, cy, size, t, t0) {
+  const m = P.qr; if (!m) return; const p = eob(prog(t, t0, t0 + .9)); if (p <= 0) return;
+  const n = m.length, quiet = 3, mod = size / (n + quiet * 2);
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(p, p); ctx.globalAlpha = clamp(p * 2);
+  ctx.shadowColor = C.a; ctx.shadowBlur = 60 * U; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(-size / 2, -size / 2, size, size, 28 * U); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.fillStyle = '#0b0b0f';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (m[y][x]) ctx.fillRect(-size / 2 + (x + quiet) * mod - .3, -size / 2 + (y + quiet) * mod - .3, mod + .6, mod + .6);
+  ctx.restore();
+  // moldura animada
+  ctx.save(); ctx.translate(cx, cy); ctx.strokeStyle = C.b; ctx.lineWidth = 5 * U; ctx.shadowColor = C.b; ctx.shadowBlur = 24 * U; ctx.globalAlpha = .9 * eo(prog(t, t0 + .3, t0 + 1));
+  const L = 70 * U, hs = size / 2 + 26 * U, k = 1 + .015 * Math.sin(t * 4);
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.beginPath(); ctx.moveTo(sx * hs * k, sy * (hs - L) * k); ctx.lineTo(sx * hs * k, sy * hs * k); ctx.lineTo(sx * (hs - L) * k, sy * hs * k); ctx.stroke(); }
+  ctx.restore();
+}
+function exaSign(t, t0, cx, y) {
+  const a = eo(prog(t, t0, t0 + .8)) * .9; if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = C.mute; setFont(22 * U, 600, 5 * U); ctx.textAlign = 'center'; ctx.fillText('EXIBIDO POR', cx, y);
+  const lg = IM.exa; if (lg) { const w = 170 * U; ctx.drawImage(lg, cx - w / 2, y + 14 * U, w, w * lg.height / lg.width); } ctx.restore();
+}
+
+/* ---------- roteiro ---------- */
+const NOME = (P.empresa || '').toUpperCase();
+const MSG = (P.mensagem || '').toUpperCase();
+const SUB = P.subtitulo || '';
+const T1 = 0, T2 = 2.4 * S, T3 = 5.6 * S, T4 = 7.7 * S;     // cenas (escalam com a duracao)
+function sceneAlpha(t, a, b, fi = .35, fo = .45) { return eio(prog(t, a, a + fi)) * (1 - eio(prog(t, b - fo, b))); }
+
+function render(t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.clearRect(0, 0, W, H);
+  // movimento de camera sutil
+  ctx.save(); const z = 1 + .035 * (t / DUR), pan = Math.sin(t * .4) * 8 * U; ctx.translate(W / 2 + pan, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2);
+  bg(t);
+  const cx = W / 2, cy = H / 2;
+
+  // CENA 1 - apresentacao da marca
+  { const a = sceneAlpha(t, T1, T2 + .1, .01, .45); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
+      ring(cx, VERT ? H * .30 : H * .30, 150 * U, t, .1, C.b, 4);
+      pill('APRESENTA', cx, VERT ? H * .30 : H * .30, 22 * U, t, .25);
+      const sz = fitSize(NOME, W * .86, VERT ? 170 * U : 200 * U);
+      kinetic(NOME, cx, VERT ? H * .47 : H * .52, sz, t, .45, { maxW: W * .86, accentWords: [0] });
+      bar(cx - 160 * U, VERT ? H * .60 : H * .70, 320 * U, 9 * U, t, 1.3);
+      ctx.restore(); } }
+
+  // CENA 2 - mensagem principal (<=5 palavras)
+  { const a = sceneAlpha(t, T2 + .1, T3 + .1); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
+      const sz = VERT ? 190 * U : 210 * U; const nw = MSG.split(' ').length;
+      kinetic(MSG, cx, cy, sz, t, T2 + .15, { maxW: W * .88, stag: .16, accentWords: [nw - 1], lh: 1.02 });
+      lightSweep(t, T2 + .8, cy - sz * 1.4, sz * 2.8);
+      ctx.restore(); } }
+
+  // CENA 3 - subtitulo / beneficio
+  { const a = sceneAlpha(t, T3 + .1, T4 + .1); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
+      if (SUB) { const sz = VERT ? 96 * U : 100 * U; kinetic(SUB.toUpperCase(), cx, cy, sz, t, T3 + .1, { w: 800, maxW: W * .84, stag: .09, accentWords: [], color: C.text }); }
+      pill('EXIBIDO NO ELEVADOR DO SEU PREDIO', cx, VERT ? H * .80 : H * .85, 24 * U, t, T3 + .5);
+      bar(cx - 220 * U, VERT ? H * .30 : H * .20, 440 * U, 9 * U, t, T3 + .2);
+      ctx.restore(); } }
+
+  // CENA 4 - chamada final + QR + assinatura EXA
+  { const a = eio(prog(t, T4 + .1, T4 + .55)); if (a > 0) { ctx.save(); ctx.globalAlpha = a;
+      const qs = VERT ? 560 * U : 470 * U;
+      const hasQR = !!P.qr;
+      if (VERT) {
+        kinetic(P.cta ? P.cta.toUpperCase() : 'CHAME AGORA', cx, H * .27, 150 * U, t, T4 + .1, { maxW: W * .86, accentWords: [1] });
+        if (hasQR) qrCard(cx, H * .53, qs, t, T4 + .5);
+        if (P.whats) pill(P.whats, cx, H * .76, 40 * U, t, T4 + 1.1, { color: C.text });
+        kinetic(NOME, cx, H * .85, fitSize(NOME, W * .8, 70 * U), t, T4 + .8, { w: 800, maxW: W * .86, color: C.mute });
+        exaSign(t, T4 + 1.4, cx, H * .93);
+      } else {
+        const lx = hasQR ? W * .30 : W * .5;
+        kinetic(P.cta ? P.cta.toUpperCase() : 'CHAME AGORA', lx, H * .42, 150 * U, t, T4 + .1, { maxW: W * (hasQR ? .52 : .8), accentWords: [1] });
+        if (P.whats) pill(P.whats, lx, H * .66, 38 * U, t, T4 + .9);
+        kinetic(NOME, lx, H * .79, fitSize(NOME, W * .46, 62 * U), t, T4 + .7, { w: 800, maxW: W * .5, color: C.mute });
+        if (hasQR) qrCard(W * .76, H * .47, qs, t, T4 + .4);
+        exaSign(t, T4 + 1.3, hasQR ? W * .76 : W * .5, H * .88);
+      }
+      ctx.restore(); } }
+  ctx.restore();
+
+  // grao de filme + fade final
+  ctx.save(); ctx.globalAlpha = .045; for (let i = 0; i < 420; i++) { ctx.fillStyle = rnd(i + Math.floor(t * 24) * 7) > .5 ? '#fff' : '#000'; ctx.fillRect(rnd(i * 3 + Math.floor(t * 24)) * W, rnd(i * 5 + 2 + Math.floor(t * 24)) * H, 2, 2); } ctx.restore();
+  const fi = 1 - eio(prog(t, 0, .35)), fo = eio(prog(t, DUR - .3, DUR)); const fa = Math.max(fi, fo); if (fa > 0) { ctx.fillStyle = `rgba(0,0,0,${fa})`; ctx.fillRect(0, 0, W, H); }
+}
+window.render = render; window.DUR = DUR; window.W = W; window.H = H;
+window.ready = () => Promise.all([document.fonts.load('900 100px Inter'), document.fonts.load('700 100px Inter'), loadAll()]);
+</script></body></html>
