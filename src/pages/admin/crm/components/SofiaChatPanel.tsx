@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Send, UserCheck, Bot, RefreshCw, X, Info } from 'lucide-react';
+import { Loader2, Send, UserCheck, Bot, RefreshCw, X, Info, Trash2, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import CRM360Panel from '@/components/admin/crm/CRM360Panel';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks/useAuth';
+import { canDeleteSofiaContact } from '@/lib/deleteContactRules';
+import DeleteContactDialog, { type DeleteContactTarget } from './DeleteContactDialog';
 
 type Conv = {
   id: string;
@@ -90,6 +94,38 @@ export const SofiaChatPanel: React.FC = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const selRef = useRef<string | null>(null);
   selRef.current = selId;
+  const { userProfile } = useAuth();
+  const canDelete = canDeleteSofiaContact(userProfile?.role);
+  const [deleteTarget, setDeleteTarget] = useState<(DeleteContactTarget & { conversationId: string }) | null>(null);
+
+  const openDelete = async (c: Conv) => {
+    if (contact?.id && contactConversationId === c.id) {
+      setDeleteTarget({ conversationId: c.id, contactId: contact.id, name: contact.name || c.name, phone: contact.phone ?? c.phone });
+      return;
+    }
+    setDeleteTarget({ conversationId: c.id, contactId: null, name: c.name, phone: c.phone, loading: true });
+    try {
+      const d = await call('contact', { conversation_id: c.id });
+      const ct: Contact | undefined = d?.contact;
+      if (!ct?.id) throw new Error('Contato nao encontrado');
+      setDeleteTarget((cur) => cur && cur.conversationId === c.id
+        ? { conversationId: c.id, contactId: ct.id, name: ct.name || c.name, phone: ct.phone ?? c.phone }
+        : cur);
+    } catch (e: any) {
+      toast.error(e?.message || 'Nao foi possivel carregar o contato');
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleted = () => {
+    const id = deleteTarget?.conversationId;
+    setDeleteTarget(null);
+    if (!id) return;
+    setConvs((prev) => prev.filter((x) => x.id !== id));
+    if (fichaConversationId === id) setFichaConversationId(null);
+    if (selId === id) { setSelId(null); setShowInfo(false); setContact(null); }
+    loadConvs();
+  };
 
   const loadConvs = useCallback(async () => {
     try {
@@ -217,10 +253,10 @@ export const SofiaChatPanel: React.FC = () => {
         </div>
         {convs.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa ainda.</p>}
         {convs.map((c) => (
+          <div key={c.id} className="relative group">
           <button
-            key={c.id}
             onClick={() => { setSelId(c.id); setFichaConversationId(c.id); }}
-            className={`w-full text-left px-4 py-3 border-b hover:bg-gray-50 ${c.id === selId ? 'bg-red-50' : ''}`}
+            className={`w-full text-left px-4 py-3 ${canDelete ? 'pr-10' : ''} border-b hover:bg-gray-50 ${c.id === selId ? 'bg-red-50' : ''}`}
           >
             <div className="flex items-start gap-3">
             <Avatar url={c.avatar_url} name={c.name} size={40} />
@@ -239,6 +275,21 @@ export const SofiaChatPanel: React.FC = () => {
             </div>
             </div>
           </button>
+          {canDelete && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="absolute right-1 bottom-2 h-7 w-7" aria-label="Mais ações">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => openDelete(c)}>
+                  <Trash2 className="w-4 h-4 mr-2" /> Apagar contato
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          </div>
         ))}
       </div>
 
@@ -383,6 +434,11 @@ export const SofiaChatPanel: React.FC = () => {
               <Button onClick={saveContact} disabled={saving} className="w-full bg-red-700 hover:bg-red-800 text-white">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
               </Button>
+              {canDelete && (
+                <Button variant="ghost" size="sm" onClick={() => openDelete(sel)} className="w-full text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="w-4 h-4 mr-1.5" /> Apagar contato
+                </Button>
+              )}
               {Object.keys(contact.extra || {}).length > 0 && (
                 <div>
                   <div className="text-xs font-medium text-gray-600 mb-1">Dados coletados pela Sofia</div>
