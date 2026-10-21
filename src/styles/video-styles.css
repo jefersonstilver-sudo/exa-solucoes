@@ -19,7 +19,8 @@
   -webkit-user-select: text;
   user-select: text;
 }
-body:has(.video-styles-page), html:has(.video-styles-page) { overflow-y: auto !important; overscroll-behavior-y: auto; }
+body:has(.video-styles-page), html:has(.video-styles-page) { overflow-y: auto !important; overscroll-behavior-y: auto; background: var(--styles-bg, #0A0A0B); }
+body:has(.video-styles-page) #root { min-height: 100dvh; }
 .video-styles-inner { max-width: 1200px; margin: auto; }
 .styles-hero { padding: 64px 0 40px; text-align: center; }
 .styles-brand { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--styles-border); background: var(--styles-glass); padding: 9px 16px; border-radius: 30px; color: var(--styles-muted); font-size: 12px; }

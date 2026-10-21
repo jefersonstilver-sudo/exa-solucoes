@@ -1,6 +1,8 @@
 # Página pública /estilos
-- [ ] Criar seleção com cinco vídeos originais, visual independente e WhatsApp Sofia padrão.
-- [ ] Testar escolha, URLs, reprodução visível e celular/desktop; solicitar publicação.
+- [x] Criar seleção com cinco vídeos originais, visual independente e WhatsApp Sofia padrão; nenhuma alteração no banco.
+- [x] Testar seleção no celular/desktop, número padrão/substituição, noindex e ausência de erros; três testes passaram, compilação OK, cinco URLs retornam HTTP 200 com H.264.
+- [ ] Confirmar reprodução H.264 em navegador real — Chromium de teste não possui esse codec; URLs originais preservadas.
+- [ ] Solicitar publicação — decisão pendente sobre 51 alertas críticos de segurança preexistentes.
 
 # CRM 360
 - [x] Integrar ficha somente leitura via RPC existente em Sofia, usuários e pedidos, sem alterar banco ou dados.
