@@ -348,6 +348,21 @@ const AdvertiserInvoices = () => {
                 
                 <CollapsibleContent>
                   <CardContent className="pt-0 space-y-3">
+                    {(pedido.cobrancas || []).map((c) => (
+                      <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border bg-muted/20 text-sm">
+                        <div className="font-medium">
+                          {c.kind === 'pix_automatico'
+                            ? 'Pix Automático autorizado — cobranças mensais automáticas'
+                            : 'Cobrança Pix (Asaas)'}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>{formatCurrency(Number(c.value) || 0)}</span>
+                          <Badge variant="outline">
+                            {['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(c.status).toUpperCase()) ? 'Pago' : c.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
                     {/* Resumo */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg mb-4">
                       <div>
