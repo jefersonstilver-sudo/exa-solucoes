@@ -1,4 +1,4 @@
-"""EXA Motion Studio worker: renders a sofia_video_jobs row to MP4, uploads to Storage, notifies Sofia."""
+"""EXA Motion v8 worker: gera a cena com o diretor (Sofia/Claude), valida (layout, midia, movimento), renderiza o MP4 no formato nativo, sobe no Storage e avisa a Sofia."""
 import os, sys, json, subprocess, urllib.request, urllib.error
 
 URL = os.environ["SUPABASE_URL"].rstrip("/")
@@ -26,7 +26,7 @@ def notify(payload):
     except Exception as e: print("notify failed", e)
 
 def gerar_cena(job):
-    """Potencializador: pede ao Sofia (Claude) o codigo JS do motion, valida renderizando quadros de teste; ate 3 tentativas, senao cai no template."""
+    """Diretor: pede o codigo da cena, valida renderizando quadros de teste; ate 3 tentativas, senao usa a cena automatica K.auto() (mesmo sistema visual)."""
     import time
     try: subprocess.run([sys.executable, "-m", "pip", "install", "-q", "pillow"], check=False)
     except Exception: pass
@@ -65,31 +65,19 @@ def gerar_cena(job):
     try:
         rows = req("GET", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}&select=briefing"); b = (rows[0]["briefing"] if rows else b) or b
     except Exception: pass
-    b["scene_code"] = None; b["scene_js"] = None; b["estilo"] = b.get("estilo") or 2; b["scene_fallback"] = True; b["scene_err"] = (erro or "")[:200]
+    b["scene_code"] = None; b["scene_js"] = None; b["estilo"] = 0; b["scene_fallback"] = True; b["scene_err"] = (erro or "")[:200]
     return b
 
-def estilos():
-    """Gera as 5 amostras de estilo (genericas) e sobe em sofia-videos/estilos/."""
-    frases = ["Sua marca", "dentro do elevador", "vista todo dia", "por quem decide"]
-    for n in range(1, 6):
-        spec = {"formato": "horizontal_10s", "briefing": {"empresa": "Sua Marca", "segmento": "seu negocio", "mensagem": "Sua marca em destaque", "subtitulo": "Dentro do elevador", "cta": "Fale conosco", "instagram": "suamarca", "cores_estilo": "#c8283c", "estilo": n, "frases": frases, "numeros": [{"valor": 10, "rotulo": "anos de mercado", "sufixo": "+"}, {"valor": 98, "rotulo": "clientes satisfeitos", "sufixo": "%"}, {"valor": 24, "rotulo": "atendimento", "sufixo": "h"}]}}
-        jp, out = f"/tmp/estilo_{n}.json", f"/tmp/estilo{n}.mp4"
-        json.dump(spec, open(jp, "w"))
-        subprocess.run([sys.executable, os.path.join(HERE, "render.py"), jp, out], check=True)
-        with open(out, "rb") as f: blob = f.read()
-        req("POST", f"/storage/v1/object/{BUCKET}/estilos/estilo{n}.mp4", raw=blob, headers={"Content-Type": "video/mp4", "x-upsert": "true"})
-        print("estilo", n, "ok", len(blob))
-
 def main():
-    if JOB == 'estilos':
-        estilos(); return
+    try: subprocess.run([sys.executable, "-m", "pip", "install", "-q", "pillow"], check=False)
+    except Exception: pass
     rows = req("GET", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}&select=*")
     if not rows: sys.exit("job not found")
     job = rows[0]
     req("PATCH", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}", {"status": "rendering"})
     jp, out = f"/tmp/job_{JOB}.json", f"/tmp/{JOB}.mp4"
     brief0 = dict(job.get("briefing") or {})
-    if brief0.get("gen_scene") and not (brief0.get("scene_code") or brief0.get("scene_js")):
+    if brief0.get("gen_scene") and not brief0.get("scene_js"):
         brief0 = gerar_cena(job)
     spec = {"formato": job.get("formato") or "horizontal", "briefing": brief0}
     json.dump(spec, open(jp, "w"))
