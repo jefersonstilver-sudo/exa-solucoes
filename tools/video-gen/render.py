@@ -10,7 +10,7 @@ job = json.load(open(sys.argv[1])); out = pathlib.Path(sys.argv[2])
 frames_only = [float(x) for x in sys.argv[4:]] if len(sys.argv) > 3 and sys.argv[3] == '--frames' else None
 VALIDATE = len(sys.argv) > 3 and sys.argv[3] == '--validate'
 b = job.get('briefing', {}); fmt = job.get('formato', 'horizontal_10s')
-vert = fmt == 'vertical_premium_15s'; FPS = 60; DUR = 15 if vert else 10
+vert = fmt == 'vertical_premium_15s'; FPS = 30; DUR = 15 if vert else 10
 W, H = (1080, 1920) if vert else (1920, 1080)
 tmp = pathlib.Path(tempfile.mkdtemp(prefix='exa_motion_'))
 assets = {}
