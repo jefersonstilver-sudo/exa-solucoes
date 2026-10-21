@@ -7,6 +7,8 @@ import './modules/monitoramento-ia/styles/theme.css'
 import { ThemeProvider } from './components/ui/theme-provider'
 import './utils/debugHelpers'
 import { APP_VERSION } from './config/version'
+import { HelmetProvider } from 'react-helmet-async'
+import VideoStylesPage from './pages/public/VideoStylesPage'
 
 console.log(`🚀 Starting application v${APP_VERSION}...`);
 
@@ -57,7 +59,7 @@ try {
     <React.StrictMode>
       <ThemeProvider defaultTheme="light">
         <BootGuard>
-          <App />
+          {window.location.pathname.replace(/\/$/, '') === '/estilos' ? <HelmetProvider><VideoStylesPage /></HelmetProvider> : <App />}
         </BootGuard>
       </ThemeProvider>
     </React.StrictMode>,

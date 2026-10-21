@@ -1,3 +1,7 @@
+# Página pública /estilos
+- [ ] Criar seleção com cinco vídeos originais, visual independente e WhatsApp Sofia padrão.
+- [ ] Testar escolha, URLs, reprodução visível e celular/desktop; solicitar publicação.
+
 # CRM 360
 - [x] Integrar ficha somente leitura via RPC existente em Sofia, usuários e pedidos, sem alterar banco ou dados.
 - [x] Adicionar Consolidação via view existente; 33 testes passaram e compilação automática OK.
