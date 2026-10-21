@@ -199,7 +199,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                 {/* Info compacta */}
                 <div className="flex items-center justify-between text-xs mb-2">
                   {getCategoryBadge(coupon.categoria)}
-                  <span className="font-semibold text-emerald-600">{coupon.desconto_percentual}% OFF</span>
+                  <span className="font-semibold text-emerald-600">{formatCouponDiscount(coupon)}</span>
                 </div>
                 
                 {/* Barra de uso */}
@@ -437,7 +437,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {coupon.desconto_percentual}%
+                    {formatCouponDiscount(coupon)}
                     {coupon.min_meses > 1 && (
                       <div className="text-xs text-muted-foreground">
                         Min. {coupon.min_meses} meses

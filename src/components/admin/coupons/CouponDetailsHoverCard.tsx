@@ -102,7 +102,7 @@ const CouponDetailsHoverCard: React.FC<CouponDetailsHoverCardProps> = ({ coupon,
               <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-[#9C1E1E] to-[#7a1717] shadow-lg">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white">
-                    {coupon.desconto_percentual}%
+                    {formatCouponDiscount(coupon)}
                   </div>
                   <div className="text-[10px] text-white/80">
                     OFF
