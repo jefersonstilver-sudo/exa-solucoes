@@ -1,4 +1,5 @@
 # Financeiro — etapas 0 e 1
+- [ ] Substituir todos os pagamentos e verificadores frontend pelo Asaas existente; remover dependências/textos legados, preservar funções protegidas e validar chamadas e testes.
 - [x] Corrigir envio imediato após extensão/reativação, cobertura master/filhos, preservação do vídeo base/programações e sinalização de envios parciais/pendentes; cinco testes passaram.
 - [ ] Executar e confirmar reenvio real AWS dos 20 pedidos vigentes (22 ativos, dois vencidos) — bloqueado: chamadas administrativas retornam 401 e Supabase externo não fornece sessão autenticada neste ambiente. Nenhum reenvio global foi confirmado.
 - [x] Liberar 35 segundos para Curiosidades e reorganização por arraste nos cards de pedidos; ordem salva por conta neste navegador, cinco testes passaram e build OK.
