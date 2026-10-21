@@ -165,7 +165,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
 
   const handleLogoScaleSave = async () => {
     try {
-      await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
+      if (!targetUserId) await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
       toast.success('Tamanho da logo salvo!');
     } catch (error) {
       console.error('Erro ao salvar tamanho da logo:', error);
@@ -236,7 +236,7 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
       if (error) throw error;
 
       // Save logo scale to user_metadata
-      await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
+      if (!targetUserId) await supabase.auth.updateUser({ data: { logo_scale: logoScale } });
 
       await loadCompanyData(true);
       toast.success('Informações da empresa salvas com sucesso!');
