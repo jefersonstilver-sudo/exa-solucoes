@@ -1,0 +1,63 @@
+.video-styles-page {
+  --styles-bg: #0A0A0B;
+  --styles-red: #C8102E;
+  --styles-text: #f7f7fa;
+  --styles-muted: #a4a4af;
+  --styles-border: #ffffff18;
+  --styles-glass: #ffffff06;
+  --styles-green: #25d366;
+  --styles-green-text: #062b14;
+  --styles-shadow: 0 20px 70px #00000055;
+  --styles-glow: 0 12px 45px #c8102e24;
+  --styles-background: radial-gradient(ellipse at 15% 0%, #c8102e16, transparent 42%), radial-gradient(ellipse at 95% 18%, #6658f010, transparent 35%), #0A0A0B;
+  min-height: 100dvh;
+  background: var(--styles-background);
+  color: var(--styles-text);
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0;
+  padding: 0 24px;
+  -webkit-user-select: text;
+  user-select: text;
+}
+body:has(.video-styles-page), html:has(.video-styles-page) { overflow-y: auto !important; overscroll-behavior-y: auto; background: var(--styles-bg, #0A0A0B); }
+body:has(.video-styles-page) #root { min-height: 100dvh; }
+.video-styles-inner { max-width: 1200px; margin: auto; }
+.styles-hero { padding: 64px 0 40px; text-align: center; }
+.styles-brand { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--styles-border); background: var(--styles-glass); padding: 9px 16px; border-radius: 30px; color: var(--styles-muted); font-size: 12px; }
+.styles-brand strong { color: var(--styles-text); font-family: 'Space Grotesk', sans-serif; font-size: 16px; }
+.styles-hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: 52px; line-height: 1.12; font-weight: 600; margin: 24px auto 18px; max-width: 720px; }
+.styles-hero h1 span { color: var(--styles-red); }
+.styles-hero p { color: var(--styles-muted); font-size: 15px; line-height: 1.8; max-width: 570px; margin: auto; }
+.styles-hero p strong { color: var(--styles-text); font-weight: 500; }
+.styles-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.style-card { background: var(--styles-glass); border: 1px solid var(--styles-border); border-radius: 24px; padding: 12px; box-shadow: var(--styles-shadow); backdrop-filter: blur(18px); transition: border-color .25s, box-shadow .25s, transform .25s; min-width: 0; }
+.style-card:hover { transform: translateY(-5px); border-color: var(--styles-red); box-shadow: var(--styles-glow); }
+.style-card.is-selected { border-color: var(--styles-red); box-shadow: var(--styles-glow); }
+.styles-grid .style-card:last-child { grid-column: 2; }
+.style-video-wrap { aspect-ratio: 16/9; position: relative; border-radius: 16px; overflow: hidden; background: var(--styles-bg); }
+.style-video-wrap video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.style-video-hit { position: absolute; inset: 0; width: 100%; height: 100%; background: transparent !important; border-radius: 16px; }
+.style-video-controls { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
+.style-video-controls .style-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--styles-bg); color: var(--styles-text); border: 1px solid var(--styles-border); }
+.style-video-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--styles-muted); pointer-events: none; }
+.style-card-body { padding: 20px 12px 12px; }
+.style-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 12px; }
+.style-number { color: var(--styles-red); font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 500; line-height: 1; }
+.style-heading h2 { font-family: 'Space Grotesk', sans-serif; font-size: 19px; line-height: 1.3; font-weight: 500; }
+.style-description { color: var(--styles-muted); font-size: 13px; line-height: 1.75; min-height: 70px; margin-bottom: 20px; }
+.style-choose { width: 100%; height: 44px; border-radius: 12px; background: var(--styles-glass); color: var(--styles-text); border: 1px solid var(--styles-border); }
+.style-choose:hover, .is-selected .style-choose { background: var(--styles-red); color: var(--styles-text); border-color: var(--styles-red); }
+.styles-footer { text-align: center; padding: 44px 0 40px; color: var(--styles-muted); font-size: 12px; line-height: 1.9; }
+.styles-footer p:last-child { margin-top: 12px; }
+.video-styles-page.has-selection { padding-bottom: 160px; }
+.styles-confirm { position: fixed; z-index: 80; bottom: 0; left: 0; right: 0; border-top: 1px solid var(--styles-border); background: var(--styles-bg); backdrop-filter: blur(24px); padding: 20px 24px calc(20px + env(safe-area-inset-bottom)); box-shadow: var(--styles-shadow); }
+.styles-confirm-inner { max-width: 1000px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.styles-confirm-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 500; }
+.styles-confirm-title svg { color: var(--styles-red); }
+.styles-confirm p { color: var(--styles-muted); font-size: 12px; line-height: 1.6; margin-top: 6px; }
+.styles-whatsapp { height: 48px; padding: 0 24px; border-radius: 12px; background: var(--styles-green); color: var(--styles-green-text); font-weight: 600; }
+.styles-whatsapp:hover { background: var(--styles-green); filter: brightness(1.08); }
+.video-styles-page button:focus-visible, .video-styles-page a:focus-visible { outline: 2px solid var(--styles-red); outline-offset: 4px; }
+@media (min-width: 768px) and (max-width: 1023px) { .styles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .styles-grid .style-card:last-child { grid-column: 1 / -1; width: calc(50% - 12px); justify-self: center; } }
+@media (max-width: 767px) { .video-styles-page { padding-left: 18px; padding-right: 18px; } .styles-hero { padding: 40px 0 32px; } .styles-hero h1 { font-size: 34px; max-width: 360px; } .styles-hero p { font-size: 14px; } .styles-grid { grid-template-columns: minmax(0,1fr); gap: 20px; } .styles-grid .style-card:last-child { grid-column: auto; } .style-description { min-height: 0; } .styles-confirm-inner { flex-direction: column; gap: 12px; align-items: stretch; } .styles-confirm { padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); } .styles-confirm-title { font-size: 14px; } .styles-confirm p { font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .style-card { transition: none; } .style-card:hover { transform: none; } }
