@@ -395,7 +395,19 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         .not('pedido_id', 'is', null)
         .gte('created_at', start)
         .lte('created_at', end);
-      const sofiaPedidoIds: string[] = Array.from(new Set((sofiaAceitesRows || []).map((r: any) => r.pedido_id).filter(Boolean)));
+      // sofia_aceites pode não ser legível pelo navegador; cobranças criadas pela Sofia
+      // (external_reference 'sofia:<aceite>') identificam o mesmo pedido.
+      const { data: sofiaChargeRows } = await supabase.from('sofia_cobrancas')
+        .select('pedido_id, created_at')
+        .like('external_reference', 'sofia:%')
+        .not('pedido_id', 'is', null)
+        .gte('created_at', start)
+        .lte('created_at', end);
+      const aceitesMerged: any[] = [...(sofiaAceitesRows || [])];
+      (sofiaChargeRows || []).forEach((c: any) => {
+        if (!aceitesMerged.some(a => a.pedido_id === c.pedido_id)) aceitesMerged.push({ pedido_id: c.pedido_id, accepted_at: c.created_at });
+      });
+      const sofiaPedidoIds: string[] = Array.from(new Set(aceitesMerged.map((r: any) => r.pedido_id).filter(Boolean)));
       const sofiaChargePaid: Record<string, number> = {};
       const sofiaChargePending: Record<string, number> = {};
       if (sofiaPedidoIds.length > 0) {
@@ -503,7 +515,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           };
         }
         const sofia = vendedoresMap[SOFIA_ID];
-        (sofiaAceitesRows || []).forEach((r: any) => {
+        aceitesMerged.forEach((r: any) => {
           if (!r.pedido_id || countedPedidos.has(r.pedido_id)) return;
           countedPedidos.add(r.pedido_id);
           if (r.accepted_at) sofia.aceitas++;
