@@ -47,7 +47,7 @@ const initialFormData: AdminOrderFormData = {
   valorMensal: 0,
   dataInicio: '',
   dataFim: '',
-  metodoPagamento: 'pix_avista',
+  metodoPagamento: 'pix',
   statusInicial: 'pendente',
   logoFile: null,
 };
@@ -187,7 +187,7 @@ export function useAdminCreateOrder() {
   };
 
   // Submit order
-  const submitOrder = async () => {
+  const submitOrder = async (options: { keepForm?: boolean } = {}) => {
     setIsSubmitting(true);
     try {
       console.log('📋 [SUBMIT] Iniciando criação de pedido manual...', {
@@ -252,8 +252,9 @@ export function useAdminCreateOrder() {
         valor_mensal: formData.tipoCobranca === 'mensal' ? formData.valorMensal : null,
         data_inicio: formData.dataInicio || null,
         data_fim: formData.dataFim || null,
-        metodo_pagamento: formData.metodoPagamento,
-        status: formData.statusInicial,
+        // Manual admin orders are always created pending; payment only via Asaas confirmation.
+        metodo_pagamento: 'pix',
+        status: 'pendente',
         created_by_admin: adminId,
         proposal_id: formData.proposalId,
         sem_slots_video: true,
@@ -287,7 +288,7 @@ export function useAdminCreateOrder() {
       });
 
       // Audit log for manual payment marking
-      if (formData.statusInicial === 'pago' || formData.statusInicial === 'pago_pendente_video') {
+      if (false) {
         console.log('💰 [SUBMIT] Registrando pagamento manual no log de eventos...');
         await supabase.from('log_eventos_sistema').insert({
           tipo_evento: 'MANUAL_PAYMENT_MARK',
@@ -316,7 +317,7 @@ export function useAdminCreateOrder() {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       
       toast.success(`Pedido criado com sucesso! ID: ${pedido.id.slice(0, 8)}...`);
-      resetForm();
+      if (!options.keepForm) resetForm();
       return pedido;
     } catch (error: any) {
       console.error('💥 [SUBMIT] Erro fatal ao criar pedido:', error);
