@@ -58,7 +58,7 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ data = [], loadin
       'debit_card': 'Cartão Débito',
       'bank_transfer': 'Transferência',
       'ticket': 'Boleto',
-      'account_money': 'Saldo MP'
+      'account_money': 'Saldo histórico'
     };
     return methods[method] || method;
   };
@@ -83,7 +83,7 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ data = [], loadin
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `transacoes_mp_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `transacoes_asaas_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
@@ -135,7 +135,7 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ data = [], loadin
                   <TableHead className="text-right">Líquido</TableHead>
                   <TableHead>Método</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-center">MP</TableHead>
+                  <TableHead className="text-center">Confirmação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -171,7 +171,7 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ data = [], loadin
                         {getStatusBadge(t.status)}
                       </TableCell>
                       <TableCell className="text-center">
-                        <CheckCircle2 className="h-4 w-4 text-primary mx-auto" />
+                        {['RECEIVED', 'CONFIRMED'].includes(t.status) ? <CheckCircle2 className="h-4 w-4 text-primary mx-auto" /> : <span className="text-xs text-muted-foreground">Não verificada</span>}
                       </TableCell>
                     </TableRow>
                   ))

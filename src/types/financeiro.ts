@@ -9,7 +9,7 @@ export type StatusCobranca = 'pendente' | 'pago' | 'vencido' | 'cancelado';
 export type MetodoPagamento = 'pix' | 'boleto' | 'cartao' | 'transferencia' | 'dinheiro';
 
 // Origem do recebimento
-export type OrigemRecebimento = 'manual' | 'mp' | 'asaas' | 'stripe';
+export type OrigemRecebimento = 'manual' | 'asaas' | 'historico';
 
 // Periodicidade de despesa fixa
 export type Periodicidade = 'mensal' | 'trimestral' | 'semestral' | 'anual';

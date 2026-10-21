@@ -6,7 +6,7 @@ import { formatCurrency } from '@/utils/priceUtils';
 interface KPIData {
   revenue_30d: number;
   avg_ticket: number;
-  mp_fees: number;
+  asaas_fees: number;
   refunds: number;
   chargebacks: number;
   net_margin: number;
@@ -33,8 +33,8 @@ const FinancialKPIsRow: React.FC<FinancialKPIsRowProps> = ({ data, loading }) =>
       icon: CreditCard
     },
     {
-      label: 'Taxas MP',
-      value: data?.mp_fees || 0,
+      label: 'Taxas Asaas',
+      value: data?.asaas_fees || 0,
       format: 'currency' as const,
       icon: Percent
     },

@@ -82,12 +82,12 @@ export const useOrderStatus = (
         if (paymentMethod === 'boleto' || paymentMethod === 'boleto_fidelidade') {
           return {
             label: 'Aguardando Pagamento',
-            description: 'Gere o boleto para efetuar o pagamento',
+            description: 'Consulte as parcelas para pagar com Pix Asaas',
             color: 'text-white',
             bgColor: 'bg-orange-600 border-orange-700',
             icon: CreditCard,
             action: {
-              label: 'Gerar Boleto',
+              label: 'Ver Parcelas',
               variant: 'default',
               href: `/anunciante/faturas?pedido=${order.id}`
             }
@@ -114,15 +114,15 @@ export const useOrderStatus = (
         if (paymentMethod === 'cartao' || paymentMethod === 'credit_card') {
           return {
             label: 'Aguardando Pagamento',
-            description: 'Finalize o pagamento com cartão de crédito',
+            description: 'Efetue o pagamento com Pix Asaas',
             color: 'text-white',
             bgColor: 'bg-orange-600 border-orange-700',
             icon: CreditCard,
             action: {
-              label: 'Pagar com Cartão',
+              label: 'Pagar com PIX',
               variant: 'default',
               onClick: onStripePayment ? () => onStripePayment(order.id) : undefined,
-              href: !onStripePayment ? `/payment?pedido=${order.id}&method=credit_card` : undefined
+              href: !onStripePayment ? `/payment?pedido=${order.id}&method=pix` : undefined
             }
           };
         }
