@@ -2,6 +2,7 @@
 modo=contrato: sends the PDF to ClickSign (clicksign-create-contract). modo=modelo: sends the PDF back to Sofia to deliver as a model on WhatsApp.
 No third-party PDF service; PDFs are never stored."""
 import os, sys, json, base64, urllib.request, urllib.error
+import urllib.parse
 
 URL = os.environ["SUPABASE_URL"].rstrip("/")
 KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
@@ -22,7 +23,7 @@ def call(method, path, body=None):
     return json.loads(t) if t[:1] in b"[{" else t
 
 def notify(action, payload):
-    r = urllib.request.Request(f"{URL}/functions/v1/sofia-agent?action={action}&token={TOKEN}",
+    r = urllib.request.Request(f"{URL}/functions/v1/sofia-agent?action={action}&token={urllib.parse.quote(TOKEN)}",
         data=json.dumps(payload).encode(), method="POST",
         headers={"Content-Type": "application/json"})
     try: urllib.request.urlopen(r, timeout=90).read()
