@@ -9,6 +9,7 @@ import PixExpiredState from './PixExpiredState';
 import PixQrCodeMissing from './PixQrCodeMissing';
 import PixPaymentFooter from './PixPaymentFooter';
 import { isAsaasPaid } from '@/services/asaasPaymentRules';
+import { Button } from '@/components/ui/button';
 
 interface PixPaymentDetailsProps {
   qrCodeBase64?: string;
@@ -176,7 +177,7 @@ const PixPaymentDetails = ({
       ) : !qrCodeBase64 && !qrCodeText ? (
         <div className="text-sm text-muted-foreground space-y-3">
           <p>Cobrança Asaas já emitida. O código Pix não está disponível nesta sessão; consulte o pagamento existente. Nenhuma segunda cobrança será gerada.</p>
-          <button onClick={handleRefreshStatus}>Consultar status Asaas</button>
+          <Button variant="outline" onClick={handleRefreshStatus}>Consultar status Asaas</Button>
         </div>
       ) : (
         <PixActiveState

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { generateOrderPix, verifyAsaasOrder, findOrderCharge } from '@/services/asaasPaymentService';
+import { generateOrderPix, verifyAsaasOrder, findOrderCharge, getIssuedAsaasPix } from '@/services/asaasPaymentService';
 export interface PixPaymentData {
   qrCodeBase64?: string; qrCode?: string; paymentId?: string; status?: string;
   createdAt?: string; pedidoId?: string; valorTotal?: number;
@@ -19,7 +19,8 @@ export const usePixPayment = (pedidoId: string | null) => {
       const existing = await findOrderCharge(pedidoId);
       if (existing) {
         const result = await verifyAsaasOrder(pedidoId);
-        if (!cancelled) setPaymentData({ paymentId: existing.asaas_id, status: result.payment_status, pedidoId, valorTotal: Number(order.valor_total) });
+        const issued = getIssuedAsaasPix(pedidoId);
+        if (!cancelled) setPaymentData({ paymentId: existing.asaas_id, status: result.payment_status, pedidoId, valorTotal: Number(order.valor_total), qrCodeBase64: issued?.qr_base64, qrCode: issued?.copia_cola });
         return;
       }
       const data = await generateOrderPix(pedidoId);

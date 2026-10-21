@@ -707,7 +707,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         {/* SEÇÃO: INFORMAÇÕES DE PAGAMENTO */}
         {order.log_pagamento && <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Informações de Pagamento e Auditoria</h2>
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Histórico de Pagamento · não é confirmação Asaas</h2>
             </div>
             
             <div className="p-4 space-y-4">

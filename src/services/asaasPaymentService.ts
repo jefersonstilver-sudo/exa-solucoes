@@ -58,6 +58,7 @@ export async function verifyAsaasOrder(pedidoId: string) {
 const inflight = new Map<string, Promise<AsaasPix>>();
 // Ephemeral QR data is not a financial status or browser-storage credential.
 const issuedPix = new Map<string, AsaasPix>();
+export const getIssuedAsaasPix = (reference: string) => issuedPix.get(reference);
 export function generateOrderPix(pedidoId: string, profile?: Record<string, any>): Promise<AsaasPix> {
   const issued = issuedPix.get(pedidoId);
   if (issued) return Promise.resolve(issued);
