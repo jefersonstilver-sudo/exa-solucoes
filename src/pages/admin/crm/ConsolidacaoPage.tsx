@@ -5,7 +5,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveTable } from '@/components/admin/common/ResponsiveTable';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
-import { crm360Path, fetchInconsistencies, type CRMInconsistency } from '@/services/crm360';
+import { fetchInconsistencies, inconsistencyLookup, type CRMInconsistency } from '@/services/crm360';
 
 const labels: Record<string, string> = { telefone_em_varias_contas: 'Telefone em várias contas', contato_sofia_sem_conta: 'Contato Sofia sem conta', pedido_sem_whatsapp: 'Pedido sem WhatsApp', pedido_sem_email: 'Pedido sem e-mail' };
 export default function ConsolidacaoPage() {
@@ -19,7 +19,7 @@ export default function ConsolidacaoPage() {
         { key: 'key', label: 'Identificação', render: r => <span className="break-all">{r.chave}</span> },
         { key: 'detail', label: 'Detalhe', render: r => <span className="break-words">{r.detalhe}</span> },
         { key: 'count', label: 'Quantidade', render: r => r.qtd },
-        { key: 'action', label: 'Ficha', render: r => <Button variant="outline" size="sm" asChild><Link to={r.tipo.startsWith('pedido_') ? `${basePath}/pedidos/${encodeURIComponent(r.chave)}` : crm360Path(basePath, r.tipo === 'telefone_em_varias_contas' ? { phone: r.chave } : { contact: r.chave })}>{r.tipo.startsWith('pedido_') ? 'Abrir pedido e ficha' : 'Ver ficha 360'}</Link></Button> },
+        { key: 'action', label: 'Ficha', render: r => <Button variant="outline" size="sm" asChild><Link to={`${basePath}/crm-360?${new URLSearchParams(inconsistencyLookup(r))}`}>Ver ficha 360</Link></Button> },
       ]} /></section>)}
     </>}
   </main>;

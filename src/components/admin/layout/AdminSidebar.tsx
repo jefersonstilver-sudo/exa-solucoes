@@ -138,6 +138,14 @@ const AdminSidebar = () => {
     
     // SISTEMA
     {
+      label: 'Consolidação',
+      icon: <Users className="h-5 w-5" />,
+      href: buildPath('consolidacao'),
+      requireSuperAdmin: true,
+      section: 'system',
+      permission: 'canManageUsers'
+    },
+    {
       label: 'Usuários',
       icon: <Users className="h-5 w-5" />,
       href: buildPath('usuarios'),
