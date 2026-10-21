@@ -39,7 +39,7 @@ export async function findOrderCharge(pedidoId: string) {
   // Only explicit order identifiers, never payer names or approximate amounts.
   const { data, error } = await supabase.from('sofia_cobrancas').select('*')
     .or(`pedido_id.eq.${pedidoId},external_reference.eq.${pedidoId}`)
-    .eq('kind', 'pix').order('created_at', { ascending: false }).limit(1).maybeSingle();
+    .like('asaas_id', 'pay_%').order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (error) throw new Error('Não foi possível ler a cobrança Asaas vinculada ao pedido');
   return data;
 }
@@ -65,7 +65,7 @@ export function generateOrderPix(pedidoId: string, profile?: Record<string, any>
     if (userError || !user) throw new Error('Dados do titular indisponíveis');
     const customer_id = await createAsaasCustomer({
       nome: user.nome || profile?.nome || '', email: user.email || profile?.email || '',
-      cpf_cnpj: user.empresa_documento || user.documento || profile?.empresa_documento || profile?.cpf_cnpj || '',
+      cpf_cnpj: user.empresa_documento || user.cpf || profile?.empresa_documento || profile?.cpf_cnpj || '',
       telefone: user.telefone || profile?.telefone || ''
     });
     return createAsaasPix(customer_id, Number(order.valor_total), order.nome_pedido || `Pedido EXA ${pedidoId}`, pedidoId);

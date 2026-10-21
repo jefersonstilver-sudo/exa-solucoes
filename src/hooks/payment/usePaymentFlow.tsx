@@ -84,47 +84,6 @@ export const usePaymentFlow = () => {
       options.handleClearCart();
       options.onPixGenerated?.({ qrCodeBase64: data.qr_base64, qrCodeText: data.copia_cola, pedidoId: pedido.id });
       sonnerToast.success('Cobrança Pix Asaas criada');
-      return { success: true, pedidoId: pedido.id, paymentPending: true };
-          }
-          
-          // Asaas API error
-          if (errorMessage.includes('ASAAS_API_ERROR') || errorMessage.includes('Asaas')) {
-            sonnerToast.error('Erro temporário no sistema de pagamentos. Tente novamente em alguns minutos.');
-            return { success: false, pedidoId: pedido.id, error: errorMessage };
-          }
-          
-          throw error;
-        }
-        
-        // Check for error in response body
-        if (data?.success === false) {
-          const errorCode = data.error || '';
-          
-          if (errorCode === 'ASAAS_CREDENTIALS_MISSING' || errorCode === 'ASAAS_API_ERROR') {
-            sonnerToast.error(data.support_message || 'Erro no sistema de pagamentos. Tente novamente.');
-            return { success: false, pedidoId: pedido.id, error: data.message };
-          }
-          
-          throw new Error(data.message || 'Erro ao processar pagamento');
-        }
-        
-        options.handleClearCart();
-        sonnerToast.success("Pedido criado! Dados de pagamento serão enviados por e-mail.");
-        
-        if (options.onPixGenerated && data?.qrCodeBase64) {
-          options.onPixGenerated({
-            qrCodeBase64: data.qrCodeBase64 || '',
-            qrCodeText: data.qrCode || '',
-            pedidoId: pedido.id,
-            isSubscription: data.isSubscription || data.isPixParcelado || false,
-            valorMensal: data.valor,
-            valorTotal: data.valorTotal,
-            totalMeses: data.totalMeses,
-            infoMessage: data.infoMessage
-          });
-        }
-      }
-      
       return { success: true, pedidoId: pedido.id };
     } catch (error: any) {
       sonnerToast.error(error.message);
