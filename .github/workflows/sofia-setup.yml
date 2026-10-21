@@ -1,0 +1,21 @@
+name: sofia-setup
+on:
+  workflow_dispatch:
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Registrar webhook da Evolution (usa os secrets do repo)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SOFIA_WEBHOOK_TOKEN: ${{ secrets.SOFIA_WEBHOOK_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os, urllib.request, urllib.parse
+          u = os.environ["SUPABASE_URL"].rstrip("/") + "/functions/v1/sofia-agent?action=setup&token=" + urllib.parse.quote(os.environ["SOFIA_WEBHOOK_TOKEN"])
+          try:
+              r = urllib.request.urlopen(u, timeout=60)
+              print("status", r.status, r.read()[:300])
+          except urllib.error.HTTPError as e:
+              print("status", e.code, e.read()[:200])
+          PY
