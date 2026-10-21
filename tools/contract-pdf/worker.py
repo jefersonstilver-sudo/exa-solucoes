@@ -24,8 +24,9 @@ def call(method, path, body=None):
 def notify(action, payload):
     r = urllib.request.Request(f"{URL}/functions/v1/sofia-agent?action={action}&token={TOKEN}",
         data=json.dumps(payload).encode(), method="POST",
-        headers={"Content-Type": "application/json", "Authorization": "Bearer " + KEY})
+        headers={"Content-Type": "application/json"})
     try: urllib.request.urlopen(r, timeout=90).read()
+    except urllib.error.HTTPError as e: print("notify failed", e.code, e.read()[:300])
     except Exception as e: print("notify failed", e)
 
 def render(html):
