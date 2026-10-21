@@ -13756,6 +13756,76 @@ export type Database = {
         }
         Relationships: []
       }
+      sofia_auth: {
+        Row: {
+          claim_conv_id: string | null
+          contact_id: string
+          otp_attempts: number
+          otp_expires: string | null
+          otp_hash: string | null
+          session_expires: string | null
+        }
+        Insert: {
+          claim_conv_id?: string | null
+          contact_id: string
+          otp_attempts?: number
+          otp_expires?: string | null
+          otp_hash?: string | null
+          session_expires?: string | null
+        }
+        Update: {
+          claim_conv_id?: string | null
+          contact_id?: string
+          otp_attempts?: number
+          otp_expires?: string | null
+          otp_hash?: string | null
+          session_expires?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_auth_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sofia_avisos: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          id: string
+          predio_id: string | null
+          status: string
+          texto: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          predio_id?: string | null
+          status?: string
+          texto: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          predio_id?: string | null
+          status?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_avisos_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sofia_client_knowledge: {
         Row: {
           answer: string
@@ -13791,6 +13861,83 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      sofia_contacts: {
+        Row: {
+          company: string | null
+          created_at: string
+          id: string
+          lid: string | null
+          name: string | null
+          notes: Json
+          phone: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          id?: string
+          lid?: string | null
+          name?: string | null
+          notes?: Json
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          id?: string
+          lid?: string | null
+          name?: string | null
+          notes?: Json
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sofia_conversations: {
+        Row: {
+          contact_id: string
+          human_until: string | null
+          id: string
+          instance: string
+          jid: string
+          last_message_at: string
+          mode: string
+          summary: string | null
+        }
+        Insert: {
+          contact_id: string
+          human_until?: string | null
+          id?: string
+          instance: string
+          jid: string
+          last_message_at?: string
+          mode?: string
+          summary?: string | null
+        }
+        Update: {
+          contact_id?: string
+          human_until?: string | null
+          id?: string
+          instance?: string
+          jid?: string
+          last_message_at?: string
+          mode?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sofia_learning: {
         Row: {
@@ -13862,6 +14009,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sofia_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          direction: string
+          id: number
+          wa_id: string | null
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          direction: string
+          id?: number
+          wa_id?: string | null
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          id?: number
+          wa_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -17566,6 +17748,14 @@ export type Database = {
         }[]
       }
       sincronizar_exibicoes_buildings: { Args: never; Returns: Json }
+      sofia_match_phone: {
+        Args: { p: string }
+        Returns: {
+          kind: string
+          label: string
+          ref_id: string
+        }[]
+      }
       submit_lead_produtora: {
         Args: {
           p_agendar_cafe?: boolean
