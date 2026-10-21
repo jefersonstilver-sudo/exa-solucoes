@@ -3,8 +3,21 @@ on:
   workflow_dispatch:
     inputs:
       contrato_id:
-        description: contratos_legais id
-        required: true
+        description: contratos_legais id (ou "modelo")
+        required: false
+        default: ""
+      modo:
+        description: contrato ou modelo
+        required: false
+        default: "contrato"
+      proposal_id:
+        description: proposal id (modo modelo)
+        required: false
+        default: ""
+      conversa_id:
+        description: sofia_conversations id (modo modelo)
+        required: false
+        default: ""
 jobs:
   render:
     runs-on: ubuntu-latest
@@ -19,7 +32,10 @@ jobs:
           playwright install chromium --with-deps
       - run: python tools/contract-pdf/worker.py
         env:
+          MODO: ${{ inputs.modo }}
           CONTRATO_ID: ${{ inputs.contrato_id }}
+          PROPOSAL_ID: ${{ inputs.proposal_id }}
+          CONVERSA_ID: ${{ inputs.conversa_id }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SOFIA_WEBHOOK_TOKEN: ${{ secrets.SOFIA_WEBHOOK_TOKEN }}
