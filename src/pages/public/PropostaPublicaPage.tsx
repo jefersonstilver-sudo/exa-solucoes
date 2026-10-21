@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { supabase } from '@/integrations/supabase/client';
+import { createAsaasCustomer, createAsaasPix, readAsaasStatus } from '@/services/asaasPaymentService';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 import { validateEmail } from '@/utils/inputValidation';
 import { PaymentSuccessModal } from '@/components/public/PaymentSuccessModal';
@@ -303,6 +304,9 @@ const PropostaPublicaPage = () => {
     
     const checkPaymentStatus = async () => {
       try {
+        if (!paymentData?.paymentId) return;
+        const officialStatus = await readAsaasStatus(paymentData.paymentId);
+        if (!officialStatus.paid) return;
         // Check if proposal was converted (payment approved)
         const { data: proposalData, error } = await supabase
           .from('proposals')
@@ -349,7 +353,7 @@ const PropostaPublicaPage = () => {
     checkPaymentStatus();
     
     // Then poll every 5 seconds
-    const pollInterval = setInterval(checkPaymentStatus, 5000);
+    const pollInterval = setInterval(checkPaymentStatus, 60000);
     
     return () => {
       console.log('🛑 POLLING: Parando verificação');
@@ -856,120 +860,24 @@ const PropostaPublicaPage = () => {
     }
   };
 
-  // Generate payment (PIX, Boleto or Card Subscription)
   const handleGeneratePayment = async () => {
-    if (!proposal || !paymentMethod) return;
-    
-    // Verificar se é pagamento personalizado
-    const isCustomPayment = proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0;
-    
-    // Handle credit card subscription (recurring)
-    if (paymentMethod === 'cartao_recorrente') {
-      setIsGeneratingPayment(true);
-      setPaymentStep('generating');
-      
-      try {
-        const emailToUse = emailInput || proposal.client_email || '';
-        
-        const { data, error } = await supabase.functions.invoke('create-subscription-payment', {
-          body: {
-            proposalId: proposal.id,
-            clientEmail: emailToUse
-          }
-        });
-
-        if (error) throw error;
-        
-        if (!data?.success) {
-          throw new Error(data?.error || 'Erro ao criar assinatura');
-        }
-
-        // Redirect to Mercado Pago checkout
-        if (data.initPoint) {
-          toast.success('Redirecionando para pagamento...');
-          window.location.href = data.initPoint;
-        } else {
-          throw new Error('URL de pagamento não disponível');
-        }
-        
-      } catch (err: any) {
-        console.error('Erro ao criar assinatura:', err);
-        toast.error(err.message || 'Erro ao criar assinatura');
-        setPaymentStep('select');
-      } finally {
-        setIsGeneratingPayment(false);
-      }
-      return;
-    }
-    
-    // Calcular valor a ser pago
-    let paymentValue: number;
-    
-    if (isCustomPayment) {
-      // Pagamento personalizado: apenas 1ª parcela
-      paymentValue = Number(proposal.custom_installments[0].amount);
-      console.log('💳 Pagamento personalizado - 1ª parcela:', paymentValue);
-    } else {
-      // Pagamento padrão
-      paymentValue = effectiveSelectedPlan === 'avista' 
-        ? proposal.cash_total_value 
-        : proposal.fidel_monthly_value * proposal.duration_months;
-    }
-    
-    // Validar valor mínimo do Mercado Pago (R$ 5,00) - apenas para boleto
-    if (paymentMethod === 'boleto' && paymentValue < 5) {
-      toast.error('O valor mínimo para pagamento via Boleto é R$ 5,00. Entre em contato com o vendedor.');
-      return;
-    }
-    
-    setIsGeneratingPayment(true);
-    setPaymentStep('generating');
-    
+    if (!proposal || paymentMethod !== 'pix' || isGeneratingPayment) return;
+    setIsGeneratingPayment(true); setPaymentStep('generating');
     try {
-      const emailToUse = emailInput || proposal.client_email || '';
-      
-      const { data, error } = await supabase.functions.invoke('generate-proposal-payment', {
-        body: {
-          proposalId: proposal.id,
-          paymentMethod,
-          selectedPlan: isCustomPayment ? 'custom' : effectiveSelectedPlan,
-          clientEmail: emailToUse,
-          diaVencimento: paymentMethod === 'boleto' ? diaVencimento : undefined,
-          isCustomPayment,
-          installmentNumber: isCustomPayment ? 1 : undefined
-        }
-      });
-
-      if (error) throw error;
-      
-      if (!data?.success) {
-        // Verificar se é erro de valor mínimo
-        if (data?.error?.includes('5') || data?.error?.includes('mínimo')) {
-          throw new Error('Valor abaixo do mínimo permitido (R$ 5,00). Entre em contato com o vendedor.');
-        }
-        throw new Error(data?.error || 'Erro ao gerar pagamento');
-      }
-
-      setPaymentData(data.paymentData);
-      setPaymentStep('ready');
-      
-      // Start polling for payment status (PIX only)
-      if (paymentMethod === 'pix') {
-        setIsPollingPayment(true);
-      }
-      
-      // Send confirmation email with payment data
-      await sendConfirmationEmail(emailToUse, data.paymentData);
-      
-      toast.success('Pagamento gerado com sucesso!');
-      
-    } catch (err: any) {
-      console.error('Erro ao gerar pagamento:', err);
-      toast.error(err.message || 'Erro ao gerar pagamento');
-      setPaymentStep('select');
-    } finally {
-      setIsGeneratingPayment(false);
-    }
+      const custom = proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0;
+      const email = emailInput || proposal.client_email || '';
+      const { data: existing, error: chargeError } = await supabase.from('sofia_cobrancas').select('asaas_id').eq('external_reference', proposal.id).limit(1).maybeSingle();
+      if (chargeError) throw new Error('Entre na sua conta para gerar o pagamento Asaas');
+      if (existing) throw new Error('Esta proposta já possui cobrança Asaas; consulte o vendedor para recuperar os dados de pagamento');
+      const customer = await createAsaasCustomer({ nome: proposal.client_company_name || proposal.client_name, email, cpf_cnpj: proposal.client_cnpj || '', telefone: proposal.client_phone || '' });
+      const value = custom ? Number(proposal.custom_installments[0].amount) : effectiveSelectedPlan === 'avista' ? proposal.cash_total_value : proposal.fidel_monthly_value * proposal.duration_months;
+      const pix = await createAsaasPix(customer, value, `Proposta EXA ${proposal.number}`, proposal.id);
+      const data: PaymentData = { method: 'pix', paymentId: pix.payment_id, qrCode: pix.copia_cola, qrCodeBase64: pix.qr_base64, dueDate: pix.expires };
+      setPaymentData(data); setPaymentStep('ready'); setIsPollingPayment(true);
+      await sendConfirmationEmail(email, data);
+      toast.success('Pix Asaas gerado');
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Pagamento indisponível'); setPaymentStep('select'); }
+    finally { setIsGeneratingPayment(false); }
   };
 
   // Aceitar proposta com pagamento personalizado

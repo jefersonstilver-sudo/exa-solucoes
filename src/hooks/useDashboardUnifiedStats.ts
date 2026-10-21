@@ -199,7 +199,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       ).length || 0;
 
       // Cash receipts: only official Asaas PAYMENT_RECEIVED statement lines, by movement date.
-      // Never infer receipt from order status, valor_total or legacy Mercado Pago installments.
+      // Never infer receipt from order status, valor_total or legacy installments.
       const collectReceipts = async (begin: string, finish: string): Promise<number | null> => {
         let total = 0;
         for (let offset = 0; ; offset += 500) {

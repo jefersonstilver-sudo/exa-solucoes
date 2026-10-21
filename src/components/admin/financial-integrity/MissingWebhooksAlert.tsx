@@ -30,7 +30,7 @@ const MissingWebhooksAlert: React.FC<MissingWebhooksAlertProps> = ({
       </CardHeader>
       <CardContent>
         <p className="text-gray-700">
-          {stats.missing_webhooks} pedido(s) confirmado(s) sem webhook correspondente do MercadoPago.
+          {stats.missing_webhooks} cobrança(s) Asaas sem evento correspondente.
           Isso pode indicar pagamentos processados fora do fluxo padrão.
         </p>
         <Button 
@@ -39,7 +39,7 @@ const MissingWebhooksAlert: React.FC<MissingWebhooksAlertProps> = ({
           variant="outline"
           disabled={loading}
         >
-          Investigar e Corrigir
+          Consultar Asaas
         </Button>
       </CardContent>
     </Card>

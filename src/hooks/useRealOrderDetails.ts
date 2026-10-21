@@ -12,7 +12,7 @@ interface Parcela {
   status: string;
   data_pagamento?: string | null;
   metodo_pagamento?: string | null;
-  mercadopago_payment_id?: string | null;
+  asaas_payment_id?: string | null;
 }
 
 interface OrderWithClient {
@@ -241,7 +241,7 @@ export const useRealOrderDetails = (orderId: string) => {
             status: p.status,
             data_pagamento: p.data_pagamento,
             metodo_pagamento: p.metodo_pagamento,
-            mercadopago_payment_id: p.mercadopago_payment_id
+            asaas_payment_id: undefined
           }));
           console.log('💰 [ORDER DETAILS] Parcelas encontradas:', parcelas.length);
         }
