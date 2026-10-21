@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { isAsaasPaid } from '@/services/asaasPaymentService';
+import { isSofiaChargePaid } from '@/services/asaasPaymentRules';
 
 export interface ConversationTypeStats {
   conversas: number;
@@ -399,10 +400,10 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const sofiaChargePending: Record<string, number> = {};
       if (sofiaPedidoIds.length > 0) {
         const { data: sCharges } = await supabase.from('sofia_cobrancas')
-          .select('pedido_id,value,status').in('pedido_id', sofiaPedidoIds);
+          .select('pedido_id,value,status,paid_at').in('pedido_id', sofiaPedidoIds);
         sCharges?.forEach((c: any) => {
           if (!c.pedido_id) return;
-          const m = isAsaasPaid(c.status) ? sofiaChargePaid : sofiaChargePending;
+          const m = isSofiaChargePaid(c.status, c.paid_at) ? sofiaChargePaid : sofiaChargePending;
           m[c.pedido_id] = (m[c.pedido_id] || 0) + Number(c.value);
         });
       }
@@ -427,11 +428,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         const pedidoIdsConvertidos = pedidosConvertidos?.map(p => p.id) || [];
         if (pedidoIdsConvertidos.length > 0) {
           const { data: charges, error: chargeError } = await supabase.from('sofia_cobrancas')
-            .select('pedido_id,value,status').in('pedido_id', pedidoIdsConvertidos);
+            .select('pedido_id,value,status,paid_at').in('pedido_id', pedidoIdsConvertidos);
           if (chargeError) throw chargeError;
           charges?.forEach(charge => {
             if (!charge.pedido_id) return;
-            const map = isAsaasPaid(charge.status) ? parcelasPagasPorPedidoRanking : parcelasPendentesPorPedidoRanking;
+            const map = isSofiaChargePaid(charge.status, (charge as any).paid_at) ? parcelasPagasPorPedidoRanking : parcelasPendentesPorPedidoRanking;
             map[charge.pedido_id] = (map[charge.pedido_id] || 0) + Number(charge.value);
           });
         }
