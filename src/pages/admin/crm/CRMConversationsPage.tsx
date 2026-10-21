@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ChatPanel } from './components/ChatPanel';
+import { SofiaChatPanel } from './components/SofiaChatPanel';
 import type { CollaboratorRow } from './components/CollaboratorCard';
 
 const CRMConversationsPage: React.FC = () => {
@@ -104,7 +105,11 @@ const CRMConversationsPage: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <ChatPanel collaborator={collaborator} />
+            /sofia/i.test(`${collaborator.collaborator_name} ${(collaborator as any).instance_name ?? ''}`) ? (
+<SofiaChatPanel />
+) : (
+<ChatPanel collaborator={collaborator} />
+)
           )}
         </div>
       </div>
