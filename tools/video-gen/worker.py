@@ -68,7 +68,21 @@ def gerar_cena(job):
     b["scene_code"] = None; b["scene_fallback"] = True; b["scene_err"] = (erro or "")[:200]
     return b
 
+def estilos():
+    """Gera as 5 amostras de estilo (genericas) e sobe em sofia-videos/estilos/."""
+    frases = ["Sua marca", "dentro do elevador", "vista todo dia", "por quem decide"]
+    for n in range(1, 6):
+        spec = {"formato": "horizontal_10s", "briefing": {"empresa": "Sua Marca", "segmento": "seu negocio", "mensagem": "Sua marca em destaque", "subtitulo": "Dentro do elevador", "cta": "Fale conosco", "instagram": "suamarca", "cores_estilo": "#c8283c", "estilo": n, "frases": frases, "numeros": [{"valor": 10, "rotulo": "anos de mercado", "sufixo": "+"}, {"valor": 98, "rotulo": "clientes satisfeitos", "sufixo": "%"}, {"valor": 24, "rotulo": "atendimento", "sufixo": "h"}]}}
+        jp, out = f"/tmp/estilo_{n}.json", f"/tmp/estilo{n}.mp4"
+        json.dump(spec, open(jp, "w"))
+        subprocess.run([sys.executable, os.path.join(HERE, "render.py"), jp, out], check=True)
+        with open(out, "rb") as f: blob = f.read()
+        req("POST", f"/storage/v1/object/{BUCKET}/estilos/estilo{n}.mp4", raw=blob, headers={"Content-Type": "video/mp4", "x-upsert": "true"})
+        print("estilo", n, "ok", len(blob))
+
 def main():
+    if JOB == 'estilos':
+        estilos(); return
     rows = req("GET", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}&select=*")
     if not rows: sys.exit("job not found")
     job = rows[0]

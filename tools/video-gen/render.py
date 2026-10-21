@@ -57,28 +57,84 @@ def pick_hue(s):
     return None
 hh = b.get('hue') if b.get('hue') is not None else hue_from_text(b.get('cores_estilo')) if hue_from_text(b.get('cores_estilo')) is not None else pick_hue(P['empresa'] + ' ' + P['mensagem'] + ' ' + b.get('segmento', ''))
 if hh is not None: P['hue'] = hh
+
+def hex2hsl(h):
+    import colorsys
+    h=h.lstrip('#'); r,g,b=[int(h[i:i+2],16)/255 for i in (0,2,4)]; hh,l,ss=colorsys.rgb_to_hls(r,g,b); return hh*360,ss,l
+def hsl2hex(h,s,l):
+    import colorsys
+    r,g,b=colorsys.hls_to_rgb((h%360)/360,l,s); return '#%02x%02x%02x'%(int(r*255),int(g*255),int(b*255))
+def logo_palette(path):
+    try:
+        from PIL import Image
+        im=Image.open(path).convert('RGBA'); im.thumbnail((120,120)); px=[p for p in im.getdata() if p[3]>200]
+        from collections import Counter
+        q=Counter((p[0]//32*32+16,p[1]//32*32+16,p[2]//32*32+16) for p in px)
+        cand=[]
+        for (r,g,b),n in q.most_common(40):
+            h,s,l=hex2hsl('#%02x%02x%02x'%(r,g,b))
+            if s>.35 and .22<l<.75: cand.append((n*(1+s),h,s,l))
+        cand.sort(reverse=True); out=[]
+        for _,h,s,l in cand:
+            if all(min(abs(h-x),360-abs(h-x))>35 for x in out): out.append(h)
+        return out[:2]
+    except Exception as e:
+        print('paleta falhou',e); return []
+def hexcolor(txt):
+    import re as _re
+    m=_re.search(r'#([0-9a-fA-F]{6})',txt or '')
+    return ('#'+m.group(1)) if m else None
+hl=[]
+if 'logo' in assets: hl=logo_palette(tmp/assets['logo'])
+cx=hexcolor(b.get('cores_estilo'))
+if cx: P['cor']=cx; hl2=hex2hsl(cx)[0]
+elif P.get('hue') is not None and hue_from_text(b.get('cores_estilo')) is not None: P['cor']=hsl2hex(P['hue'],.85,.52); hl2=P['hue']
+elif hl: P['cor']=hsl2hex(hl[0],.85,.52); hl2=hl[0]
+elif P.get('hue') is not None: P['cor']=hsl2hex(P['hue'],.85,.52); hl2=P['hue']
+else: P['cor']='#d92d3a'; hl2=355
+P['cor2']=hsl2hex(hl[1],.9,.58) if len(hl)>1 else hsl2hex(hl2+35,.9,.6)
+P['escuro']='#0b0b10'; P['claro']='#f2efe9'
+P['frases']=[x for x in (b.get('frases') or []) if x][:6]
+P['numeros']=b.get('numeros') or []
+
 SCENE = (b.get('scene_code') or '').strip()
-shutil.copy(here / ('gen_harness.html' if SCENE else 'template4.html'), tmp / 'index.html')
+SCENE_HTML = (b.get('scene_html') or '').strip(); ESTILO = int(b.get('estilo') or 0)
+HTMLMODE = bool(SCENE_HTML) or ESTILO in (1,2,3,4,5)
+if HTMLMODE: SCENE=''
+if HTMLMODE:
+    shutil.copy(here / 'gsap.min.js', tmp / 'gsap.min.js')
+    if SCENE_HTML: (tmp / 'index.html').write_text(SCENE_HTML, encoding='utf-8')
+    else: shutil.copy(here / ('estilo%d.html' % ESTILO), tmp / 'index.html')
+else:
+    shutil.copy(here / ('gen_harness.html' if SCENE else 'template4.html'), tmp / 'index.html')
 with sync_playwright() as p:
     br = p.chromium.launch(args=['--allow-file-access-from-files'])
     pg = br.new_page(viewport={'width': W, 'height': H})
     pg.on('pageerror', lambda e: print('PAGEERR', e))
     perr = []
     pg.on('pageerror', lambda e: perr.append(str(e)))
-    if SCENE: pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith('file://') else r.abort())
+    if SCENE or HTMLMODE: pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith('file://') else r.abort())
     pg.add_init_script('window.P = %s;' % json.dumps(P))
+    if HTMLMODE: pg.add_init_script('window.__RENDER = true;')
     if SCENE: pg.add_init_script('window.SCENE_CODE = %s;' % json.dumps(SCENE))
-    pg.goto('file://%s/index.html' % tmp); pg.evaluate('window.ready()')
+    pg.goto('file://%s/index.html' % tmp)
+    if HTMLMODE:
+        pg.wait_for_function('window.tl && window.tl.duration() > 1', timeout=15000); pg.evaluate('document.fonts && document.fonts.ready'); pg.wait_for_timeout(300)
+    else: pg.evaluate('window.ready()')
+    def shot(t):
+        if HTMLMODE:
+            pg.evaluate('(t)=>{window.tl.pause();window.tl.time(t,false)}', t); return pg.screenshot(omit_background=bool(media))
+        pg.evaluate('render(%f)' % t); return pg.locator('canvas').screenshot(omit_background=bool(media))
     if VALIDATE:
         import io, time
         from PIL import Image, ImageChops, ImageStat
         res = {'ok': True, 'problemas': []}; ims = []; t0 = time.time()
         ts = [0.5, 1.5, 3, 4.5, 6, 7.5, 9, DUR - 0.4]
         for t in ts:
-            pg.evaluate('render(%f)' % t)
-            ims.append(Image.open(io.BytesIO(pg.locator('canvas').screenshot(omit_background=bool(media)))).convert('RGBA'))
+            ims.append(Image.open(io.BytesIO(shot(t))).convert('RGBA'))
         per = (time.time() - t0) / len(ts)
         errs = pg.evaluate('window.ERRS || []') + perr
+        if HTMLMODE and pg.evaluate('window.tl.duration()') < DUR - 0.6: errs.append('timeline curta: ' + str(pg.evaluate('window.tl.duration()')))
         if errs: res['ok'] = False; res['problemas'].append('erros JS: ' + ' | '.join(errs[:4]))
         bl = 0
         for im in ims:
@@ -92,8 +148,7 @@ with sync_playwright() as p:
     times = frames_only if frames_only else [i / FPS for i in range(DUR * FPS)]
     fd = tmp / 'f'; fd.mkdir()
     for i, t in enumerate(times):
-        pg.evaluate('render(%f)' % t)
-        pg.locator('canvas').screenshot(path=str(fd / ('f_%05d.png' % i)), omit_background=bool(media))
+        open(str(fd / ('f_%05d.png' % i)), 'wb').write(shot(t))
     br.close()
 if frames_only:
     out.mkdir(parents=True, exist_ok=True)
