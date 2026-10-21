@@ -14,6 +14,8 @@ import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import AvatarUpload from '@/components/ui/avatar-upload';
 import DocumentUpload from '@/components/ui/document-upload';
 import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
+import ClientBrandExtrasCard from '@/components/settings/ClientBrandExtrasCard';
+import { resolveDisplayName, saveClientIdentity } from '@/services/clientProfileService';
 import { WhatsAppVerificationModal } from '@/components/settings/WhatsAppVerificationModal';
 import { cn } from '@/lib/utils';
 import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
@@ -36,7 +38,7 @@ interface UserSettings {
 }
 
 const AdvertiserSettings = () => {
-  const { userProfile, refreshUserProfile } = useAuth();
+  const { userProfile, refreshUserProfile, isImpersonating } = useAuth() as any;
   const { formatDocument, validateDocument } = useDocumentValidation();
 
   const [settings, setSettings] = useState<UserSettings>({
@@ -81,16 +83,24 @@ const AdvertiserSettings = () => {
     if (!userProfile) return;
     try {
       setLoading(true);
-      const { data: authUser, error: authError } = await supabase.auth.getUser();
-      if (authError) throw authError;
+      // Usuário efetivo (cliente, inclusive quando o CEO está visualizando como cliente)
+      let authUser: any;
+      if (isImpersonating) {
+        authUser = { user: { id: userProfile.id, email: userProfile.email, user_metadata: {} } };
+      } else {
+        const { data, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        authUser = data;
+      }
       const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', authUser.user?.id).single();
       if (userError && userError.code !== 'PGRST116') throw userError;
 
       if (authUser.user) {
         const loaded: UserSettings = {
           email: authUser.user.email || '',
-          name: authUser.user.user_metadata?.name || authUser.user.user_metadata?.full_name || '',
-          phone: authUser.user.user_metadata?.phone || userData?.telefone || '',
+          // Fonte única da verdade: users.nome (fallback primeiro_nome + sobrenome)
+          name: resolveDisplayName(userData as any) || authUser.user.user_metadata?.name || authUser.user.user_metadata?.full_name || '',
+          phone: userData?.telefone || authUser.user.user_metadata?.phone || '',
           cpf: userData?.cpf || '',
           documento_estrangeiro: userData?.documento_estrangeiro || '',
           documento_frente_url: userData?.documento_frente_url || '',
@@ -149,17 +159,25 @@ const AdvertiserSettings = () => {
         }
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      const updateData: Record<string, any> = { name: settings.name, phone: settings.phone, notifications: settings.notifications };
-      if (currentLogoScale !== null) {
-        updateData.logo_scale = currentLogoScale;
+      let user: any;
+      if (isImpersonating) {
+        user = { id: userProfile.id, email: userProfile.email };
+      } else {
+        const { data: { user: authU } } = await supabase.auth.getUser();
+        if (!authU) throw new Error('Usuário não autenticado');
+        user = authU;
+        const updateData: Record<string, any> = { name: settings.name, phone: settings.phone, notifications: settings.notifications };
+        if (currentLogoScale !== null) {
+          updateData.logo_scale = currentLogoScale;
+        }
+        const { error: authError } = await supabase.auth.updateUser({
+          data: updateData,
+        });
+        if (authError) throw authError;
       }
-      const { error: authError } = await supabase.auth.updateUser({
-        data: updateData,
-      });
-      if (authError) throw authError;
+
+      // Nome/telefone em users (fonte única) + sincroniza pedidos.client_name
+      await saveClientIdentity(user.id, { nome: settings.name, telefone: settings.phone || null });
 
       const { data: existingUser } = await supabase.from('users').select('role').eq('id', user.id).single();
       const { error: userError } = await supabase.from('users').upsert({
@@ -180,7 +198,7 @@ const AdvertiserSettings = () => {
       toast.success('Configurações salvas com sucesso!');
       
       // Atualizar perfil global para refletir mudanças imediatamente
-      await refreshUserProfile();
+      if (!isImpersonating) await refreshUserProfile();
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
       toast.error('Erro ao salvar configurações');
@@ -414,6 +432,9 @@ const AdvertiserSettings = () => {
 
       {/* 3. Company/Brand */}
       <CompanyBrandSection isEditing={isEditing} onLogoScaleChange={setCurrentLogoScale} />
+
+      {/* Redes e identidade da marca */}
+      <ClientBrandExtrasCard userId={userProfile?.id} />
 
       {/* 4. Security */}
       <Card>
