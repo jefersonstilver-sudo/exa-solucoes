@@ -8,6 +8,7 @@ from playwright.sync_api import sync_playwright
 here = pathlib.Path(__file__).parent.resolve()
 job = json.load(open(sys.argv[1])); out = pathlib.Path(sys.argv[2])
 frames_only = [float(x) for x in sys.argv[4:]] if len(sys.argv) > 3 and sys.argv[3] == '--frames' else None
+VALIDATE = len(sys.argv) > 3 and sys.argv[3] == '--validate'
 b = job.get('briefing', {}); fmt = job.get('formato', 'horizontal_10s')
 vert = fmt == 'vertical_premium_15s'; FPS = 30; DUR = 15 if vert else 10
 W, H = (1080, 1920) if vert else (1920, 1080)
@@ -56,13 +57,38 @@ def pick_hue(s):
     return None
 hh = b.get('hue') if b.get('hue') is not None else hue_from_text(b.get('cores_estilo')) if hue_from_text(b.get('cores_estilo')) is not None else pick_hue(P['empresa'] + ' ' + P['mensagem'] + ' ' + b.get('segmento', ''))
 if hh is not None: P['hue'] = hh
-shutil.copy(here / 'template4.html', tmp / 'index.html')
+SCENE = (b.get('scene_code') or '').strip()
+shutil.copy(here / ('gen_harness.html' if SCENE else 'template4.html'), tmp / 'index.html')
 with sync_playwright() as p:
     br = p.chromium.launch(args=['--allow-file-access-from-files'])
     pg = br.new_page(viewport={'width': W, 'height': H})
     pg.on('pageerror', lambda e: print('PAGEERR', e))
+    perr = []
+    pg.on('pageerror', lambda e: perr.append(str(e)))
+    if SCENE: pg.route('**/*', lambda r: r.continue_() if r.request.url.startswith('file://') else r.abort())
     pg.add_init_script('window.P = %s;' % json.dumps(P))
+    if SCENE: pg.add_init_script('window.SCENE_CODE = %s;' % json.dumps(SCENE))
     pg.goto('file://%s/index.html' % tmp); pg.evaluate('window.ready()')
+    if VALIDATE:
+        import io, time
+        from PIL import Image, ImageChops, ImageStat
+        res = {'ok': True, 'problemas': []}; ims = []; t0 = time.time()
+        ts = [0.5, 1.5, 3, 4.5, 6, 7.5, 9, DUR - 0.4]
+        for t in ts:
+            pg.evaluate('render(%f)' % t)
+            ims.append(Image.open(io.BytesIO(pg.locator('canvas').screenshot(omit_background=bool(media)))).convert('RGBA'))
+        per = (time.time() - t0) / len(ts)
+        errs = pg.evaluate('window.ERRS || []') + perr
+        if errs: res['ok'] = False; res['problemas'].append('erros JS: ' + ' | '.join(errs[:4]))
+        bl = 0
+        for im in ims:
+            st = ImageStat.Stat(im.convert('L')); a = im.split()[3]
+            if (not media and st.stddev[0] < 6) or (media and ImageStat.Stat(a).mean[0] < 4): bl += 1
+        if bl >= 3: res['ok'] = False; res['problemas'].append('quadros em branco/vazios (%d de %d)' % (bl, len(ts)))
+        diffs = [ImageStat.Stat(ImageChops.difference(ims[i].convert('RGB'), ims[i + 1].convert('RGB')).convert('L')).mean[0] for i in range(len(ims) - 1)]
+        if sum(diffs) / len(diffs) < 1.5: res['ok'] = False; res['problemas'].append('quase sem animacao entre quadros (dif media %.1f)' % (sum(diffs) / len(diffs)))
+        if per > 1.2: res['ok'] = False; res['problemas'].append('muito pesado: %.2fs por quadro; simplifique (menos particulas/blur/shadowBlur)' % per)
+        res['seg_por_quadro'] = round(per, 2); print('VALIDATE ' + json.dumps(res)); br.close(); shutil.rmtree(tmp, ignore_errors=True); sys.exit(0)
     times = frames_only if frames_only else [i / FPS for i in range(DUR * FPS)]
     fd = tmp / 'f'; fd.mkdir()
     for i, t in enumerate(times):

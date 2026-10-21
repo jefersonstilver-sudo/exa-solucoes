@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:transparent}canvas{display:block}</style></head><body><canvas id="c"></canvas>
+<script>
+const P = window.P; const vert = P.formato === 'vertical_premium_15s';
+const W = vert ? 1080 : 1920, H = vert ? 1920 : 1080, DUR = vert ? 15 : 10;
+const cv = document.getElementById('c'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
+window.W = W; window.H = H; window.DUR = DUR; window.ERRS = [];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, x) => a + (b - a) * x;
+const E = { W, H, DUR, U: Math.min(W, H) / 1080, vert, P, media: !!P.media, img: {}, clamp, lerp,
+  rnd: (s) => { const x = Math.sin(s * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); },
+  easeOutCubic: x => 1 - Math.pow(1 - clamp(x), 3), easeInOutCubic: x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; },
+  easeOutBack: x => { x = clamp(x); const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+  easeOutElastic: x => { x = clamp(x); return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - .75) * (2 * Math.PI) / 3) + 1; },
+  hsl: (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`,
+  wrapText: (c, text, maxW) => { const w = String(text).split(/\s+/), L = []; let cur = ''; for (const x of w) { const tt = cur ? cur + ' ' + x : x; if (c.measureText(tt).width > maxW && cur) { L.push(cur); cur = x; } else cur = tt; } if (cur) L.push(cur); return L; },
+  text: (c, str, x, y, size, o = {}) => { c.save(); c.font = `${o.weight || 800} ${size}px ${o.font || 'Inter, DejaVu Sans, Arial, sans-serif'}`; c.textAlign = o.align || 'center'; c.textBaseline = o.base || 'middle'; c.globalAlpha *= o.alpha ?? 1; c.lineJoin = 'round'; if (o.stroke !== false) { c.lineWidth = o.strokeW || size * .16; c.strokeStyle = o.strokeColor || 'rgba(0,0,0,.85)'; c.strokeText(str, x, y); } c.fillStyle = o.color || '#fff'; c.fillText(str, x, y); c.restore(); },
+  drawQR: (c, x, y, size, fg = '#000', bg = '#fff') => { const q = P.qr; if (!q) return; const n = q.length, pad = size * .06, cs = (size - pad * 2) / n; c.save(); c.fillStyle = bg; c.beginPath(); c.roundRect(x, y, size, size, size * .05); c.fill(); c.fillStyle = fg; for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q[r][k]) c.fillRect(x + pad + k * cs, y + pad + r * cs, cs + .6, cs + .6); c.restore(); },
+  drawImg: (c, im, x, y, w, h) => { if (!im) return; const r = Math.min(w / im.width, h / im.height); const dw = im.width * r, dh = im.height * r; c.drawImage(im, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh); } };
+window.ready = async function () {
+  for (const k of Object.keys(P.assets || {})) { await new Promise(res => { const im = new Image(); im.onload = () => { E.img[k] = im; res(); }; im.onerror = res; im.src = P.assets[k]; }); }
+  try { await (document.fonts && document.fonts.ready); } catch (_) {}
+  const code = window.SCENE_CODE || '';
+  try { const f = new Function('E', code + '\n;return {setup: typeof setup==="function"?setup:null, frame: typeof frame==="function"?frame:null};'); window.S = f(E); if (!window.S.frame) throw new Error('frame() nao definida'); if (window.S.setup) window.S.setup(E); }
+  catch (e) { window.ERRS.push('init: ' + e.message); window.S = null; }
+};
+window.render = function (t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, W, H);
+  if (!window.S) return;
+  try { ctx.save(); window.S.frame(ctx, t, E); ctx.restore(); } catch (e) { if (window.ERRS.length < 5) window.ERRS.push('frame@' + t.toFixed(2) + ': ' + e.message); }
+};
+</script></body></html>
