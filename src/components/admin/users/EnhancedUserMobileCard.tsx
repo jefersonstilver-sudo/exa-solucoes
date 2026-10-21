@@ -5,6 +5,7 @@ import { Crown, Shield, UserCheck, Eye, DollarSign, Phone, FileText, CheckCircle
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
+import CRMUserSummary from '@/components/admin/crm/CRMUserSummary';
 
 interface User {
   id: string;
@@ -140,6 +141,7 @@ const EnhancedUserMobileCard: React.FC<EnhancedUserMobileCardProps> = ({
         </div>
 
         {/* Informações Detalhadas */}
+        <CRMUserSummary userId={user.id} />
         <div className="space-y-2 pt-2 border-t">
           {/* Status de Verificação */}
           <div className="flex items-center gap-1.5">

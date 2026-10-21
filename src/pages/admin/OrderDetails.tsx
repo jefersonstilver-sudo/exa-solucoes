@@ -12,6 +12,7 @@ import ClientOrderViewSheet from '@/components/impersonation/ClientOrderViewShee
 import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import ClientProfilePanel from '@/components/admin/orders/ClientProfilePanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -107,6 +108,7 @@ const OrderDetails = () => {
         </div>
 
         <Tabs defaultValue="pedido" className="w-full">
+          <div className="mb-4"><OrderCRM360Fields userId={orderDetails.client_id} email={orderDetails.email} whatsapp={orderDetails.whatsapp} /></div>
           <TabsList>
             <TabsTrigger value="pedido">Pedido</TabsTrigger>
             {orderDetails?.client_id && <TabsTrigger value="perfil">Perfil do cliente</TabsTrigger>}

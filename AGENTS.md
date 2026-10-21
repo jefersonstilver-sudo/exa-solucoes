@@ -1,3 +1,4 @@
+CRM 360 must use the existing `crm_cliente_360` RPC and paginated `crm_inconsistencias` view through a shared read-only service; this preserves the database's identity matching and authorization as the source of truth.
 Use `devices` as the source of current provider connectivity, querying all non-deleted rows with pagination and a Realtime subscription plus 60-second refresh; history events describe outages, not live status.
 After order extension/reactivation, invoke the existing order-scoped AWS audit with current dates and all confirmed master/child buildings; preserve base-video and schedule state, and distinguish accepted tasks from completed uploads to avoid false delivery claims.
 Persist advertiser card ordering as account-scoped browser preferences, independent of order business data; use dnd-kit handles to preserve card actions and scrolling.

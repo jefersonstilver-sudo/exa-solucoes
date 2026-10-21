@@ -11,6 +11,8 @@ export interface OrderOrAttempt {
   data_inicio?: string;
   data_fim?: string;
   client_id?: string;
+  email?: string | null;
+  whatsapp?: string | null;
   client_email?: string;
   client_name?: string;
   client_phone?: string;

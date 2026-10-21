@@ -51,6 +51,7 @@ import { AccessTab } from './AccessTab';
 import { ScopeTab } from './ScopeTab';
 import { AuditTab } from './AuditTab';
 import { DangerZone } from './DangerZone';
+import CRMUserSummary from '@/components/admin/crm/CRMUserSummary';
 
 export const UserConsoleDialog: React.FC<UserConsoleDialogProps> = ({
   open,
@@ -111,6 +112,7 @@ export const UserConsoleDialog: React.FC<UserConsoleDialogProps> = ({
           )}
         </div>
         <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+        <CRMUserSummary userId={user.id} showLink />
         <div className="flex items-center gap-2 mt-1">
           <StatusBadge user={user} />
           <RoleBadge role={selectedRole} />

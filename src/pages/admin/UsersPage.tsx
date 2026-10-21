@@ -12,7 +12,7 @@ import CreateUserDialog from '@/components/admin/users/CreateUserDialog';
 import { UserConsoleDialog } from '@/components/admin/users/console/UserConsoleDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 interface User {
@@ -36,6 +36,7 @@ interface User {
 
 const UsersPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -85,6 +86,13 @@ const UsersPage = () => {
     fetchUsers();
     refetchStats();
   };
+
+  useEffect(() => {
+    const userId = searchParams.get('user');
+    if (!userId || loading) return;
+    const target = users.find(u => u.id === userId);
+    if (target) { setSelectedUser(target); setActiveTab(target.role === 'client' ? 'clients' : 'team'); }
+  }, [searchParams, users, loading]);
 
   const handleSyncOrphanUsers = async () => {
     try {

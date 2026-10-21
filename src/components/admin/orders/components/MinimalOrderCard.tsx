@@ -15,6 +15,7 @@ import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
 import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
+import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 
 interface MinimalOrderCardProps {
   item: OrderOrAttempt;
@@ -207,6 +208,7 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
         </div>
 
         {/* Linha 3: Painéis (com IDs para super_admin) */}
+        {item.type === 'order' && <OrderCRM360Fields userId={item.client_id} email={item.email} whatsapp={item.whatsapp} />}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Building className="h-3.5 w-3.5" />

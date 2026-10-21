@@ -16,6 +16,7 @@ import { ClientTrackingModal } from '@/components/admin/crm/ClientTrackingModal'
 import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
 import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
+import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
   isSelected: boolean;
@@ -638,6 +639,7 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
         {item.type === 'order' && (
           <>
           <SofiaSoldBadge pedidoId={item.id} className="mt-3" />
+          <OrderCRM360Fields userId={item.client_id} email={item.email} whatsapp={item.whatsapp} />
           <OrderPixActions className="mt-3" order={{ id: item.id, status: item.status, type: item.type, valor_total: item.valor_total, client_name: item.client_name, email: item.client_email, client_id: item.client_id }} />
           </>
         )}

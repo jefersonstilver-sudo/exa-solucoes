@@ -8,6 +8,8 @@ import OrdersPage from '@/pages/admin/OrdersPage';
 import OrderDetails from '@/pages/admin/OrderDetails';
 import ApprovalsPage from '@/pages/admin/ApprovalsPage';
 import UsersPage from '@/pages/admin/UsersPage';
+import CRM360Page from '@/pages/admin/crm/CRM360Page';
+import ConsolidacaoPage from '@/pages/admin/crm/ConsolidacaoPage';
 import TiposContaPage from '@/pages/admin/TiposContaPage';
 import SindicosInteressados from '@/pages/admin/SindicosInteressados';
 import CouponsPage from '@/pages/admin/CouponsPage';
@@ -289,6 +291,8 @@ const SuperAdminRoutes = () => {
       
       {/* ============ SISTEMA ============ */}
       <Route path="usuarios" element={<ErrorBoundary><UsersPage /></ErrorBoundary>} />
+      <Route path="crm-360" element={<CRM360Page />} />
+      <Route path="consolidacao" element={<ConsolidacaoPage />} />
       <Route path="tipos-conta" element={<TiposContaPage />} />
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
