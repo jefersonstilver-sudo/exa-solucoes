@@ -13,6 +13,7 @@ import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { getStatusConfig as getCanonicalStatusConfig } from '@/constants/pedidoStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
+import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
 
 interface MinimalOrderCardProps {
@@ -269,6 +270,7 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
         {/* Ações */}
         <div className="flex items-center gap-1.5">
           {item.type === 'order' && (
+            <SofiaSoldBadge pedidoId={item.id} className="self-start" />
             <OrderPixActions order={{ id: item.id, status: item.status, type: item.type, valor_total: item.valor_total, client_name: item.client_name, email: item.client_email, client_id: item.client_id }} />
           )}
           {item.type === 'order' && isSuperAdmin && panelList && panelList.length > 0 && (
