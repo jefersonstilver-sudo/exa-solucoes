@@ -3,6 +3,8 @@ import { Loader2, Send, UserCheck, Bot, RefreshCw, X, Info } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import CRM360Panel from '@/components/admin/crm/CRM360Panel';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 type Conv = {
   id: string;
@@ -79,6 +81,7 @@ export const SofiaChatPanel: React.FC = () => {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [fichaConversationId, setFichaConversationId] = useState<string | null>(null);
   const [contact, setContact] = useState<Contact | null>(null);
   const [form, setForm] = useState({ name: '', company: '', role: 'lead', manual: '' });
   const [saving, setSaving] = useState(false);
@@ -135,6 +138,7 @@ export const SofiaChatPanel: React.FC = () => {
     setContact(null);
     call('contact', { conversation_id: selId })
       .then((d) => {
+        if (selRef.current !== selId) return;
         const c: Contact = d.contact;
         setContact(c);
         setForm({ name: c.name || '', company: c.company || '', role: c.role || 'lead', manual: c.manual || '' });
@@ -196,6 +200,7 @@ export const SofiaChatPanel: React.FC = () => {
   }
 
   return (
+    <><Sheet open={Boolean(fichaConversationId)} onOpenChange={open => { if (!open) setFichaConversationId(null); }}><SheetContent side="right" className="w-full sm:max-w-5xl overflow-y-auto h-dvh"><SheetHeader className="mb-6"><SheetTitle>Ficha 360</SheetTitle></SheetHeader>{contact?.id && fichaConversationId === selId ? <CRM360Panel lookup={{ contact: contact.id }} /> : <div className="flex items-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" />Carregando contato...</div>}</SheetContent></Sheet>
     <div className={`grid grid-cols-1 ${showInfo ? "md:grid-cols-[320px_1fr_320px]" : "md:grid-cols-[320px_1fr]"} h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden`}>
       <div className="border-r border-gray-200 overflow-y-auto">
         <div className="px-4 py-3 flex items-center justify-between border-b bg-gray-50">
@@ -208,7 +213,7 @@ export const SofiaChatPanel: React.FC = () => {
         {convs.map((c) => (
           <button
             key={c.id}
-            onClick={() => setSelId(c.id)}
+            onClick={() => { setSelId(c.id); setFichaConversationId(c.id); }}
             className={`w-full text-left px-4 py-3 border-b hover:bg-gray-50 ${c.id === selId ? 'bg-red-50' : ''}`}
           >
             <div className="flex items-start gap-3">
@@ -237,7 +242,7 @@ export const SofiaChatPanel: React.FC = () => {
         ) : (
           <>
             <div className="px-4 py-3 border-b flex items-center justify-between gap-3">
-              <button className="flex items-center gap-3 min-w-0 text-left" onClick={() => setShowInfo((v) => !v)}>
+              <Button variant="ghost" className="flex items-center gap-3 min-w-0 text-left h-auto p-0 justify-start" onClick={() => setFichaConversationId(sel.id)}>
               <Avatar url={contact?.avatar_url ?? sel.avatar_url} name={sel.name} size={40} />
               <div className="min-w-0">
                 <div className="font-semibold text-gray-900 truncate">{sel.name} {sel.role && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 align-middle">{roleLabel(sel.role)}</span>}</div>
@@ -247,8 +252,9 @@ export const SofiaChatPanel: React.FC = () => {
                     : 'Sofia atendendo'}
                 </div>
               </div>
-              </button>
+              </Button>
               <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setFichaConversationId(sel.id)}>Ficha 360</Button>
               <Button size="sm" variant="ghost" onClick={() => setShowInfo((v) => !v)} title="Detalhes do contato">
                 <Info className="w-4 h-4" />
               </Button>
@@ -383,7 +389,7 @@ export const SofiaChatPanel: React.FC = () => {
           )}
         </div>
       )}
-    </div>
+    </div></>
   );
 };
 
