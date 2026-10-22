@@ -28,8 +28,9 @@ export const DeleteContactDialog: React.FC<Props> = ({ target, onClose, onDelete
     try {
       const { data, error } = await (supabase.rpc as any)('crm_apagar_contato', { p_contact: target.contactId, p_confirm: text.trim() });
       if (error) throw new Error(error.message);
-      const d = (data || {}) as { conversas?: number; mensagens?: number };
+      const d = (data || {}) as { conversas?: number; mensagens?: number; avisos?: string[] };
       toast.success(`Contato apagado: ${d.conversas ?? 0} conversas e ${d.mensagens ?? 0} mensagens removidas`);
+      if (Array.isArray(d.avisos) && d.avisos.length) toast.warning('Atenção: ' + d.avisos.join(' '), { duration: 10000 });
       onDeleted();
     } catch (e: any) {
       toast.error(e?.message || 'Não foi possível apagar o contato');
@@ -46,7 +47,7 @@ export const DeleteContactDialog: React.FC<Props> = ({ target, onClose, onDelete
             <AlertTriangle className="h-5 w-5" /> Apagar contato e historico?
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm">
-            Ao apagar, a Sofia perde todo o entendimento e o historico desta pessoa (conversas, mensagens, videos de teste e anotacoes). Se esse numero mandar mensagem de novo, ela sera tratada como uma pessoa NOVA. Esta acao nao pode ser desfeita. Contatos com conta de cliente, pedido ou contrato nao podem ser apagados.
+            Ao apagar, a Sofia perde todo o entendimento e o historico desta pessoa (conversas, mensagens, videos de teste e anotacoes). Se esse numero mandar mensagem de novo, ela sera tratada como uma pessoa NOVA. Esta acao nao pode ser desfeita. Contatos com pedido em andamento ou conta de cliente no site nao podem ser apagados; pedidos antigos (excluidos, cancelados ou finalizados) geram apenas um aviso.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
