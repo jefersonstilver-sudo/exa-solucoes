@@ -8,14 +8,14 @@ on:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg fonts-inter fonts-dejavu
-          pip install playwright segno pillow
+          sudo apt-get update && sudo apt-get install -y ffmpeg fonts-inter fonts-dejavu poppler-utils librsvg2-bin
+          pip install playwright segno pillow anthropic
           playwright install chromium --with-deps
       - run: python tools/video-gen/worker.py
         env:
@@ -23,3 +23,6 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SOFIA_WEBHOOK_TOKEN: ${{ secrets.SOFIA_WEBHOOK_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          COVERR_API_KEY: ${{ secrets.COVERR_API_KEY }}
+          LUCAS_MODEL: ${{ vars.LUCAS_MODEL }}
