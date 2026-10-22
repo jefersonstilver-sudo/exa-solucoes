@@ -74,6 +74,14 @@ def main():
     rows = req("GET", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}&select=*")
     if not rows: sys.exit("job not found")
     job = rows[0]
+    if (job.get("briefing") or {}).get("motor") == "lucas":
+        # Lucas Editor: motor novo (ficha da marca + revisao visual pelo Opus). Ele mesmo sobe o video e avisa a Sofia.
+        p = subprocess.run([sys.executable, os.path.join(HERE, "..", "lucas", "lucas.py")], stderr=subprocess.PIPE, text=True)
+        if p.returncode != 0:
+            print(p.stderr[-4000:])
+            ult = [l for l in p.stderr.strip().splitlines() if l.strip()][-1:] or ["sem detalhe"]
+            raise RuntimeError("Lucas Editor falhou: " + ult[0][:300])
+        return
     req("PATCH", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}", {"status": "rendering"})
     jp, out = f"/tmp/job_{JOB}.json", f"/tmp/{JOB}.mp4"
     brief0 = dict(job.get("briefing") or {})
