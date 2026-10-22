@@ -139,6 +139,20 @@ safe = SCENE_JS.replace('</script', '<\\/script')
                                 '<script>window.__scene=function(){\n' + safe + '\n};window.__run();</script></body></html>', encoding='utf-8')
 
 TS_CHECK = [round(x * DUR / 10, 2) for x in (0.6, 1.6, 2.6, 3.6, 4.6, 5.6, 6.6, 7.6, 8.6, 9.6)]
+# trecho quase vazio: menos de COV_MIN da tela com conteudo por COV_RUN segundos ou mais (amostra a cada COV_STEP s)
+COV_STEP, COV_MIN, COV_RUN = 0.2, 0.06, 0.6
+def empty_runs(cov):
+    """cov = [(t, fracao)]; devolve trechos quase vazios [{inicio_s, fim_s, dur_s, cobertura_min}]"""
+    out = []; start = None; low = 1.0
+    for t, c in cov + [(DUR + 1, 1.0)]:
+        if c < COV_MIN and t < DUR - 0.25:
+            if start is None: start, low = t, c
+            low = min(low, c)
+        elif start is not None:
+            end = min(t, DUR)
+            if end - start >= COV_RUN - 1e-6: out.append({'inicio_s': round(start, 1), 'fim_s': round(end, 1), 'dur_s': round(end - start, 1), 'cobertura_min': round(100 * low, 1)})
+            start = None
+    return out
 with sync_playwright() as p:
     br = p.chromium.launch(args=['--allow-file-access-from-files'])
     pg = br.new_page(viewport={'width': W, 'height': H})
@@ -169,6 +183,13 @@ with sync_playwright() as p:
         for x in pg.evaluate('window.__checkLayout ? window.__checkLayout() : []'):
             lay.append('t=%.1fs %s' % (t, x))
     lay = list(dict.fromkeys(lay))[:8]
+    # cobertura de conteudo ao longo do video (pega buracos que a amostra de 10 quadros nao ve)
+    cov = []
+    for i in range(int(DUR / COV_STEP)):
+        t = round(0.3 + i * COV_STEP, 2)
+        if t >= DUR: break
+        seek(t); cov.append((t, pg.evaluate('window.__coverage ? window.__coverage() : 1')))
+    vazios = empty_runs(cov)
     ignored = bool(P['media']) and pg.evaluate('!!window.__mediaIgnored')
 
     if VALIDATE:
@@ -181,13 +202,15 @@ with sync_playwright() as p:
         if dur_tl < DUR - 0.6: errs.append('timeline curta (%.1fs de %ds): planeje cenas ate K.DUR' % (dur_tl, DUR))
         if errs: res['ok'] = False; res['problemas'].append('erros JS: ' + ' | '.join(errs[:4]))
         if lay: res['ok'] = False; res['problemas'].append('layout: ' + ' ; '.join(lay))
+        for v in vazios:
+            res['ok'] = False; res['problemas'].append('trecho quase vazio de %.1fs a %.1fs (so %.1f%% da tela com conteudo): mantenha um elemento em cena ou comece a cena seguinte antes' % (v['inicio_s'], v['fim_s'], v['cobertura_min']))
         if ignored: res['ok'] = False; res['problemas'].append('o video/foto do cliente nao foi usado: chame K.media(tl, at, {parent, rect}) em pelo menos uma cena')
         bl = sum(1 for im in ims if ImageStat.Stat(im.convert('L')).stddev[0] < 6)
         if bl >= 3: res['ok'] = False; res['problemas'].append('quadros vazios (%d de %d)' % (bl, len(ims)))
         diffs = [ImageStat.Stat(ImageChops.difference(ims[i], ims[i + 1]).convert('L')).mean[0] for i in range(len(ims) - 1)]
         if sum(diffs) / len(diffs) < 1.5: res['ok'] = False; res['problemas'].append('quase sem animacao entre quadros')
         if per > 1.5: res['ok'] = False; res['problemas'].append('muito pesado: %.2fs por quadro; simplifique' % per)
-        res['seg_por_quadro'] = round(per, 2); print('VALIDATE ' + json.dumps(res, ensure_ascii=False)); br.close(); shutil.rmtree(tmp, ignore_errors=True); sys.exit(0)
+        res['seg_por_quadro'] = round(per, 2); res['cobertura_media'] = round(100 * sum(c for _, c in cov) / max(1, len(cov)), 1); print('VALIDATE ' + json.dumps(res, ensure_ascii=False)); br.close(); shutil.rmtree(tmp, ignore_errors=True); sys.exit(0)
 
     times = frames_only if frames_only else [i / FPS for i in range(DUR * FPS)]
     fd = tmp / 'f'; fd.mkdir(); hashes = []
@@ -203,7 +226,7 @@ for i in range(1, len(hashes)):
         cur = 1
 uniq = len(set(hashes))
 print('FRAMEREPORT ' + json.dumps({'fps': FPS, 'formato': fmt, 'resolucao': '%dx%d' % (W, H), 'quadros': len(hashes), 'unicos': uniq, 'pct_unicos': round(100.0 * uniq / max(1, len(hashes)), 1),
-                                   'paradas_longas': runs, 'layout': lay, 'midia_ignorada': ignored, 'tem_midia': bool(P['media']), 'motor': 'v8'}, ensure_ascii=False))
+                                   'paradas_longas': runs, 'trechos_vazios': vazios, 'cobertura_media': round(100 * sum(c for _, c in cov) / max(1, len(cov)), 1), 'layout': lay, 'midia_ignorada': ignored, 'tem_midia': bool(P['media']), 'motor': 'v8'}, ensure_ascii=False))
 if frames_only:
     out.mkdir(parents=True, exist_ok=True)
     for i, t in enumerate(times): shutil.copy(fd / ('f_%05d.jpg' % i), out / ('t_%05.2f.jpg' % t))
