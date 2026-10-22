@@ -1,6 +1,27 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { fetchVideosToDelete, deleteVideosFromExternalAPI } from './videoExternalDeletionService';
+import { cancelarAsaasPedidos } from './pedidoAsaasCancelService';
+
+/**
+ * Antes de excluir: cancela no Asaas a autorizacao do Pix Automatico, a assinatura e as cobrancas abertas.
+ * So segue para a exclusao o pedido cujo cancelamento foi confirmado. Cobranca paga nao e estornada.
+ */
+async function cancelarNoAsaasAntes(pedidoIds: string[], justificativa: string): Promise<{ liberados: string[]; bloqueados: string[] }> {
+  try {
+    const r = await cancelarAsaasPedidos(pedidoIds, justificativa);
+    const liberados = r.pedidos.filter(p => p.ok).map(p => p.pedido_id);
+    const bloqueados = pedidoIds.filter(id => !liberados.includes(id));
+    if (bloqueados.length) {
+      const nomes = r.pedidos.filter(p => !p.ok).map(p => p.nome || p.pedido_id.slice(0, 8)).join(', ');
+      toast.error(`${bloqueados.length} pedido(s) NAO foram excluidos: o cancelamento no Asaas nao foi confirmado (${nomes}). Nada foi apagado deles.`, { duration: 12000 });
+    }
+    return { liberados, bloqueados };
+  } catch (e) {
+    toast.error('Nao consegui cancelar as cobrancas no Asaas: ' + (e as Error).message + '. Nenhum pedido foi excluido.', { duration: 12000 });
+    return { liberados: [], bloqueados: pedidoIds };
+  }
+}
 
 export interface BulkDeleteResult {
   success: boolean;
@@ -17,9 +38,11 @@ interface BulkDeleteResponse {
 }
 
 export const bulkDeletePedidos = async (
-  pedidoIds: string[],
+  pedidoIdsSolicitados: string[],
   justificativa: string
 ): Promise<BulkDeleteResult> => {
+  const { liberados: pedidoIds } = await cancelarNoAsaasAntes(pedidoIdsSolicitados, justificativa);
+  if (!pedidoIds.length) return { success: false, deleted_count: 0, total_requested: pedidoIdsSolicitados.length, error: 'Cancelamento no Asaas nao confirmado' };
   try {
     // Obter informações do navegador para auditoria
     const userAgent = navigator.userAgent;
@@ -84,11 +107,15 @@ export const bulkDeletePedidos = async (
  * Salva histórico completo antes de deletar
  */
 export const superAdminBulkDeletePedidos = async (
-  pedidoIds: string[],
+  pedidoIdsSolicitados: string[],
   justificativa: string
 ): Promise<BulkDeleteResult> => {
   const getTimestamp = () => new Date().toISOString();
   const logSeparator = '═'.repeat(80);
+
+  // FASE 0: cancelar no Asaas ANTES de apagar videos e banco
+  const { liberados: pedidoIds } = await cancelarNoAsaasAntes(pedidoIdsSolicitados, justificativa);
+  if (!pedidoIds.length) return { success: false, deleted_count: 0, total_requested: pedidoIdsSolicitados.length, error: 'Cancelamento no Asaas nao confirmado' };
   
   try {
     // Obter informações do navegador para auditoria
@@ -135,8 +162,7 @@ export const superAdminBulkDeletePedidos = async (
       console.log(`   ℹ️ Nenhum vídeo para deletar da AWS`);
     }
 
-    // FASE 2.5: Cancelamento de boletos (migrado para ASAAS)
-    // FASE 2.5: Cancelamento de boletos (migrado para ASAAS) — não bloqueia a deleção
+    // FASE 2.5: o cancelamento no Asaas agora acontece na FASE 0 (cancelarNoAsaasAntes), antes de apagar qualquer coisa
 
     // ✅ FASE 3: Deletar do banco
     console.log(`\n🗑️ [${getTimestamp()}] FASE 3: Deletando do banco Supabase...`);
