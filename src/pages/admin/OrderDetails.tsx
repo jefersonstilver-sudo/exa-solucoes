@@ -11,6 +11,7 @@ import PurgePedidoVideosDialog from '@/components/impersonation/PurgePedidoVideo
 import ClientOrderViewSheet from '@/components/impersonation/ClientOrderViewSheet';
 import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import ClientProfilePanel from '@/components/admin/orders/ClientProfilePanel';
+import PedidoWhatsappAcessosCard from '@/components/admin/orders/PedidoWhatsappAcessosCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 
@@ -124,7 +125,16 @@ const OrderDetails = () => {
           </TabsContent>
           {orderDetails?.client_id && (
             <TabsContent value="perfil">
-              <ClientProfilePanel userId={orderDetails.client_id} onSaved={refetch} />
+              <div className="space-y-4">
+                <PedidoWhatsappAcessosCard
+                  pedidoId={orderDetails.id}
+                  clientId={orderDetails.client_id}
+                  gestorWhatsapp={orderDetails.whatsapp}
+                  gestorEmail={orderDetails.client_email || orderDetails.email}
+                  onChanged={refetch}
+                />
+                <ClientProfilePanel userId={orderDetails.client_id} onSaved={refetch} />
+              </div>
             </TabsContent>
           )}
         </Tabs>
