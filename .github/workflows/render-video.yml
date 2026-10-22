@@ -8,14 +8,14 @@ on:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg fonts-inter fonts-dejavu
-          pip install playwright segno
+          pip install playwright segno pillow
           playwright install chromium --with-deps
       - run: python tools/video-gen/worker.py
         env:
