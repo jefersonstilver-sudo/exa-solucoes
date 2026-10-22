@@ -118,7 +118,6 @@ const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsP
 const CategoriasFinanceirasPage = lazy(() => import('@/pages/admin/financeiro/CategoriasFinanceirasPage'));
 
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
-const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
 const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').then(m => ({ default: m.Agentes })));
 const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
@@ -295,13 +294,8 @@ const AdminRoutes = () => {
           </Suspense>
         </ProtectedModuleRoute>
       } />
-      <Route path="crm-chat" element={
-        <ProtectedModuleRoute moduleKey={MODULE_KEYS.crm_chat}>
-          <Suspense fallback={<GlobalLoadingPage message="Carregando CRM Chat..." />}>
-            <CRMUnificado />
-          </Suspense>
-        </ProtectedModuleRoute>
-      } />
+      {/* CRM Chat antigo eliminado: tudo vai para o CRM Evolution */}
+      <Route path="crm-chat" element={<Navigate to="/admin/crm-evolution" replace />} />
       <Route path="crm-evolution" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.crm_evolution}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando CRM Evolution..." />}>
@@ -539,7 +533,7 @@ const AdminRoutes = () => {
       <Route path="monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />
       <Route path="monitoramento-ia/dashboard" element={<Navigate to="/admin" replace />} />
       <Route path="monitoramento-ia/paineis" element={<Navigate to="/admin/paineis-exa" replace />} />
-      <Route path="monitoramento-ia/crm" element={<Navigate to="/admin/crm-chat" replace />} />
+      <Route path="monitoramento-ia/crm" element={<Navigate to="/admin/crm-evolution" replace />} />
       <Route path="monitoramento-ia/agentes" element={<Navigate to="/admin/agentes-sofia" replace />} />
       <Route path="monitoramento-ia/alertas" element={<Navigate to="/admin/exa-alerts" replace />} />
       <Route path="monitoramento-ia/escalacoes" element={<Navigate to="/admin/escalacoes" replace />} />
