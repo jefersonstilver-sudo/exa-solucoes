@@ -95,7 +95,7 @@ export const MobileMoreMenu: React.FC<MobileMoreMenuProps> = ({ trigger }) => {
       items: [
         { icon: Contact, label: 'Contatos', path: buildPath('contatos'), moduleKey: MODULE_KEYS.contatos },
         { icon: LayoutGrid, label: 'Kanban', path: buildPath('contatos-kanban'), moduleKey: MODULE_KEYS.contatos_kanban },
-        { icon: MessageSquare, label: 'CRM Chat', path: buildPath('crm-chat'), moduleKey: MODULE_KEYS.crm_chat },
+        { icon: MessageSquare, label: 'CRM Evolution', path: buildPath('crm-evolution'), moduleKey: MODULE_KEYS.crm_evolution },
         { icon: Users, label: 'CRM Site', path: buildPath('crm'), moduleKey: MODULE_KEYS.crm_site },
         { icon: Zap, label: 'Leads EXA', path: buildPath('leads-exa'), moduleKey: MODULE_KEYS.leads },
         { icon: UserCheck, label: 'Síndicos', path: buildPath('sindicos-interessados'), moduleKey: MODULE_KEYS.sindicos },
