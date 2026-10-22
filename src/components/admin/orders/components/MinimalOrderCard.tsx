@@ -91,7 +91,10 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
 
   const whatsapp = item.whatsapp || null;
   const emailPedido = item.email || item.client_email || null;
-  const conversarHref = whatsapp ? `${basePath}/crm-chat?telefone=${soDigitos(whatsapp)}` : null;
+  // CRM Evolution > Sofia, ja na conversa do cliente (se nao existir, o painel cria uma pronta para escrever)
+  const conversarHref = whatsapp
+    ? `${basePath}/crm-evolution/conversas/sofia?telefone=${soDigitos(whatsapp)}&nome=${encodeURIComponent(item.client_name || '')}`
+    : null;
 
   const sincronizar = async () => {
     if (!panelList?.length) return;
