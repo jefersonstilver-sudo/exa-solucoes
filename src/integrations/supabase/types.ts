@@ -14082,6 +14082,45 @@ export type Database = {
           },
         ]
       }
+      sofia_erros: {
+        Row: {
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string
+          detalhe: string | null
+          etapa: string
+          id: number
+          modelo: string | null
+          ms: number | null
+          nivel: string
+          versao: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          detalhe?: string | null
+          etapa: string
+          id?: number
+          modelo?: string | null
+          ms?: number | null
+          nivel?: string
+          versao?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          detalhe?: string | null
+          etapa?: string
+          id?: number
+          modelo?: string | null
+          ms?: number | null
+          nivel?: string
+          versao?: string | null
+        }
+        Relationships: []
+      }
       sofia_learning: {
         Row: {
           category: string
