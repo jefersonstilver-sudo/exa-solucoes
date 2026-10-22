@@ -13,6 +13,8 @@ export interface OrderOrAttempt {
   client_id?: string;
   email?: string | null;
   whatsapp?: string | null;
+  /** quantos WhatsApps autorizados (alem do gestor) o pedido tem */
+  whatsapp_autorizados?: number;
   client_email?: string;
   client_name?: string;
   client_phone?: string;
