@@ -324,7 +324,7 @@
   function qrNode(size, parent, css) { if (!P.qr) return null; const q = P.qr, n = q.length, cv = document.createElement('canvas'); cv.width = cv.height = 400; const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 400, 400); c.fillStyle = '#000'; const m = 400 / (n + 8); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q[y][x]) c.fillRect((x + 4) * m, (y + 4) * m, m + .5, m + .5); const d = el('width:' + u(size) + ';height:' + u(size) + ';border-radius:' + u(size * .08) + ';overflow:hidden;background:#fff;' + (css || ''), '', parent); cv.style.cssText = 'width:100%;height:100%;display:block'; d.appendChild(cv); return d; }
   // cartao final no estilo do CTA da Sofia: marca grande, chamada, numero gigante, chip verde, QR e Instagram
   function end(tl, at, o) {
-    o = o || {}; const p = el('left:0;top:0;width:100%;height:100%;z-index:50', ''); tl.fromTo(p, { opacity: 0 }, { opacity: 1, duration: .45, immediateRender: true }, at);
+    o = o || {}; const p = el('left:0;top:0;width:100%;height:100%;z-index:50', ''); p.dataset.endcard = '1'; tl.fromTo(p, { opacity: 0 }, { opacity: 1, duration: .45, immediateRender: true }, at);
     el(`left:0;top:0;width:100%;height:100%;background:${C.bg}`, '', p);
     const hasLogo = !!P.assets.logo, qr = !!P.qr;
     if (vert) {
@@ -391,6 +391,32 @@
       if (alpha(n) > .9) boxes.push([x0, y0, x1, y1, txt, n]); });
     for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) { const a = boxes[i], b = boxes[j]; if (a[5].contains(b[5]) || b[5].contains(a[5])) continue; if (a[5].closest('[data-ktext]') && a[5].closest('[data-ktext]') === b[5].closest('[data-ktext]')) continue; const ix = Math.min(a[2], b[2]) - Math.max(a[0], b[0]), iy = Math.min(a[3], b[3]) - Math.max(a[1], b[1]); if (ix > 12 && iy > 12 && ix * iy > .25 * Math.min((a[2] - a[0]) * (a[3] - a[1]), (b[2] - b[0]) * (b[3] - b[1]))) out.push('textos sobrepostos: "' + a[4] + '" x "' + b[4] + '"'); }
     return [...new Set(out)].slice(0, 6);
+  };
+
+  // ---------- validacao: quanto da tela tem conteudo visivel agora (0 a 1) ----------
+  // Conta so o que a cena desenha (camadas de cena e cartao final); ignora fundo, brilho, nome no topo e logo EXA.
+  // Usa uma grade grossa para somar a area sem contar duas vezes o que se sobrepoe.
+  window.__coverage = function () {
+    const sr = st.getBoundingClientRect(), k = sr.width / W, GX = vert ? 27 : 48, GY = vert ? 48 : 27, cw = W / GX, ch = H / GY;
+    const grid = new Uint8Array(GX * GY);
+    const alpha = n => { let a = 1; for (let p = n; p && p !== st; p = p.parentElement) { const cs = getComputedStyle(p); if (cs.display === 'none' || cs.visibility === 'hidden') return 0; a *= parseFloat(cs.opacity); if (a < .3) return a; } return a; };
+    const roots = [...st.querySelectorAll('[data-scene], [data-endcard]')];
+    const seen = new Set();
+    roots.forEach(root => root.querySelectorAll('*').forEach(n => {
+      if (seen.has(n)) return; seen.add(n);
+      const tag = n.tagName, cs = getComputedStyle(n);
+      const hasText = [...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim());
+      const painted = tag === 'IMG' || tag === 'CANVAS' || tag === 'svg' || tag === 'VIDEO' || hasText ||
+        (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') || (cs.backgroundImage && cs.backgroundImage !== 'none');
+      if (!painted) return;
+      const r = n.getBoundingClientRect(); if (r.width < 4 || r.height < 4) return;
+      const x0 = Math.max(0, (r.left - sr.left) / k), y0 = Math.max(0, (r.top - sr.top) / k), x1 = Math.min(W, (r.right - sr.left) / k), y1 = Math.min(H, (r.bottom - sr.top) / k);
+      if (x1 <= x0 || y1 <= y0) return;
+      if ((x1 - x0) * (y1 - y0) > .92 * W * H) return; // camada/fundo de tela cheia nao e conteudo
+      if (alpha(n) < .3) return;
+      for (let gy = Math.floor(y0 / ch); gy < Math.min(GY, Math.ceil(y1 / ch)); gy++) for (let gx = Math.floor(x0 / cw); gx < Math.min(GX, Math.ceil(x1 / cw)); gx++) grid[gy * GX + gx] = 1;
+    }));
+    let s = 0; for (let i = 0; i < grid.length; i++) s += grid[i]; return s / grid.length;
   };
 
   // ---------- cena automatica (reserva quando o diretor falha): usa os componentes acima ----------
