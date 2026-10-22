@@ -18,7 +18,7 @@ import { EnhancedOrderCard } from './components/EnhancedOrderCard';
 import { SortSelector, SortField, SortDirection } from './components/SortSelector';
 import { SortableTab } from './components/SortableTab';
 import { bulkDeletePedidos, bulkDeleteTentativas, superAdminBulkDeletePedidos } from '@/services/bulkDeleteService';
-import { Trash2, AlertTriangle, LayoutList, LayoutGrid, Users, FolderOpen, Plus } from 'lucide-react';
+import { Trash2, AlertTriangle, LayoutList, LayoutGrid, Users, FolderOpen, Plus, ChevronsUpDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
@@ -85,6 +85,14 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
   const [viewMode, setViewMode] = useState<'minimal' | 'detailed'>('minimal');
+  // "expandir todos" do modo compacto, lembrado neste navegador
+  const [expandirTodos, setExpandirTodos] = useState<boolean>(() => {
+    try { return localStorage.getItem('pedidos_expandir_todos') === '1'; } catch { return false; }
+  });
+  const alternarExpandirTodos = () => setExpandirTodos((v) => {
+    try { localStorage.setItem('pedidos_expandir_todos', v ? '0' : '1'); } catch { /* sem storage */ }
+    return !v;
+  });
   const [groupByClient, setGroupByClient] = useState(false);
   const [groupByGroup, setGroupByGroup] = useState(false);
   const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
@@ -435,6 +443,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
                       group.items.map(item => (
                         <MinimalOrderCard
                           key={item.id}
+                          defaultExpanded={expandirTodos}
                           item={item}
                           isSelected={selectedItems.includes(item.id)}
                           onSelectionChange={handleSelectItem}
@@ -471,6 +480,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           {items.map(item => (
             <MinimalOrderCard
               key={item.id}
+              defaultExpanded={expandirTodos}
               item={item}
               isSelected={selectedItems.includes(item.id)}
               onSelectionChange={handleSelectItem}
@@ -555,6 +565,13 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           >
             <Plus className="h-4 w-4 mr-1.5" />
             Novo grupo
+          </Button>
+        )}
+
+        {viewMode === 'minimal' && (
+          <Button variant="ghost" size="sm" onClick={alternarExpandirTodos} className="h-8 px-3" title="Mostrar ou esconder os detalhes de todos os pedidos">
+            <ChevronsUpDown className="h-4 w-4 mr-1.5" />
+            {expandirTodos ? 'Recolher todos' : 'Expandir todos'}
           </Button>
         )}
 

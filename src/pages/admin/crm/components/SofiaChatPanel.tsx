@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Loader2, Send, UserCheck, Bot, RefreshCw, X, Info, Trash2, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -97,6 +98,12 @@ export const SofiaChatPanel: React.FC = () => {
   const { userProfile } = useAuth();
   const canDelete = canDeleteSofiaContact(userProfile?.role);
   const [deleteTarget, setDeleteTarget] = useState<(DeleteContactTarget & { conversationId: string }) | null>(null);
+  // ?telefone= (botao "Conversar" da lista de pedidos): abre direto a conversa daquele cliente
+  const [searchParams] = useSearchParams();
+  const telefoneAlvo = (searchParams.get('telefone') || '').replace(/\D/g, '');
+  const [extraConv, setExtraConv] = useState<Conv | null>(null);
+  const [semConversa, setSemConversa] = useState<string | null>(null);
+  const alvoResolvido = useRef(false);
 
   const openDelete = async (c: Conv) => {
     if (contact?.id && contactConversationId === c.id) {
@@ -131,13 +138,24 @@ export const SofiaChatPanel: React.FC = () => {
     try {
       const d = await call('list');
       setConvs(d.conversations || []);
+      if (telefoneAlvo && !alvoResolvido.current) {
+        alvoResolvido.current = true;
+        const l8 = telefoneAlvo.slice(-8);
+        let alvo: Conv | null = (d.conversations || []).find((c: Conv) => (c.phone || '').replace(/\D/g, '').slice(-8) === l8) || null;
+        if (!alvo) {
+          try { alvo = (await call('find_phone', { phone: telefoneAlvo }))?.conversation || null; } catch { alvo = null; }
+          if (alvo) setExtraConv(alvo);
+        }
+        if (alvo) { setSelId(alvo.id); setSemConversa(null); return; }
+        setSemConversa(telefoneAlvo);
+      }
       setSelId((cur) => cur ?? d.conversations?.[0]?.id ?? null);
     } catch (e: any) {
       console.error('sofia list', e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [telefoneAlvo]);
 
   const loadMsgs = useCallback(async (id: string, replace: boolean) => {
     try {
@@ -204,7 +222,9 @@ export const SofiaChatPanel: React.FC = () => {
     }
   };
 
-  const sel = convs.find((c) => c.id === selId) || null;
+  // conversa antiga achada pelo telefone entra no topo da lista (a lista so traz as 60 mais recentes)
+  const lista = extraConv && !convs.some((c) => c.id === extraConv.id) ? [extraConv, ...convs] : convs;
+  const sel = lista.find((c) => c.id === selId) || null;
 
   const setMode = async (mode: 'auto' | 'humano') => {
     if (!selId) return;
@@ -243,7 +263,7 @@ export const SofiaChatPanel: React.FC = () => {
 
   return (
     <><DeleteContactDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={handleDeleted} />
-    <Sheet open={Boolean(fichaConversationId)} onOpenChange={open => { if (!open) setFichaConversationId(null); }}><SheetContent side="right" className="w-full sm:max-w-5xl overflow-y-auto h-dvh"><SheetHeader className="mb-6 flex-row items-center justify-between gap-3 space-y-0 pr-8"><SheetTitle>Ficha 360</SheetTitle>{canDelete && fichaConversationId && (() => { const fc = convs.find(x => x.id === fichaConversationId); return fc ? <Button variant="ghost" size="sm" onClick={() => openDelete(fc)} className="text-destructive hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4 mr-1.5" />Apagar contato</Button> : null; })()}</SheetHeader>{contactError ? <p role="alert">{contactError}</p> : contact?.id && fichaConversationId === contactConversationId ? <CRM360Panel lookup={{ contact: contact.id }} /> : <div className="flex items-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" />Carregando contato...</div>}</SheetContent></Sheet>
+    <Sheet open={Boolean(fichaConversationId)} onOpenChange={open => { if (!open) setFichaConversationId(null); }}><SheetContent side="right" className="w-full sm:max-w-5xl overflow-y-auto h-dvh"><SheetHeader className="mb-6 flex-row items-center justify-between gap-3 space-y-0 pr-8"><SheetTitle>Ficha 360</SheetTitle>{canDelete && fichaConversationId && (() => { const fc = lista.find(x => x.id === fichaConversationId); return fc ? <Button variant="ghost" size="sm" onClick={() => openDelete(fc)} className="text-destructive hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4 mr-1.5" />Apagar contato</Button> : null; })()}</SheetHeader>{contactError ? <p role="alert">{contactError}</p> : contact?.id && fichaConversationId === contactConversationId ? <CRM360Panel lookup={{ contact: contact.id }} /> : <div className="flex items-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" />Carregando contato...</div>}</SheetContent></Sheet>
     <div className={`grid grid-cols-1 ${showInfo ? "md:grid-cols-[320px_1fr_320px]" : "md:grid-cols-[320px_1fr]"} h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden`}>
       <div className="border-r border-gray-200 overflow-y-auto">
         <div className="px-4 py-3 flex items-center justify-between border-b bg-gray-50">
@@ -252,8 +272,14 @@ export const SofiaChatPanel: React.FC = () => {
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
-        {convs.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa ainda.</p>}
-        {convs.map((c) => (
+        {semConversa && (
+          <div className="m-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+            Este cliente ({semConversa}) ainda não conversou com a Sofia, então não há conversa para abrir.
+            <button type="button" className="ml-1 underline" onClick={() => setSemConversa(null)}>Fechar</button>
+          </div>
+        )}
+        {lista.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa ainda.</p>}
+        {lista.map((c) => (
           <div key={c.id} className="relative group">
           <button
             onClick={() => { setSelId(c.id); setFichaConversationId(c.id); }}
