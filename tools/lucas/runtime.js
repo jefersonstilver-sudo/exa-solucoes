@@ -63,7 +63,7 @@
     let w = h * im.naturalWidth / im.naturalHeight; if (o.maxW && w > o.maxW) { w = o.maxW; h = w * im.naturalHeight / im.naturalWidth; }
     const x = o.align === 'left' ? cx : o.align === 'right' ? cx - w : cx - w / 2, y = cy - h / 2;
     ctx.save(); if (o.alpha != null) ctx.globalAlpha *= o.alpha; ctx.drawImage(im, x, y, w, h); ctx.restore();
-    L._box('logo', x, y, w, h); return { x, y, w, h };
+    L._box('logo', x, y, w, h, '', ctx); return { x, y, w, h };
   };
 
   // ---------- clipes de video (sequencias de quadros extraidas pelo render) ----------
@@ -93,7 +93,15 @@
 
   // ---------- texto ----------
   const boxes = [];
-  L._box = (kind, x, y, w, h, txt) => boxes.push({ kind, x, y, w, h, txt });
+  // caixa em coordenadas de TELA: aplica o translate/scale/rotate atual do ctx (senao o verificador acusa 'fora da tela' sem estar)
+  L._box = (kind, x, y, w, h, txt, ctx) => {
+    if (ctx && ctx.getTransform) {
+      const m = ctx.getTransform(); const pts = [[x, y], [x + w, y], [x, y + h], [x + w, y + h]].map(([px, py]) => [m.a * px + m.c * py + m.e, m.b * px + m.d * py + m.f]);
+      const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+      x = Math.min(...xs); y = Math.min(...ys); w = Math.max(...xs) - x; h = Math.max(...ys) - y;
+    }
+    boxes.push({ kind, x, y, w, h, txt });
+  };
   const fontStr = (o, size) => (o.italic ? 'italic ' : '') + (o.weight || 800) + ' ' + Math.round(size) + "px '" + (o.font || 'Inter') + "', 'Inter', sans-serif";
   /** Texto com quebra por palavras e auto-ajuste: diminui a fonte ate caber em maxW x maxLines. Nunca corta.
       o: {size, font, weight, italic, color, align('left'|'center'|'right'), maxW, maxLines, lineH, letter(px), upper, alpha, shadow, stroke}
@@ -119,7 +127,7 @@
     lines.forEach((l, i) => { const yy = y + i * size * lh; if (o.stroke) { ctx.lineWidth = o.stroke.w || size * 0.08; ctx.strokeStyle = o.stroke.color || '#000'; ctx.strokeText(l, x, yy); } ctx.fillText(l, x, yy); wmax = Math.max(wmax, ctx.measureText(l).width); });
     ctx.restore();
     const h = lines.length * size * lh, bx = (o.align === 'center' ? x - wmax / 2 : o.align === 'right' ? x - wmax : x);
-    if ((o.alpha == null || o.alpha > 0.05)) L._box('texto', bx, y, wmax, h, str);
+    if ((o.alpha == null || o.alpha > 0.05)) L._box('texto', bx, y, wmax, h, str, ctx);
     return { w: wmax, h, size, lines: lines.length };
   };
 
