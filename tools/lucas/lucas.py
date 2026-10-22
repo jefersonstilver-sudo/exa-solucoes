@@ -450,12 +450,15 @@ def rodar_job():
         try:
             raw = baixar(logo_url, A / "logo_raw")
             cab = open(raw, "rb").read(400).lstrip()
-            if cab.startswith(b"%PDF"):  # logo vetorial em PDF -> PNG transparente em alta
-                subprocess.run(["pdftocairo", "-png", "-transp", "-singlefile", "-r", "400", str(raw), str(A / "logo_pdf")], check=True)
-                raw = A / "logo_pdf.png"
-            elif cab.startswith((b"<svg", b"<?xml")) or b"<svg" in cab:
-                subprocess.run(["rsvg-convert", "-w", "2400", "-a", "-o", str(A / "logo_svg.png"), str(raw)], check=True)
-                raw = A / "logo_svg.png"
+            if cab.startswith(b"%PDF") or cab.startswith((b"<svg", b"<?xml")) or b"<svg" in cab:
+                # logo vetorial (PDF ou SVG) -> PNG transparente em alta, sem depender de apt
+                import pymupdf as fitz
+                tipo = "pdf" if cab.startswith(b"%PDF") else "svg"
+                doc = fitz.open(stream=Path(raw).read_bytes(), filetype=tipo)
+                pg0 = doc[0]
+                zoom = 2400 / max(pg0.rect.width, pg0.rect.height, 1)
+                pg0.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=True).save(str(A / "logo_vetor.png"))
+                raw = A / "logo_vetor.png"
             if True:
                 w, h = preparar_imagem(raw, A / "logo.png", 1600)
                 assets["logo"] = {"src": "assets/logo.png", "w": w, "h": h}
