@@ -138,13 +138,16 @@ Deno.serve(async (req) => {
   if (!bearer) return json({ error: 'Unauthorized' }, 401);
   const { data: { user }, error: ae } = await db.auth.getUser(bearer);
   if (ae || !user) return json({ error: 'Unauthorized' }, 401);
-  const { data: roles } = await db.from('user_roles').select('role').eq('user_id', user.id).in('role', ['super_admin', 'admin', 'admin_financeiro']).limit(1);
+  const { data: roles } = await db.from('user_roles').select('role').eq('user_id', user.id).in('role', ['super_admin', 'admin', 'admin_financeiro']);
   if (!roles?.length) return json({ error: 'Forbidden' }, 403);
+  const superAdmin = roles.some((r: J) => r.role === 'super_admin');
 
   const body = await req.json().catch(() => null) as J | null;
   const modo = body?.modo;
   const ids: string[] = Array.isArray(body?.pedido_ids) ? body!.pedido_ids.filter((x: unknown) => typeof x === 'string' && UUID.test(x)) : [];
   if (!['mapear', 'cancelar'].includes(modo) || !ids.length || ids.length > 50) return json({ error: 'Parametros invalidos' }, 400);
+  // cancelar mexe em cobranca: so super_admin (o mesmo papel que pode excluir pedido)
+  if (modo === 'cancelar' && !superAdmin) return json({ error: 'Somente super_admin pode cancelar no Asaas' }, 403);
   const justificativa = String(body?.justificativa || '').slice(0, 500);
 
   const pedidos: J[] = [];
