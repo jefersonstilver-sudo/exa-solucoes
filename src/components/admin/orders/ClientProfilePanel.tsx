@@ -14,10 +14,12 @@ import { resolveDisplayName, saveClientIdentity } from '@/services/clientProfile
 interface Props {
   userId: string;
   onSaved?: () => void;
+  /** esconde as secoes de marca (usado na gaveta rapida da lista de pedidos) */
+  compact?: boolean;
 }
 
 /** Aba "Perfil do cliente" no detalhe do pedido (CEO edita em nome do cliente). */
-const ClientProfilePanel: React.FC<Props> = ({ userId, onSaved }) => {
+const ClientProfilePanel: React.FC<Props> = ({ userId, onSaved, compact }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [nome, setNome] = useState('');
@@ -111,8 +113,8 @@ const ClientProfilePanel: React.FC<Props> = ({ userId, onSaved }) => {
         </CardContent>
       </Card>
 
-      <CompanyBrandSection isEditing userId={userId} />
-      <ClientBrandExtrasCard userId={userId} />
+      {!compact && <CompanyBrandSection isEditing userId={userId} />}
+      {!compact && <ClientBrandExtrasCard userId={userId} />}
     </div>
   );
 };

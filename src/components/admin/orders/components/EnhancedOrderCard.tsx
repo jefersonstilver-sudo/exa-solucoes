@@ -17,6 +17,7 @@ import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
 import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
 import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
+import WhatsappStatusBadge from '@/components/admin/orders/WhatsappStatusBadge';
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
   isSelected: boolean;
@@ -26,6 +27,8 @@ interface EnhancedOrderCardProps {
   onUnblockOrder?: (orderId: string) => void;
   isBlocking?: boolean;
   isUnblocking?: boolean;
+  /** clique no nome do cliente abre o cadastro + WhatsApps do pedido */
+  onOpenClientProfile?: (item: OrderOrAttempt) => void;
 }
 const getStatusColor = (status: string, correctStatus?: string) => {
   const targetStatus = correctStatus || status;
@@ -140,7 +143,8 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
   onBlockOrder,
   onUnblockOrder,
   isBlocking,
-  isUnblocking
+  isUnblocking,
+  onOpenClientProfile
 }) => {
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   
@@ -568,10 +572,12 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
               <User className="w-4 h-4 text-purple-600" />
               <span 
                 className="text-sm font-medium cursor-pointer hover:text-primary hover:underline transition-colors"
-                onClick={() => setShowTrackingModal(true)}
+                onClick={() => (item.type === 'order' && onOpenClientProfile ? onOpenClientProfile(item) : setShowTrackingModal(true))}
+                title={item.type === 'order' && onOpenClientProfile ? 'Ver cadastro do cliente e WhatsApps do pedido' : undefined}
               >
                 {item.client_name}
               </span>
+              {item.type === 'order' && <WhatsappStatusBadge whatsapp={item.whatsapp} autorizados={item.whatsapp_autorizados} />}
             </div>}
           
           {item.client_email && <div className="flex items-center gap-2">

@@ -26,6 +26,7 @@ import { useOrderGroups, OrderGroup } from '@/hooks/useOrderGroups';
 import { OrderGroupHeader } from '@/components/orders/OrderGroupHeader';
 import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
 import { AsaasCancelPreview } from './AsaasCancelPreview';
+import ClientQuickProfileSheet, { ClientQuickProfileTarget } from './ClientQuickProfileSheet';
 
 interface OrdersTabsRefactoredProps {
   onViewOrderDetails: (orderId: string) => void;
@@ -54,6 +55,11 @@ const DEFAULT_TAB_ORDER = [
 
 const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrderDetails, searchTerm = '' }) => {
   const { ordersAndAttempts: rawOrdersAndAttempts, loading, refetch } = useOrdersWithAttemptsRefactored();
+  const [perfilAlvo, setPerfilAlvo] = useState<ClientQuickProfileTarget | null>(null);
+  const abrirPerfil = (item: OrderOrAttempt) => setPerfilAlvo({
+    pedidoId: item.id, clientId: item.client_id, clientName: item.client_name,
+    email: item.email, clientEmail: item.client_email, whatsapp: item.whatsapp,
+  });
 
   // Aplica busca global (id, cliente, email) antes da segmentação por status
   const ordersAndAttempts = useMemo(() => {
@@ -433,6 +439,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
                           isSelected={selectedItems.includes(item.id)}
                           onSelectionChange={handleSelectItem}
                           onViewOrderDetails={onViewOrderDetails}
+                          onOpenClientProfile={abrirPerfil}
                           showCheckbox={isSuperAdmin}
                           isSuperAdmin={isSuperAdmin}
                         />
@@ -445,6 +452,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
                           isSelected={selectedItems.includes(item.id)}
                           onSelectionChange={handleSelectItem}
                           onViewOrderDetails={onViewOrderDetails}
+                          onOpenClientProfile={abrirPerfil}
                           onBlockOrder={handleBlockOrder}
                           onUnblockOrder={handleUnblockOrder}
                           isBlocking={isBlocking}
@@ -467,6 +475,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
               isSelected={selectedItems.includes(item.id)}
               onSelectionChange={handleSelectItem}
               onViewOrderDetails={onViewOrderDetails}
+              onOpenClientProfile={abrirPerfil}
               showCheckbox={isSuperAdmin}
               isSuperAdmin={isSuperAdmin}
             />
@@ -481,6 +490,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
               isSelected={selectedItems.includes(item.id)}
               onSelectionChange={handleSelectItem}
               onViewOrderDetails={onViewOrderDetails}
+              onOpenClientProfile={abrirPerfil}
               onBlockOrder={handleBlockOrder}
               onUnblockOrder={handleUnblockOrder}
               isBlocking={isBlocking}
@@ -668,6 +678,14 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           title="Editar Grupo"
         />
       )}
+
+      {/* Cadastro do cliente + WhatsApps do pedido (clique no nome do cliente) */}
+      <ClientQuickProfileSheet
+        target={perfilAlvo}
+        onClose={() => setPerfilAlvo(null)}
+        onChanged={() => { refetch(); }}
+        onOpenOrder={(id) => { setPerfilAlvo(null); onViewOrderDetails(id); }}
+      />
     </div>
   );
 };

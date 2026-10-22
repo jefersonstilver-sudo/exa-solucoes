@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { contarAutorizados } from '@/services/pedidoWhatsappService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { OrderOrAttempt, OrdersStats } from '@/types/ordersAndAttempts';
@@ -47,6 +48,7 @@ export const useOrdersWithAttemptsRefactored = () => {
       const tipoProdutoMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.tipo_produto]));
       const isMasterMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.is_master]));
       const contactMap = new Map((pedidosExtra || []).map(p => [p.id, p]));
+      const autorizadosMap = await contarAutorizados(pedidoIds);
       
       // Buscar IDs de pedidos que têm vídeos
       const { data: pedidosComVideo } = await supabase
@@ -83,6 +85,7 @@ export const useOrdersWithAttemptsRefactored = () => {
         client_id: pedido.client_id,
         email: contactMap.get(pedido.id)?.email ?? null,
         whatsapp: contactMap.get(pedido.id)?.whatsapp ?? null,
+        whatsapp_autorizados: autorizadosMap.get(pedido.id) || 0,
         client_email: pedido.client_email,
         client_name: pedido.client_name,
         video_status: pedido.video_status,

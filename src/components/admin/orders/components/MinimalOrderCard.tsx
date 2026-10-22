@@ -16,6 +16,7 @@ import OrderPixActions from '@/components/admin/orders/pix/OrderPixActions';
 import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
 import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
+import WhatsappStatusBadge from '@/components/admin/orders/WhatsappStatusBadge';
 
 interface MinimalOrderCardProps {
   item: OrderOrAttempt;
@@ -24,6 +25,8 @@ interface MinimalOrderCardProps {
   onViewOrderDetails?: (orderId: string) => void;
   showCheckbox?: boolean;
   isSuperAdmin?: boolean;
+  /** clique no nome do cliente abre o cadastro + WhatsApps do pedido */
+  onOpenClientProfile?: (item: OrderOrAttempt) => void;
 }
 
 // Usa o mapper central canônico para obter configuração de status
@@ -87,7 +90,8 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   onSelectionChange,
   onViewOrderDetails,
   showCheckbox = true,
-  isSuperAdmin = false
+  isSuperAdmin = false,
+  onOpenClientProfile
 }) => {
   const statusConfig = getStatusConfig(item.status, item.type);
   const showVideoPreview = item.type === 'order' && ['ativo', 'video_aprovado'].includes(item.status);
@@ -199,9 +203,21 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
         {/* Linha 2: Cliente */}
         <div className="flex items-center gap-2">
           <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-          <span className="text-sm font-medium truncate">
-            {item.client_name || 'Nome não disponível'}
-          </span>
+          {item.type === 'order' && onOpenClientProfile ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onOpenClientProfile(item); }}
+              className="text-sm font-medium truncate text-left hover:text-primary hover:underline"
+              title="Ver cadastro do cliente e WhatsApps do pedido"
+            >
+              {item.client_name || 'Nome não disponível'}
+            </button>
+          ) : (
+            <span className="text-sm font-medium truncate">
+              {item.client_name || 'Nome não disponível'}
+            </span>
+          )}
+          {item.type === 'order' && <WhatsappStatusBadge whatsapp={item.whatsapp} autorizados={item.whatsapp_autorizados} />}
           <span className="text-xs text-muted-foreground truncate hidden sm:inline">
             • {item.client_email || 'Email não disponível'}
           </span>
