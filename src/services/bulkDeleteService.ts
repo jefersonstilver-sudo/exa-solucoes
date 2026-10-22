@@ -219,7 +219,7 @@ export const superAdminBulkDeletePedidos = async (
     console.log(logSeparator);
 
     if (!result || !result.success) {
-      const errorMsg = result?.error || 'Erro desconhecido';
+      const errorMsg = result?.error || (Array.isArray(result?.errors) && result.errors.length ? result.errors.join(' | ') : 'Erro desconhecido');
       console.log(`\n${logSeparator}`);
       console.error(`❌ [${getTimestamp()}] FALHA LÓGICA NO PROCESSO`);
       console.log(logSeparator);
