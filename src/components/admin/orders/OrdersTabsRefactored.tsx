@@ -25,6 +25,7 @@ import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { useOrderGroups, OrderGroup } from '@/hooks/useOrderGroups';
 import { OrderGroupHeader } from '@/components/orders/OrderGroupHeader';
 import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
+import { AsaasCancelPreview } from './AsaasCancelPreview';
 
 interface OrdersTabsRefactoredProps {
   onViewOrderDetails: (orderId: string) => void;
@@ -73,6 +74,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteJustification, setDeleteJustification] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [asaasMapaPronto, setAsaasMapaPronto] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
@@ -278,7 +280,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         totalDeleted += result.deleted_count;
       }
 
-      toast.success(`${totalDeleted} item(s) excluído(s)`);
+      if (totalDeleted > 0) toast.success(`${totalDeleted} item(s) excluído(s)`);
       setSelectedItems([]);
       setDeleteJustification('');
       setIsDeleteDialogOpen(false);
@@ -372,6 +374,12 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
                     Esta ação irá deletar {selectedItems.length} item(s) permanentemente.
                   </AlertDescription>
                 </Alert>
+                {isDeleteDialogOpen && (
+                  <AsaasCancelPreview
+                    pedidoIds={selectedItems.filter(id => ordersAndAttempts.find(item => item.id === id && item.type === 'order'))}
+                    onReady={setAsaasMapaPronto}
+                  />
+                )}
                 <Textarea
                   value={deleteJustification}
                   onChange={(e) => setDeleteJustification(e.target.value)}
@@ -382,8 +390,8 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
                   <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>
                     Cancelar
                   </Button>
-                  <Button variant="destructive" onClick={handleBulkDelete} disabled={isDeleting || !deleteJustification.trim()}>
-                    {isDeleting ? 'Excluindo...' : 'Confirmar'}
+                  <Button variant="destructive" onClick={handleBulkDelete} disabled={isDeleting || !deleteJustification.trim() || !asaasMapaPronto}>
+                    {isDeleting ? 'Cancelando no Asaas e excluindo...' : 'Cancelar no Asaas e excluir'}
                   </Button>
                 </DialogFooter>
               </DialogContent>
