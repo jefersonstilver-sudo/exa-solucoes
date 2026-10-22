@@ -20,13 +20,15 @@ const CRMConversationsPage: React.FC = () => {
         setLoading(false);
         return;
       }
-      const { data } = await (supabase as any)
+      const base = (supabase as any)
         .from('evolution_instances')
         .select(
           'id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status, instance_name',
-        )
-        .eq('id', id)
-        .maybeSingle();
+        );
+      // "sofia" = atalho usado pelo botao Conversar da lista de pedidos
+      const { data } = id === 'sofia'
+        ? await base.or('collaborator_name.ilike.%sofia%,instance_name.ilike.%sofia%').limit(1).maybeSingle()
+        : await base.eq('id', id).maybeSingle();
       setCollaborator((data as CollaboratorRow) ?? null);
       setLoading(false);
     })();

@@ -1,46 +1,27 @@
-import React, { Suspense, lazy } from 'react';
-import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
-import { useDynamicModulePermissions } from '@/hooks/useDynamicModulePermissions';
-import { Shield } from 'lucide-react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
-// Reutiliza o CRMUnificado existente (Chat WhatsApp)
-const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
-
+// O CRM Chat antigo foi eliminado: as conversas ficam no CRM Evolution (Sofia e colaboradores).
 const ChatTab: React.FC = () => {
-  const { hasCRMAccess, isCEO, isComercial, isLoading } = useDynamicModulePermissions();
-
-  // Aguardar carregamento das permissões
-  if (isLoading) {
-    return <GlobalLoadingPage message="Verificando permissões..." />;
-  }
-
-  // Se não tem acesso ao CRM, mostrar mensagem de acesso negado
-  if (!hasCRMAccess) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden -mx-4 md:mx-0">
-        <div className="h-[calc(100vh-280px)] min-h-[500px] flex flex-col items-center justify-center text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-            <Shield className="h-8 w-8 text-destructive" />
-          </div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">
-            Acesso Restrito
-          </h2>
-          <p className="text-muted-foreground max-w-md">
-            O CRM está disponível apenas para o CEO e equipe Comercial.
-            {isComercial && ' Como comercial, você pode ver apenas suas próprias conversas.'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+  const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden -mx-4 md:mx-0">
-      <Suspense fallback={<GlobalLoadingPage message="Carregando Chat..." />}>
-        <div className="h-[calc(100vh-280px)] min-h-[500px]">
-          <CRMUnificado />
+    <div className="bg-white rounded-xl border border-gray-200 -mx-4 md:mx-0">
+      <div className="min-h-[320px] flex flex-col items-center justify-center text-center p-8 gap-3">
+        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+          <MessageCircle className="h-7 w-7 text-red-700" />
         </div>
-      </Suspense>
+        <h2 className="text-lg font-semibold text-foreground">As conversas agora ficam no CRM Evolution</h2>
+        <p className="text-sm text-muted-foreground max-w-md">
+          Conversas da Sofia e dos colaboradores, com histórico completo e envio de mensagens.
+        </p>
+        <Button onClick={() => navigate(buildPath('crm-evolution'))} className="bg-red-700 hover:bg-red-800 text-white">
+          Abrir CRM Evolution
+        </Button>
+      </div>
     </div>
   );
 };
