@@ -101,6 +101,7 @@ export const SofiaChatPanel: React.FC = () => {
   // ?telefone= (botao "Conversar" da lista de pedidos): abre direto a conversa daquele cliente
   const [searchParams] = useSearchParams();
   const telefoneAlvo = (searchParams.get('telefone') || '').replace(/\D/g, '');
+  const nomeAlvo = (searchParams.get('nome') || '').trim();
   const [extraConv, setExtraConv] = useState<Conv | null>(null);
   const [semConversa, setSemConversa] = useState<string | null>(null);
   const alvoResolvido = useRef(false);
@@ -146,8 +147,20 @@ export const SofiaChatPanel: React.FC = () => {
           try { alvo = (await call('find_phone', { phone: telefoneAlvo }))?.conversation || null; } catch { alvo = null; }
           if (alvo) setExtraConv(alvo);
         }
+        if (!alvo) {
+          // cliente que nunca falou com a Sofia: cria contato e conversa, prontos para voce escrever
+          try {
+            const r = await call('start', { phone: telefoneAlvo, nome: nomeAlvo });
+            alvo = r?.conversation || null;
+            if (alvo) {
+              setExtraConv(alvo);
+              toast.success(r?.criada ? 'Conversa nova aberta. A Sofia não enviou nada: escreva sua mensagem.' : 'Conversa encontrada.');
+            }
+          } catch (e: any) {
+            setSemConversa(`${telefoneAlvo}: ${e?.message || 'não foi possível abrir a conversa'}`);
+          }
+        }
         if (alvo) { setSelId(alvo.id); setSemConversa(null); return; }
-        setSemConversa(telefoneAlvo);
       }
       setSelId((cur) => cur ?? d.conversations?.[0]?.id ?? null);
     } catch (e: any) {
@@ -155,7 +168,7 @@ export const SofiaChatPanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [telefoneAlvo]);
+  }, [telefoneAlvo, nomeAlvo]);
 
   const loadMsgs = useCallback(async (id: string, replace: boolean) => {
     try {
@@ -274,7 +287,7 @@ export const SofiaChatPanel: React.FC = () => {
         </div>
         {semConversa && (
           <div className="m-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-            Este cliente ({semConversa}) ainda não conversou com a Sofia, então não há conversa para abrir.
+            Não consegui abrir a conversa ({semConversa}).
             <button type="button" className="ml-1 underline" onClick={() => setSemConversa(null)}>Fechar</button>
           </div>
         )}
