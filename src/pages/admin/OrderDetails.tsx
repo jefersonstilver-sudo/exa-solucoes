@@ -14,6 +14,7 @@ import ClientProfilePanel from '@/components/admin/orders/ClientProfilePanel';
 import PedidoWhatsappAcessosCard from '@/components/admin/orders/PedidoWhatsappAcessosCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
+import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -83,6 +84,13 @@ const OrderDetails = () => {
                 variant="default"
                 className="bg-[#C7141A] hover:bg-[#B40D1A] text-white"
                 onInternalView={(sid) => setClientViewSessionId(sid)}
+              />
+            )}
+            {orderDetails?.id && (
+              <OrderStatusActions
+                size="default"
+                pedidos={[{ id: orderDetails.id, status: orderDetails.status, nome: orderDetails.nome_pedido || orderDetails.client_name }]}
+                onDone={refetch}
               />
             )}
             <Button
