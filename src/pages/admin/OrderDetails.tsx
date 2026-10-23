@@ -15,6 +15,7 @@ import PedidoWhatsappAcessosCard from '@/components/admin/orders/PedidoWhatsappA
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
+import { pedidoStatusInfo } from '@/lib/pedidoStatus';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -62,33 +63,44 @@ const OrderDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Botões de ação */}
-        <div className="flex items-center justify-between gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/super_admin/pedidos')}
-            className="flex items-center gap-2 bg-white hover:bg-gray-50 border-gray-300 font-semibold"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para Lista
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-4 pb-28 sm:py-8 px-3 sm:px-4">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Cabeçalho + ações (pensado primeiro para o celular) */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/super_admin/pedidos')}
+              className="shrink-0 h-10 w-10 rounded-full bg-white shadow-sm border border-gray-200"
+              aria-label="Voltar para a lista de pedidos"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Pedido #{orderDetails.id.slice(0, 8)}</p>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{orderDetails.nome_pedido || orderDetails.client_name || 'Pedido'}</h1>
+            </div>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pedidoStatusInfo(orderDetails.status).cls}`}>
+              {pedidoStatusInfo(orderDetails.status).label}
+            </span>
+          </div>
+          <SofiaSoldBadge pedidoId={id} className="text-xs px-3 py-1" />
 
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            <SofiaSoldBadge pedidoId={id} className="text-xs px-3 py-1" />
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
             {orderDetails?.client_id && (
               <AccessAsClientButton
                 targetUserId={orderDetails.client_id}
                 pedidoId={id}
                 variant="default"
-                className="bg-[#C7141A] hover:bg-[#B40D1A] text-white"
+                className="col-span-2 sm:col-span-1 w-full sm:w-auto h-11 rounded-xl bg-[#C7141A] hover:bg-[#B40D1A] text-white"
                 onInternalView={(sid) => setClientViewSessionId(sid)}
               />
             )}
             {orderDetails?.id && (
               <OrderStatusActions
                 size="default"
+                grid
                 pedidos={[{ id: orderDetails.id, status: orderDetails.status, nome: orderDetails.nome_pedido || orderDetails.client_name }]}
                 onDone={refetch}
               />
@@ -96,22 +108,19 @@ const OrderDetails = () => {
             <Button
               variant="outline"
               onClick={() => setPurgeOpen(true)}
-              className="border-destructive/40 text-destructive hover:bg-destructive/10"
+              className="w-full sm:w-auto h-11 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Excluir todos os vídeos
+              <Trash2 className="h-4 w-4 mr-1.5 shrink-0" />
+              <span className="sm:hidden">Excluir vídeos</span>
+              <span className="hidden sm:inline">Excluir todos os vídeos</span>
             </Button>
             <Button
               onClick={handleExportPDF}
               disabled={isExporting}
-              className="flex items-center gap-2 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white font-semibold shadow-lg transition-all"
+              className="w-full sm:w-auto h-11 rounded-xl flex items-center gap-2 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white font-semibold shadow-sm"
             >
-              {isExporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {isExporting ? 'Gerando PDF...' : 'Exportar PDF'}
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {isExporting ? 'Gerando...' : 'Exportar PDF'}
             </Button>
           </div>
         </div>
