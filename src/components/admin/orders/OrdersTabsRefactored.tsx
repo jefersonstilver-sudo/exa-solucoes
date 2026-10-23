@@ -26,6 +26,7 @@ import { useOrderGroups, OrderGroup } from '@/hooks/useOrderGroups';
 import { OrderGroupHeader } from '@/components/orders/OrderGroupHeader';
 import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
 import { AsaasCancelPreview } from './AsaasCancelPreview';
+import OrderStatusActions from './OrderStatusActions';
 import ClientQuickProfileSheet, { ClientQuickProfileTarget } from './ClientQuickProfileSheet';
 
 interface OrdersTabsRefactoredProps {
@@ -369,6 +370,13 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           </div>
           
           {selectedItems.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+            <OrderStatusActions
+              pedidos={ordersAndAttempts
+                .filter(item => selectedItems.includes(item.id) && item.type === 'order')
+                .map(item => ({ id: item.id, status: item.status, nome: (item as any).nome_pedido || item.client_name }))}
+              onDone={() => { setSelectedItems([]); refetch(); }}
+            />
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="destructive" size="sm">
@@ -410,6 +418,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           )}
         </div>
       )}
