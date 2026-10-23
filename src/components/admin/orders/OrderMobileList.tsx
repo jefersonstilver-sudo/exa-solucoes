@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { OrderMobileCard } from './OrderMobileCard';
 import { MobileSelectionToolbar } from './MobileSelectionToolbar';
+import OrderStatusActions from './OrderStatusActions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Package } from 'lucide-react';
 import { useBulkSelection } from '@/hooks/useBulkSelection';
@@ -18,6 +19,8 @@ interface OrderMobileListProps {
   loading?: boolean;
   onViewDetails: (orderId: string) => void;
   onBulkDelete?: (orderIds: string[]) => Promise<void>;
+  /** chamado depois de cancelar/suspender/reativar pedidos selecionados */
+  onStatusChanged?: () => void;
   installmentsMap?: Record<string, Installment[]>;
 }
 
@@ -26,6 +29,7 @@ export const OrderMobileList: React.FC<OrderMobileListProps> = ({
   loading = false,
   onViewDetails,
   onBulkDelete,
+  onStatusChanged,
   installmentsMap = {},
 }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -112,6 +116,15 @@ export const OrderMobileList: React.FC<OrderMobileListProps> = ({
         onDelete={handleDelete}
         isAllSelected={isAllSelected}
         isDeleting={isDeleting}
+        extraActions={
+          <OrderStatusActions
+            compact
+            pedidos={orders
+              .filter((o: any) => selectedIds.has(o.id) && o.type !== 'attempt')
+              .map((o: any) => ({ id: o.id, status: o.status, nome: o.nome_pedido || o.client_name }))}
+            onDone={() => { handleClearSelection(); onStatusChanged?.(); }}
+          />
+        }
       />
     </>
   );
