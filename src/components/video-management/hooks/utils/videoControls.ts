@@ -85,16 +85,41 @@ export const createVideoControls = ({
     const video = videoRef.current;
     if (!video || !isElementReady) return;
 
-    if (!isFullscreen) {
-      if (video.requestFullscreen) {
-        video.requestFullscreen();
+    const v = video as HTMLVideoElement & {
+      webkitEnterFullscreen?: () => void;
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      webkitDisplayingFullscreen?: boolean;
+    };
+    const d = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void> | void;
+    };
+    const ativo = !!(document.fullscreenElement || d.webkitFullscreenElement || v.webkitDisplayingFullscreen);
+
+    if (!ativo) {
+      // iPhone (Safari iOS) nao tem requestFullscreen em <video>: so o webkitEnterFullscreen funciona
+      try {
+        if (v.requestFullscreen) {
+          Promise.resolve(v.requestFullscreen()).catch(() => v.webkitEnterFullscreen?.());
+        } else if (v.webkitRequestFullscreen) {
+          v.webkitRequestFullscreen();
+        } else if (v.webkitEnterFullscreen) {
+          v.webkitEnterFullscreen();
+        }
+      } catch {
+        v.webkitEnterFullscreen?.();
       }
+      setIsFullscreen(true);
+      // ao sair da tela cheia nativa do iPhone, volta o estado do botao
+      v.addEventListener('webkitendfullscreen', () => setIsFullscreen(false), { once: true });
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      } else if (d.webkitExitFullscreen) {
+        d.webkitExitFullscreen();
       }
+      setIsFullscreen(false);
     }
-    setIsFullscreen(!isFullscreen);
   };
 
   const restart = () => {
