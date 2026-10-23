@@ -1,4 +1,5 @@
 
+import { pedidoStatusInfo } from '@/lib/pedidoStatus';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,18 +74,18 @@ export const ManualPaymentVerifier: React.FC<ManualPaymentVerifierProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Status atual do pedido:</p>
-            <Badge className={getStatusColor(currentStatus)}>
-              {currentStatus}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-gray-600 mb-1">Status atual do pedido:</p>
+            <Badge className={`${pedidoStatusInfo(currentStatus).cls} border-0`}>
+              {pedidoStatusInfo(currentStatus).label}
             </Badge>
           </div>
           
           <Button
             onClick={handleVerifyPayment}
             disabled={isVerifying}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full sm:w-auto shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isVerifying ? (
               <>
