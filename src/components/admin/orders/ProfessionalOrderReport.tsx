@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { pedidoStatusInfo } from '@/lib/pedidoStatus';
 import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send, Monitor, Smartphone, Plus, Trash2, ChevronDown, Building, Download, Crown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import exaLogo from '@/assets/exa-logo.png';
@@ -250,6 +251,12 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       label: string;
       icon: React.ReactNode;
     }> = {
+      'aguardando_video': {
+        bg: 'bg-orange-500',
+        text: 'text-white',
+        label: 'Aguardando Vídeo',
+        icon: <Clock className="h-4 w-4" />
+      },
       'pago_pendente_video': {
         bg: 'bg-orange-500',
         text: 'text-white',
@@ -293,12 +300,10 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         icon: <XCircle className="h-4 w-4" />
       }
     };
-    return configs[status] || {
-      bg: 'bg-gray-500',
-      text: 'text-white',
-      label: status,
-      icon: <FileText className="h-4 w-4" />
-    };
+    if (configs[status]) return configs[status];
+    const info = pedidoStatusInfo(status);
+    const [bg, text] = info.solid.split(' ');
+    return { bg, text, label: info.label, icon: status === 'bloqueado' ? <Clock className="h-4 w-4" /> : status.startsWith('cancelado') ? <XCircle className="h-4 w-4" /> : <FileText className="h-4 w-4" /> };
   };
   const statusConfig = getStatusConfig(correctStatus);
   const emittedAt = new Date().toLocaleString('pt-BR', {
@@ -342,7 +347,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             </div>
             <div className={`${statusConfig.bg} ${statusConfig.text} px-2 lg:px-3 py-1 lg:py-1.5 rounded text-[10px] lg:text-xs font-semibold flex items-center gap-1 lg:gap-1.5`}>
               {statusConfig.icon}
-              <span className="hidden sm:inline">{statusConfig.label}</span>
+              <span>{statusConfig.label}</span>
             </div>
             {order.is_master && (
               <div className="bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 px-2 lg:px-3 py-1 lg:py-1.5 rounded text-[10px] lg:text-xs font-bold flex items-center gap-1 lg:gap-1.5 shadow-md animate-pulse">
@@ -422,8 +427,8 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             
             {/* Master Toggle */}
             <div className="col-span-1 sm:col-span-2 lg:col-span-5 pt-3 mt-3 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
                   <p className="text-gray-500 mb-1">Pedido Master</p>
                   <p className="text-[10px] text-gray-400">Vídeos enviados são aprovados automaticamente</p>
                 </div>
@@ -432,9 +437,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                   disabled={togglingMaster}
                   variant={order.is_master ? "default" : "outline"}
                   size="sm"
-                  className={order.is_master 
+                  className={"w-full sm:w-auto shrink-0 " + (order.is_master 
                     ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-bold text-xs shadow-md" 
-                    : "border-gray-300 text-gray-600 text-xs"
+                    : "border-gray-300 text-gray-600 text-xs")
                   }
                 >
                   {togglingMaster ? (
@@ -1041,126 +1046,94 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             </div> : <div className="p-4 space-y-4">
               {sortedVideos.map((video, videoIndex) => {
             const isInDisplay = video.video_data?.id === currentVideoId;
-            return <div key={video.id} className={`border rounded-lg overflow-hidden transition-all ${isInDisplay ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200' : 'bg-white border-gray-200 hover:shadow-md'}`}>
+            const rejeitado = video.approval_status === 'rejected';
+            const pendente = video.approval_status === 'pending';
+            const vertical = String(video.video_data?.orientacao || '').toLowerCase().startsWith('vert');
+            const rejectionReason = (video as any).rejection_reason as string | undefined;
+            const exib = rejeitado
+              ? { dot: 'bg-red-500', txt: 'Fora do ar · recusado', cls: 'text-red-700' }
+              : pendente
+                ? { dot: 'bg-orange-500', txt: 'Aguardando aprovação', cls: 'text-orange-700' }
+                : isInDisplay
+                  ? { dot: 'bg-blue-500 animate-pulse', txt: 'Em exibição', cls: 'text-blue-700 font-semibold' }
+                  : video.is_active
+                    ? { dot: 'bg-green-500', txt: 'Ativo · programado', cls: 'text-green-700' }
+                    : { dot: 'bg-gray-300', txt: 'Extra · fora da programação', cls: 'text-gray-500' };
+            return <div key={video.id} className={`rounded-2xl border overflow-hidden transition-all ${isInDisplay ? 'border-blue-300 ring-2 ring-blue-100 bg-blue-50/40' : rejeitado ? 'border-red-200 bg-red-50/30' : 'border-gray-200 bg-white'}`}>
                     {isInDisplay && <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-1.5 text-xs font-bold flex items-center gap-2">
-                        <div className="relative flex items-center">
-                          <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-75" />
-                          <div className="relative w-2 h-2 bg-white rounded-full" />
-                        </div>
-                        🔴 EM EXIBIÇÃO AGORA
+                        <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-75 animate-ping" /><span className="relative inline-flex h-2 w-2 rounded-full bg-white" /></span>
+                        EM EXIBIÇÃO AGORA
                       </div>}
-                    <div className="grid grid-cols-12 gap-4">
+                    <div className="flex flex-col sm:flex-row">
                       {/* Preview do Vídeo */}
-                      <div className="col-span-3">
-                        <div className="aspect-video bg-gray-900 relative group">
-                          {video.video_data?.url ? <>
-                              <video src={video.video_data.url} className="w-full h-full object-contain" autoPlay muted loop playsInline preload="metadata" />
-                              <div className="absolute top-2 left-2">
-                                <span className={`px-2 py-1 rounded text-xs font-semibold ${isInDisplay ? 'bg-blue-600 text-white' : 'bg-black/80 text-white'}`}>
-                                  Slot {video.slot_position}
-                                </span>
-                              </div>
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const response = await fetch(video.video_data.url);
-                                    const blob = await response.blob();
-                                    const blobUrl = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = blobUrl;
-                                    a.download = `${video.video_data.nome || 'video'}.mp4`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(blobUrl);
-                                  } catch (err) {
-                                    console.error('Erro ao baixar vídeo:', err);
-                                    window.open(video.video_data.url, '_blank');
-                                  }
-                                }}
-                                title="Download vídeo original"
-                                className="absolute top-2 right-2 p-1.5 rounded bg-black/60 hover:bg-black/80 text-white transition-colors"
-                              >
-                                <Download className="h-4 w-4" />
-                              </button>
-                            </> : <div className="w-full h-full flex items-center justify-center text-gray-500">
-                              <Video className="h-8 w-8" />
-                            </div>}
+                      <div className={`relative bg-gray-950 shrink-0 w-full ${vertical ? 'sm:w-40' : 'sm:w-72'}`}>
+                        <div className={vertical ? 'aspect-[9/16] max-h-80 sm:max-h-none mx-auto' : 'aspect-video'}>
+                          {video.video_data?.url ? <video src={video.video_data.url} className="w-full h-full object-contain" autoPlay muted loop playsInline preload="metadata" /> : <div className="w-full h-full min-h-[120px] flex items-center justify-center text-gray-500"><Video className="h-8 w-8" /></div>}
                         </div>
+                        <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[11px] font-semibold backdrop-blur ${isInDisplay ? 'bg-blue-600 text-white' : 'bg-black/60 text-white'}`}>
+                          Espaço {video.slot_position}
+                        </span>
+                        {video.video_data?.url && <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const response = await fetch(video.video_data!.url);
+                              const blob = await response.blob();
+                              const blobUrl = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = blobUrl;
+                              a.download = `${video.video_data!.nome || 'video'}.mp4`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(blobUrl);
+                            } catch (err) {
+                              console.error('Erro ao baixar vídeo:', err);
+                              window.open(video.video_data!.url, '_blank');
+                            }
+                          }}
+                          title="Baixar vídeo original"
+                          aria-label="Baixar vídeo original"
+                          className="absolute top-2 right-2 h-8 w-8 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>}
                       </div>
-                      
+
                       {/* Informações do Vídeo */}
-                      <div className="col-span-9 p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className={`font-semibold text-base mb-1 ${isInDisplay ? 'text-blue-900' : 'text-gray-900'}`}>
-                              {video.video_data?.nome || 'Nome não disponível'}
-                            </h3>
-                            <div className="flex items-center gap-3 text-xs text-gray-600">
-                              <span>{video.video_data?.duracao != null ? `${video.video_data.duracao}s` : 'N/A'}</span>
-                              <span>•</span>
-                              <span className="capitalize">{video.video_data?.orientacao || 'N/A'}</span>
-                              <span>•</span>
-                              <span>
-                                Enviado em {video.uploaded_at ? formatDate(video.uploaded_at) : video.created_at ? formatDate(video.created_at) : 'N/A'}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Status Badges e Botão de Resync */}
-                          <div className="flex items-center gap-2">
-                            {video.approval_status === 'approved' && <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">
-                                <CheckCircle2 className="h-3 w-3" />
-                                Aprovado
-                              </span>}
-                            {video.approval_status === 'rejected' && <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-semibold">
-                                <XCircle className="h-3 w-3" />
-                                Rejeitado
-                              </span>}
-                            {video.approval_status === 'pending' && <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
-                                <Clock className="h-3 w-3" />
-                                Pendente
-                              </span>}
-                            {video.approval_status === 'approved' && (
-                              <VideoDaysBadge
-                                approved_at={video.approved_at}
-                                is_base_video={video.is_base_video}
-                                schedule_rules={video.schedule_rules}
-                                inline
-                              />
-                            )}
-                          </div>
+                      <div className="flex-1 min-w-0 p-4 space-y-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {video.approval_status === 'approved' && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[11px] font-semibold"><CheckCircle2 className="h-3 w-3" />Aprovado</span>}
+                          {rejeitado && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[11px] font-semibold"><XCircle className="h-3 w-3" />Recusado</span>}
+                          {pendente && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[11px] font-semibold"><Clock className="h-3 w-3" />Em análise</span>}
+                          {video.is_base_video && !rejeitado && <span className="inline-flex items-center px-2 py-0.5 bg-gray-900 text-white rounded-full text-[11px] font-semibold">Principal</span>}
+                          {video.approval_status === 'approved' && (
+                            <VideoDaysBadge
+                              approved_at={video.approved_at}
+                              is_base_video={video.is_base_video}
+                              schedule_rules={video.schedule_rules}
+                              inline
+                            />
+                          )}
                         </div>
-                        
-                        {/* Status de Exibição */}
-                        <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${video.is_active ? 'bg-green-500' : 'bg-gray-300'}`} />
-                            <span className="text-xs text-gray-600">
-                              {video.is_active ? <span className="font-semibold text-green-700">Ativo</span> : <span className="text-gray-500">Inativo</span>}
-                            </span>
+                        <div className="min-w-0">
+                          <h3 className={`font-semibold text-[15px] leading-snug break-words ${isInDisplay ? 'text-blue-900' : 'text-gray-900'}`}>
+                            {video.video_data?.nome || 'Nome não disponível'}
+                          </h3>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {video.video_data?.duracao != null ? `${video.video_data.duracao}s` : '—'}
+                            {' · '}<span className="capitalize">{video.video_data?.orientacao || '—'}</span>
+                            {' · '}Enviado em {video.uploaded_at ? formatDate(video.uploaded_at) : video.created_at ? formatDate(video.created_at) : '—'}
+                          </p>
+                        </div>
+                        {rejeitado && rejectionReason && (
+                          <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-800">
+                            <span className="font-semibold">Motivo da recusa:</span> {rejectionReason}
                           </div>
-                          
-                          <div className="flex items-center gap-2">
-                            {isInDisplay ? <>
-                                <div className="relative">
-                                  <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75" />
-                                  <div className="relative w-2 h-2 bg-blue-500 rounded-full" />
-                                </div>
-                                <span className="text-xs font-bold text-blue-700">EM EXIBIÇÃO</span>
-                              </> : <>
-                                <div className="w-2 h-2 bg-gray-300 rounded-full" />
-                                <span className="text-xs text-gray-500">Na lista de programação</span>
-                              </>}
-                          </div>
-                          
-                          <div className="flex items-center gap-2 justify-end">
-                            <span className="text-xs text-gray-500">Slot</span>
-                            <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded ${isInDisplay ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>
-                              {video.slot_position}
-                            </span>
-                          </div>
+                        )}
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100 text-xs">
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${exib.dot}`} />
+                          <span className={exib.cls}>{exib.txt}</span>
                         </div>
                       </div>
                     </div>
