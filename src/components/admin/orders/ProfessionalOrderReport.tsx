@@ -364,7 +364,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       </div>
 
       {/* CONTEÚDO PRINCIPAL - MINIMALISTA */}
-      <div className="px-6 py-6 space-y-6">
+      <div className="px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* SEÇÃO: NOME DO PEDIDO */}
         <OrderNameEdit orderId={order.id} currentName={order.nome_pedido} />
@@ -1043,14 +1043,18 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <Video className="h-10 w-10 text-gray-400 mx-auto mb-2" />
               <p className="text-sm font-medium text-gray-600 mb-1">Nenhum vídeo enviado</p>
               <p className="text-xs text-gray-500">Os vídeos aparecerão aqui quando forem enviados.</p>
-            </div> : <div className="p-4 space-y-4">
+            </div> : <div className="p-3 sm:p-4 space-y-4">
               {sortedVideos.map((video, videoIndex) => {
-            const isInDisplay = video.video_data?.id === currentVideoId;
+            // pedido cancelado/suspenso/finalizado: o video ja saiu das telas, mesmo que as marcacoes do banco continuem
+            const pedidoForaDoAr = ['cancelado', 'cancelado_automaticamente', 'bloqueado', 'finalizado'].includes(String(order.status));
+            const isInDisplay = !pedidoForaDoAr && video.video_data?.id === currentVideoId;
             const rejeitado = video.approval_status === 'rejected';
             const pendente = video.approval_status === 'pending';
             const vertical = String(video.video_data?.orientacao || '').toLowerCase().startsWith('vert');
             const rejectionReason = (video as any).rejection_reason as string | undefined;
-            const exib = rejeitado
+            const exib = pedidoForaDoAr && !rejeitado
+              ? { dot: 'bg-gray-400', txt: 'Fora das telas · pedido ' + pedidoStatusInfo(order.status).label.toLowerCase(), cls: 'text-gray-600' }
+              : rejeitado
               ? { dot: 'bg-red-500', txt: 'Fora do ar · recusado', cls: 'text-red-700' }
               : pendente
                 ? { dot: 'bg-orange-500', txt: 'Aguardando aprovação', cls: 'text-orange-700' }
