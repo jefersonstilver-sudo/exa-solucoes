@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, DollarSign, Calendar, Building2, Phone, Mail, Check, Clock, CreditCard, FileText, AlertCircle, Crown, RefreshCw } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
+import { pedidoStatusInfo } from '@/lib/pedidoStatus';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CouponBadge } from '@/components/admin/orders/CouponBadge';
@@ -181,8 +182,8 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
 
   const preview = (
     <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
           {order.nome_pedido && (
             <span className="text-xs font-semibold text-foreground">{order.nome_pedido}</span>
           )}
@@ -208,8 +209,8 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
             </Badge>
           )}
         </div>
-        <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
-          {getStatusText(order.status)}
+        <Badge className={`${pedidoStatusInfo(order.status).cls} border-0 shrink-0 whitespace-nowrap font-semibold`}>
+          {pedidoStatusInfo(order.status).label}
         </Badge>
       </div>
       <div className="flex items-center gap-2">
