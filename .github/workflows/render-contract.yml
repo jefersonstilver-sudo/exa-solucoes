@@ -21,21 +21,53 @@ on:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
+    env:
+      MODO: ${{ inputs.modo }}
+      CONTRATO_ID: ${{ inputs.contrato_id }}
+      PROPOSAL_ID: ${{ inputs.proposal_id }}
+      CONVERSA_ID: ${{ inputs.conversa_id }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SOFIA_WEBHOOK_TOKEN: ${{ secrets.SOFIA_WEBHOOK_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: |
-          sudo apt-get update && sudo apt-get install -y fonts-inter fonts-dejavu
+      # Sem apt-get: o espelho do Ubuntu as vezes trava e o contrato nunca saia (caso Angel, 22/10/2026).
+      # Fonte Inter baixada direto do GitHub, com limite de tempo; se falhar, segue com as fontes do sistema.
+      - name: fontes e navegador
+        timeout-minutes: 6
+        run: |
+          mkdir -p ~/.local/share/fonts
+          if curl -fsSL --max-time 60 -o /tmp/inter.zip https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip; then
+            mkdir -p /tmp/inter && unzip -oq /tmp/inter.zip -d /tmp/inter && find /tmp/inter -name '*.ttf' -exec cp {} ~/.local/share/fonts/ \; && fc-cache -f || true
+          else
+            echo "Inter indisponivel; seguindo com as fontes do sistema"
+          fi
           pip install playwright
-          playwright install chromium --with-deps
-      - run: python tools/contract-pdf/worker.py
-        env:
-          MODO: ${{ inputs.modo }}
-          CONTRATO_ID: ${{ inputs.contrato_id }}
-          PROPOSAL_ID: ${{ inputs.proposal_id }}
-          CONVERSA_ID: ${{ inputs.conversa_id }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SOFIA_WEBHOOK_TOKEN: ${{ secrets.SOFIA_WEBHOOK_TOKEN }}
+          timeout 240 playwright install chromium || timeout 240 playwright install chromium --with-deps
+      - name: gerar PDF e enviar
+        id: worker
+        timeout-minutes: 5
+        run: python tools/contract-pdf/worker.py
+      # Se um passo antes do worker falhar ou algo estourar o tempo, a Sofia e avisada na hora
+      # (quando o proprio worker falha, ele ja avisa sozinho).
+      - name: avisar a Sofia da falha
+        if: (failure() || cancelled()) && steps.worker.outcome != 'failure'
+        run: |
+          python - <<'PY'
+          import os, json, urllib.request, urllib.parse
+          url = os.environ["SUPABASE_URL"].rstrip("/")
+          tok = urllib.parse.quote(os.environ["SOFIA_WEBHOOK_TOKEN"])
+          modo = os.environ.get("MODO") or "contrato"
+          if modo == "modelo":
+              action, body = "modelo", {"conversa_id": os.environ.get("CONVERSA_ID", ""), "error": "falha no gerador de PDF (GitHub Actions)"}
+          else:
+              action, body = "contrato", {"contrato_id": os.environ.get("CONTRATO_ID", ""), "error": "falha no gerador de PDF (GitHub Actions)"}
+          req = urllib.request.Request(f"{url}/functions/v1/sofia-agent?action={action}&token={tok}", data=json.dumps(body).encode(), method="POST", headers={"Content-Type": "application/json"})
+          try:
+              print(urllib.request.urlopen(req, timeout=60).read()[:200])
+          except Exception as e:
+              print("aviso falhou", e)
+          PY
