@@ -11,6 +11,8 @@ interface MobileSelectionToolbarProps {
   onDelete: () => void;
   isAllSelected: boolean;
   isDeleting?: boolean;
+  /** acoes extras (ex.: cancelar/suspender pedido) mostradas numa segunda linha */
+  extraActions?: React.ReactNode;
 }
 
 export const MobileSelectionToolbar: React.FC<MobileSelectionToolbarProps> = ({
@@ -21,6 +23,7 @@ export const MobileSelectionToolbar: React.FC<MobileSelectionToolbarProps> = ({
   onDelete,
   isAllSelected,
   isDeleting = false,
+  extraActions,
 }) => {
   return (
     <AnimatePresence>
@@ -87,6 +90,7 @@ export const MobileSelectionToolbar: React.FC<MobileSelectionToolbarProps> = ({
                   {isDeleting ? 'Excluindo...' : `Excluir (${selectedCount})`}
                 </Button>
               </div>
+              {extraActions && <div className="mt-2">{extraActions}</div>}
             </div>
           </div>
         </motion.div>
