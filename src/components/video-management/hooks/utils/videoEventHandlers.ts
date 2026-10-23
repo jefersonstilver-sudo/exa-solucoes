@@ -69,6 +69,12 @@ export const createVideoEventHandlers = ({
     if (video.duration && !isNaN(video.duration)) {
       setDuration(video.duration);
     }
+
+    // iPhone/iPad (Safari) so carrega os metadados e NAO dispara canplay ate o usuario tocar no play.
+    // Sem isto o card ficava preso em "Carregando video..." (ex.: Aprovacoes no celular).
+    if (stateRef.isLoading) {
+      finalizeLoading('loadedmetadata');
+    }
   };
 
   const handleLoadedData = (video: HTMLVideoElement) => () => {
