@@ -369,6 +369,7 @@ const OrdersPage = () => {
             orders={quickFilteredOrders}
             loading={loading}
             onViewDetails={handleViewOrderDetails}
+            onStatusChanged={refetch}
             onBulkDelete={async (ids) => {
               const { error } = await supabase
                 .from('pedidos')
