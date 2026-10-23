@@ -20,6 +20,8 @@ interface Props {
   size?: 'sm' | 'default';
   /** layout em grade para a barra do celular */
   compact?: boolean;
+  /** os botoes viram itens de uma grade do componente pai (wrapper "contents") */
+  grid?: boolean;
 }
 
 const INATIVOS = ['cancelado', 'cancelado_automaticamente', 'finalizado'];
@@ -45,7 +47,7 @@ const TEXTOS: Record<PedidoStatusAcao, { titulo: string; botao: string; desc: st
   },
 };
 
-const OrderStatusActions: React.FC<Props> = ({ pedidos, onDone, size = 'sm', compact = false }) => {
+const OrderStatusActions: React.FC<Props> = ({ pedidos, onDone, size = 'sm', compact = false, grid = false }) => {
   const { isSuperAdmin } = useAuth();
   const [acao, setAcao] = useState<PedidoStatusAcao | null>(null);
   const [motivo, setMotivo] = useState('');
@@ -85,11 +87,11 @@ const OrderStatusActions: React.FC<Props> = ({ pedidos, onDone, size = 'sm', com
     else toast.error(`${out.length - okN} de ${out.length} pedido(s) não foram alterados. Veja o detalhe.`);
   };
 
-  const btnCls = compact ? 'flex-1 h-10 text-sm font-medium' : '';
+  const btnCls = grid ? 'w-full sm:w-auto h-11 rounded-xl' : compact ? 'flex-1 h-10 text-sm font-medium' : '';
 
   return (
     <>
-      <div className={compact ? 'flex gap-2' : 'flex items-center gap-2 flex-wrap'}>
+      <div className={grid ? 'contents' : compact ? 'flex gap-2' : 'flex items-center gap-2 flex-wrap'}>
         {podeReativar.length > 0 && (
           <Button size={size} variant="outline" className={`border-green-600/50 text-green-700 hover:bg-green-50 ${btnCls}`} onClick={() => abrir('reativar')}>
             <PlayCircle className="h-4 w-4 mr-1" /> Reativar{pedidos.length > 1 ? ` (${podeReativar.length})` : ''}
