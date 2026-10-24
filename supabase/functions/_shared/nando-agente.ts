@@ -22,6 +22,7 @@ export interface Contexto {
   predioAtual: Predio | null;
   midias: Record<string, { mime: string; caminho: string; url: string }>; // midias recebidas (id -> arquivo salvo)
   registros: string[];        // o que as ferramentas fizeram neste turno (vira memoria)
+  inicio?: number;            // quando esta resposta comecou (rascunhos de antes disso sao descartados ao criar um novo)
 }
 
 function quem(c: Contexto) { return `${c.nomePessoa || "sem nome"} (+${telefoneCanonico(c.tel)})`; }
@@ -315,6 +316,11 @@ export const FERRAMENTAS = [
     },
   },
   {
+    name: "descartar_rascunhos",
+    description: "Descarta TODOS os rascunhos não publicados desta pessoa. Use quando ela cancelar, disser que não quer, não gostou ou mudar de assunto sem publicar. Rascunho nunca fica guardado.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
     name: "criar_opcoes_documento",
     description: "Para imagem ou PDF com texto (comunicado, regras, cartaz): cria de uma vez TODAS as opções numa prévia só: (1) cartões do Nando com TODOS os itens (se houver lista), (2) resumo com QR do documento completo (se fizer sentido), (3) o arquivo original como está. O síndico escolhe pelo número. Os itens são distribuídos sozinhos entre os cartões (até 6 por cartão; o cartão com QR leva menos).",
     input_schema: {
@@ -390,8 +396,19 @@ export const FERRAMENTAS = [
   },
 ];
 
-// rascunho nunca aparece na lista e some sozinho depois de 24 h (nunca esteve no painel).
-// Os recentes ficam guardados: a pessoa pode ter varios avisos sendo montados ao mesmo tempo.
+// Rascunho NAO fica guardado: se o sindico nao publicou, nao gostou.
+// Ao criar algo novo numa nova mensagem, os rascunhos que essa pessoa deixou antes sao descartados
+// (os criados nesta mesma resposta continuam, para ela escolher entre eles).
+async function descartarAnteriores(c: Contexto, buildingId: string) {
+  const ate = new Date(c.inicio || Date.now()).toISOString();
+  await c.sb.from("nando_avisos").update({ status: "removido", removido_por: "rascunho não publicado (descartado)", removido_em: new Date().toISOString() })
+    .eq("building_id", buildingId).eq("status", "rascunho").eq("criado_por_tel", telefoneCanonico(c.tel)).lt("created_at", ate);
+}
+async function descartarTodosDaPessoa(c: Contexto): Promise<number> {
+  const { data } = await c.sb.from("nando_avisos").update({ status: "removido", removido_por: "rascunho cancelado pelo síndico", removido_em: new Date().toISOString() })
+    .eq("status", "rascunho").eq("criado_por_tel", telefoneCanonico(c.tel)).select("id");
+  return (data || []).length;
+}
 async function descartarRascunhos(c: Contexto, buildingId: string) {
   const { data } = await c.sb.from("nando_avisos").select("id").eq("building_id", buildingId).eq("status", "rascunho")
     .lt("created_at", new Date(Date.now() - 86400000).toISOString());
@@ -450,7 +467,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           }
         }
       }
-      // rascunhos nunca entram na lista; os com mais de 24 h sao descartados
+      // rascunhos nunca entram na lista
       await descartarRascunhos(c, p.id);
       const { data } = await sb.from("nando_avisos").select("*").eq("building_id", p.id)
         .in("status", ["no_ar", "agendado", "erro"]).order("created_at");
@@ -473,6 +490,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_aviso_nando": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      await descartarAnteriores(c, p.id);
       let foto: string | null = null;
       if (e.midia_id) {
         const m = c.midias[e.midia_id] || await midiaSalva(c, e.midia_id);
@@ -563,6 +581,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_aviso_arquivo": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      await descartarAnteriores(c, p.id);
       const a = await criarArquivoOriginal(c, p, e);
       if (typeof a === "string") return a;
       const link = await criarPrevia(c, a.id);
@@ -571,6 +590,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_opcoes_documento": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      await descartarAnteriores(c, p.id);
       const m = c.midias[e.midia_id] || await midiaSalva(c, String(e.midia_id || ""));
       if (!m) return "Não encontrei esse arquivo (midia_id). Peça para a pessoa mandar de novo.";
       const proposta = crypto.randomUUID();
@@ -683,6 +703,11 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       c.registros.push(`aviso ${idCurto(a.id)} removido: ${a.titulo}`);
       return `Aviso "${a.titulo}" retirado (some do painel em até ~10 min).`;
     }
+    case "descartar_rascunhos": {
+      const n = await descartarTodosDaPessoa(c);
+      c.registros.push(`rascunhos descartados: ${n}`);
+      return n ? `${n} rascunho(s) descartado(s). Nada foi publicado e nada ficou guardado.` : "Não havia rascunho para descartar.";
+    }
     case "ver_arquivo": {
       const m = c.midias[e.midia_id] || await midiaSalva(c, String(e.midia_id || ""));
       if (!m) return "Não encontrei esse arquivo (midia_id). Peça para a pessoa mandar de novo.";
@@ -737,9 +762,9 @@ async function midiaSalva(c: Contexto, id: string) {
 }
 
 // ---------------------------------------------------------------- prompt
-// o que esta pessoa deixou pela metade (rascunhos das ultimas 24 h), para o Nando retomar sozinho
+// previas que esta pessoa ainda nao aprovou (ultimas 2 h), para o Nando retomar sozinho
 async function assuntoEmAndamento(c: Contexto): Promise<string> {
-  const desde = new Date(Date.now() - 86400000).toISOString();
+  const desde = new Date(Date.now() - 2 * 3600000).toISOString();
   const { data } = await c.sb.from("nando_avisos").select("id,titulo,created_at,building_id,conteudo")
     .eq("criado_por_tel", telefoneCanonico(c.tel)).eq("status", "rascunho").gte("created_at", desde)
     .order("created_at", { ascending: false }).limit(30);
@@ -760,7 +785,7 @@ async function assuntoEmAndamento(c: Contexto): Promise<string> {
     if (ops.length > 1) return `- "${ult.titulo}", criado há ${min} min, opções: ${ops.sort((x: any, y: any) => (x.conteudo?.opcao || 0) - (y.conteudo?.opcao || 0)).map((a: any) => `opção ${a.conteudo?.opcao || 1} = código ${idCurto(a.id)}`).join(", ")}.`;
     return `- "${ult.titulo}", criado há ${min} min: código ${idCurto(ult.id)}.`;
   });
-  return `AVISOS EM ANDAMENTO (rascunhos ainda não publicados, guardados por 24 h; o mais recente primeiro):\n${linhas.join("\n")}\nUse SEMPRE esses códigos para publicar; nunca crie de novo um aviso que já está aqui. Se a pessoa pedir para publicar vários, publique cada código uma vez.`;
+  return `AVISOS EM ANDAMENTO (prévias enviadas que a pessoa ainda não aprovou; o mais recente primeiro):\n${linhas.join("\n")}\nSe ela aprovar, publique com esses códigos (cada um uma vez). Se ela cancelar ou não quiser, use descartar_rascunhos.`;
 }
 export async function promptSistema(c: Contexto): Promise<string> {
   const agora = horaLocalIso(new Date()).replace("T", " ");
@@ -815,7 +840,7 @@ DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
 - Se algo no documento não bate (data que já passou, nome de outro condomínio), aponte em UMA frase junto com a proposta, sem travar o trabalho.
 - O original já vem como uma das opções (30 s na tela por padrão).
 - Série: a prévia mostra os cartões lado a lado; publicar_aviso com o código do cartão 1 publica a série inteira.
-- Rascunho que a pessoa adiou ("depois eu publico", "cancela por enquanto") fica guardado por 24 h e aparece em AVISOS EM ANDAMENTO: publique depois com o mesmo código, sem criar de novo.
+- RASCUNHO NÃO FICA GUARDADO. Se a pessoa cancelar, disser que não quer, que não gostou ou que publica depois, use descartar_rascunhos e diga só que não publicou nada ("Fechado, não publiquei nada."). Nunca diga que ficou guardado. Se depois ela quiser, você cria de novo.
 - Pedido de publicar várias coisas de uma vez: publique cada aviso UMA vez (confira em AVISOS EM ANDAMENTO e no listar_avisos o que já está no ar) e responda com a lista final. Nunca publique dois avisos iguais.
 
 LINK DOS AVISOS DO PRÉDIO
@@ -839,6 +864,7 @@ Responda agora à última mensagem.`;
 export async function rodarAgente(c: Contexto, mensagens: any[]): Promise<string> {
   const key = Deno.env.get("NANDO_ANTHROPIC_API_KEY");
   if (!key) throw new Error("NANDO_ANTHROPIC_API_KEY ausente");
+  c.inicio = c.inicio || Date.now();
   const system = await promptSistema(c);
   const msgs = [...mensagens];
   let modeloIdx = 0;
