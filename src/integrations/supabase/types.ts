@@ -10563,6 +10563,21 @@ export type Database = {
           },
         ]
       }
+      nando_trava: {
+        Row: {
+          ate: string
+          telefone: string
+        }
+        Insert: {
+          ate: string
+          telefone: string
+        }
+        Update: {
+          ate?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string | null
@@ -18519,6 +18534,11 @@ export type Database = {
       migrate_orphaned_payments: { Args: never; Returns: Json }
       monitor_coupon_security: { Args: never; Returns: Json }
       monitor_system_health: { Args: never; Returns: Json }
+      nando_pegar_trava: {
+        Args: { p_segundos: number; p_tel: string }
+        Returns: boolean
+      }
+      nando_soltar_trava: { Args: { p_tel: string }; Returns: undefined }
       norm_fone: { Args: { t: string }; Returns: string }
       normalize_phone: { Args: { phone: string }; Returns: string }
       notify_contracts_expiring_soon: { Args: never; Returns: Json }
