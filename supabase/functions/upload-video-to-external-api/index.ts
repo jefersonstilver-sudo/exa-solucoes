@@ -86,7 +86,7 @@ serve(async (req) => {
     }
 
     // Supabase infere relações como arrays; aqui são objetos únicos (!inner + .single()).
-    const pv = pedidoVideo as any;
+    const pedidoVideoData = pedidoVideo as any;
 
     // 🚧 BLOQUEIO: vídeos com corte metadata-only (sem corte físico) NÃO devem
     // ser enviados aos painéis sem reencode. Caso contrário o painel reproduz o original inteiro.
