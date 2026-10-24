@@ -375,7 +375,11 @@ export const FERRAMENTAS = [
   {
     name: "publicar_aviso",
     description: "Publica um rascunho já aprovado pelo síndico. Para publicar o MESMO aviso em vários prédios: 'predios' com os códigos ou nomes (ou ['todos'] = todos os prédios que a pessoa pode mexer) e, se quiser, 'exceto'. As cópias ficam ligadas (mesmo grupo): depois dá para alterar ou tirar de todos de uma vez. Cada prédio recebe a assinatura dele. O painel atualiza em até ~10 minutos.",
-    input_schema: { type: "object", properties: { aviso: { type: "string" }, predios: { type: "array", items: { type: "string" } }, exceto: { type: "array", items: { type: "string" } } }, required: ["aviso"] },
+    input_schema: { type: "object", properties: { aviso: { type: "string" }, predios: { type: "array", items: { type: "string" } }, exceto: { type: "array", items: { type: "string" } },
+      repetir: { type: "object", description: "SÓ para aviso que se repete (ex: coleta de lixo toda terça; dedetização todo dia 10). O Nando coloca e tira sozinho em cada vez. frequencia: diaria|semanal|mensal; dias_semana: 0=dom..6=sáb; dia_mes: 1-28; hora_inicio/hora_fim 'HH:MM' (quando aparece e some naquele dia); ate: 'AAAA-MM-DD' opcional.",
+        properties: { frequencia: { type: "string", enum: ["diaria", "semanal", "mensal"] }, dias_semana: { type: "array", items: { type: "number" } }, dia_mes: { type: "number" },
+          hora_inicio: { type: "string" }, hora_fim: { type: "string" }, ate: { type: "string" } }, required: ["frequencia", "hora_inicio", "hora_fim"] } },
+      required: ["aviso"] },
   },
   {
     name: "alterar_aviso",
@@ -391,6 +395,22 @@ export const FERRAMENTAS = [
     name: "remover_aviso",
     description: "Tira um aviso do painel AGORA. Só use quando a pessoa pedir claramente para tirar aquele aviso. Se o aviso foi publicado junto em vários prédios, use todos_os_predios=true quando ela pedir para tirar de todos (ou 'predios' para só alguns).",
     input_schema: { type: "object", properties: { aviso: { type: "string" }, todos_os_predios: { type: "boolean" }, predios: { type: "array", items: { type: "string" } } }, required: ["aviso"] },
+  },
+  {
+    name: "editar_aviso",
+    description: "Muda o TEXTO de um aviso animado do Nando já publicado (ou rascunho) sem criar outro: título, quando/onde, texto, itens ou assinatura. Republica no painel e tira a versão antiga. Com todos_os_predios=true muda em todos os prédios do mesmo grupo (cada um mantém a assinatura dele). Num cartão de série, muda só aquele cartão.",
+    input_schema: { type: "object", properties: { aviso: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" },
+      itens: { type: "array", items: { type: "string" }, description: "a lista completa nova de itens deste cartão" }, assinatura: { type: "string" }, todos_os_predios: { type: "boolean" } }, required: ["aviso"] },
+  },
+  {
+    name: "listar_repeticoes",
+    description: "Lista os avisos que se repetem (do prédio atual, ou de todos os prédios da pessoa com todos=true), com a regra e a próxima vez.",
+    input_schema: { type: "object", properties: { todos: { type: "boolean" } } },
+  },
+  {
+    name: "parar_repeticao",
+    description: "Para um aviso que se repete (código da repetição, de listar_repeticoes). Tira também a próxima vez já agendada. Com todos_os_predios=true para em todos os prédios onde foi criada junto.",
+    input_schema: { type: "object", properties: { codigo: { type: "string" }, todos_os_predios: { type: "boolean" } }, required: ["codigo"] },
   },
   {
     name: "salvar_preferencia",
@@ -472,6 +492,79 @@ async function ajustarAssinatura(c: Contexto, copia: any, origemNome: string, p:
   return { ...copia, conteudo };
 }
 
+// ---------------- avisos que se repetem
+const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+function horaOk(h: unknown) { const m = /^(\d{1,2})(?::|h)?(\d{2})?$/.exec(String(h || "").trim()); if (!m) return null; const hh = +m[1], mm = +(m[2] || 0); return hh < 24 && mm < 60 ? `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}` : null; }
+export function regraTexto(r: any): string {
+  const q = r.frequencia === "diaria" ? "todo dia" : r.frequencia === "mensal" ? `todo dia ${r.dia_mes}` :
+    `toda ${(r.dias_semana || []).map((d: number) => DIAS[d]).join(", ")}`.replace("toda sábado", "todo sábado").replace("toda domingo", "todo domingo");
+  return `${q}, das ${r.hora_inicio} às ${r.hora_fim}${r.ate ? ` (até ${String(r.ate).split("-").reverse().join("/")})` : ""}`;
+}
+// proxima vez (inicio/fim) depois de "depois"
+export function proximaVez(r: any, depois: Date | null): { inicio: Date; fim: Date } | null {
+  const agora = new Date();
+  const hoje = horaLocalIso(agora).slice(0, 10);
+  for (let k = 0; k < 62; k++) {
+    const dia = new Date(new Date(`${hoje}T12:00:00-03:00`).getTime() + k * 86400000);
+    const ymd = horaLocalIso(dia).slice(0, 10);
+    if (r.ate && ymd > r.ate) return null;
+    const ds = new Date(`${ymd}T12:00:00-03:00`).getUTCDay(), dm = +ymd.slice(8, 10);
+    const casa = r.frequencia === "diaria" || (r.frequencia === "semanal" && (r.dias_semana || []).includes(ds)) || (r.frequencia === "mensal" && dm === +r.dia_mes);
+    if (!casa) continue;
+    const inicio = new Date(`${ymd}T${r.hora_inicio}:00-03:00`);
+    let fim = new Date(`${ymd}T${r.hora_fim}:00-03:00`);
+    if (fim <= inicio) fim = new Date(fim.getTime() + 86400000);
+    if (fim <= agora) continue;
+    if (depois && inicio <= depois) continue;
+    return { inicio, fim };
+  }
+  return null;
+}
+function validarRegra(r: any): string | null {
+  if (!r || !["diaria", "semanal", "mensal"].includes(r.frequencia)) return "frequência inválida (diaria, semanal ou mensal)";
+  r.hora_inicio = horaOk(r.hora_inicio); r.hora_fim = horaOk(r.hora_fim);
+  if (!r.hora_inicio || !r.hora_fim) return "informe hora_inicio e hora_fim no formato HH:MM";
+  if (r.frequencia === "semanal") { r.dias_semana = (r.dias_semana || []).map(Number).filter((d: number) => d >= 0 && d <= 6); if (!r.dias_semana.length) return "informe os dias da semana (0=domingo..6=sábado)"; }
+  if (r.frequencia === "mensal") { r.dia_mes = Math.round(Number(r.dia_mes)); if (!(r.dia_mes >= 1 && r.dia_mes <= 28)) return "dia do mês entre 1 e 28"; }
+  if (r.ate && !/^\d{4}-\d{2}-\d{2}$/.test(r.ate)) return "data final no formato AAAA-MM-DD";
+  return null;
+}
+// cria (e publica com data de inicio/fim) a proxima vez de cada repeticao que comeca nas proximas 24 h
+export async function gerarOcorrencias(sb: SupabaseClient, soEstas?: string[]): Promise<string[]> {
+  let q = sb.from("nando_recorrencias").select("*").eq("ativo", true);
+  if (soEstas?.length) q = q.in("id", soEstas);
+  const { data: recs } = await q;
+  const log: string[] = [];
+  for (const r of recs || []) {
+    try {
+      const prox = proximaVez(r.regra, r.ultima_inicio ? new Date(r.ultima_inicio) : null);
+      if (!prox) { await sb.from("nando_recorrencias").update({ ativo: false }).eq("id", r.id); log.push(`repetição ${idCurto(r.id)} terminou`); continue; }
+      if (prox.inicio.getTime() - Date.now() > 24 * 3600000) continue;
+      const { data: modelos } = await sb.from("nando_avisos").select("*").eq("conteudo->>modelo_rep", r.id);
+      if (!modelos?.length) { await sb.from("nando_recorrencias").update({ ativo: false }).eq("id", r.id); continue; }
+      const c: Contexto = { sb, tel: r.criado_por_tel || "", nomePessoa: r.criado_por_nome || "", admin: true, predios: [], predioAtual: null, midias: {}, registros: [] };
+      const p = await predioPorId(c, r.building_id);
+      for (const m of modelos.sort((x: any, y: any) => (x.conteudo?.parte || 0) - (y.conteudo?.parte || 0))) {
+        const { conteudo } = m;
+        const { data: linha, error } = await sb.from("nando_avisos").insert({ ...m, id: undefined, created_at: undefined, updated_at: undefined, arquivo: null, status: "rascunho",
+          removido_por: null, removido_em: null, inicio: prox.inicio.toISOString(), fim: prox.fim.toISOString(), lembrar_em: null,
+          conteudo: { ...conteudo, modelo_rep: undefined, ocorrencia_de: r.id, ...(r.lote ? { lote: `${r.lote}:${prox.inicio.toISOString()}` } : {}) } }).select("*").single();
+        if (error) throw error;
+        const arquivo = await publicarEm(c, linha, p);
+        const st = prox.inicio > new Date(Date.now() + 60000) ? "agendado" : "no_ar";
+        await sb.from("nando_avisos").update({ arquivo, status: st }).eq("id", linha.id);
+        await historico(sb, linha.id, "Nando (repetição)", "publicou", { predio: p.nome, repeticao: idCurto(r.id) });
+      }
+      await sb.from("nando_recorrencias").update({ ultima_inicio: prox.inicio.toISOString() }).eq("id", r.id);
+      log.push(`repetição ${idCurto(r.id)}: ${p.nome} ${fmtData(prox.inicio)}`);
+    } catch (err) {
+      log.push(`repetição ${idCurto(r.id)} falhou: ${(err as Error).message}`);
+      await registrarOcorrencia(sb, { tipo: "erro_publicacao", telefone: r.criado_por_tel || "", nome: r.criado_por_nome || "", building_id: r.building_id, descricao: `Repetição ${idCurto(r.id)} não publicou: ${(err as Error).message}` }).catch(() => {});
+    }
+  }
+  return log;
+}
+
 async function publicarEm(c: Contexto, a: any, p: Predio): Promise<string> {
   // arquivo final
   let bytes: Uint8Array, mime: string, ext: string;
@@ -531,7 +624,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const { data } = await sb.from("nando_avisos").select("*").eq("building_id", p.id)
         .in("status", ["no_ar", "agendado", "erro"]).order("created_at");
       if (!data?.length) {
-        const { data: antigos } = await sb.from("nando_avisos").select("titulo").eq("building_id", p.id).eq("status", "encerrado").order("created_at", { ascending: false }).limit(5);
+        const { data: antigos } = await sb.from("nando_avisos").select("titulo").eq("building_id", p.id).eq("status", "encerrado").is("conteudo->>modelo_rep", null).order("created_at", { ascending: false }).limit(5);
         return `${p.nome}: nenhum aviso aparecendo no painel agora (a tela mostra "sem avisos no momento").` +
           (antigos?.length ? ` Avisos antigos já encerrados (não aparecem mais; só cite se perguntarem): ${antigos.map((a: any) => a.titulo).join(", ")}.` : "");
       }
@@ -706,6 +799,32 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const origem = await predioPorId(c, a.building_id).catch(() => null);
       const lote = alvos.length > 1 ? crypto.randomUUID() : null;
       const res: string[] = [];
+      if (e.repetir) {
+        const regra = { ...e.repetir };
+        const erroRegra = validarRegra(regra);
+        if (erroRegra) return `Não criei a repetição: ${erroRegra}.`;
+        const loteRep = alvos.length > 1 ? crypto.randomUUID() : null;
+        const ids: string[] = [];
+        for (const p of alvos) {
+          const recId = crypto.randomUUID();
+          for (const base of bases) {
+            let m = base;
+            if (p.id !== base.building_id) {
+              const { data: copia } = await sb.from("nando_avisos").insert({ ...base, id: undefined, building_id: p.id, cliente_id: p.cliente_id, created_at: undefined, updated_at: undefined }).select("*").single();
+              m = await ajustarAssinatura(c, copia, origem?.nome || "", p);
+            }
+            await sb.from("nando_avisos").update({ status: "encerrado", removido_por: "modelo de repetição", conteudo: { ...m.conteudo, modelo_rep: recId } }).eq("id", m.id);
+          }
+          const { error } = await sb.from("nando_recorrencias").insert({ id: recId, building_id: p.id, modelo_id: bases[0].id, regra, criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa, lote: loteRep });
+          if (error) { res.push(`${p.nome}: ERRO ao criar a repetição (${error.message})`); continue; }
+          ids.push(recId);
+          const prox = proximaVez(regra, null);
+          res.push(`${p.nome}: repetição [${idCurto(recId)}] criada, ${regraTexto(regra)}; próxima vez ${prox ? fmtData(prox.inicio) : "—"}`);
+        }
+        const feitos = await gerarOcorrencias(sb, ids);
+        c.registros.push(`repetição criada: ${res.join("; ")}${feitos.length ? ` | ${feitos.join("; ")}` : ""}`);
+        return res.join("\n") + "\n(O Nando coloca e tira sozinho em cada vez; cada vez é publicada até 24 h antes, com hora para aparecer e sumir.)";
+      }
       for (const p of alvos) {
         if (await avisosAtivos(c, p.id) + bases.length > LIMITE_AVISOS) { res.push(`${p.nome}: NÃO publicado (passaria de ${LIMITE_AVISOS} avisos no ar; tire algum antes)`); continue; }
         for (const base of bases) {
@@ -791,6 +910,80 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       c.registros.push(`remoção: ${res.join("; ")}`);
       const outros = lista.length === 1 && a0.conteudo?.lote ? (await doLote(c, a0)).filter((r: any) => r.id !== a0.id && ["no_ar", "agendado"].includes(r.status)).length : 0;
       return res.join("\n") + (outros > 0 ? `\n(O mesmo aviso continua em mais ${outros} prédio(s) do grupo; se a pessoa quiser tirar de todos, use todos_os_predios=true.)` : "");
+    }
+    case "editar_aviso": {
+      const a0 = await acharAviso(c, e.aviso);
+      if (a0.tipo !== "nando") return "Esse aviso é uma imagem/PDF: para mudar o conteúdo, mande o arquivo novo que eu troco.";
+      const lista = e.todos_os_predios ? await doLote(c, a0) : [a0];
+      const res: string[] = [];
+      for (const a of lista) {
+        const p = await predioPorId(c, a.building_id);
+        try {
+          const r = await fetch(a.conteudo?.arquivo_url); if (!r.ok) throw new Error("arquivo do aviso indisponível");
+          const dados = await r.json();
+          if (e.titulo) dados.titulo = String(e.titulo).slice(0, 60);
+          if (e.quando !== undefined) dados.quando = String(e.quando).slice(0, 60) || undefined;
+          if (e.texto !== undefined) dados.texto = String(e.texto).slice(0, 160) || undefined;
+          if (e.assinatura) dados.assinatura = String(e.assinatura).slice(0, 60);
+          if (Array.isArray(e.itens)) {
+            const icones = (dados.itens || []).map((x: any) => x?.icone);
+            dados.itens = e.itens.map((t: unknown, i: number) => ({ icone: icones[i] || icones[0] || dados.icone, texto: String(t).slice(0, 90) }));
+          }
+          const url = await salvarArquivo(c, `avisos/${a.id}.${Date.now()}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
+          const titulo = e.titulo ? (a.conteudo?.serie ? `${dados.titulo} (${a.conteudo.parte}/${a.conteudo.total})` : dados.titulo).slice(0, 70) : a.titulo;
+          const conteudo = { ...a.conteudo, arquivo_url: url, campos: { ...(a.conteudo?.campos || {}), titulo: dados.titulo, quando: dados.quando, texto: dados.texto, assinatura: dados.assinatura } };
+          const mud: any = { conteudo, titulo };
+          if (["no_ar", "agendado"].includes(a.status)) {
+            const arquivo = await publicarEm(c, { ...a, ...mud }, p);
+            if (a.arquivo) await removerDoPainel(p.cliente_id, [a.arquivo]).catch(() => {});
+            mud.arquivo = arquivo;
+          }
+          await sb.from("nando_avisos").update(mud).eq("id", a.id);
+          await historico(sb, a.id, quem(c), "editou o texto");
+          res.push(`${p.nome}: [${idCurto(a.id)}] "${titulo}" ${["no_ar", "agendado"].includes(a.status) ? "atualizado no painel (a versão nova aparece em até ~10 min)" : "rascunho atualizado"}`);
+        } catch (err) { res.push(`${p.nome}: [${idCurto(a.id)}] ERRO ao editar: ${(err as Error).message}`); }
+      }
+      c.registros.push(`edição: ${res.join("; ")}`);
+      const outros = !e.todos_os_predios && a0.conteudo?.lote ? (await doLote(c, a0)).length - 1 : 0;
+      const link = a0.status === "rascunho" ? `\nNova prévia (10 min): ${await criarPrevia(c, a0.id)}` : "";
+      return res.join("\n") + link + (outros > 0 ? `\n(O mesmo aviso está em mais ${outros} prédio(s) do grupo; para mudar em todos, use todos_os_predios=true.)` : "");
+    }
+    case "listar_repeticoes": {
+      const lista = e.todos ? (c.admin ? await todosPredios(sb) : c.predios) : (c.predioAtual ? [c.predioAtual] : []);
+      if (!lista.length) return "Escolha o prédio primeiro (escolher_predio) ou use todos=true.";
+      const { data } = await sb.from("nando_recorrencias").select("*").eq("ativo", true).in("building_id", lista.map((x) => x.id)).order("created_at");
+      if (!data?.length) return "Nenhum aviso que se repete" + (e.todos ? " nos prédios dessa pessoa." : ` no ${lista[0].nome}.`);
+      const out: string[] = [];
+      for (const r of data) {
+        const { data: m } = await sb.from("nando_avisos").select("titulo").eq("id", r.modelo_id).maybeSingle();
+        const prox = proximaVez(r.regra, r.ultima_inicio ? new Date(r.ultima_inicio) : null);
+        const nome = lista.find((x) => x.id === r.building_id)?.nome || "";
+        out.push(`- ${String(m?.titulo || "Aviso").replace(/\s*\(\d+\/\d+\)$/, "")} · ${nome} · ${regraTexto(r.regra)} · próxima ${prox ? fmtData(prox.inicio) : "—"}   {código ${idCurto(r.id)}${r.lote ? "; criada junto em vários prédios" : ""}}`);
+      }
+      return out.join("\n") + "\n(Mostre sem o trecho entre chaves.)";
+    }
+    case "parar_repeticao": {
+      const pre = String(e.codigo || "").toLowerCase().replace(/[^0-9a-f]/g, "").slice(0, 8);
+      if (pre.length !== 8) return "Código inválido. Use listar_repeticoes.";
+      const { data: achados } = await sb.from("nando_recorrencias").select("*").gte("id", `${pre}-0000-0000-0000-000000000000`).lte("id", `${pre}-ffff-ffff-ffff-ffffffffffff`).limit(1);
+      const r0 = achados?.[0]; if (!r0) return "Não encontrei essa repetição. Use listar_repeticoes.";
+      const pode = (b: string) => c.admin || c.predios.some((p) => p.id === b);
+      if (!pode(r0.building_id)) return "Essa repetição é de um prédio que esta pessoa não administra.";
+      let recs = [r0];
+      if (e.todos_os_predios && r0.lote) { const { data } = await sb.from("nando_recorrencias").select("*").eq("lote", r0.lote).eq("ativo", true); recs = (data || []).filter((x: any) => pode(x.building_id)); }
+      const res: string[] = [];
+      for (const r of recs) {
+        await sb.from("nando_recorrencias").update({ ativo: false }).eq("id", r.id);
+        const { data: futuras } = await sb.from("nando_avisos").select("*").eq("conteudo->>ocorrencia_de", r.id).eq("status", "agendado");
+        for (const f of futuras || []) {
+          if (f.arquivo) await removerDoPainel(f.cliente_id, [f.arquivo]).catch(() => {});
+          await sb.from("nando_avisos").update({ status: "removido", removido_por: quem(c), removido_em: new Date().toISOString() }).eq("id", f.id);
+        }
+        const nome = (await predioPorId({ ...c, admin: true }, r.building_id).catch(() => null))?.nome || "prédio";
+        res.push(`${nome}: repetição [${idCurto(r.id)}] parada${futuras?.length ? " (tirei também a próxima vez já agendada)" : ""}`);
+      }
+      c.registros.push(`repetição parada: ${res.join("; ")}`);
+      return res.join("\n") + "\n(Se a vez de hoje já está na tela, ela continua até a hora de sumir; se quiser tirar agora, use remover_aviso.)";
     }
     case "descartar_rascunhos": {
       const n = await descartarTodosDaPessoa(c);
@@ -943,6 +1136,8 @@ LINK DOS AVISOS DO PRÉDIO
 - Depois de publicar, alterar ou listar avisos, ofereça o link da página do prédio (link_dos_avisos): mostra todos os avisos no ar e agendados como aparecem na tela, a ordem do rodízio e até quando cada um fica. Se a pessoa pedir para "ver como está", mande o link direto.
 - VÁRIOS PRÉDIOS (gestor/administradora ou o Jeferson): o mesmo aviso pode ir para vários prédios de uma vez. Crie o rascunho UMA vez (no prédio atual), mostre a prévia e, aprovado, publique com publicar_aviso passando 'predios' (nomes ou códigos, ou ['todos']) e 'exceto' se ela disser "menos o X". Cada prédio recebe a assinatura dele automaticamente. Antes de publicar em vários, confirme em uma frase a lista de prédios ("Vou colocar no A, B e C, pode ser?").
 - Aviso publicado junto em vários prédios fica no mesmo grupo: para "tirar de todos", "mudar a data em todos" etc., use remover_aviso/alterar_aviso com todos_os_predios=true (UM pedido resolve todos; para série, faça para cada cartão). Se ela pedir só para um prédio, mexa só naquele e avise que nos outros continua. Responda prédio por prédio o que deu certo.
+- AVISO QUE SE REPETE (coleta de lixo toda terça, dedetização todo dia 10, limpeza da caixa d'água...): crie o rascunho uma vez, mostre a prévia e publique com publicar_aviso + 'repetir' (frequência, dias, hora de aparecer e de sumir). Confirme a regra em uma frase antes ("Vai aparecer toda terça das 7h às 20h, pode ser?"). Para ver ou parar: listar_repeticoes / parar_repeticao. Quando a pessoa disser "todo/toda/sempre/todo mês", ofereça a repetição.
+- Para corrigir o TEXTO de um aviso do Nando já publicado ("troca a data para sábado", "corrige o horário"), use editar_aviso (não crie outro). Datas de quando aparece/sai continuam em alterar_aviso.
 - Para quem cuida de mais de um prédio, ofereça o link da CARTEIRA (link_dos_avisos com todos=true): uma página só, com todos os prédios e avisos, sempre atualizada, válida por 24 horas.
 - Máximo de ${LIMITE_AVISOS} avisos no ar por prédio. Acima de 6, avise que o rodízio fica longo e cada aviso aparece menos.
 - Para tirar um aviso, confirme qual é (pelo título) antes de usar remover_aviso. Avisos antigos (anteriores ao Nando) também aparecem na lista; só tire se pedirem.

@@ -1,6 +1,6 @@
 // =====================================================================
 // NANDO - rotinas automaticas (chamada a cada 5 minutos pelo pg_cron).
-// 1) agendados que comecaram -> no_ar
+// 1) agendados que comecaram -> no_ar (1b: avisos que se repetem)
 // 2) avisos com data de saida vencida -> tira do painel e avisa quem criou
 // 3) lembretes ("te lembro daqui 30 dias")
 // 4) cobranca gentil de predio sem aviso ha 7+ dias (max 1x/semana, dia util, horario comercial)
@@ -11,6 +11,7 @@ import {
   db, removerDoPainel, enviarTexto, fmtData, primeiroNome, horaLocalIso, ALERTA_NUMERO, MODO_TESTE, telefoneCanonico,
   chavesTelefone, historico,
 } from "../_shared/nando-core.ts";
+import { gerarOcorrencias } from "../_shared/nando-agente.ts";
 
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
 
@@ -31,6 +32,9 @@ Deno.serve(async (req) => {
   const { data: comecaram } = await sb.from("nando_avisos").update({ status: "no_ar" })
     .eq("status", "agendado").lte("inicio", agora.toISOString()).select("id");
   if (comecaram?.length) log.push(`${comecaram.length} agendado(s) entraram no ar`);
+
+  // 1b) avisos que se repetem: publica a proxima vez (ate 24 h antes, com hora de aparecer e sumir)
+  try { log.push(...await gerarOcorrencias(sb)); } catch (e) { log.push(`repetições falharam: ${(e as Error).message}`); }
 
   // 2) vencidos
   const { data: vencidos } = await sb.from("nando_avisos").select("*").in("status", ["no_ar", "agendado"])
