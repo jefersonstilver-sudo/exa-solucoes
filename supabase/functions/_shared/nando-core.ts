@@ -17,7 +17,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.12";
+export const NANDO_VERSAO = "2026-10-24.13";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -185,11 +185,13 @@ export async function registrarOcorrencia(sb: SupabaseClient, o: { tipo: string;
 }
 
 // ---------------- API dos paineis (AWS) ----------------
+// a lista oficial guarda "CondominiumNotices/arquivo.png"; a pasta lista so "arquivo.png": compara pelo nome
+export function nomeBase(n: unknown): string { return String(n || "").split("/").pop() || ""; }
 export async function listarArquivosPainel(clienteId: string): Promise<string[]> {
   const r = await fetch(`${API_EXTERNA}/geral/listar-arquivos/${encodeURIComponent(clienteId)}/CondominiumNotices`, { signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error(`listar-arquivos ${r.status}`);
   const j = await r.json();
-  return Array.isArray(j.arquivos) ? j.arquivos : [];
+  return Array.isArray(j.arquivos) ? j.arquivos.map(nomeBase) : [];
 }
 // Lista oficial que os paineis leem (ExaSistema / updates_clientes)
 export async function avisosOficiais(clienteId: string): Promise<any[] | null> {
@@ -293,12 +295,16 @@ export async function sincronizarLegado(sb: SupabaseClient, p: Predio) {
   let arquivos: string[] = [];
   try { arquivos = await listarArquivosPainel(p.cliente_id); } catch (e) { console.error("[NANDO] listar", (e as Error).message); }
   const oficiais = await avisosOficiais(p.cliente_id);
-  const nomes = new Set<string>([...arquivos, ...(oficiais || []).map((o: any) => o.mensagem).filter(Boolean)]);
+  const nomes = new Set<string>([...arquivos, ...(oficiais || []).map((o: any) => nomeBase(o.mensagem)).filter(Boolean)]);
   const { data: conhecidos } = await sb.from("nando_avisos").select("id,arquivo,status,conteudo").eq("building_id", p.id);
-  const porArquivo = new Map((conhecidos || []).filter((c: any) => c.arquivo).map((c: any) => [c.arquivo, c]));
+  // corrige copias criadas antes (o mesmo arquivo do Nando importado de novo como "anterior ao Nando")
+  const doNando = new Set((conhecidos || []).filter((c: any) => c.arquivo && !c.conteudo?.legado).map((c: any) => nomeBase(c.arquivo)));
+  const copias = (conhecidos || []).filter((c: any) => c.conteudo?.legado && doNando.has(nomeBase(c.arquivo)));
+  if (copias.length) await sb.from("nando_avisos").delete().in("id", copias.map((c: any) => c.id));
+  const porArquivo = new Map((conhecidos || []).filter((c: any) => c.arquivo && !copias.includes(c)).map((c: any) => [nomeBase(c.arquivo), c]));
   const novos: any[] = [];
   for (const a of nomes) {
-    const meta = (oficiais || []).find((o: any) => o.mensagem === a);
+    const meta = (oficiais || []).find((o: any) => nomeBase(o.mensagem) === a);
     const incerto = oficiais === null;
     const status = incerto ? "no_ar" : situacaoNoPainel(meta);
     const atual: any = porArquivo.get(a);

@@ -3,7 +3,7 @@
 // =====================================================================
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
-  Predio, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
+  Predio, nomeBase, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
   b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso,
 } from "./nando-core.ts";
@@ -284,7 +284,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         const { data: ativos } = await sb.from("nando_avisos").select("id,arquivo,conteudo").eq("building_id", p.id).in("status", ["no_ar", "agendado"]);
         for (const x of ativos || []) {
           if (x.conteudo?.legado) continue;
-          if (!x.arquivo || !arquivosPainel.includes(x.arquivo)) {
+          if (!x.arquivo || !arquivosPainel.includes(nomeBase(x.arquivo))) {
             await sb.from("nando_avisos").update({ status: "erro", erro: "o arquivo não está na pasta do painel" }).eq("id", x.id);
           }
         }
@@ -299,7 +299,13 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
       const rot: Record<string, string> = { no_ar: "No ar (confirmado no painel)", agendado: "Agendados", rascunho: "Rascunhos (ainda não publicados)", erro: "Com problema (NÃO estão no painel)" };
       const blocos: string[] = [];
       for (const st of ["no_ar", "agendado", "erro", "rascunho"]) {
-        const grupo = data.filter((a: any) => a.status === st);
+        let grupo = data.filter((a: any) => a.status === st);
+        if (st === "rascunho") {
+          // so o que esta em andamento (ultimas 24h) e uma linha por conjunto de 3 opcoes
+          const vistos = new Set<string>();
+          grupo = grupo.filter((a: any) => Date.now() - new Date(a.created_at).getTime() < 86400000)
+            .filter((a: any) => { const g = a.conteudo?.grupo || a.id; if (vistos.has(g)) return false; vistos.add(g); return true; });
+        }
         if (!grupo.length) continue;
         blocos.push(`*${rot[st]} – ${p.nome}*\n` + grupo.map((a: any, n: number) =>
           `${n + 1}. ${a.titulo} — ${a.segundos}s na tela · ${st === "agendado" ? `começa ${fmtData(a.inicio)} · ` : ""}${a.fim ? `sai ${fmtData(a.fim)}` : "sem data de saída"}${a.lembrar_em ? ` · lembrete ${fmtData(a.lembrar_em)}` : ""}` +
