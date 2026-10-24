@@ -196,7 +196,7 @@ serve(async (req) => {
     // Check if config exists
     const { data: existingConfig } = await supabase
       .from('zoho_email_config')
-      .select('id')
+      .select('id, refresh_token')
       .limit(1)
       .single();
 
