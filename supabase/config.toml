@@ -621,3 +621,6 @@ schedule = "* * * * *"
 
 [functions.generate-roteiro]
 verify_jwt = true
+
+[functions.nando-painel]
+verify_jwt = false

@@ -1031,12 +1031,12 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         if (!lista.length) return "Nenhum prédio ligado a este número.";
         const link = `${SITE_URL}/nando/predio/${await tokenCarteira(telefoneCanonico(c.tel), 24 * 60)}`;
         c.registros.push(`link da carteira (${lista.length} prédios) enviado`);
-        return `Link da carteira com os ${lista.length} prédios (sempre atualizado, vale 24 horas): ${link}`;
+        return `Link do painel com os ${lista.length} prédios (sempre atualizado; ao abrir, a pessoa confirma com um código que eu mando aqui no WhatsApp e pode deixar o aparelho lembrado por 30 dias): ${link}`;
       }
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
       const link = `${SITE_URL}/nando/predio/${await tokenPredio(p.id, 60)}`;
       c.registros.push(`link dos avisos do ${p.nome} enviado`);
-      return `Link da página de avisos do ${p.nome} (vale 1 hora): ${link}`;
+      return `Link do painel do ${p.nome} (ao abrir, a pessoa confirma com um código que eu mando aqui no WhatsApp; o link vale 1 hora, o acesso fica 12 h ou 30 dias no aparelho lembrado). Painel direto, sem link: ${SITE_URL}/nando/painel . Link: ${link}`;
     }
     case "salvar_preferencia": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro.";
@@ -1158,6 +1158,7 @@ LINK DOS AVISOS DO PRÉDIO
 - Aviso publicado junto em vários prédios fica no mesmo grupo: para "tirar de todos", "mudar a data em todos" etc., use remover_aviso/alterar_aviso com todos_os_predios=true (UM pedido resolve todos; para série, faça para cada cartão). Se ela pedir só para um prédio, mexa só naquele e avise que nos outros continua. Responda prédio por prédio o que deu certo.
 - AVISO QUE SE REPETE (coleta de lixo toda terça, dedetização todo dia 10, limpeza da caixa d'água...): crie o rascunho uma vez, mostre a prévia e publique com publicar_aviso + 'repetir' (frequência, dias, hora de aparecer e de sumir). Confirme a regra em uma frase antes ("Vai aparecer toda terça das 7h às 20h, pode ser?"). Para ver ou parar: listar_repeticoes / parar_repeticao. Quando a pessoa disser "todo/toda/sempre/todo mês", ofereça a repetição.
 - Para corrigir o TEXTO de um aviso do Nando já publicado ("troca a data para sábado", "corrige o horário"), use editar_aviso (não crie outro). Datas de quando aparece/sai continuam em alterar_aviso.
+- PAINEL DO SÍNDICO no site (${SITE_URL}/nando/painel): mostra todos os avisos no ar e agendados de todos os prédios da pessoa, com miniatura, programação, histórico, e deixa mudar data, tempo, texto ou tirar do ar. Entrar exige um código de 6 dígitos que chega aqui no WhatsApp (o site manda sozinho); toda alteração pelo site pede um código novo. Se a pessoa receber um código sem ter pedido, diga para ignorar e não passar para ninguém. NUNCA diga nem repita códigos.
 - Para quem cuida de mais de um prédio, ofereça o link da CARTEIRA (link_dos_avisos com todos=true): uma página só, com todos os prédios e avisos, sempre atualizada, válida por 24 horas.
 - Máximo de ${LIMITE_AVISOS} avisos no ar por prédio. Acima de 6, avise que o rodízio fica longo e cada aviso aparece menos.
 - Para tirar um aviso, confirme qual é (pelo título) antes de usar remover_aviso. Avisos antigos (anteriores ao Nando) também aparecem na lista; só tire se pedirem.

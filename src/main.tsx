@@ -10,7 +10,7 @@ import { APP_VERSION } from './config/version'
 import { HelmetProvider } from 'react-helmet-async'
 import VideoStylesPage from './pages/public/VideoStylesPage'
 import NandoPrevia from './pages/public/NandoPrevia'
-import NandoPredio from './pages/public/NandoPredio'
+import NandoPainel from './pages/public/NandoPainel'
 
 console.log(`🚀 Starting application v${APP_VERSION}...`);
 
@@ -61,7 +61,7 @@ try {
     <React.StrictMode>
       <ThemeProvider defaultTheme="light">
         <BootGuard>
-          {window.location.pathname.replace(/\/$/, '') === '/estilos' ? <HelmetProvider><VideoStylesPage /></HelmetProvider> : window.location.pathname.startsWith('/nando/previa/') ? <NandoPrevia /> : window.location.pathname.startsWith('/nando/predio/') ? <NandoPredio /> : <App />}
+          {window.location.pathname.replace(/\/$/, '') === '/estilos' ? <HelmetProvider><VideoStylesPage /></HelmetProvider> : window.location.pathname.startsWith('/nando/previa/') ? <NandoPrevia /> : (window.location.pathname.startsWith('/nando/predio/') || window.location.pathname.replace(/\/$/, '') === '/nando/painel') ? <NandoPainel /> : <App />}
         </BootGuard>
       </ThemeProvider>
     </React.StrictMode>,
