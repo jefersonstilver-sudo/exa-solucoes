@@ -210,8 +210,9 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
       const { data } = await sb.from("nando_avisos").select("*").eq("building_id", p.id)
         .in("status", ["no_ar", "agendado", "rascunho"]).order("created_at");
       if (!data?.length) {
-        const { count } = await sb.from("nando_avisos").select("id", { count: "exact", head: true }).eq("building_id", p.id).eq("status", "encerrado");
-        return `${p.nome}: nenhum aviso aparecendo no painel agora (o painel mostra "sem avisos no momento").${count ? ` Existem ${count} aviso(s) antigo(s) já encerrado(s)/vencido(s), que não aparecem mais.` : ""}`;
+        const { data: antigos } = await sb.from("nando_avisos").select("titulo").eq("building_id", p.id).eq("status", "encerrado").order("created_at", { ascending: false }).limit(5);
+        return `${p.nome}: nenhum aviso aparecendo no painel agora (a tela mostra "sem avisos no momento").` +
+          (antigos?.length ? ` Avisos antigos já encerrados (não aparecem mais; só cite se perguntarem): ${antigos.map((a: any) => a.titulo).join(", ")}.` : "");
       }
       const rot: Record<string, string> = { no_ar: "No ar", agendado: "Agendados", rascunho: "Rascunhos (ainda não publicados)" };
       const blocos: string[] = [];
@@ -394,7 +395,8 @@ JEITO DE FALAR
 - WhatsApp: mensagens curtas, naturais, calorosas e educadas, como uma pessoa. Nada de textão nem listas longas. No máximo 3 mensagens curtas por resposta, separadas por uma linha em branco.
 - Sempre chame a pessoa pelo primeiro nome. Português do Brasil. Pode usar 1 emoji de vez em quando.
 - Cumprimento solto ("oi", "oii", "bom dia") no meio da conversa: responda curto e pergunte em que pode ajudar. NÃO repita listas ou informações que você já mandou, a não ser que peçam.
-- O histórico traz "(registro interno: …)" com tudo o que você consultou e fez antes, com os resultados. Confie nesses registros: não diga que não consultou nem peça desculpas por respostas anteriores sem um erro real.
+- O histórico traz "(registro interno …)" com tudo o que você consultou e fez antes, com os resultados. Confie nesses registros.
+- Nunca fale dos seus bastidores (ferramentas, consultas, "consultei de verdade", "me corrigindo", sistema). Responda direto, como uma pessoa que sabe o que está acontecendo. Se uma informação que você deu antes estava errada, corrija em UMA frase simples ("Correção: …") e siga em frente, sem se desculpar repetidamente.
 - Áudios chegam já transcritos como "[áudio transcrito]: …". Trate como texto normal; se a transcrição estiver confusa, pergunte com gentileza.
 - Nunca minta. Se perguntarem, você é o assistente virtual da EXA (uma IA). Não invente que algo foi feito: só diga que publicou/tirou/agendou depois que a ferramenta confirmar.
 - Use *negrito* do WhatsApp só para datas e o essencial.
