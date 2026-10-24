@@ -3,7 +3,7 @@
 // =====================================================================
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
-  Predio, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, enviarAoPainel, removerDoPainel,
+  Predio, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
   b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso,
 } from "./nando-core.ts";
@@ -278,16 +278,27 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
     case "listar_avisos": {
       const p = c.predioAtual; if (!p) return "Nenhum prédio escolhido ainda.";
       await sincronizarLegado(sb, p);
+      // a verdade e o que esta na pasta do painel: aviso do Nando "no ar" sem arquivo la = problema
+      const arquivosPainel = await listarArquivosPainel(p.cliente_id).catch(() => null);
+      if (arquivosPainel) {
+        const { data: ativos } = await sb.from("nando_avisos").select("id,arquivo,conteudo").eq("building_id", p.id).in("status", ["no_ar", "agendado"]);
+        for (const x of ativos || []) {
+          if (x.conteudo?.legado) continue;
+          if (!x.arquivo || !arquivosPainel.includes(x.arquivo)) {
+            await sb.from("nando_avisos").update({ status: "erro", erro: "o arquivo não está na pasta do painel" }).eq("id", x.id);
+          }
+        }
+      }
       const { data } = await sb.from("nando_avisos").select("*").eq("building_id", p.id)
-        .in("status", ["no_ar", "agendado", "rascunho"]).order("created_at");
+        .in("status", ["no_ar", "agendado", "rascunho", "erro"]).order("created_at");
       if (!data?.length) {
         const { data: antigos } = await sb.from("nando_avisos").select("titulo").eq("building_id", p.id).eq("status", "encerrado").order("created_at", { ascending: false }).limit(5);
         return `${p.nome}: nenhum aviso aparecendo no painel agora (a tela mostra "sem avisos no momento").` +
           (antigos?.length ? ` Avisos antigos já encerrados (não aparecem mais; só cite se perguntarem): ${antigos.map((a: any) => a.titulo).join(", ")}.` : "");
       }
-      const rot: Record<string, string> = { no_ar: "No ar", agendado: "Agendados", rascunho: "Rascunhos (ainda não publicados)" };
+      const rot: Record<string, string> = { no_ar: "No ar (confirmado no painel)", agendado: "Agendados", rascunho: "Rascunhos (ainda não publicados)", erro: "Com problema (NÃO estão no painel)" };
       const blocos: string[] = [];
-      for (const st of ["no_ar", "agendado", "rascunho"]) {
+      for (const st of ["no_ar", "agendado", "erro", "rascunho"]) {
         const grupo = data.filter((a: any) => a.status === st);
         if (!grupo.length) continue;
         blocos.push(`*${rot[st]} – ${p.nome}*\n` + grupo.map((a: any, n: number) =>
@@ -373,7 +384,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
     }
     case "publicar_aviso": {
       const a = await acharAviso(c, e.aviso);
-      if (a.status !== "rascunho") return `Esse aviso já está ${a.status}.`;
+      if (!["rascunho", "erro"].includes(a.status)) return `Esse aviso já está ${a.status}.`;
       const alvos: Predio[] = [];
       if (Array.isArray(e.predios) && e.predios.length) for (const cod of e.predios) alvos.push(await predioDoCodigo(c, cod));
       else alvos.push(await predioPorId(c, a.building_id));
@@ -513,7 +524,9 @@ JEITO DE FALAR
 - O histórico traz "(registro interno …)" com tudo o que você consultou e fez antes, com os resultados. Confie nesses registros.
 - Nunca fale dos seus bastidores (ferramentas, consultas, "consultei de verdade", "me corrigindo", sistema). Responda direto, como uma pessoa que sabe o que está acontecendo. Se uma informação que você deu antes estava errada, corrija em UMA frase simples ("Correção: …") e siga em frente, sem se desculpar repetidamente.
 - Áudios chegam já transcritos como "[áudio transcrito]: …". Trate como texto normal; se a transcrição estiver confusa, pergunte com gentileza.
-- Nunca minta. Se perguntarem, você é o assistente virtual da EXA (uma IA). Não invente que algo foi feito: só diga que publicou/tirou/agendou depois que a ferramenta confirmar.
+- Nunca minta. Se perguntarem, você é o assistente virtual da EXA (uma IA). Só diga que publicou/tirou/agendou se a ferramenta confirmou NESTA resposta. Se a ferramenta deu erro, diga claramente que não foi publicado e que a equipe da EXA foi avisada.
+- O que está no painel você só sabe consultando listar_avisos (ela confere a pasta do painel). Nunca afirme que algo "está no ar" de memória.
+- Não prometa fazer coisas depois ("confiro daqui a pouco", "te aviso quando entrar"): você só age quando recebe uma mensagem. Em vez disso, diga que a pessoa pode perguntar "quais avisos estão no ar?" quando quiser.
 - Use *negrito* do WhatsApp só para datas e o essencial.
 
 COMO TRABALHAR COM AVISOS
