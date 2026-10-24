@@ -75,8 +75,8 @@ serve(async (req) => {
       throw new Error(`Upload original failed: ${originalUploadError.message}`);
     }
 
-    const originalUrl = getStorageUrl(supabase, 'arquivos', originalPath);
-    const originalPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', originalPath, originalUrl);
+    const originalUrl = getStorageUrl(supabase as any, 'arquivos', originalPath);
+    const originalPreviewUrl = await createSignedPreviewUrl(supabase as any, 'arquivos', originalPath, originalUrl);
 
     if (onlyUploadOriginal) {
       return jsonResponse({
@@ -130,8 +130,8 @@ serve(async (req) => {
       throw new Error(`Upload processed failed: ${processedUploadError.message}`);
     }
 
-    const processedUrl = getStorageUrl(supabase, 'arquivos', processedPath);
-    const processedPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', processedPath, processedUrl);
+    const processedUrl = getStorageUrl(supabase as any, 'arquivos', processedPath);
+    const processedPreviewUrl = await createSignedPreviewUrl(supabase as any, 'arquivos', processedPath, processedUrl);
 
     console.log('[PROCESS-CLIENT-LOGO] ✅ Logo processada com sucesso');
 
@@ -225,7 +225,7 @@ async function callOpenAI(
     formData.append('model', 'gpt-image-1');
     formData.append('prompt', prompt);
     formData.append('output_format', 'png');
-    formData.append('image', new Blob([imageBytes], { type: mimeType }), fileName);
+    formData.append('image', new Blob([imageBytes as unknown as BlobPart], { type: mimeType }), fileName);
 
     const response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',

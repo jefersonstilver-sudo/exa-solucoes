@@ -349,7 +349,7 @@ async function updateCircuitBreaker(
       .from('delivery_circuit_breaker')
       .update({
         failure_count: newFailureCount,
-        last_failure_at: failures > 0 ? now.toISOString() : currentState.last_failure_at,
+        last_failure_at: failures > 0 ? now.toISOString() : (currentState as any).last_failure_at,
         updated_at: now.toISOString()
       })
       .eq('agent_key', agentKey);

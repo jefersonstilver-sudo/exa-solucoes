@@ -112,8 +112,8 @@ Deno.serve(async (req) => {
         const headers: Record<string, string> = {};
         
         // Adicionar Client-Token se estiver configurado
-        if (zapiConfig.client_token) {
-          headers['Client-Token'] = zapiConfig.client_token;
+        if ((zapiConfig as any).client_token) {
+          headers['Client-Token'] = (zapiConfig as any).client_token;
           console.log('🔐 [EDGE] Client-Token presente');
         } else {
           console.warn('⚠️ [EDGE] Client-Token NÃO configurado - isso pode causar erro 400');

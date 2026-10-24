@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     
     // Importar e validar entrada
     const { validateTrackingEvent } = await import('./validation.ts');
-    const event: TrackingEvent = validateTrackingEvent(body);
+    const event: TrackingEvent = validateTrackingEvent(body) as TrackingEvent;
     
     console.log('📊 Tracking event received:', event.event_type);
 

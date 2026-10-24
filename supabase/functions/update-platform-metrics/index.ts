@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
           .select('id', { count: 'exact' })
           .eq('approval_status', 'pending')
           .in('pedido_id', 
-            supabase.from('pedidos').select('id').eq('client_id', user.id)
+            (supabase.from('pedidos').select('id').eq('client_id', user.id) as unknown as string[])
           );
 
         // Contar vídeos aprovados
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
           .select('id', { count: 'exact' })
           .eq('approval_status', 'approved')
           .in('pedido_id',
-            supabase.from('pedidos').select('id').eq('client_id', user.id)
+            (supabase.from('pedidos').select('id').eq('client_id', user.id) as unknown as string[])
           );
 
         // Contar pedidos ativos

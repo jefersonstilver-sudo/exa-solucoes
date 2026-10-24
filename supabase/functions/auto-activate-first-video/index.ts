@@ -55,8 +55,8 @@ Deno.serve(async (req) => {
       is_base_video: videoData.is_base_video,
       is_active: videoData.is_active,
       selected_for_display: videoData.selected_for_display,
-      video_name: videoData.videos?.nome,
-      predios: videoData.pedidos?.lista_predios
+      video_name: (videoData.videos as any)?.nome,
+      predios: (videoData.pedidos as any)?.lista_predios
     });
 
     // 2. Verificar se é o primeiro vídeo aprovado
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     console.log('✅ [AUTO-ACTIVATE] Vídeo está corretamente marcado como base/ativo/exibição');
 
     // 4. Obter lista de prédios
-    const predios = videoData.pedidos?.lista_predios || [];
+    const predios = (videoData.pedidos as any)?.lista_predios || [];
     
     if (predios.length === 0) {
       console.warn('⚠️ [AUTO-ACTIVATE] Nenhum prédio associado ao pedido');
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
           sync_result: syncData,
           video_info: {
             id: videoData.id,
-            title: videoData.videos?.nome,
+            title: (videoData.videos as any)?.nome,
             slot: videoData.slot_position,
             predios_count: predios.length
           }

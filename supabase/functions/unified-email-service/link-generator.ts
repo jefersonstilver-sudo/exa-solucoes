@@ -53,6 +53,8 @@ export class LinkGenerator {
       
       console.log(`🔧 [LINK-GENERATOR] Usando estratégia: ${linkType}`);
       
+      const shouldTryAlternatives = linkType !== 'signup';
+      
       // Gerar link com expiração estendida (24 horas)
       const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
         type: linkType,
