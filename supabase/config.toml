@@ -21,6 +21,15 @@ verify_jwt = false
 [functions.evolution-proxy]
 verify_jwt = false
 
+[functions.nando-webhook]
+verify_jwt = false
+
+[functions.nando-previa]
+verify_jwt = false
+
+[functions.nando-cron]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321

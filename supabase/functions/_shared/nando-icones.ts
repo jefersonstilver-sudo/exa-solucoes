@@ -1,0 +1,88 @@
+// Biblioteca de icones 3D do Nando: Microsoft Fluent Emoji 3D (licenca MIT).
+// https://github.com/microsoft/fluentui-emoji  -- todos os nomes abaixo foram conferidos (existem).
+export const ICONES: Record<string, { nome: string; cor: string; uso: string }> = {
+  agua: { nome: "Potable water", cor: "#0a84ff", uso: "falta d'agua, caixa d'agua, manutencao hidraulica" },
+  gota: { nome: "Droplet", cor: "#0a84ff", uso: "vazamento, limpeza de caixa d'agua, umidade" },
+  energia: { nome: "High voltage", cor: "#f5a400", uso: "falta de energia, manutencao eletrica, Copel" },
+  lampada: { nome: "Light bulb", cor: "#f5a400", uso: "iluminacao, economia de energia, ideias" },
+  tomada: { nome: "Electric plug", cor: "#f5a400", uso: "eletrica, carregador, tomada" },
+  gas: { nome: "Fire", cor: "#ff5a1f", uso: "gas, leitura do gas, fogo, churrasqueira" },
+  elevador: { nome: "Elevator", cor: "#5e5ce6", uso: "manutencao do elevador, uso do elevador" },
+  limpeza: { nome: "Broom", cor: "#30b0c7", uso: "limpeza, faxina, areas comuns" },
+  bolhas: { nome: "Bubbles", cor: "#30b0c7", uso: "lavagem, higienizacao, limpeza de fachada" },
+  festa: { nome: "Party popper", cor: "#ff2d55", uso: "festa, confraternizacao, evento" },
+  fogos: { nome: "Fireworks", cor: "#bf5af2", uso: "ano novo, comemoracao" },
+  natal: { nome: "Christmas tree", cor: "#34c759", uso: "natal, decoracao de fim de ano" },
+  obra: { nome: "Construction", cor: "#ff9f0a", uso: "obra, reforma, interdicao" },
+  ferramentas: { nome: "Hammer and wrench", cor: "#8e8e93", uso: "manutencao geral, conserto" },
+  chave_inglesa: { nome: "Wrench", cor: "#8e8e93", uso: "manutencao, reparo" },
+  caixa_ferramentas: { nome: "Toolbox", cor: "#ff3b30", uso: "manutencao programada" },
+  engrenagem: { nome: "Gear", cor: "#8e8e93", uso: "sistema, equipamento, configuracao" },
+  dedetizacao: { nome: "Cockroach", cor: "#a2845e", uso: "dedetizacao, controle de pragas" },
+  ratos: { nome: "Rat", cor: "#a2845e", uso: "desratizacao" },
+  mosquito: { nome: "Mosquito", cor: "#34c759", uso: "dengue, mosquito, agua parada" },
+  garagem: { nome: "Automobile", cor: "#ff3b30", uso: "garagem, vagas, veiculos, portao de carros" },
+  bicicleta: { nome: "Bicycle", cor: "#34c759", uso: "bicicletario" },
+  encomenda: { nome: "Package", cor: "#a2845e", uso: "encomendas, entregas, portaria" },
+  mudanca: { nome: "Package", cor: "#a2845e", uso: "mudanca, horario de mudanca" },
+  chave: { nome: "Key", cor: "#ffcc00", uso: "chaves, acesso, tag, controle" },
+  cadeado: { nome: "Locked", cor: "#ffcc00", uso: "seguranca, portao trancado, acesso restrito" },
+  porta: { nome: "Door", cor: "#a2845e", uso: "porta, portao, entrada" },
+  calendario: { nome: "Spiral calendar", cor: "#ff3b30", uso: "data, prazo, agenda" },
+  assembleia: { nome: "Ballot box with ballot", cor: "#5e5ce6", uso: "assembleia, votacao, eleicao de sindico" },
+  documento: { nome: "Clipboard", cor: "#5e5ce6", uso: "regimento, documento, comunicado oficial" },
+  bilhete: { nome: "Memo", cor: "#5e5ce6", uso: "comunicado geral, recado" },
+  alfinete: { nome: "Pushpin", cor: "#ff3b30", uso: "lembrete fixo" },
+  megafone: { nome: "Megaphone", cor: "#ff2d55", uso: "comunicado importante, atencao" },
+  sino: { nome: "Bell", cor: "#ffcc00", uso: "lembrete, aviso geral" },
+  atencao: { nome: "Warning", cor: "#ff9f0a", uso: "alerta, cuidado, risco" },
+  proibido: { nome: "Prohibited", cor: "#ff3b30", uso: "proibicao" },
+  entrada_proibida: { nome: "No entry", cor: "#ff3b30", uso: "area interditada, nao entre" },
+  silencio: { nome: "Shushing face", cor: "#5e5ce6", uso: "silencio, barulho, horario de descanso" },
+  som: { nome: "Speaker high volume", cor: "#5e5ce6", uso: "barulho, som alto" },
+  reciclagem: { nome: "Recycling symbol", cor: "#34c759", uso: "coleta seletiva, reciclagem" },
+  lixo: { nome: "Wastebasket", cor: "#8e8e93", uso: "lixo, descarte, coleta" },
+  pets: { nome: "Paw prints", cor: "#a2845e", uso: "animais, pets nas areas comuns" },
+  cachorro: { nome: "Dog face", cor: "#a2845e", uso: "cachorro, coleira, passeio" },
+  piscina: { nome: "Water wave", cor: "#0a84ff", uso: "piscina, manutencao da piscina" },
+  chuveiro: { nome: "Shower", cor: "#0a84ff", uso: "agua quente, aquecedor" },
+  sol: { nome: "Sun", cor: "#ff9f0a", uso: "verao, calor, area de lazer" },
+  chuva: { nome: "Umbrella with rain drops", cor: "#0a84ff", uso: "chuva, tempestade, janelas" },
+  termometro: { nome: "Thermometer", cor: "#ff3b30", uso: "temperatura, ar-condicionado" },
+  criancas: { nome: "Children crossing", cor: "#ffcc00", uso: "criancas, playground, cuidado" },
+  esporte: { nome: "Soccer ball", cor: "#34c759", uso: "quadra, esportes" },
+  plantas: { nome: "Seedling", cor: "#34c759", uso: "jardim, jardinagem, paisagismo" },
+  folhas: { nome: "Leaf fluttering in wind", cor: "#34c759", uso: "outono, varricao, area verde" },
+  camera: { nome: "Video camera", cor: "#8e8e93", uso: "cameras, monitoramento" },
+  internet: { nome: "Satellite antenna", cor: "#5e5ce6", uso: "internet, antena, TV" },
+  celular: { nome: "Mobile phone", cor: "#5e5ce6", uso: "aplicativo, contato, WhatsApp" },
+  telefone: { nome: "Telephone receiver", cor: "#ff3b30", uso: "telefones uteis, contato" },
+  email: { nome: "Envelope", cor: "#5e5ce6", uso: "correspondencia, e-mail" },
+  conversa: { nome: "Speech balloon", cor: "#5e5ce6", uso: "convivencia, recado aos moradores" },
+  coracao: { nome: "Red heart", cor: "#ff2d55", uso: "agradecimento, boas-vindas, campanha solidaria" },
+  aperto_mao: { nome: "Handshake", cor: "#ffcc00", uso: "boas-vindas, parceria, convivencia" },
+  ok: { nome: "Check mark button", cor: "#34c759", uso: "concluido, resolvido, liberado" },
+  estrela: { nome: "Star", cor: "#ffcc00", uso: "destaque, novidade" },
+  brilho: { nome: "Sparkles", cor: "#bf5af2", uso: "novidade, reforma concluida" },
+  ampulheta: { nome: "Hourglass not done", cor: "#ff9f0a", uso: "prazo, aguarde" },
+  casa: { nome: "House", cor: "#ff9f0a", uso: "condominio, moradia" },
+  predio: { nome: "Office building", cor: "#8e8e93", uso: "predio, fachada" },
+  combustivel: { nome: "Fuel pump", cor: "#ff3b30", uso: "gerador, diesel" },
+  bateria: { nome: "Battery", cor: "#34c759", uso: "gerador, nobreak" },
+  lanterna: { nome: "Flashlight", cor: "#ffcc00", uso: "queda de energia, emergencia" },
+  onibus: { nome: "Bus", cor: "#ffcc00", uso: "transporte, van escolar" },
+  carrinho: { nome: "Shopping cart", cor: "#8e8e93", uso: "carrinhos de compras do predio" },
+  cesta: { nome: "Basket", cor: "#a2845e", uso: "doacoes, campanha de arrecadacao" },
+};
+
+export function urlIcone(tema: string): string | null {
+  const i = ICONES[tema];
+  if (!i) return null;
+  const pasta = encodeURIComponent(i.nome);
+  const arq = i.nome.toLowerCase().replace(/ /g, "_") + "_3d.png";
+  return `https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/${pasta}/3D/${arq}`;
+}
+
+export function listaTemas(): string {
+  return Object.entries(ICONES).map(([k, v]) => `${k} (${v.uso})`).join("; ");
+}
