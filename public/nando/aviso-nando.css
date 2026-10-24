@@ -3,6 +3,7 @@
 .na-bg{position:absolute;inset:-6%;background-size:cover;background-position:center;opacity:.55}
 .na-palco{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0;overflow:hidden;border-radius:6px}
 .na-fundo{position:absolute;inset:-4%;background-size:cover;background-position:center;background-color:#2a1236;
+  background-image:radial-gradient(circle at 20% 15%,color-mix(in srgb,var(--na-cor) 70%,transparent),transparent 55%),radial-gradient(circle at 85% 60%,color-mix(in srgb,var(--na-cor) 45%,#000),transparent 60%),linear-gradient(170deg,#24103a,#0c0614);
   animation:naZoom 22s ease-in-out infinite alternate;will-change:transform}
 .na-veu{position:absolute;inset:0;background:
   radial-gradient(ellipse 80% 45% at 50% 30%,color-mix(in srgb,var(--na-cor) 38%,transparent),transparent 70%),
@@ -37,3 +38,4 @@
 @keyframes naZoom{from{transform:scale(1)}to{transform:scale(1.08)}}
 @media (prefers-reduced-motion:reduce){.na-fundo,.na-flutua,.na-brilho{animation:none}}
 
+.na-credito{position:absolute;right:28px;bottom:26px;font-size:20px;color:rgba(255,255,255,.55);letter-spacing:.5px}

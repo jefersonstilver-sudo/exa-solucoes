@@ -90,6 +90,28 @@ async function fundoGradiente(cor: string): Promise<string | null> {
   } catch { return null; }
 }
 
+// Foto de fundo do Unsplash (segue as regras da API: usa o link original da foto, registra o download e da o credito)
+async function fotoUnsplash(busca: string): Promise<{ url: string; credito: string } | null> {
+  const key = Deno.env.get("UNSPLASH_ACCESS_KEY");
+  if (!key) return null;
+  try {
+    const q = encodeURIComponent(busca.slice(0, 60));
+    const r = await fetch(`https://api.unsplash.com/search/photos?query=${q}&orientation=portrait&content_filter=high&per_page=8`, {
+      headers: { Authorization: `Client-ID ${key}`, "Accept-Version": "v1" }, signal: AbortSignal.timeout(12000),
+    });
+    if (!r.ok) { console.error("[NANDO] unsplash", r.status); return null; }
+    const j = await r.json();
+    const lista = (j.results || []).filter((x: any) => x?.urls?.raw);
+    if (!lista.length) return null;
+    const foto = lista[Math.floor(Math.random() * Math.min(4, lista.length))];
+    // obrigatorio pela Unsplash: avisar o "download" quando a foto e usada
+    if (foto.links?.download_location) fetch(foto.links.download_location, { headers: { Authorization: `Client-ID ${key}` } }).catch(() => {});
+    const raw = String(foto.urls.raw);
+    const url = raw + (raw.includes("?") ? "&" : "?") + "w=1080&h=1920&fit=crop&crop=entropy&q=72&fm=jpg";
+    return { url, credito: `Foto: ${foto.user?.name || "Unsplash"} / Unsplash` };
+  } catch (err) { console.error("[NANDO] unsplash", (err as Error).message); return null; }
+}
+
 function parseData(s: unknown): Date | null {
   if (!s) return null;
   let t = String(s).trim();
@@ -124,6 +146,7 @@ export const FERRAMENTAS = [
         tema: { type: "string", description: "Tema do ícone 3D (uma das chaves da biblioteca)" },
         cor: { type: "string", description: "Cor de destaque em #RRGGBB (opcional; padrão do tema)" },
         midia_id: { type: "string", description: "Opcional: id de uma FOTO enviada pelo síndico para aparecer em destaque" },
+        busca_foto: { type: "string", description: "2 a 4 palavras EM INGLÊS para buscar a foto de fundo no Unsplash, ligadas ao tema e ao clima do aviso (ex: 'quiet night city', 'water tap kitchen', 'elevator lobby', 'pool summer'). Evite pessoas em destaque." },
         segundos: { type: "number", description: "Tempo na tela (5 a 120). Padrão 15" },
         inicio: { type: "string", description: "Início 'YYYY-MM-DDTHH:MM' (horário de Brasília). Vazio = assim que publicar" },
         fim: { type: "string", description: "Saída automática 'YYYY-MM-DDTHH:MM'. Vazio = sem data de saída" },
@@ -253,8 +276,13 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         v: 1, titulo: String(e.titulo || "").slice(0, 70), quando: e.quando ? String(e.quando).slice(0, 80) : undefined,
         texto: String(e.texto || "").slice(0, 260), assinatura: e.assinatura || `Administração do ${p.nome}`,
         cor: /^#[0-9a-f]{6}$/i.test(e.cor || "") ? e.cor : ICONES[tema].cor, icone, foto: foto || undefined,
-        fundo: foto ? undefined : (await fundoGradiente(ICONES[tema].cor)) || undefined,
+        fundo: undefined as string | undefined, credito: undefined as string | undefined,
       };
+      if (!foto) {
+        const f = e.busca_foto ? await fotoUnsplash(String(e.busca_foto)) : null;
+        if (f) { dados.fundo = f.url; dados.credito = f.credito; }
+        else dados.fundo = (await fundoGradiente(ICONES[tema].cor)) || undefined;
+      }
       const ini = parseData(e.inicio), fim = parseData(e.fim);
       const { data: a, error } = await sb.from("nando_avisos").insert({
         building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: dados.titulo, status: "rascunho",
@@ -419,7 +447,7 @@ COMO TRABALHAR COM AVISOS
 - Fluxo: entender o aviso → criar rascunho (criar_aviso_nando ou criar_aviso_arquivo) → mandar o link da prévia → ajustar se pedirem (crie um rascunho novo) → confirmar → publicar_aviso.
 - Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data no aviso, pergunte UMA vez, de forma natural: "Ele fica sem data para sair? Se quiser, eu te lembro daqui a 30 dias para ver se ainda vale." Se não quiser lembrete, fica por tempo indeterminado. Faça as perguntas que faltarem juntas, numa mensagem só, e não repita perguntas já respondidas. (3) tempo na tela: SÓ pergunte/mencione se o prédio já tiver outro aviso no ar (aí o rodízio alterna entre eles; padrão 15 s). Se este for o ÚNICO aviso, não fale de segundos: ele fica o tempo todo na tela.
 - Confirme datas por extenso com dia da semana e hora exata (ex: "fica até *domingo, 27/10, às 23h59*, certo?").
-- Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine. Temas: ${listaTemas()}.
+- Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine e informe busca_foto (palavras em inglês) para a foto de fundo, que aparece desfocada atrás do texto. Temas: ${listaTemas()}.
 - Se mandarem uma foto (ex: o portão), você pode usar a foto em destaque no aviso do Nando (midia_id) ou publicar a foto como está.
 - PDF / documento de assembleia: nunca publique minúsculo sem avisar. Pergunte se prefere: (a) publicar o PDF como está (ajustado à tela, letras pequenas), (b) transformar num aviso curto e visual do Nando com os pontos principais, ou (c) aviso visual resumido dizendo onde o documento completo está disponível. Recomende (b) quando o texto for longo.
 - Uma administradora com vários prédios pode pedir o mesmo aviso em vários prédios: publique com publicar_aviso passando a lista de códigos.

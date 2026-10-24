@@ -95,6 +95,7 @@
     if (d.texto) { tx = el("div", "na-texto na-entra", d.texto); bloco.appendChild(tx); }
     palco.appendChild(bloco);
 
+    if (d.credito) palco.appendChild(el("div", "na-credito", String(d.credito).slice(0, 60)));
     palco.appendChild(el("div", "na-assina na-entra", d.assinatura || "Administração do Condomínio"));
     raiz.appendChild(palco);
 
@@ -113,7 +114,7 @@
     if (qd) caber(qd, 52, 34, 140);
     if (tx) caber(tx, 46, 30, foto ? 300 : 360);
 
-    var fsrc = seguro(d.fundo) || foto || icone;
+    var fsrc = seguro(d.fundo) || foto;   // nunca usar o icone ampliado como fundo
     if (fsrc) desfocar(fsrc, function (u) {
       if (!u) return;
       fundo.style.backgroundImage = "url(" + u + ")";
