@@ -24,7 +24,7 @@ serve(async (req) => {
 
     // Check if user already exists in auth
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingAuthUser = existingUsers?.users?.find(u => u.email === email);
+    const existingAuthUser = existingUsers?.users?.find((u: any) => u.email === email);
 
     let userId: string;
 
@@ -33,7 +33,7 @@ serve(async (req) => {
       userId = existingAuthUser.id;
 
       // Update password and metadata
-      await supabaseAdmin.auth.admin.updateUser(userId, {
+      await (supabaseAdmin.auth.admin as any).updateUser(userId, {
         password,
         email_confirm: true,
         user_metadata: {

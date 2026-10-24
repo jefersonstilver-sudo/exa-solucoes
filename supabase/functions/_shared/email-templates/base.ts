@@ -380,6 +380,7 @@ export function createEmailTemplate(params: {
   title?: string;
   subtitle?: string;
   content: string;
+  preheader?: string;
   footerText?: string;
 }): string {
   return `

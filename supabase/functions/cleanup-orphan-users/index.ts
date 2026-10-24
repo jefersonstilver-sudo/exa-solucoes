@@ -83,7 +83,7 @@ serve(async (req) => {
     console.log(`✅ [CLEANUP] Encontrados ${dbUsers.length} usuários no banco`);
 
     // 3. Encontrar usuários órfãos (existem no auth mas não no banco)
-    const orphanUsers = authUsers.filter(authUser => !dbUserIds.has(authUser.id));
+    const orphanUsers = authUsers.filter((authUser: any) => !dbUserIds.has(authUser.id));
     
     console.log(`🔍 [CLEANUP] Encontrados ${orphanUsers.length} usuários órfãos`);
 

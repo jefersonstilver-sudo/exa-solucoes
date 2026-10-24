@@ -76,7 +76,7 @@ serve(async (req) => {
       user = data?.user || null;
     } else if (email) {
       const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-      user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase()) || null;
+      user = users.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase()) || null;
     } else {
       return new Response(JSON.stringify({ success: false, error: 'Email ou user_id é obrigatório' }), {
         status: 400,

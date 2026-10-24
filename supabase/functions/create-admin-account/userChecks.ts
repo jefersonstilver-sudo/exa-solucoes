@@ -35,7 +35,7 @@ export const checkExistingUser = async (email: string): Promise<CheckResult> => 
       };
     }
 
-    const existingUser = authUsers.users.find(user => user.email === email);
+    const existingUser = authUsers.users.find((user: any) => user.email === email);
     if (existingUser) {
       console.log('⚠️ [CREATE-ADMIN] Email já existe em auth.users');
       

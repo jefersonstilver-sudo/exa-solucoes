@@ -96,7 +96,7 @@ serve(async (req) => {
       console.log('🔍 Buscando usuário existente no Auth...');
       const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers();
       
-      const existingAuthUser = authUsers?.users?.find(u => u.email?.toLowerCase() === clientEmail);
+      const existingAuthUser = authUsers?.users?.find((u: any) => u.email?.toLowerCase() === clientEmail);
       
       if (existingAuthUser) {
         userId = existingAuthUser.id;

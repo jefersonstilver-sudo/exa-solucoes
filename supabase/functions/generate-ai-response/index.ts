@@ -826,6 +826,7 @@ Exemplo 3 (indecisão):
     
     // Variável para guardar resultado da função para validação posterior
     let toolFunctionResult: any = null;
+    let aiReply = '';
     
     // ====== PROCESSAR TOOL CALLS ======
     if (firstMessage?.tool_calls && firstMessage.tool_calls.length > 0) {

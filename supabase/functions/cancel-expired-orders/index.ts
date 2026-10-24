@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         .update({ 
           status: 'cancelado',
           log_pagamento: {
-            ...order.log_pagamento,
+            ...(order as any).log_pagamento,
             cancelled_at: new Date().toISOString(),
             cancellation_reason: 'Pagamento não realizado em 48 horas',
             auto_cancelled: true

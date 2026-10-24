@@ -33,7 +33,7 @@ serve(async (req: Request) => {
     
     // Importar e validar entrada
     const { validateEmailRequest } = await import('./validation.ts');
-    const validatedData = validateEmailRequest(body);
+    const validatedData = validateEmailRequest(body) as any;
     
     const { action, email, user, email_data } = validatedData;
     
