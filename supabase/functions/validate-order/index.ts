@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       .eq('client_id', user.id)
       .single();
 
-    if (orderError || !order) {
+    if (orderError || !orderRaw) {
       console.error('Order not found:', orderError);
       return new Response(
         JSON.stringify({ 
