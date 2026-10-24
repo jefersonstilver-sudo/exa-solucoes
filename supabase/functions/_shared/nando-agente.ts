@@ -5,7 +5,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   Predio, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
-  b64ParaBytes, bytesParaB64, telefoneCanonico, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso,
+  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 
@@ -250,7 +250,7 @@ async function publicarEm(c: Contexto, a: any, p: Predio): Promise<string> {
   let bytes: Uint8Array, mime: string, ext: string;
   if (a.tipo === "nando") {
     const r = await fetch(a.conteudo.arquivo_url); if (!r.ok) throw new Error("arquivo do aviso indisponível");
-    bytes = new Uint8Array(await r.arrayBuffer()); mime = "application/json"; ext = "nando.json";
+    bytes = await pngComAviso(await r.json()); mime = "image/png"; ext = "png";
   } else {
     const r = await fetch(a.origem_url); if (!r.ok) throw new Error("arquivo do aviso indisponível");
     bytes = new Uint8Array(await r.arrayBuffer());

@@ -17,7 +17,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.9";
+export const NANDO_VERSAO = "2026-10-24.10";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -242,8 +242,42 @@ export async function enviarAoPainel(clienteId: string, arquivo: { nome: string;
   const r = await fetch(`${API_EXTERNA}/noticias/upload/${encodeURIComponent(clienteId)}`, { method: "POST", body: fd, signal: AbortSignal.timeout(60000) });
   const txt = await r.text();
   if (!r.ok) throw new Error(`upload ${r.status}: ${txt.slice(0, 300)}`);
+  // a API responde "ok" no geral mesmo quando recusa o arquivo: confere o resultado de cada arquivo
+  try {
+    const j = JSON.parse(txt);
+    const res = (j.results || []).find((x: any) => x.filename === arquivo.nome) || (j.results || [])[0];
+    if (res && /error|erro|inv/i.test(String(res.status || ""))) throw new Error(`painel recusou o arquivo: ${res.status}`);
+  } catch (e) { if ((e as Error).message.startsWith("painel recusou")) throw e; }
+  // e confere se o arquivo realmente esta na pasta do predio
+  const lista = await listarArquivosPainel(clienteId).catch(() => null);
+  if (lista && !lista.includes(arquivo.nome)) throw new Error("o arquivo não apareceu na pasta do painel depois do envio");
   return txt;
 }
+
+// O painel so aceita .pdf/.png/.jpg: o aviso do Nando vai dentro de um PNG (bloco de texto "nando"),
+// e o painel v28 le esses dados e desenha o aviso animado.
+const TABELA_CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b: Uint8Array): number { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = TABELA_CRC[(c ^ b[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function bloco(tipo: string, dados: Uint8Array): Uint8Array {
+  const out = new Uint8Array(12 + dados.length); const v = new DataView(out.buffer);
+  v.setUint32(0, dados.length); out.set(new TextEncoder().encode(tipo), 4); out.set(dados, 8);
+  v.setUint32(8 + dados.length, crc32(out.subarray(4, 8 + dados.length))); return out;
+}
+export async function pngComAviso(dados: unknown): Promise<Uint8Array> {
+  const w = 9, h = 16;
+  const ihdr = new Uint8Array(13); const iv = new DataView(ihdr.buffer);
+  iv.setUint32(0, w); iv.setUint32(4, h); ihdr[8] = 8; ihdr[9] = 2; // 8 bits, RGB
+  const cru = new Uint8Array(h * (1 + w * 3));
+  for (let y = 0; y < h; y++) { const o = y * (1 + w * 3); for (let x = 0; x < w; x++) { cru[o + 1 + x * 3] = 20; cru[o + 2 + x * 3] = 10; cru[o + 3 + x * 3] = 28; } }
+  const comp = new Uint8Array(await new Response(new Blob([cru]).stream().pipeThrough(new CompressionStream("deflate"))).arrayBuffer());
+  const json = new TextEncoder().encode(JSON.stringify(dados));
+  const texto = new TextEncoder().encode("nando\0" + bytesParaB64(json));
+  const partes = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), bloco("IHDR", ihdr), bloco("tEXt", texto), bloco("IDAT", comp), bloco("IEND", new Uint8Array())];
+  const tot = partes.reduce((s, p) => s + p.length, 0); const png = new Uint8Array(tot); let o = 0;
+  for (const p of partes) { png.set(p, o); o += p.length; }
+  return png;
+}
+
 export async function removerDoPainel(clienteId: string, nomes: string[]) {
   const r = await fetch(`${API_EXTERNA}/noticias/deletar/${encodeURIComponent(clienteId)}`, {
     method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(nomes), signal: AbortSignal.timeout(30000),
