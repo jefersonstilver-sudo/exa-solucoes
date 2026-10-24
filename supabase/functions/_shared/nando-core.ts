@@ -174,15 +174,34 @@ export async function listarArquivosPainel(clienteId: string): Promise<string[]>
 }
 // Lista oficial que os paineis leem (ExaSistema / updates_clientes)
 export async function avisosOficiais(clienteId: string): Promise<any[] | null> {
+  // null = nao foi possivel confirmar (sem chave, sem permissao ou predio nao encontrado)
   const key = Deno.env.get("EXASISTEMA_ANON_KEY");
   if (!key) return null;
-  const r = await fetch(`${EXASISTEMA_URL}/rest/v1/updates_clientes?cliente_id=eq.${encodeURIComponent(clienteId)}&select=json_data`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000),
-  });
-  if (!r.ok) return null;
-  const rows = await r.json();
-  const lista = rows?.[0]?.json_data?.CondominiumNotices;
-  return Array.isArray(lista) ? lista : [];
+  try {
+    const r = await fetch(`${EXASISTEMA_URL}/rest/v1/updates_clientes?cliente_id=eq.${encodeURIComponent(clienteId)}&select=json_data`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) { console.error("[NANDO] exasistema", r.status); return null; }
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    const lista = rows[0]?.json_data?.CondominiumNotices;
+    return Array.isArray(lista) ? lista : [];
+  } catch (e) { console.error("[NANDO] exasistema", (e as Error).message); return null; }
+}
+// mesma regra do painel (avisos.js): apagado, sem arquivo, antes do inicio ou depois do fim = fora do ar
+function dataLocal(s: unknown): Date | null {
+  if (!s) return null;
+  const t = String(s).trim().replace(" ", "T");
+  const d = new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(t) ? t : t + "-03:00");
+  return isNaN(+d) ? null : d;
+}
+export function situacaoNoPainel(meta: any | undefined): "no_ar" | "agendado" | "encerrado" {
+  if (!meta || meta.status === "deleted" || !meta.mensagem) return "encerrado";
+  const agora = new Date();
+  const ini = dataLocal(meta.data_ini), fim = dataLocal(meta.data_fim);
+  if (fim && agora > fim) return "encerrado";
+  if (ini && agora < ini) return "agendado";
+  return "no_ar";
 }
 export function dataApi(d: Date | string | null | undefined, padrao: "inicio" | "fim"): string {
   if (!d) return padrao === "inicio" ? horaLocalIso(new Date()) : "2099-12-31T23:59:00";
@@ -216,29 +235,40 @@ export async function removerDoPainel(clienteId: string, nomes: string[]) {
 }
 
 // Importa para a lista do Nando os avisos que ja estavam no painel (nada e apagado).
+// A situacao (no ar / encerrado) segue a lista oficial que o painel le, nao so os arquivos guardados.
 export async function sincronizarLegado(sb: SupabaseClient, p: Predio) {
   let arquivos: string[] = [];
-  try { arquivos = await listarArquivosPainel(p.cliente_id); } catch (e) { console.error("[NANDO] listar", (e as Error).message); return; }
-  const { data: conhecidos } = await sb.from("nando_avisos").select("arquivo,status").eq("building_id", p.id);
-  const ja = new Set((conhecidos || []).map((c: any) => c.arquivo));
+  try { arquivos = await listarArquivosPainel(p.cliente_id); } catch (e) { console.error("[NANDO] listar", (e as Error).message); }
   const oficiais = await avisosOficiais(p.cliente_id);
-  const novos = arquivos.filter((a) => !ja.has(a)).map((a) => {
-    const meta = (oficiais || []).find((o: any) => o.mensagem === a) || {};
-    const fim = meta.data_fim ? new Date(String(meta.data_fim).replace(" ", "T") + "-03:00") : null;
-    const ini = meta.data_ini ? new Date(String(meta.data_ini).replace(" ", "T") + "-03:00") : null;
-    const tit = String(meta.titulo || a.replace(/^noticia_/, "").replace(/_\d{14}\.\w+$/, "").replace(/[-_]/g, " ")).trim();
-    const seg = Number((String(meta.titulo || "").match(/\[(\d+)s\]/) || [])[1] || 15);
-    const vencido = fim && !isNaN(+fim) && fim < new Date();
-    return {
+  const nomes = new Set<string>([...arquivos, ...(oficiais || []).map((o: any) => o.mensagem).filter(Boolean)]);
+  const { data: conhecidos } = await sb.from("nando_avisos").select("id,arquivo,status,conteudo").eq("building_id", p.id);
+  const porArquivo = new Map((conhecidos || []).filter((c: any) => c.arquivo).map((c: any) => [c.arquivo, c]));
+  const novos: any[] = [];
+  for (const a of nomes) {
+    const meta = (oficiais || []).find((o: any) => o.mensagem === a);
+    const incerto = oficiais === null;
+    const status = incerto ? "no_ar" : situacaoNoPainel(meta);
+    const atual: any = porArquivo.get(a);
+    if (atual) {
+      // so reavalia avisos antigos (os do Nando sao controlados pelo proprio Nando)
+      if (atual.conteudo?.legado && (atual.status !== status || !!atual.conteudo?.incerto !== incerto) && !["removido"].includes(atual.status)) {
+        await sb.from("nando_avisos").update({ status, conteudo: { ...atual.conteudo, incerto, metadados: meta || null } }).eq("id", atual.id);
+      }
+      continue;
+    }
+    const fim = dataLocal(meta?.data_fim), ini = dataLocal(meta?.data_ini);
+    const tit = String(meta?.titulo || a.replace(/^noticia_/, "").replace(/_\d{14}\.\w+$/, "").replace(/[-_]/g, " ")).replace(/\[\d+s\]/g, "").trim();
+    const seg = Number((String(meta?.titulo || "").match(/\[(\d+)s\]/) || [])[1] || 15);
+    novos.push({
       building_id: p.id, cliente_id: p.cliente_id, arquivo: a,
       tipo: a.toLowerCase().endsWith(".pdf") ? "pdf" : a.toLowerCase().endsWith(".nando.json") ? "nando" : "imagem",
       titulo: tit || a, segundos: Math.max(5, Math.min(120, seg)),
-      inicio: ini && !isNaN(+ini) ? ini.toISOString() : new Date().toISOString(),
-      fim: fim && !isNaN(+fim) && fim.getFullYear() < 2090 ? fim.toISOString() : null,
-      status: vencido ? "encerrado" : "no_ar", criado_por_nome: "anterior ao Nando",
-      conteudo: { legado: true, metadados: meta },
-    };
-  });
+      inicio: (ini || new Date()).toISOString(),
+      fim: fim && fim.getFullYear() < 2090 ? fim.toISOString() : null,
+      status, criado_por_nome: "anterior ao Nando",
+      conteudo: { legado: true, incerto, metadados: meta || null, arquivo_guardado: arquivos.includes(a) },
+    });
+  }
   if (novos.length) await sb.from("nando_avisos").insert(novos);
 }
 

@@ -209,9 +209,12 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
       await sincronizarLegado(sb, p);
       const { data } = await sb.from("nando_avisos").select("*").eq("building_id", p.id)
         .in("status", ["no_ar", "agendado", "rascunho"]).order("created_at");
-      if (!data?.length) return `${p.nome}: nenhum aviso no ar, agendado ou em rascunho.`;
+      if (!data?.length) {
+        const { count } = await sb.from("nando_avisos").select("id", { count: "exact", head: true }).eq("building_id", p.id).eq("status", "encerrado");
+        return `${p.nome}: nenhum aviso aparecendo no painel agora (o painel mostra "sem avisos no momento").${count ? ` Existem ${count} aviso(s) antigo(s) já encerrado(s)/vencido(s), que não aparecem mais.` : ""}`;
+      }
       return `${p.nome} – ${data.length} aviso(s):\n` + data.map((a: any) =>
-        `• [${idCurto(a.id)}] ${a.titulo} | ${a.tipo} | ${a.status} | ${a.segundos}s | início ${fmtData(a.inicio)} | saída ${fmtData(a.fim)}${a.lembrar_em ? ` | lembrete ${fmtData(a.lembrar_em)}` : ""} | por ${a.criado_por_nome || "?"}`,
+        `• [${idCurto(a.id)}] ${a.titulo} | ${a.tipo} | ${a.status} | ${a.segundos}s | início ${fmtData(a.inicio)} | saída ${fmtData(a.fim)}${a.lembrar_em ? ` | lembrete ${fmtData(a.lembrar_em)}` : ""} | por ${a.criado_por_nome || "?"}${a.conteudo?.incerto ? " | ATENÇÃO: não consegui confirmar na lista oficial do painel se este está realmente aparecendo" : ""}`,
       ).join("\n");
     }
     case "criar_aviso_nando": {
