@@ -39,8 +39,11 @@ def main():
     t0 = time.time()
     r = subprocess.run([
         "nice", "-n", "5", "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-        "-f", "x11grab", "-framerate", "25", "-video_size", f"{w}x{h}", "-i", display + ".0",
-        "-t", str(SEGUNDOS), "-vf", escala, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "24",
+        # o NUC e fraco: captura a 20 quadros/s com o relogio real (o video fica na velocidade certa)
+        "-thread_queue_size", "1024", "-use_wallclock_as_timestamps", "1",
+        "-f", "x11grab", "-framerate", "20", "-draw_mouse", "0", "-video_size", f"{w}x{h}", "-i", display + ".0",
+        "-t", str(SEGUNDOS), "-vf", escala, "-fps_mode", "cfr", "-r", "20",
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20", "-threads", "2",
         "-movflags", "+faststart", ARQ,
     ])
     if r.returncode != 0 or not os.path.exists(ARQ):
