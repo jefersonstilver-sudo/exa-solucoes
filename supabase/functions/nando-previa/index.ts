@@ -77,8 +77,13 @@ Deno.serve(async (req) => {
       if (prim.tipo === "nando") for (const r of lista) { const d = await dadosNando(r.conteudo?.arquivo_url); if (d) cartoes.push(d); }
       secoes.push({ opcao: n, rotulo: prim.conteudo?.rotulo_opcao || `Opção ${n}`, tipo: prim.tipo, cartoes, url: prim.tipo === "nando" ? null : prim.origem_url, credito: prim.conteudo?.credito_foto || null });
     }
+    // compatibilidade com a pagina antiga do site: as opcoes tambem vao "achatadas" (cartao por cartao, com rotulo)
+    const opcoesPlanas = secoes.flatMap((sc: any) => sc.tipo === "nando"
+      ? sc.cartoes.map((d: unknown, i: number) => ({ opcao: sc.opcao * 10 + i, rotulo: `Opção ${sc.opcao} · ${sc.rotulo}${sc.cartoes.length > 1 ? ` (${i + 1}/${sc.cartoes.length})` : ""}`, dados: d, credito: null }))
+      : []);
     return json(200, {
-      ok: true, tipo: "proposta", titulo: String(a.titulo || "").replace(/\s*\(\d+\/\d+\)$/, ""), segundos: a.segundos, inicio: a.inicio, fim: a.fim,
+      opcoes: opcoesPlanas, dados: opcoesPlanas[0]?.dados || null, serie: false,
+      ok: true, tipo: "nando", proposta: true, titulo: String(a.titulo || "").replace(/\s*\(\d+\/\d+\)$/, ""), segundos: a.segundos, inicio: a.inicio, fim: a.fim,
       predio: b?.nome || "", outros: outros || 0, secoes, expira_em: p.expira_em,
     });
   }

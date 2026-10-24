@@ -60,7 +60,7 @@ export default function NandoPrevia() {
     let aviso: { remover: () => void; escalar: () => void } | null = null;
     const onResize = () => aviso?.escalar();
     (async () => {
-      if (p.tipo === 'proposta' && p.secoes) {
+      if (p.secoes?.length) {
         carregarCss('/nando/aviso-nando.css');
         await carregarScript('/nando/aviso-nando.js');
         const montados: { remover: () => void; escalar: () => void }[] = [];
@@ -117,7 +117,7 @@ export default function NandoPrevia() {
       {!p && <div style={{ marginTop: 80, opacity: 0.7 }}>Carregando…</div>}
       {p && !p.ok && <div style={{ marginTop: 60, maxWidth: 360, textAlign: 'center', lineHeight: 1.5, opacity: 0.85 }}>{p.erro}</div>}
 
-      {p?.ok && p.tipo === 'proposta' && (
+      {p?.ok && !!p.secoes?.length && (
         <div style={{ width: '100%', maxWidth: 1100 }}>
           <div style={{ fontSize: 14, opacity: 0.8, textAlign: 'center', marginBottom: 6 }}>Escolha uma ou mais opções e responda o Nando com o número 👇</div>
           {p.secoes!.map((s) => (
@@ -148,7 +148,7 @@ export default function NandoPrevia() {
         </div>
       )}
 
-      {p?.ok && p.tipo !== 'proposta' && (
+      {p?.ok && !p.secoes?.length && (
         <>
           {p.tipo === 'nando' && (
             <>
