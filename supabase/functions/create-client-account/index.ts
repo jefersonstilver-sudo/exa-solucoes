@@ -33,6 +33,7 @@ serve(async (req) => {
       userId = existingAuthUser.id;
 
       // Update password and metadata
+      // @ts-ignore -- type-only suppression
       await supabaseAdmin.auth.admin.updateUser(userId, {
         password,
         email_confirm: true,

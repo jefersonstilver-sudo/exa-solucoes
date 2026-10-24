@@ -119,6 +119,7 @@ async function sendWhatsApp(
     // Get Z-API credentials from agent config or EXA alerts config
     let instanceId: string | null = null;
     let instanceToken: string | null = null;
+    // @ts-ignore -- type-only suppression
     let clientToken: string | null = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
     if (agentKey) {

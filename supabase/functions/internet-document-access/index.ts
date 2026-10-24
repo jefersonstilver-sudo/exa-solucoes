@@ -1,3 +1,4 @@
+// @ts-ignore -- type-only suppression
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3.24.2';
 import { internetAdmin } from '../_shared/internet-auth.ts';

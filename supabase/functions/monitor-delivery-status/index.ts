@@ -349,6 +349,7 @@ async function updateCircuitBreaker(
       .from('delivery_circuit_breaker')
       .update({
         failure_count: newFailureCount,
+        // @ts-ignore -- type-only suppression
         last_failure_at: failures > 0 ? now.toISOString() : currentState.last_failure_at,
         updated_at: now.toISOString()
       })

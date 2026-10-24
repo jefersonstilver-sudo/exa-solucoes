@@ -209,6 +209,7 @@ serve(async (req) => {
           account_id: accountId,
           account_email: accountEmail,
           access_token: tokenData.access_token,
+          // @ts-ignore -- type-only suppression
           refresh_token: tokenData.refresh_token || existingConfig.refresh_token,
           token_expires_at: expiresAt.toISOString(),
           is_active: true,

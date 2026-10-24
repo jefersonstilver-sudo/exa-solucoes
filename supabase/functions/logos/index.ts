@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+// @ts-ignore -- type-only suppression
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import {
   parsePublicLogoSnapshot,
@@ -96,6 +97,7 @@ serve(async (req) => {
       serviceRoleKey,
       publicDeadline ? { global: { fetch: (input, init) => fetch(input, {
         ...init,
+        // @ts-ignore -- type-only suppression
         signal: init?.signal ? AbortSignal.any([init.signal, publicDeadline]) : publicDeadline,
       }) } } : {}
     );

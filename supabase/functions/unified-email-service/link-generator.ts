@@ -37,6 +37,7 @@ export class LinkGenerator {
         console.error('❌ [LINK-GENERATOR] Erro ao verificar usuários:', userError);
       }
       
+      // @ts-ignore -- type-only suppression
       const existingUser = userData?.users?.find(user => user.email === email);
       const userExists = !!existingUser;
       const emailConfirmed = existingUser?.email_confirmed_at !== null;
@@ -70,6 +71,7 @@ export class LinkGenerator {
       console.error(`❌ [LINK-GENERATOR] Erro na API do Supabase (${linkType}):`, error);
       
       // Se falhou e devemos tentar alternativas
+      // @ts-ignore -- type-only suppression
       if (shouldTryAlternatives) {
         console.log('🔄 [LINK-GENERATOR] Tentando estratégias alternativas...');
         

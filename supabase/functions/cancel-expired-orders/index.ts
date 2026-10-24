@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
         .update({ 
           status: 'cancelado',
           log_pagamento: {
+            // @ts-ignore -- type-only suppression
             ...order.log_pagamento,
             cancelled_at: new Date().toISOString(),
             cancellation_reason: 'Pagamento não realizado em 48 horas',

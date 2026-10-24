@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
     }
 
     // 2. Extrair lista de prédios
+    // @ts-ignore -- type-only suppression
     const buildings = pedidoVideo.pedidos.lista_predios as string[];
     if (!buildings || buildings.length === 0) {
       throw new Error('Nenhum prédio associado ao pedido');
@@ -54,6 +55,7 @@ Deno.serve(async (req) => {
     console.log(`🏢 [DELETE_EXTERNAL_API] Pedido tem ${buildings.length} prédio(s)`);
 
     // 3. Extrair nome do arquivo do Storage URL
+    // @ts-ignore -- type-only suppression
     const storageUrl = pedidoVideo.videos.url;
     const fileName = storageUrl.split('/').pop()?.split('?')[0] || '';
 

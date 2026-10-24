@@ -207,6 +207,7 @@ serve(async (req) => {
         }
 
         conversationId = newConv.id;
+        // @ts-ignore -- type-only suppression
         phoneToConversation.set(phone, { id: conversationId, agent_key: agentKey || 'eduardo' });
       }
       

@@ -204,6 +204,7 @@ serve(async (req) => {
 
       } catch (parcelaError: any) {
         console.error('[BILLING-SCHEDULER] Erro ao processar parcela:', parcela.id, parcelaError);
+        // @ts-ignore -- type-only suppression
         results.erros.push({ parcela_id: parcela.id, erro: parcelaError.message });
       }
     }

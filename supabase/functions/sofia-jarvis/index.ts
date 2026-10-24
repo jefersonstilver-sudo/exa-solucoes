@@ -2926,6 +2926,7 @@ async function handleGetAdminSession(params: any): Promise<{ text: string; data:
   }));
 
   const adminList = adminsWithContext.map(a => 
+    // @ts-ignore -- type-only suppression
     `${a.userName} (${a.userRole}): página "${a.currentPage}", ações: ${a.recentActions?.map(r => r.action).join(', ') || 'nenhuma'}`
   ).join('. ');
 

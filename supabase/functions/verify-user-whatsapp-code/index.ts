@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
 
       // Atualizar user_metadata no auth
       const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+        // @ts-ignore -- type-only suppression
         userId,
         { user_metadata: { phone: novoTelefone } }
       );

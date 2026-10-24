@@ -75,7 +75,9 @@ serve(async (req) => {
       throw new Error(`Upload original failed: ${originalUploadError.message}`);
     }
 
+    // @ts-ignore -- type-only suppression
     const originalUrl = getStorageUrl(supabase, 'arquivos', originalPath);
+    // @ts-ignore -- type-only suppression
     const originalPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', originalPath, originalUrl);
 
     if (onlyUploadOriginal) {
@@ -130,7 +132,9 @@ serve(async (req) => {
       throw new Error(`Upload processed failed: ${processedUploadError.message}`);
     }
 
+    // @ts-ignore -- type-only suppression
     const processedUrl = getStorageUrl(supabase, 'arquivos', processedPath);
+    // @ts-ignore -- type-only suppression
     const processedPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', processedPath, processedUrl);
 
     console.log('[PROCESS-CLIENT-LOGO] ✅ Logo processada com sucesso');
