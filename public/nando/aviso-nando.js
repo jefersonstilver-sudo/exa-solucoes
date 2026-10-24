@@ -36,10 +36,10 @@
     img.crossOrigin = "anonymous";
     img.onload = function () {
       try {
-        var p = document.createElement("canvas"); p.width = 54; p.height = 96;
+        var p = document.createElement("canvas"); p.width = 108; p.height = 192;
         var c = p.getContext("2d");
-        var r = Math.max(54 / img.width, 96 / img.height);
-        c.drawImage(img, (54 - img.width * r) / 2, (96 - img.height * r) / 2, img.width * r, img.height * r);
+        var r = Math.max(108 / img.width, 192 / img.height);
+        c.drawImage(img, (108 - img.width * r) / 2, (192 - img.height * r) / 2, img.width * r, img.height * r);
         var g = document.createElement("canvas"); g.width = 270; g.height = 480;
         var gc = g.getContext("2d"); gc.imageSmoothingEnabled = true; gc.imageSmoothingQuality = "high";
         gc.drawImage(p, 0, 0, 270, 480);
@@ -112,7 +112,11 @@
     // texto: cabe sempre (titulo 2 linhas, texto ate a area disponivel)
     // letras grandes: o quadro e lido de longe no elevador (tela de 27")
     caber(tt, 150, 84, foto ? 300 : 340);
-    if (qd) caber(qd, 66, 48, 170);
+    if (qd) { // data/horario numa linha so, se couber
+      qd.style.whiteSpace = "nowrap"; var tq = 66; qd.style.fontSize = tq + "px";
+      while (tq > 44 && qd.scrollWidth > qd.clientWidth + 1) { tq -= 2; qd.style.fontSize = tq + "px"; }
+      if (qd.scrollWidth > qd.clientWidth + 1) { qd.style.whiteSpace = "normal"; caber(qd, 60, 44, 170); }
+    }
     if (tx) caber(tx, 64, 42, foto ? 300 : 420);
 
     var fsrc = seguro(d.fundo) || foto;   // nunca usar o icone ampliado como fundo
