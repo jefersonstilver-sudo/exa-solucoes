@@ -50,7 +50,7 @@ serve(async (req) => {
     console.log('📋 [UPLOAD_EXTERNAL_API] Buscando dados do vídeo:', { pedido_video_id });
 
     // 1. Buscar dados completos do pedido_video
-    const { data: pedidoVideo, error: pvError } = await supabase
+    const { data: pedidoVideoRaw, error: pvError } = await supabase
       .from('pedido_videos')
       .select(`
         id,
