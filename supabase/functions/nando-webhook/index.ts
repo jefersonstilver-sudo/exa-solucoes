@@ -5,7 +5,7 @@
 // GET ?action=setup  -> registra este endpoint como webhook da instancia do Nando (so admin do site).
 // =====================================================================
 import {
-  db, ehAdmin, prediosDoTelefone, telefoneCanonico, enviarTexto, enviarDigitando, baixarMidia, instanciaNando,
+  db, ehAdmin, prediosDoTelefone, telefoneCanonico, enviarTexto, enviarDigitando, baixarMidia, instanciaNando, transcreverAudio,
   MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios,
 } from "../_shared/nando-core.ts";
 import { Contexto, rodarAgente } from "../_shared/nando-agente.ts";
@@ -157,7 +157,7 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
   for (const l of linhas) {
     const c = l.conteudo || {};
     if (l.papel === "nando") push("assistant", String(c.texto || "").slice(0, 2000) || "(ok)");
-    else if (l.papel === "sistema") push("assistant", `(registro interno: ${String(c.texto || "").slice(0, 800)})`);
+    else if (l.papel === "sistema") push("assistant", `(registro interno do que consultei/fiz: ${String(c.texto || "").slice(0, 2500)})`);
     else if (!novas.includes(l)) push("user", c.texto ? c.texto : `[${c.midia || "mídia"} enviada${c.midia_id ? `, midia_id=${c.midia_id}` : ""}]`);
   }
   // mensagens novas, com as midias anexadas para o Claude ver
@@ -181,8 +181,15 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
         } else if (m.mime.includes("pdf") && bytes.length < 9_000_000) {
           blocos.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: m.base64 } });
           blocos.push({ type: "text", text: `[PDF recebido: midia_id=${id}]` });
-        } else if (c.midia === "audio") {
-          blocos.push({ type: "text", text: "[áudio recebido – você ainda não consegue ouvir áudios; peça com gentileza para escrever]" });
+        } else if (c.midia === "audio" || m.mime.startsWith("audio/")) {
+          const dica = [...(ctx.predios || []).map((p) => p.nome), ctx.predioAtual?.nome || ""].join(", ");
+          const txt = await transcreverAudio(m.base64, m.mime, dica ? `Prédios citados: ${dica}.` : "");
+          if (txt) {
+            await sb.from("nando_mensagens").update({ conteudo: { ...c, texto: `[áudio transcrito]: ${txt}`, midia_id: id, key: undefined, mensagem: undefined } }).eq("id", l.id);
+            blocos.push({ type: "text", text: `[áudio transcrito]: ${txt}` });
+          } else {
+            blocos.push({ type: "text", text: "[áudio recebido, mas a transcrição falhou – peça com gentileza para repetir ou escrever]" });
+          }
         } else {
           blocos.push({ type: "text", text: `[${c.midia} recebido (${m.mime}) – só imagens e PDF viram aviso]` });
         }
@@ -197,7 +204,7 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
   await enviarDigitando(sb, tel, 2500);
   const resposta = await rodarAgente(ctx, msgs);
 
-  if (ctx.registros.length) await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "sistema", conteudo: { texto: ctx.registros.join(" | ") } });
+  if (ctx.registros.length) await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "sistema", conteudo: { texto: ctx.registros.join("\n") } });
   if (!resposta) return;
   // ate 3 mensagens curtas, com "digitando" entre elas
   const partes = resposta.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);

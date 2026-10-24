@@ -213,9 +213,17 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         const { count } = await sb.from("nando_avisos").select("id", { count: "exact", head: true }).eq("building_id", p.id).eq("status", "encerrado");
         return `${p.nome}: nenhum aviso aparecendo no painel agora (o painel mostra "sem avisos no momento").${count ? ` Existem ${count} aviso(s) antigo(s) já encerrado(s)/vencido(s), que não aparecem mais.` : ""}`;
       }
-      return `${p.nome} – ${data.length} aviso(s):\n` + data.map((a: any) =>
-        `• [${idCurto(a.id)}] ${a.titulo} | ${a.tipo} | ${a.status} | ${a.segundos}s | início ${fmtData(a.inicio)} | saída ${fmtData(a.fim)}${a.lembrar_em ? ` | lembrete ${fmtData(a.lembrar_em)}` : ""} | por ${a.criado_por_nome || "?"}${a.conteudo?.incerto ? " | ATENÇÃO: não consegui confirmar na lista oficial do painel se este está realmente aparecendo" : ""}`,
-      ).join("\n");
+      const rot: Record<string, string> = { no_ar: "No ar", agendado: "Agendados", rascunho: "Rascunhos (ainda não publicados)" };
+      const blocos: string[] = [];
+      for (const st of ["no_ar", "agendado", "rascunho"]) {
+        const grupo = data.filter((a: any) => a.status === st);
+        if (!grupo.length) continue;
+        blocos.push(`*${rot[st]} – ${p.nome}*\n` + grupo.map((a: any, n: number) =>
+          `${n + 1}. ${a.titulo} — ${a.segundos}s na tela · ${st === "agendado" ? `começa ${fmtData(a.inicio)} · ` : ""}${a.fim ? `sai ${fmtData(a.fim)}` : "sem data de saída"}${a.lembrar_em ? ` · lembrete ${fmtData(a.lembrar_em)}` : ""}` +
+          `   {código interno ${idCurto(a.id)}; criado por ${a.criado_por_nome || "?"}${a.conteudo?.incerto ? "; NÃO CONFIRMADO na lista oficial do painel" : ""}}`,
+        ).join("\n"));
+      }
+      return blocos.join("\n\n") + "\n\n(Mostre ao síndico exatamente nesse formato, um abaixo do outro, SEM o trecho entre chaves {…}.)";
     }
     case "criar_aviso_nando": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
@@ -385,6 +393,9 @@ ${MODO_TESTE ? "(Fase de teste interna.)" : ""}
 JEITO DE FALAR
 - WhatsApp: mensagens curtas, naturais, calorosas e educadas, como uma pessoa. Nada de textão nem listas longas. No máximo 3 mensagens curtas por resposta, separadas por uma linha em branco.
 - Sempre chame a pessoa pelo primeiro nome. Português do Brasil. Pode usar 1 emoji de vez em quando.
+- Cumprimento solto ("oi", "oii", "bom dia") no meio da conversa: responda curto e pergunte em que pode ajudar. NÃO repita listas ou informações que você já mandou, a não ser que peçam.
+- O histórico traz "(registro interno: …)" com tudo o que você consultou e fez antes, com os resultados. Confie nesses registros: não diga que não consultou nem peça desculpas por respostas anteriores sem um erro real.
+- Áudios chegam já transcritos como "[áudio transcrito]: …". Trate como texto normal; se a transcrição estiver confusa, pergunte com gentileza.
 - Nunca minta. Se perguntarem, você é o assistente virtual da EXA (uma IA). Não invente que algo foi feito: só diga que publicou/tirou/agendou depois que a ferramenta confirmar.
 - Use *negrito* do WhatsApp só para datas e o essencial.
 
@@ -399,7 +410,7 @@ COMO TRABALHAR COM AVISOS
 - Uma administradora com vários prédios pode pedir o mesmo aviso em vários prédios: publique com publicar_aviso passando a lista de códigos.
 - Máximo de ${LIMITE_AVISOS} avisos no ar por prédio. Acima de 6, avise que o rodízio fica longo e cada aviso aparece menos.
 - Para tirar um aviso, confirme qual é (pelo título) antes de usar remover_aviso. Avisos antigos (anteriores ao Nando) também aparecem na lista; só tire se pedirem.
-- Quando perguntarem "quais avisos estão no ar?", use listar_avisos e responda de forma resumida e humana.
+- Quando perguntarem "quais avisos estão no ar?", SEMPRE use listar_avisos naquele momento (nunca responda de memória) e mostre a lista exatamente no formato que a ferramenta devolve: título em negrito e um aviso por linha, numerados, um abaixo do outro. Se não houver nenhum no ar, diga isso claramente e ofereça criar um.
 - Incentive a comunicação: se o prédio estiver sem avisos, sugira avisos úteis de convivência (silêncio, lixo, pets, garagem, economia de água...).
 
 O QUE NÃO PODE (recuse com educação e explique em 1 frase)
@@ -441,6 +452,7 @@ export async function rodarAgente(c: Contexto, mensagens: any[]): Promise<string
       try { saida = await executar(c, u.name, u.input || {}); }
       catch (err) { saida = "ERRO: " + (err as Error).message; console.error("[NANDO] ferramenta", u.name, err); }
       resultados.push({ type: "tool_result", tool_use_id: u.id, content: saida });
+      c.registros.push(`${u.name}(${JSON.stringify(u.input || {}).slice(0, 160)}) → ${saida.slice(0, 700)}`);
     }
     msgs.push({ role: "user", content: resultados });
   }

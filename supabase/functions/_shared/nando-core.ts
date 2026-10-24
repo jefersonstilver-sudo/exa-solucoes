@@ -155,6 +155,23 @@ export async function baixarMidia(sb: SupabaseClient, mensagemBruta: any): Promi
   return { base64: String(b64).replace(/^data:[^,]+,/, ""), mime: j.mimetype || j.data?.mimetype || "application/octet-stream" };
 }
 
+// Transcreve audio do WhatsApp (OpenAI Whisper, mesma chave ja usada pelo transcribe-audio do site).
+export async function transcreverAudio(base64: string, mime: string, dica = ""): Promise<string | null> {
+  const key = Deno.env.get("OPENAI_API_KEY");
+  if (!key) { console.error("[NANDO] OPENAI_API_KEY ausente"); return null; }
+  const tipo = (mime || "audio/ogg").split(";")[0];
+  const ext = tipo.includes("mpeg") ? "mp3" : tipo.includes("mp4") || tipo.includes("m4a") ? "m4a" : tipo.includes("wav") ? "wav" : tipo.includes("webm") ? "webm" : "ogg";
+  const fd = new FormData();
+  fd.append("file", new Blob([b64ParaBytes(base64) as unknown as BlobPart], { type: tipo }), `audio.${ext}`);
+  fd.append("model", "whisper-1");
+  fd.append("language", "pt");
+  fd.append("prompt", ("Conversa de WhatsApp entre um síndico e o Nando, assistente de avisos de condomínio da EXA Mídia. " + dica).slice(0, 800));
+  const r = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: fd, signal: AbortSignal.timeout(60000) });
+  if (!r.ok) { console.error("[NANDO] whisper", r.status, (await r.text()).slice(0, 200)); return null; }
+  const j = await r.json();
+  return String(j.text || "").trim() || null;
+}
+
 // ---------------- alerta para o Jeferson ----------------
 export async function registrarOcorrencia(sb: SupabaseClient, o: { tipo: string; telefone?: string; nome?: string; building_id?: string | null; descricao: string }) {
   const { data } = await sb.from("nando_ocorrencias").insert({ ...o }).select("id").single();
