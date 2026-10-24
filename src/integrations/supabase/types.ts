@@ -9855,6 +9855,144 @@ export type Database = {
         }
         Relationships: []
       }
+      marca_arquivos: {
+        Row: {
+          created_at: string
+          id: string
+          legenda: string | null
+          marca_id: string
+          meta: Json
+          origem: string
+          path: string | null
+          tipo: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          legenda?: string | null
+          marca_id: string
+          meta?: Json
+          origem?: string
+          path?: string | null
+          tipo: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          legenda?: string | null
+          marca_id?: string
+          meta?: Json
+          origem?: string
+          path?: string | null
+          tipo?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marca_arquivos_marca_id_fkey"
+            columns: ["marca_id"]
+            isOneToOne: false
+            referencedRelation: "marcas_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marcas_clientes: {
+        Row: {
+          banco_autorizado: boolean
+          banco_termos: string[]
+          client_id: string | null
+          contact_id: string | null
+          cores: Json
+          created_at: string
+          empresa: string
+          endereco: string | null
+          estrategia: Json | null
+          fontes: Json
+          id: string
+          instagram: string | null
+          logo: Json | null
+          notas: string | null
+          proibido: string | null
+          segmento: string | null
+          site: string | null
+          slogan: string | null
+          tom_de_voz: string | null
+          updated_at: string
+          whatsapp_qr: string | null
+        }
+        Insert: {
+          banco_autorizado?: boolean
+          banco_termos?: string[]
+          client_id?: string | null
+          contact_id?: string | null
+          cores?: Json
+          created_at?: string
+          empresa: string
+          endereco?: string | null
+          estrategia?: Json | null
+          fontes?: Json
+          id?: string
+          instagram?: string | null
+          logo?: Json | null
+          notas?: string | null
+          proibido?: string | null
+          segmento?: string | null
+          site?: string | null
+          slogan?: string | null
+          tom_de_voz?: string | null
+          updated_at?: string
+          whatsapp_qr?: string | null
+        }
+        Update: {
+          banco_autorizado?: boolean
+          banco_termos?: string[]
+          client_id?: string | null
+          contact_id?: string | null
+          cores?: Json
+          created_at?: string
+          empresa?: string
+          endereco?: string | null
+          estrategia?: Json | null
+          fontes?: Json
+          id?: string
+          instagram?: string | null
+          logo?: Json | null
+          notas?: string | null
+          proibido?: string | null
+          segmento?: string | null
+          site?: string | null
+          slogan?: string | null
+          tom_de_voz?: string | null
+          updated_at?: string
+          whatsapp_qr?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marcas_clientes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marcas_clientes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marcas_clientes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           agent_key: string | null
@@ -10043,6 +10181,384 @@ export type Database = {
             columns: ["proposal_id"]
             isOneToOne: false
             referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_avisos: {
+        Row: {
+          arquivo: string | null
+          building_id: string
+          cliente_id: string
+          conteudo: Json
+          created_at: string
+          criado_por_nome: string | null
+          criado_por_tel: string | null
+          erro: string | null
+          fim: string | null
+          id: string
+          inicio: string
+          lembrar_em: string | null
+          ordem: number
+          origem_url: string | null
+          removido_em: string | null
+          removido_por: string | null
+          segundos: number
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo?: string | null
+          building_id: string
+          cliente_id: string
+          conteudo?: Json
+          created_at?: string
+          criado_por_nome?: string | null
+          criado_por_tel?: string | null
+          erro?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string
+          lembrar_em?: string | null
+          ordem?: number
+          origem_url?: string | null
+          removido_em?: string | null
+          removido_por?: string | null
+          segundos?: number
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo?: string | null
+          building_id?: string
+          cliente_id?: string
+          conteudo?: Json
+          created_at?: string
+          criado_por_nome?: string | null
+          criado_por_tel?: string | null
+          erro?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string
+          lembrar_em?: string | null
+          ordem?: number
+          origem_url?: string | null
+          removido_em?: string | null
+          removido_por?: string | null
+          segundos?: number
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_avisos_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_codigos: {
+        Row: {
+          building_id: string
+          codigo_hash: string
+          created_at: string
+          expira_em: string
+          id: string
+          telefone: string
+          tentativas: number
+          usado: boolean
+        }
+        Insert: {
+          building_id: string
+          codigo_hash: string
+          created_at?: string
+          expira_em?: string
+          id?: string
+          telefone: string
+          tentativas?: number
+          usado?: boolean
+        }
+        Update: {
+          building_id?: string
+          codigo_hash?: string
+          created_at?: string
+          expira_em?: string
+          id?: string
+          telefone?: string
+          tentativas?: number
+          usado?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_codigos_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_config: {
+        Row: {
+          chave: string
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          chave: string
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          chave?: string
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
+      nando_estado: {
+        Row: {
+          building_id: string | null
+          confirmado: boolean
+          dados: Json
+          telefone: string
+          updated_at: string
+        }
+        Insert: {
+          building_id?: string | null
+          confirmado?: boolean
+          dados?: Json
+          telefone: string
+          updated_at?: string
+        }
+        Update: {
+          building_id?: string | null
+          confirmado?: boolean
+          dados?: Json
+          telefone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_estado_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_links: {
+        Row: {
+          building_id: string
+          created_at: string
+          slug: string
+        }
+        Insert: {
+          building_id: string
+          created_at?: string
+          slug?: string
+        }
+        Update: {
+          building_id?: string
+          created_at?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_links_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: true
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_mensagens: {
+        Row: {
+          building_id: string | null
+          conteudo: Json
+          created_at: string
+          id: number
+          papel: string
+          telefone: string
+        }
+        Insert: {
+          building_id?: string | null
+          conteudo: Json
+          created_at?: string
+          id?: never
+          papel: string
+          telefone: string
+        }
+        Update: {
+          building_id?: string | null
+          conteudo?: Json
+          created_at?: string
+          id?: never
+          papel?: string
+          telefone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_mensagens_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_ocorrencias: {
+        Row: {
+          alertado_em: string | null
+          building_id: string | null
+          created_at: string
+          descricao: string
+          id: string
+          nome: string | null
+          resolvido: boolean
+          telefone: string | null
+          tipo: string
+        }
+        Insert: {
+          alertado_em?: string | null
+          building_id?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          nome?: string | null
+          resolvido?: boolean
+          telefone?: string | null
+          tipo: string
+        }
+        Update: {
+          alertado_em?: string | null
+          building_id?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          nome?: string | null
+          resolvido?: boolean
+          telefone?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_ocorrencias_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_predio_perfil: {
+        Row: {
+          building_id: string
+          cobranca_ativa: boolean
+          notas: string | null
+          pausado: boolean
+          pausado_por: string | null
+          preferencias: Json
+          ultima_cobranca_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          building_id: string
+          cobranca_ativa?: boolean
+          notas?: string | null
+          pausado?: boolean
+          pausado_por?: string | null
+          preferencias?: Json
+          ultima_cobranca_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          building_id?: string
+          cobranca_ativa?: boolean
+          notas?: string | null
+          pausado?: boolean
+          pausado_por?: string | null
+          preferencias?: Json
+          ultima_cobranca_em?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_predio_perfil_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: true
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_previas: {
+        Row: {
+          aviso_id: string
+          created_at: string
+          expira_em: string
+          token: string
+        }
+        Insert: {
+          aviso_id: string
+          created_at?: string
+          expira_em?: string
+          token: string
+        }
+        Update: {
+          aviso_id?: string
+          created_at?: string
+          expira_em?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_previas_aviso_id_fkey"
+            columns: ["aviso_id"]
+            isOneToOne: false
+            referencedRelation: "nando_avisos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nando_sessoes: {
+        Row: {
+          building_id: string
+          created_at: string
+          expira_em: string
+          telefone: string
+          token_hash: string
+        }
+        Insert: {
+          building_id: string
+          created_at?: string
+          expira_em?: string
+          telefone: string
+          token_hash: string
+        }
+        Update: {
+          building_id?: string
+          created_at?: string
+          expira_em?: string
+          telefone?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_sessoes_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
             referencedColumns: ["id"]
           },
         ]
@@ -11349,6 +11865,41 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedido_whatsapp_autorizados: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string | null
+          pedido_id: string
+          telefone: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string | null
+          pedido_id: string
+          telefone: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string | null
+          pedido_id?: string
+          telefone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_whatsapp_autorizados_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
         ]
