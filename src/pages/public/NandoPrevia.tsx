@@ -7,7 +7,7 @@ type Secao = { opcao: number; rotulo: string; tipo: 'nando' | 'imagem' | 'pdf'; 
 type Previa = {
   secoes?: Secao[];
   ok: boolean; erro?: string; tipo?: 'nando' | 'imagem' | 'pdf' | 'proposta'; titulo?: string; segundos?: number;
-  inicio?: string; fim?: string | null; predio?: string; outros?: number; opcoes?: { opcao: number; rotulo?: string; dados: unknown; credito?: string | null }[]; serie?: boolean; dados?: unknown; url?: string | null; expira_em?: string;
+  inicio?: string; fim?: string | null; predio?: string; destinos?: string[]; outros?: number; opcoes?: { opcao: number; rotulo?: string; dados: unknown; credito?: string | null }[]; serie?: boolean; dados?: unknown; url?: string | null; expira_em?: string;
 };
 
 declare global {
@@ -112,7 +112,12 @@ export default function NandoPrevia() {
     <div style={{ minHeight: '100vh', background: 'radial-gradient(ellipse at top,#3b0d4f 0%,#120617 60%)', color: '#fff', fontFamily: 'Inter, system-ui, -apple-system, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 16px 40px' }}>
       <div style={{ fontSize: 12, letterSpacing: 3, opacity: 0.6, fontWeight: 700 }}>PRÉVIA DO AVISO</div>
       <h1 style={{ fontSize: 22, fontWeight: 800, margin: '6px 0 2px', textAlign: 'center' }}>{p?.ok ? p.titulo : 'Nando · EXA Mídia'}</h1>
-      {p?.ok && <div style={{ fontSize: 14, opacity: 0.75, marginBottom: 18 }}>{p.predio}</div>}
+      {p?.ok && (p.destinos?.length ?? 0) > 1 ? (
+        <div style={{ fontSize: 14, marginBottom: 18, textAlign: 'center', maxWidth: 520, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,.08)', lineHeight: 1.5 }}>
+          <b>Vai aparecer em {p.destinos!.length} prédios:</b> {p.destinos!.join(', ')}
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>A prévia mostra o {p.predio}; em cada prédio a assinatura sai com o nome dele.</div>
+        </div>
+      ) : p?.ok && <div style={{ fontSize: 14, opacity: 0.75, marginBottom: 18 }}>{p.predio}</div>}
 
       {!p && <div style={{ marginTop: 80, opacity: 0.7 }}>Carregando…</div>}
       {p && !p.ok && <div style={{ marginTop: 60, maxWidth: 360, textAlign: 'center', lineHeight: 1.5, opacity: 0.85 }}>{p.erro}</div>}

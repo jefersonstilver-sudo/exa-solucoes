@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 type Aviso = {
   id: string; tipo: 'nando' | 'imagem' | 'pdf'; titulo: string; segundos: number; inicio: string; fim: string | null;
   status: 'no_ar' | 'agendado'; criado_por: string; dados: unknown; url: string | null; antigo: boolean; em_grupo?: boolean;
+  criado_em?: string | null; grupo_predios?: string[]; repete?: boolean;
 };
 type Grupo = { id?: string; predio: string; codigo?: string; avisos: Aviso[] };
 type Pagina = { ok: boolean; erro?: string; modo?: 'predio' | 'carteira'; predio?: string; avisos?: Aviso[]; predios?: Grupo[]; expira_em?: string };
@@ -41,6 +42,7 @@ export default function NandoPredio() {
   const token = window.location.pathname.split('/').filter(Boolean).pop() || '';
   const [p, setP] = useState<Pagina | null>(null);
   const [resta, setResta] = useState(0);
+  const [aberto, setAberto] = useState<{ a: Aviso; predio: string; noArQtd: number } | null>(null);
 
   useEffect(() => {
     document.title = 'Avisos · Nando · EXA';
@@ -73,7 +75,7 @@ export default function NandoPredio() {
         const el = document.getElementById(`na-av-${a.id}`);
         if (!el) continue;
         if (a.tipo === 'nando' && a.dados && window.NandoAviso) montados.push(window.NandoAviso.montar(el, a.dados));
-        if (a.tipo === 'pdf' && a.url) {
+        if (a.tipo === 'pdf' && a.url) try {
           await carregarScript('https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.min.js');
           const lib = window.pdfjsLib;
           lib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
@@ -84,7 +86,7 @@ export default function NandoPredio() {
           cv.style.cssText = 'position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%';
           el.appendChild(cv);
           await pg.render({ canvasContext: cv.getContext('2d'), viewport: v }).promise;
-        }
+        } catch (err) { console.error('pdf', a.id, err); }
       }
       window.addEventListener('resize', onResize);
     })().catch((e) => console.error('predio', e));
@@ -94,8 +96,8 @@ export default function NandoPredio() {
   const min = Math.floor(resta / 60), seg = String(resta % 60).padStart(2, '0');
   const hh = Math.floor(min / 60), mm = String(min % 60).padStart(2, '0');
 
-  const cartao = (a: Aviso, ordem: number | null, noArQtd: number) => (
-    <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+  const cartao = (a: Aviso, ordem: number | null, noArQtd: number, predio = '') => (
+    <div key={a.id} onClick={() => setAberto({ a, predio, noArQtd })} title="Ver detalhes" style={{ display: 'flex', flexDirection: 'column', gap: 12, cursor: 'pointer' }}>
       <div style={moldura}>
         <div id={`na-av-${a.id}`} style={tela}>
           {a.tipo === 'imagem' && a.url && (
@@ -120,7 +122,8 @@ export default function NandoPredio() {
           {a.status === 'agendado' ? <>🗓️ Começa <b>{fmt(a.inicio)}</b></> : noArQtd > 1 ? <>⏱️ <b>{a.segundos}s</b> na tela a cada volta</> : <>📌 Fica <b>fixo na tela</b></>}
         </div>
         <div style={{ opacity: 0.8 }}>⏹️ {a.fim ? <>Sai <b>{fmt(a.fim)}</b></> : 'Sem data de saída'}</div>
-        {a.criado_por && <div style={{ opacity: 0.55, fontSize: 12 }}>Criado por {a.criado_por}{a.em_grupo ? ' · publicado junto em outros prédios' : ''}</div>}
+        {a.criado_por && <div style={{ opacity: 0.55, fontSize: 12 }}>Criado por {a.criado_por}{a.em_grupo ? ' · também em outros prédios' : ''}{a.repete ? ' · se repete' : ''}</div>}
+        <div style={{ opacity: 0.45, fontSize: 11 }}>Toque para ver detalhes</div>
       </div>
     </div>
   );
@@ -156,7 +159,7 @@ export default function NandoPredio() {
                 <>
                   <div style={{ margin: '22px 0 14px', fontSize: 13, letterSpacing: 2, fontWeight: 800, opacity: 0.7 }}>NO AR AGORA</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: 22 }}>
-                    {noAr.map((a, i) => cartao(a, noAr.length > 1 ? i + 1 : null, noAr.length))}
+                    {noAr.map((a, i) => cartao(a, noAr.length > 1 ? i + 1 : null, noAr.length, g.predio))}
                   </div>
                 </>
               )}
@@ -164,7 +167,7 @@ export default function NandoPredio() {
                 <>
                   <div style={{ margin: '30px 0 14px', fontSize: 13, letterSpacing: 2, fontWeight: 800, opacity: 0.7 }}>AGENDADOS</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: 22 }}>
-                    {agendados.map((a) => cartao(a, null, noAr.length))}
+                    {agendados.map((a) => cartao(a, null, noAr.length, g.predio))}
                   </div>
                 </>
               )}
@@ -178,6 +181,31 @@ export default function NandoPredio() {
           </div>
         )}
       </div>
+      {aberto && (
+        <div onClick={() => setAberto(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 50 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(100%, 440px)', maxHeight: '90vh', overflowY: 'auto', background: '#1d1024', border: '1px solid rgba(255,255,255,.12)', borderRadius: 18, padding: 20, lineHeight: 1.6, fontSize: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 12, letterSpacing: 2, opacity: 0.6, fontWeight: 700 }}>{aberto.predio.toUpperCase()}</div>
+                <div style={{ fontSize: 18, fontWeight: 800 }}>{aberto.a.titulo}</div>
+              </div>
+              <button onClick={() => setAberto(null)} style={{ background: 'rgba(255,255,255,.12)', color: '#fff', border: 0, borderRadius: 16, width: 32, height: 32, fontSize: 16, cursor: 'pointer' }}>✕</button>
+            </div>
+            {aberto.a.tipo === 'imagem' && aberto.a.url && <img src={aberto.a.url} alt={aberto.a.titulo} style={{ width: '100%', borderRadius: 12, marginTop: 12 }} />}
+            {aberto.a.tipo === 'pdf' && aberto.a.url && <a href={aberto.a.url} target="_blank" rel="noreferrer" style={{ color: '#d8b4fe', display: 'inline-block', marginTop: 12 }}>Abrir o PDF completo</a>}
+            <div style={{ marginTop: 14, display: 'grid', gap: 6 }}>
+              <div>👤 <b>Cadastrado por:</b> {aberto.a.criado_por || 'não informado'}{aberto.a.criado_em ? ` · ${fmt(aberto.a.criado_em)}` : ''}</div>
+              <div>📺 <b>Situação:</b> {aberto.a.status === 'no_ar' ? 'no ar agora' : 'agendado'}</div>
+              <div>🗓️ <b>Começa:</b> {fmt(aberto.a.inicio) || 'já começou'}</div>
+              <div>⏹️ <b>Sai:</b> {aberto.a.fim ? fmt(aberto.a.fim) : 'sem data de saída'}</div>
+              <div>⏱️ <b>Tempo na tela:</b> {aberto.noArQtd > 1 ? `${aberto.a.segundos}s a cada volta do rodízio` : 'fixo (é o único aviso no ar)'}</div>
+              {aberto.a.repete && <div>🔁 <b>Se repete:</b> o Nando coloca e tira sozinho em cada vez</div>}
+              {!!aberto.a.grupo_predios?.length && <div>🏢 <b>Também está em:</b> {aberto.a.grupo_predios.filter((n) => n !== aberto.predio).join(', ') || '—'}</div>}
+            </div>
+            <div style={{ marginTop: 14, fontSize: 12, opacity: 0.6 }}>Para mudar ou tirar este aviso, fale com o Nando no WhatsApp.</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

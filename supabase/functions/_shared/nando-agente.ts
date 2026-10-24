@@ -219,7 +219,7 @@ async function criarSerie(c: Contexto, p: Predio, e: any, v: Visual, extra: Reco
       segundos: clampSeg(e.segundos || 20), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
       lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
       criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
-      conteudo: { ...extra, tema, grupo, serie: total > 1, parte: k + 1, total, opcao: k + 1, credito_foto: credito, qr_alvo: v.qrAlvo || null,
+      conteudo: { ...extra, ...(e.__destinos ? { destinos: e.__destinos } : {}), tema, grupo, serie: total > 1, parte: k + 1, total, opcao: k + 1, credito_foto: credito, qr_alvo: v.qrAlvo || null,
         campos: { ...dados, icone: undefined, fundo: undefined, qr: undefined, itens: pag.map((x: any) => x?.texto) } },
     }).select("*").single();
     if (error) throw error;
@@ -243,7 +243,7 @@ async function criarArquivoOriginal(c: Contexto, p: Predio, e: any, extra: Recor
     building_id: p.id, cliente_id: p.cliente_id, tipo, titulo: String(e.titulo || "Aviso").slice(0, 70), status: "rascunho",
     segundos: clampSeg(e.segundos_original || e.segundos || 30), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
     lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
-    origem_url: m.url, criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa, conteudo: { ...extra, midia_id: e.midia_id, grupo: crypto.randomUUID() },
+    origem_url: m.url, criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa, conteudo: { ...extra, ...(e.__destinos ? { destinos: e.__destinos } : {}), midia_id: e.midia_id, grupo: crypto.randomUUID() },
   }).select("*").single();
   if (error) throw error;
   await historico(c.sb, a.id, quem(c), "criou rascunho");
@@ -292,7 +292,7 @@ export const FERRAMENTAS = [
     description: "Cria um RASCUNHO de aviso animado do Nando (modelo fixo: ícone 3D, título, quando/onde, texto curto, assinatura) e devolve o link de prévia de 10 minutos. Não publica.",
     input_schema: {
       type: "object",
-      properties: {
+      properties: { predios: { type: "array", items: { type: "string" }, description: "SE o aviso vai para mais de um prédio: nomes/códigos (ou ['todos']). A prévia já mostra todos os prédios de destino e a assinatura de cada um." }, exceto: { type: "array", items: { type: "string" } }, 
         titulo: { type: "string", description: "Curto e forte, ATÉ 30 caracteres (letras grandes, lido de longe). Ex: 'Falta d'água no sábado'" },
         quando: { type: "string", description: "Data/horário/local em uma linha, ATÉ 35 caracteres. Ex: 'Sáb 26/10 · 8h às 14h'" },
         texto: { type: "string", description: "Frase curta e amigável, ATÉ 110 caracteres (o aviso é lido de longe no elevador)" },
@@ -337,7 +337,7 @@ export const FERRAMENTAS = [
     description: "Para imagem ou PDF com texto (comunicado, regras, cartaz): cria de uma vez TODAS as opções numa prévia só: (1) cartões do Nando com TODOS os itens (se houver lista), (2) resumo com QR do documento completo (se fizer sentido), (3) o arquivo original como está. O síndico escolhe pelo número. Os itens são distribuídos sozinhos entre os cartões (até 6 por cartão; o cartão com QR leva menos).",
     input_schema: {
       type: "object",
-      properties: {
+      properties: { predios: { type: "array", items: { type: "string" }, description: "SE o aviso vai para mais de um prédio: nomes/códigos (ou ['todos']). A prévia já mostra todos os prédios de destino e a assinatura de cada um." }, exceto: { type: "array", items: { type: "string" } }, 
         midia_id: { type: "string", description: "midia_id da imagem/PDF recebido" },
         titulo: { type: "string", description: "Título curto dos cartões, SEM numeração (ex: 'Regras da piscina')" },
         quando: { type: "string", description: "Linha curta de destaque (ex: 'Aberta das 8h às 22h')" },
@@ -365,7 +365,7 @@ export const FERRAMENTAS = [
     description: "Cria um RASCUNHO a partir de uma imagem ou PDF que o síndico enviou (publicado como está, sem distorcer) e devolve o link de prévia. Não publica.",
     input_schema: {
       type: "object",
-      properties: {
+      properties: { predios: { type: "array", items: { type: "string" }, description: "SE o aviso vai para mais de um prédio: nomes/códigos (ou ['todos']). A prévia já mostra todos os prédios de destino e a assinatura de cada um." }, exceto: { type: "array", items: { type: "string" } }, 
         midia_id: { type: "string" }, titulo: { type: "string" },
         segundos: { type: "number" }, inicio: { type: "string" }, fim: { type: "string" }, lembrar_dias: { type: "number" },
       },
@@ -591,6 +591,11 @@ async function publicarEm(c: Contexto, a: any, p: Predio): Promise<string> {
 type Saida = string | { texto: string; blocos: any[] };
 export async function executar(c: Contexto, nome: string, e: any): Promise<Saida> {
   const sb = c.sb;
+  // aviso pensado para varios predios: guarda os destinos no rascunho (a previa mostra todos; publicar usa a lista)
+  if (nome.startsWith("criar_") && Array.isArray(e?.predios) && e.predios.length) {
+    const ds = await resolverAlvos(c, e.predios, e.exceto);
+    if (ds.length > 1) e.__destinos = ds.map((x) => ({ id: x.id, nome: x.nome }));
+  }
   switch (nome) {
     case "escolher_predio": {
       const p = await predioDoCodigo(c, e.codigo);
@@ -798,6 +803,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       }
       let alvos: Predio[] = [];
       if (Array.isArray(e.predios) && e.predios.length) alvos = await resolverAlvos(c, e.predios, e.exceto);
+      else if (Array.isArray(a.conteudo?.destinos) && a.conteudo.destinos.length) for (const d of a.conteudo.destinos) alvos.push(await predioPorId(c, d.id));
       else alvos.push(await predioPorId(c, a.building_id));
       if (!alvos.length) return "Nenhum prédio sobrou para publicar (confira a lista e o 'exceto').";
       const origem = await predioPorId(c, a.building_id).catch(() => null);
@@ -1148,7 +1154,7 @@ DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
 
 LINK DOS AVISOS DO PRÉDIO
 - Depois de publicar, alterar ou listar avisos, ofereça o link da página do prédio (link_dos_avisos): mostra todos os avisos no ar e agendados como aparecem na tela, a ordem do rodízio e até quando cada um fica. Se a pessoa pedir para "ver como está", mande o link direto.
-- VÁRIOS PRÉDIOS (gestor/administradora ou o Jeferson): o mesmo aviso pode ir para vários prédios de uma vez. Crie o rascunho UMA vez (no prédio atual), mostre a prévia e, aprovado, publique com publicar_aviso passando 'predios' (nomes ou códigos, ou ['todos']) e 'exceto' se ela disser "menos o X". Cada prédio recebe a assinatura dele automaticamente. Antes de publicar em vários, confirme em uma frase a lista de prédios ("Vou colocar no A, B e C, pode ser?").
+- VÁRIOS PRÉDIOS (gestor/administradora ou o Jeferson): o mesmo aviso pode ir para vários prédios de uma vez. Crie o rascunho UMA vez já passando 'predios' (assim a prévia mostra todos os prédios de destino e a assinatura de cada um), mostre a prévia e, aprovado, publique com publicar_aviso passando 'predios' (nomes ou códigos, ou ['todos']) e 'exceto' se ela disser "menos o X". Cada prédio recebe a assinatura dele automaticamente. Antes de publicar em vários, confirme em uma frase a lista de prédios ("Vou colocar no A, B e C, pode ser?").
 - Aviso publicado junto em vários prédios fica no mesmo grupo: para "tirar de todos", "mudar a data em todos" etc., use remover_aviso/alterar_aviso com todos_os_predios=true (UM pedido resolve todos; para série, faça para cada cartão). Se ela pedir só para um prédio, mexa só naquele e avise que nos outros continua. Responda prédio por prédio o que deu certo.
 - AVISO QUE SE REPETE (coleta de lixo toda terça, dedetização todo dia 10, limpeza da caixa d'água...): crie o rascunho uma vez, mostre a prévia e publique com publicar_aviso + 'repetir' (frequência, dias, hora de aparecer e de sumir). Confirme a regra em uma frase antes ("Vai aparecer toda terça das 7h às 20h, pode ser?"). Para ver ou parar: listar_repeticoes / parar_repeticao. Quando a pessoa disser "todo/toda/sempre/todo mês", ofereça a repetição.
 - Para corrigir o TEXTO de um aviso do Nando já publicado ("troca a data para sábado", "corrige o horário"), use editar_aviso (não crie outro). Datas de quando aparece/sai continuam em alterar_aviso.

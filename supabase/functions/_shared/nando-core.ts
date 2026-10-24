@@ -18,7 +18,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.25";
+export const NANDO_VERSAO = "2026-10-24.26";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -231,6 +231,23 @@ export async function avisosOficiais(clienteId: string): Promise<any[] | null> {
     const lista = rows[0]?.json_data?.CondominiumNotices;
     return Array.isArray(lista) ? lista : [];
   } catch (e) { console.error("[NANDO] exasistema", (e as Error).message); return null; }
+}
+// pasta da tela no S3 publico "telas-clientes" (ex: 5af2_RoyalLegacy): de la sai a miniatura dos avisos antigos
+export async function pastaS3(clienteId: string): Promise<string | null> {
+  const key = Deno.env.get("EXASISTEMA_ANON_KEY");
+  if (!key) return null;
+  try {
+    const r = await fetch(`${EXASISTEMA_URL}/rest/v1/updates_clientes?cliente_id=eq.${encodeURIComponent(clienteId)}&select=pasta:json_data->>pasta_s3`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const v = String(rows?.[0]?.pasta || "").replace(/^\/+|\/+$/g, "");
+    return v || null;
+  } catch { return null; }
+}
+export function urlArquivoPainel(pasta: string, arquivo: string): string {
+  return `https://telas-clientes.s3.sa-east-1.amazonaws.com/${pasta}/CondominiumNotices/${encodeURIComponent(nomeBase(arquivo))}`;
 }
 // mesma regra do painel (avisos.js): apagado, sem arquivo, antes do inicio ou depois do fim = fora do ar
 function dataLocal(s: unknown): Date | null {
