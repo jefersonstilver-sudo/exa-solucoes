@@ -39,6 +39,8 @@ def main():
             pg.set_content(HTML % (SITE, agora, SITE, agora), wait_until="networkidle")
             pg.wait_for_function("window.NandoAviso && window.NandoAviso.montar", timeout=20000)
             pg.evaluate("d => { window.__m = window.NandoAviso.montar(document.getElementById('tela'), d); }", dados)
+            pg.wait_for_timeout(300)
+            pg.evaluate("() => document.querySelectorAll('.na-raiz').forEach(r => r.classList.add('na-on'))")
             pg.wait_for_timeout(6000)  # deixa as animacoes de entrada terminarem
             png = pg.locator("#tela").screenshot(type="png")
             fotos.append(subir(f"fotos/{a['id']}_{agora}.png", png))

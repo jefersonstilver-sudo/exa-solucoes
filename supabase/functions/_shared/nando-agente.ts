@@ -484,8 +484,12 @@ async function ajustarAssinatura(c: Contexto, copia: any, origemNome: string, p:
   if (copia.tipo !== "nando" || !copia.conteudo?.arquivo_url) return copia;
   const r = await fetch(copia.conteudo.arquivo_url); if (!r.ok) return copia;
   const dados = await r.json();
-  if (String(dados.assinatura || "").trim() !== `Administração do ${origemNome}`.trim()) return copia; // assinatura escolhida pela pessoa: mantem
-  dados.assinatura = `Administração do ${p.nome}`;
+  // troca o nome do predio de origem pelo do predio novo onde quer que apareca ("Administração do Edifício X" -> "... Y");
+  // assinatura sem o nome do predio (ex: "Síndica Michelli") fica como esta
+  const ass = String(dados.assinatura || "");
+  const esc = origemNome.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!origemNome.trim() || !new RegExp(esc, "i").test(ass)) return copia;
+  dados.assinatura = ass.replace(new RegExp(esc, "ig"), p.nome);
   const url = await salvarArquivo(c, `avisos/${copia.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
   const conteudo = { ...copia.conteudo, arquivo_url: url, campos: { ...(copia.conteudo.campos || {}), assinatura: dados.assinatura } };
   await c.sb.from("nando_avisos").update({ conteudo }).eq("id", copia.id);
