@@ -85,6 +85,9 @@ serve(async (req) => {
       throw new Error('Vídeo não encontrado');
     }
 
+    // Supabase infere relações como arrays; aqui são objetos únicos (!inner + .single()).
+    const pv = pedidoVideo as any;
+
     // 🚧 BLOQUEIO: vídeos com corte metadata-only (sem corte físico) NÃO devem
     // ser enviados aos painéis sem reencode. Caso contrário o painel reproduz o original inteiro.
     const trimStart = (pedidoVideo as any).videos?.trim_start_seconds;

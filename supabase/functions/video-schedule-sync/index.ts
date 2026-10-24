@@ -81,7 +81,7 @@ serve(async (req) => {
     log.info(`📋 [VIDEO_SYNC] Found ${scheduleRules?.length || 0} active schedule rules`);
 
     // ⚡ OTIMIZAÇÃO 2: Filtrar regras válidas ANTES (null-safety)
-    const validRules = (scheduleRules || []).filter(rule => {
+    const validRules = ((scheduleRules || []) as any[]).filter(rule => {
       const cvs = rule.campaign_video_schedules;
       const campaign = cvs?.campaigns_advanced;
       return cvs && campaign && campaign.status === 'active' && campaign.pedido_id;

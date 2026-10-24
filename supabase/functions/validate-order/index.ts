@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     
     // Importar e validar entrada
     const { validateOrderRequest } = await import('./validation.ts');
-    const { order_id, cpf }: ValidateOrderRequest = validateOrderRequest(body);
+    const { order_id, cpf } = validateOrderRequest(body) as ValidateOrderRequest;
 
     console.log('Validating order:', { order_id, cpf_provided: !!cpf });
 
