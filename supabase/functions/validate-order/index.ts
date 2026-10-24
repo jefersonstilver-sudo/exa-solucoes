@@ -116,6 +116,9 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Supabase infere a relação como array; com !inner + .single() é um objeto único.
+    const order = orderRaw as any;
+
     // Verificar CPF
     const clientCpf = order.clientes.cpf?.replace(/[.-]/g, '');
     
