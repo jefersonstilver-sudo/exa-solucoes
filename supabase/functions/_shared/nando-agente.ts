@@ -5,7 +5,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   Predio, nomeBase, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
-  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira,
+  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 
@@ -799,6 +799,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const origem = await predioPorId(c, a.building_id).catch(() => null);
       const lote = alvos.length > 1 ? crypto.randomUUID() : null;
       const res: string[] = [];
+      const publicados: { id: string; url: string; predio: string; parte: number }[] = [];
       if (e.repetir) {
         const regra = { ...e.repetir };
         const erroRegra = validarRegra(regra);
@@ -842,6 +843,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           const st = new Date(linha.inicio) > new Date(Date.now() + 60000) ? "agendado" : "no_ar";
           await sb.from("nando_avisos").update({ arquivo, status: st, erro: null }).eq("id", linha.id);
           await historico(sb, linha.id, quem(c), "publicou", { predio: p.nome });
+          publicados.push({ id: linha.id, url: linha.conteudo?.arquivo_url, predio: p.nome, parte: linha.conteudo?.parte || 1 });
           res.push(`${p.nome}: "${linha.titulo}" ${st === "agendado" ? `agendado para ${fmtData(linha.inicio)}` : "publicado e confirmado na pasta do painel (aparece na tela em até ~10 min)"} [${idCurto(linha.id)}]`);
         } catch (err) {
           await sb.from("nando_avisos").update({ status: "erro", erro: (err as Error).message }).eq("id", linha.id);
@@ -855,7 +857,15 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           .eq("status", "rascunho").eq("conteudo->>grupo", a.conteudo.grupo).neq("id", a.id);
       }
       c.registros.push(`publicação: ${res.join("; ")}`);
-      return res.join("\n") + (lote ? `\n(Publicado junto em ${alvos.length} prédios: dá para alterar ou tirar de todos de uma vez com todos_os_predios=true.)` : "");
+      // foto do aviso pronto no WhatsApp (do primeiro predio), para o sindico ver e encaminhar aos moradores
+      let foto = false;
+      if (a.tipo === "nando" && res.some((r) => !/ERRO|NÃO publicado/.test(r))) {
+        const prim = publicados.find((x) => x.predio)?.predio;
+        const lista = publicados.filter((x) => x.predio === prim && x.url).sort((x, y) => x.parte - y.parte);
+        foto = await pedirFotos(c.tel, lista.map((x) => ({ id: x.id, url: x.url })),
+          `Assim ficou na tela do ${prim} ✅ Se quiser, encaminhe para o grupo dos moradores.`);
+      }
+      return res.join("\n") + (foto ? "\n(A foto do aviso como aparece na tela chega aqui no WhatsApp em 1 a 3 minutos; avise isso em poucas palavras.)" : "") + (lote ? `\n(Publicado junto em ${alvos.length} prédios: dá para alterar ou tirar de todos de uma vez com todos_os_predios=true.)` : "");
     }
     case "alterar_aviso": {
       const a0 = await acharAviso(c, e.aviso);

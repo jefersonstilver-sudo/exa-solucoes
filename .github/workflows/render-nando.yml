@@ -1,0 +1,37 @@
+name: render-nando
+# Foto do aviso do Nando para o WhatsApp do sindico (disparado pelo nando-webhook depois de publicar).
+on:
+  workflow_dispatch:
+    inputs:
+      avisos:
+        description: JSON [{id, url}] dos avisos
+        required: true
+      telefone:
+        description: telefone do sindico
+        required: true
+      legenda:
+        description: legenda da primeira foto
+        required: false
+        default: ""
+jobs:
+  foto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      AVISOS: ${{ inputs.avisos }}
+      TELEFONE: ${{ inputs.telefone }}
+      LEGENDA: ${{ inputs.legenda }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: navegador
+        timeout-minutes: 5
+        run: |
+          pip install playwright
+          timeout 240 playwright install chromium || timeout 240 playwright install chromium --with-deps
+      - name: tirar as fotos e enviar
+        timeout-minutes: 3
+        run: python tools/nando-foto/worker.py

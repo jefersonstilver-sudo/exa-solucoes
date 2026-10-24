@@ -6,7 +6,7 @@
 // =====================================================================
 import {
   db, ehAdmin, prediosDoTelefone, telefoneCanonico, enviarTexto, enviarDigitando, baixarMidia, instanciaNando, transcreverAudio,
-  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO,
+  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO, enviarImagem,
 } from "../_shared/nando-core.ts";
 import { Contexto, rodarAgente } from "../_shared/nando-agente.ts";
 
@@ -56,6 +56,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const url = new URL(req.url);
   if (url.searchParams.get("action") === "setup") return await setup(req);
+  // fotos dos avisos prontas (robo do GitHub): so com a chave de servico
+  if (url.searchParams.get("action") === "fotos") {
+    if ((req.headers.get("Authorization") || "") !== `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`) return json(401, { erro: "nao autorizado" });
+    const b = await req.json().catch(() => ({}));
+    const imagens: string[] = Array.isArray(b.imagens) ? b.imagens.slice(0, 5) : [];
+    const sbF = db();
+    for (let i = 0; i < imagens.length; i++) await enviarImagem(sbF, String(b.telefone || ""), imagens[i], i === 0 ? String(b.legenda || "") : "");
+    if (imagens.length) await sbF.from("nando_mensagens").insert({ telefone: telefoneCanonico(String(b.telefone || "")), papel: "nando", conteudo: { texto: `(enviei ${imagens.length} foto(s) do aviso como aparece na tela)` } });
+    return json(200, { ok: true, enviadas: imagens.length });
+  }
   if (url.searchParams.get("action") === "versao") return json(200, { versao: NANDO_VERSAO, modo_teste: MODO_TESTE, cobranca: (Deno.env.get("NANDO_COBRANCA") || "false").toLowerCase() === "true" });
   if (req.method !== "POST") return json(405, { error: "metodo" });
 

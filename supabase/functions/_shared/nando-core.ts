@@ -18,7 +18,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.24";
+export const NANDO_VERSAO = "2026-10-24.25";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -118,6 +118,28 @@ export async function enviarTexto(sb: SupabaseClient, tel: string, texto: string
     body: JSON.stringify({ number: telefoneCanonico(tel), text: texto, linkPreview: false }),
   });
   if (!r.ok) throw new Error(`Evolution sendText ${r.status}: ${(await r.text()).slice(0, 200)}`);
+}
+export async function enviarImagem(sb: SupabaseClient, tel: string, urlImagem: string, legenda = "") {
+  const { url, key } = evo();
+  const inst = await instanciaNando(sb);
+  const r = await fetch(`${url}/message/sendMedia/${inst}`, {
+    method: "POST", headers: { "Content-Type": "application/json", apikey: key },
+    body: JSON.stringify({ number: telefoneCanonico(tel), mediatype: "image", mimetype: "image/png", media: urlImagem, caption: legenda, fileName: "aviso.png" }),
+  });
+  if (!r.ok) throw new Error(`Evolution sendMedia ${r.status}: ${(await r.text()).slice(0, 200)}`);
+}
+// pede ao robo do GitHub (render-nando.yml) a foto dos avisos do Nando, que chega no WhatsApp em 1-3 min
+export async function pedirFotos(tel: string, avisos: { id: string; url: string }[], legenda: string): Promise<boolean> {
+  const tok = Deno.env.get("GH_DISPATCH_TOKEN"), repo = Deno.env.get("GH_REPO");
+  if (!tok || !repo || !avisos.length) return false;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/render-nando.yml/dispatches`, {
+      method: "POST", headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.github+json", "Content-Type": "application/json", "User-Agent": "nando" },
+      body: JSON.stringify({ ref: "main", inputs: { avisos: JSON.stringify(avisos.slice(0, 5)), telefone: telefoneCanonico(tel), legenda: legenda.slice(0, 500) } }),
+    });
+    if (!r.ok) console.error("[NANDO] fotos dispatch", r.status, (await r.text()).slice(0, 200));
+    return r.ok;
+  } catch (e) { console.error("[NANDO] fotos", (e as Error).message); return false; }
 }
 export async function enviarDigitando(sb: SupabaseClient, tel: string, ms = 1500) {
   try {
