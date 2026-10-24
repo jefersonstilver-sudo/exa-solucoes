@@ -112,6 +112,24 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
     .order("id", { ascending: false }).limit(1).single();
   if (ultima && ultima.id !== minhaMsg) return;
 
+  // uma resposta por vez para cada pessoa: se o Nando ainda esta respondendo a mensagem anterior,
+  // espera ele terminar (senao as duas respostas fazem o mesmo trabalho em dobro)
+  for (let i = 0; i < 50; i++) {
+    const { data: livre, error } = await sb.rpc("nando_pegar_trava", { p_tel: tel, p_segundos: 170 });
+    if (error || livre) break;   // sem a funcao no banco: segue como antes
+    await new Promise((r) => setTimeout(r, 3000));
+    const { data: nova } = await sb.from("nando_mensagens").select("id").eq("telefone", tel).eq("papel", "sindico")
+      .order("id", { ascending: false }).limit(1).single();
+    if (nova && nova.id !== minhaMsg) return;   // chegou outra mensagem: ela responde por esta tambem
+  }
+  try {
+    await responder(sb, tel, minhaMsg, pushName);
+  } finally {
+    await sb.rpc("nando_soltar_trava", { p_tel: tel }).then(() => {}, () => {});
+  }
+}
+
+async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: number, pushName: string) {
   const admin = ehAdmin(tel);
   const { predios, nome } = await prediosDoTelefone(sb, tel);
   if (MODO_TESTE && !admin) { console.log("[NANDO] modo teste: ignorando", tel); return; }
@@ -141,10 +159,16 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
   const { data: hist } = await sb.from("nando_mensagens").select("*").eq("telefone", tel).gte("created_at", desde)
     .order("id", { ascending: false }).limit(40);
   const linhas = (hist || []).reverse();
-  // as mensagens novas (ainda nao respondidas) sao as do sindico depois da ultima resposta do Nando
-  let iUlt = -1;
-  linhas.forEach((l: any, i: number) => { if (l.papel === "nando") iUlt = i; });
-  const novas = linhas.slice(iUlt + 1).filter((l: any) => l.papel === "sindico");
+  // as mensagens novas (ainda nao respondidas): as do sindico depois da ultima que o Nando respondeu
+  let ate = 0;
+  for (const l of linhas) if (l.papel === "nando" && Number(l.conteudo?.ate) > ate) ate = Number(l.conteudo.ate);
+  let novas: any[];
+  if (ate) novas = linhas.filter((l: any) => l.papel === "sindico" && l.id > ate);
+  else {
+    let iUlt = -1;
+    linhas.forEach((l: any, i: number) => { if (l.papel === "nando") iUlt = i; });
+    novas = linhas.slice(iUlt + 1).filter((l: any) => l.papel === "sindico");
+  }
 
   const msgs: any[] = [];
   const push = (role: string, content: any) => {
@@ -217,5 +241,5 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
     if (i) { await enviarDigitando(sb, tel, 1200); await new Promise((r) => setTimeout(r, 900)); }
     await enviarTexto(sb, tel, envio[i]);
   }
-  await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "nando", conteudo: { texto: resposta } });
+  await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "nando", conteudo: { texto: resposta, ate: minhaMsg } });
 }

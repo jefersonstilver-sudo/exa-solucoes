@@ -185,7 +185,7 @@ export const FERRAMENTAS = [
         cartoes: {
           type: "array", maxItems: 5,
           description: "Use para uma SÉRIE (conteúdo que não cabe num cartão só, ex: 18 regras da piscina = 3 cartões de 6). Cada cartão: titulo, quando, texto, itens. A série tem UM visual só (não gera 3 variações) e vai ao ar inteira, um cartão depois do outro.",
-          items: { type: "object", properties: { titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" }, itens: { type: "array", items: { type: "object", properties: { tema: { type: "string" }, texto: { type: "string" } } } } } },
+          items: { type: "object", properties: { titulo: { type: "string", description: "Título do cartão SEM numeração (o '1/3' já aparece sozinho no canto)" }, quando: { type: "string" }, texto: { type: "string" }, itens: { type: "array", items: { type: "object", properties: { tema: { type: "string" }, texto: { type: "string" } } } } } },
         },
         qr_midia_id: { type: "string", description: "Opcional: midia_id do PDF/imagem original que o síndico mandou. Coloca um QR code no aviso que abre o documento completo no celular. Use em todo resumo de documento." },
         qr_url: { type: "string", description: "Opcional: link https para o QR code (quando não for um arquivo enviado)" },
@@ -262,10 +262,12 @@ export const FERRAMENTAS = [
   },
 ];
 
-// rascunho nao se acumula: so existe o aviso que esta sendo montado agora (o resto e descartado; nunca esteve no painel)
-async function descartarRascunhos(c: Contexto, buildingId: string, manterGrupo?: string) {
-  const { data } = await c.sb.from("nando_avisos").select("id,conteudo").eq("building_id", buildingId).eq("status", "rascunho");
-  const ids = (data || []).filter((a: any) => !manterGrupo || (a.conteudo?.grupo || a.id) !== manterGrupo).map((a: any) => a.id);
+// rascunho nunca aparece na lista e some sozinho depois de 24 h (nunca esteve no painel).
+// Os recentes ficam guardados: a pessoa pode ter varios avisos sendo montados ao mesmo tempo.
+async function descartarRascunhos(c: Contexto, buildingId: string) {
+  const { data } = await c.sb.from("nando_avisos").select("id").eq("building_id", buildingId).eq("status", "rascunho")
+    .lt("created_at", new Date(Date.now() - 86400000).toISOString());
+  const ids = (data || []).map((a: any) => a.id);
   if (ids.length) await c.sb.from("nando_avisos").update({ status: "removido", removido_por: "rascunho descartado", removido_em: new Date().toISOString() }).in("id", ids);
 }
 
@@ -320,10 +322,8 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           }
         }
       }
-      // so fica o rascunho da ultima hora (o que esta sendo montado); ele nunca entra na lista
-      const { data: ultRasc } = await sb.from("nando_avisos").select("id,conteudo,created_at").eq("building_id", p.id).eq("status", "rascunho")
-        .gte("created_at", new Date(Date.now() - 3600000).toISOString()).order("created_at", { ascending: false }).limit(1);
-      await descartarRascunhos(c, p.id, ultRasc?.[0] ? (ultRasc[0].conteudo?.grupo || ultRasc[0].id) : undefined);
+      // rascunhos nunca entram na lista; os com mais de 24 h sao descartados
+      await descartarRascunhos(c, p.id);
       const { data } = await sb.from("nando_avisos").select("*").eq("building_id", p.id)
         .in("status", ["no_ar", "agendado", "erro"]).order("created_at");
       if (!data?.length) {
@@ -345,7 +345,6 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_aviso_nando": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
-      await descartarRascunhos(c, p.id);
       let foto: string | null = null;
       if (e.midia_id) {
         const m = c.midias[e.midia_id] || await midiaSalva(c, e.midia_id);
@@ -391,7 +390,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
             qr: k === cartoes.length - 1 ? qr : undefined, qr_legenda: k === cartoes.length - 1 ? qrLegenda : undefined,
           };
           const { data: a, error } = await sb.from("nando_avisos").insert({
-            building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: `${dados.titulo} (${k + 1}/${cartoes.length})`.slice(0, 70), status: "rascunho",
+            building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: (/\d+\s*\/\s*\d+/.test(dados.titulo) ? dados.titulo : `${dados.titulo} (${k + 1}/${cartoes.length})`).slice(0, 70), status: "rascunho",
             segundos: clampSeg(e.segundos || 20), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
             lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
             criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
@@ -460,7 +459,6 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_aviso_arquivo": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
-      await descartarRascunhos(c, p.id);
       const m = c.midias[e.midia_id] || await midiaSalva(c, e.midia_id);
       if (!m) return "Não encontrei esse arquivo. Peça para a pessoa enviar de novo.";
       const tipo = m.mime === "application/pdf" ? "pdf" : m.mime.startsWith("image/") ? "imagem" : null;
@@ -604,23 +602,30 @@ async function midiaSalva(c: Contexto, id: string) {
 }
 
 // ---------------------------------------------------------------- prompt
-// o que esta pessoa deixou pela metade (rascunho das ultimas 2 h), para o Nando retomar sozinho
+// o que esta pessoa deixou pela metade (rascunhos das ultimas 24 h), para o Nando retomar sozinho
 async function assuntoEmAndamento(c: Contexto): Promise<string> {
-  const desde = new Date(Date.now() - 2 * 3600000).toISOString();
+  const desde = new Date(Date.now() - 86400000).toISOString();
   const { data } = await c.sb.from("nando_avisos").select("id,titulo,created_at,building_id,conteudo")
     .eq("criado_por_tel", telefoneCanonico(c.tel)).eq("status", "rascunho").gte("created_at", desde)
-    .order("created_at", { ascending: false }).limit(6);
-  if (!data?.length) return "ASSUNTO EM ANDAMENTO: nenhum.";
-  const ult = data[0];
-  const grupo = ult.conteudo?.grupo;
-  const ops = grupo ? data.filter((a: any) => a.conteudo?.grupo === grupo) : [ult];
-  const min = Math.round((Date.now() - new Date(ult.created_at).getTime()) / 60000);
-  if (ult.conteudo?.serie) {
-    const primeiro = ops.find((a: any) => a.conteudo?.parte === 1) || ult;
-    return `ASSUNTO EM ANDAMENTO: série "${String(ult.titulo).replace(/\s*\(\d+\/\d+\)$/, "")}" (${ult.conteudo?.total || ops.length} cartões) ainda em rascunho, prévia enviada há ${min} min. Para publicar a série inteira: publicar_aviso com o código ${idCurto(primeiro.id)}.`;
+    .order("created_at", { ascending: false }).limit(30);
+  if (!data?.length) return "AVISOS EM ANDAMENTO (rascunhos ainda não publicados): nenhum.";
+  const grupos: any[][] = [];
+  for (const a of data) {
+    const g = a.conteudo?.grupo || a.id;
+    const lista = grupos.find((x) => (x[0].conteudo?.grupo || x[0].id) === g);
+    if (lista) lista.push(a); else if (grupos.length < 4) grupos.push([a]);
   }
-  return `ASSUNTO EM ANDAMENTO: aviso "${ult.titulo}" ainda em rascunho (prévia enviada há ${min} min, aguardando a escolha/aprovação). ` +
-    `Opções: ${ops.map((a: any) => `opção ${a.conteudo?.opcao || 1} = código ${idCurto(a.id)}`).join(", ")}.`;
+  const linhas = grupos.map((ops) => {
+    const ult = ops[0];
+    const min = Math.round((Date.now() - new Date(ult.created_at).getTime()) / 60000);
+    if (ult.conteudo?.serie) {
+      const primeiro = ops.find((a: any) => a.conteudo?.parte === 1) || ult;
+      return `- série "${String(ult.titulo).replace(/\s*\(\d+\/\d+\)$/, "")}" (${ult.conteudo?.total || ops.length} cartões), criada há ${min} min: publicar_aviso com o código ${idCurto(primeiro.id)} publica a série inteira.`;
+    }
+    if (ops.length > 1) return `- "${ult.titulo}", criado há ${min} min, opções: ${ops.sort((x: any, y: any) => (x.conteudo?.opcao || 0) - (y.conteudo?.opcao || 0)).map((a: any) => `opção ${a.conteudo?.opcao || 1} = código ${idCurto(a.id)}`).join(", ")}.`;
+    return `- "${ult.titulo}", criado há ${min} min: código ${idCurto(ult.id)}.`;
+  });
+  return `AVISOS EM ANDAMENTO (rascunhos ainda não publicados, guardados por 24 h; o mais recente primeiro):\n${linhas.join("\n")}\nUse SEMPRE esses códigos para publicar; nunca crie de novo um aviso que já está aqui. Se a pessoa pedir para publicar vários, publique cada código uma vez.`;
 }
 export async function promptSistema(c: Contexto): Promise<string> {
   const agora = horaLocalIso(new Date()).replace("T", " ");
@@ -647,7 +652,7 @@ ${MODO_TESTE ? "(Fase de teste interna.)" : ""}
 JEITO DE FALAR
 - Escreva como uma pessoa no WhatsApp: 1 ou 2 mensagens curtas por resposta (separadas por uma linha em branco), cada uma com no máximo 1–2 frases curtas. Nada de textão, nada de explicar demais, nada de repetir o que já disse. Uma pergunta por vez.
 - Sempre chame a pessoa pelo primeiro nome. Português do Brasil. Pode usar 1 emoji de vez em quando.
-- Continuidade: se houver um ASSUNTO EM ANDAMENTO (abaixo), um "oi" ou mensagem solta é para retomar esse assunto. Ex: "Oi, Jeferson! Viu as opções do aviso de silêncio? Posso publicar alguma?". Nunca recomece do zero nem pergunte de novo o que já foi definido (prédio, assunto, datas).
+- Continuidade: se houver AVISOS EM ANDAMENTO (acima), um "oi" ou mensagem solta é para retomar esse assunto. Ex: "Oi, Jeferson! Viu as opções do aviso de silêncio? Posso publicar alguma?". Nunca recomece do zero nem pergunte de novo o que já foi definido (prédio, assunto, datas).
 - "outra", "mais uma", "refaz", "não gostei", "muda" logo depois de uma prévia = gerar NOVAS 3 opções do MESMO aviso (mesmo prédio e assunto), mudando visual e/ou texto. Só pergunte o que mudar se não der para entender.
 - Nunca pergunte o prédio se o PRÉDIO ATUAL já está definido.
 - O histórico traz "(registro interno …)" com tudo o que você consultou e fez antes, com os resultados. Confie nesses registros.
@@ -675,6 +680,8 @@ DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
 - Se algo no documento não bate (data que já passou, nome de outro condomínio), aponte em UMA frase junto com a proposta, sem travar o trabalho.
 - Só publique o arquivo como está (criar_aviso_arquivo) se a pessoa pedir isso depois de ver a proposta; nesse caso sugira 30 segundos na tela.
 - Série: a prévia mostra os cartões lado a lado; publicar_aviso com o código do cartão 1 publica a série inteira.
+- Rascunho que a pessoa adiou ("depois eu publico", "cancela por enquanto") fica guardado por 24 h e aparece em AVISOS EM ANDAMENTO: publique depois com o mesmo código, sem criar de novo.
+- Pedido de publicar várias coisas de uma vez: publique cada aviso UMA vez (confira em AVISOS EM ANDAMENTO e no listar_avisos o que já está no ar) e responda com a lista final. Nunca publique dois avisos iguais.
 
 LINK DOS AVISOS DO PRÉDIO
 - Depois de publicar, alterar ou listar avisos, ofereça o link da página do prédio (link_dos_avisos): mostra todos os avisos no ar e agendados como aparecem na tela, a ordem do rodízio e até quando cada um fica. Se a pessoa pedir para "ver como está", mande o link direto.
