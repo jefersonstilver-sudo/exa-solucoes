@@ -72,7 +72,7 @@ serve(async (req) => {
 
     // Processar cada regra para determinar quais vídeos têm regras ativas
     for (const rule of scheduleRules || []) {
-      const schedule = rule.campaign_video_schedules;
+      const schedule = rule.campaign_video_schedules as any;
       const campaign = schedule.campaigns_advanced;
       const videoId = schedule.video_id;
       
@@ -123,7 +123,7 @@ serve(async (req) => {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
 
-      const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
+      const pedidoId = (rule.campaign_video_schedules as any).campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
       console.log(`🎬 [VIDEO_STATUS] Verificando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
@@ -204,7 +204,7 @@ serve(async (req) => {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
 
-      const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
+      const pedidoId = (rule.campaign_video_schedules as any).campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
       console.log(`⏹️ [VIDEO_STATUS] Verificando desativação de vídeo agendado ${videoId} (Pedido: ${pedidoId})`);

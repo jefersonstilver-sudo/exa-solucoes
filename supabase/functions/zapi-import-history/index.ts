@@ -174,7 +174,7 @@ serve(async (req) => {
         console.log('[ZAPI-IMPORT] ℹ️ Skipping message fetch (Multi-Device limitation)');
         
         // Buscar última mensagem do zapi_logs para atualizar data da conversa corretamente
-        const { data: latestLog } = await supabaseClient
+        const { data: latestLog } = await supabase
           .from('zapi_logs')
           .select('created_at, message_text, direction')
           .eq('phone_number', phoneNumber)
@@ -185,7 +185,7 @@ serve(async (req) => {
         
         if (latestLog) {
           // Atualizar conversa com data correta do último log
-          const { error: updateError } = await supabaseClient
+          const { error: updateError } = await supabase
             .from('conversations')
             .update({
               last_message_at: latestLog.created_at,
