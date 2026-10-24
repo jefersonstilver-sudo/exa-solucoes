@@ -139,13 +139,18 @@ export const FERRAMENTAS = [
     input_schema: {
       type: "object",
       properties: {
-        titulo: { type: "string", description: "Curto e direto, até ~40 caracteres. Ex: 'Falta d'água no sábado'" },
-        quando: { type: "string", description: "Data/horário/local em uma linha. Ex: 'Sábado, 26/10 · das 8h às 14h'" },
-        texto: { type: "string", description: "Explicação curta e amigável, até ~180 caracteres" },
+        titulo: { type: "string", description: "Curto e forte, ATÉ 30 caracteres (letras grandes, lido de longe). Ex: 'Falta d'água no sábado'" },
+        quando: { type: "string", description: "Data/horário/local em uma linha, ATÉ 35 caracteres. Ex: 'Sáb 26/10 · 8h às 14h'" },
+        texto: { type: "string", description: "Frase curta e amigável, ATÉ 110 caracteres (o aviso é lido de longe no elevador)" },
         assinatura: { type: "string", description: "Ex: 'Administração do Edifício Saint Peter'" },
         tema: { type: "string", description: "Tema do ícone 3D (uma das chaves da biblioteca)" },
         cor: { type: "string", description: "Cor de destaque em #RRGGBB (opcional; padrão do tema)" },
         midia_id: { type: "string", description: "Opcional: id de uma FOTO enviada pelo síndico para aparecer em destaque" },
+        variacoes: {
+          type: "array", maxItems: 3,
+          description: "SEMPRE 3 variações visuais para o síndico escolher. Cada uma com tema de ícone, cor e busca_foto diferentes (ex: uma foto do ambiente, uma foto mais conceitual e uma com outra cor). Pode trazer titulo/quando/texto alternativos (ex: uma mais formal, outra mais leve).",
+          items: { type: "object", properties: { tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" } } },
+        },
         busca_foto: { type: "string", description: "2 a 4 palavras EM INGLÊS para buscar a foto de fundo no Unsplash, ligadas ao tema e ao clima do aviso (ex: 'quiet night city', 'water tap kitchen', 'elevator lobby', 'pool summer'). Evite pessoas em destaque." },
         segundos: { type: "number", description: "Tempo na tela (5 a 120). Padrão 15" },
         inicio: { type: "string", description: "Início 'YYYY-MM-DDTHH:MM' (horário de Brasília). Vazio = assim que publicar" },
@@ -263,8 +268,6 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
     }
     case "criar_aviso_nando": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
-      const tema = ICONES[e.tema] ? e.tema : "megafone";
-      const icone = await iconeDataUrl(tema);
       let foto: string | null = null;
       if (e.midia_id) {
         const m = c.midias[e.midia_id] || await midiaSalva(c, e.midia_id);
@@ -272,32 +275,46 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         const r = await fetch(m.url);
         foto = `data:${m.mime};base64,` + bytesParaB64(new Uint8Array(await r.arrayBuffer()));
       }
-      const dados = {
-        v: 1, titulo: String(e.titulo || "").slice(0, 70), quando: e.quando ? String(e.quando).slice(0, 80) : undefined,
-        texto: String(e.texto || "").slice(0, 260), assinatura: e.assinatura || `Administração do ${p.nome}`,
-        cor: /^#[0-9a-f]{6}$/i.test(e.cor || "") ? e.cor : ICONES[tema].cor, icone, foto: foto || undefined,
-        fundo: undefined as string | undefined, credito: undefined as string | undefined,
-      };
-      if (!foto) {
-        const f = e.busca_foto ? await fotoUnsplash(String(e.busca_foto)) : null;
-        if (f) { dados.fundo = f.url; dados.credito = f.credito; }
-        else dados.fundo = (await fundoGradiente(ICONES[tema].cor)) || undefined;
-      }
+      // sempre 3 variacoes para o sindico escolher (o mesmo texto, visuais diferentes, salvo se a variacao trouxer outro texto)
+      const vars: any[] = (Array.isArray(e.variacoes) && e.variacoes.length ? e.variacoes : [{}]).slice(0, 3);
+      while (vars.length < 3) vars.push({ ...vars[vars.length - 1], _sem_foto: vars.length === 2 });
+      const grupo = crypto.randomUUID();
       const ini = parseData(e.inicio), fim = parseData(e.fim);
-      const { data: a, error } = await sb.from("nando_avisos").insert({
-        building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: dados.titulo, status: "rascunho",
-        segundos: clampSeg(e.segundos), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
-        lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
-        criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
-        conteudo: { tema, campos: { ...dados, icone: undefined, foto: e.midia_id || undefined } },
-      }).select("*").single();
-      if (error) throw error;
-      const url = await salvarArquivo(c, `avisos/${a.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
-      await sb.from("nando_avisos").update({ conteudo: { ...a.conteudo, arquivo_url: url } }).eq("id", a.id);
-      await historico(sb, a.id, quem(c), "criou rascunho");
-      const link = await criarPrevia(c, a.id);
-      c.registros.push(`rascunho ${idCurto(a.id)} criado: ${dados.titulo}`);
-      return `Rascunho criado [${idCurto(a.id)}]. Link de prévia (vale 10 min): ${link}\nAvisos já no ar neste prédio: ${await avisosAtivos(c, p.id)}${(await avisosAtivos(c, p.id)) === 0 ? " (este será o único: não fale de segundos de tela)" : ""}.`;
+      const criados: any[] = [];
+      for (let n = 0; n < vars.length; n++) {
+        const v = vars[n] || {};
+        const tema = ICONES[v.tema] ? v.tema : ICONES[e.tema] ? e.tema : "megafone";
+        const cor = /^#[0-9a-f]{6}$/i.test(v.cor || e.cor || "") ? (v.cor || e.cor) : ICONES[tema].cor;
+        const dados: any = {
+          v: 1, titulo: String(v.titulo || e.titulo || "").slice(0, 60), quando: (v.quando || e.quando) ? String(v.quando || e.quando).slice(0, 60) : undefined,
+          texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`,
+          cor, icone: await iconeDataUrl(tema), foto: foto || undefined,
+        };
+        if (!foto) {
+          const busca = v._sem_foto ? null : (v.busca_foto || e.busca_foto);
+          const f = busca ? await fotoUnsplash(String(busca)) : null;
+          if (f) { dados.fundo = f.url; dados.credito = f.credito; }
+          else dados.fundo = (await fundoGradiente(cor)) || undefined;
+        }
+        const { data: a, error } = await sb.from("nando_avisos").insert({
+          building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: dados.titulo, status: "rascunho",
+          segundos: clampSeg(e.segundos), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
+          lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
+          criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
+          conteudo: { tema, grupo, opcao: n + 1, campos: { ...dados, icone: undefined, foto: e.midia_id || undefined } },
+        }).select("*").single();
+        if (error) throw error;
+        const url = await salvarArquivo(c, `avisos/${a.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
+        await sb.from("nando_avisos").update({ conteudo: { ...a.conteudo, arquivo_url: url } }).eq("id", a.id);
+        await historico(sb, a.id, quem(c), `criou rascunho (opção ${n + 1})`);
+        criados.push(a);
+      }
+      const link = await criarPrevia(c, criados[0].id);
+      const ativos = await avisosAtivos(c, p.id);
+      c.registros.push(`3 opções criadas: ${criados.map((a, n) => `opção ${n + 1} = [${idCurto(a.id)}]`).join(", ")}`);
+      return `3 opções criadas (o síndico escolhe uma e as outras são descartadas):\n` +
+        criados.map((a, n) => `Opção ${n + 1} = código ${idCurto(a.id)}`).join("\n") +
+        `\nLink único de prévia com as 3 opções lado a lado (vale 10 min): ${link}\nAvisos já no ar neste prédio: ${ativos}${ativos === 0 ? " (este será o único: não fale de segundos de tela)" : ""}.`;
     }
     case "criar_aviso_arquivo": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
@@ -343,6 +360,10 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
           await registrarOcorrencia(sb, { tipo: "erro_publicacao", telefone: c.tel, nome: c.nomePessoa, building_id: p.id, descricao: `Falha ao publicar "${linha.titulo}" no ${p.nome}: ${(err as Error).message}` });
           res.push(`${p.nome}: ERRO ao publicar (o Jeferson já foi avisado)`);
         }
+      }
+      if (a.conteudo?.grupo) {
+        await sb.from("nando_avisos").update({ status: "removido", removido_por: "opção não escolhida", removido_em: new Date().toISOString() })
+          .eq("status", "rascunho").eq("conteudo->>grupo", a.conteudo.grupo).neq("id", a.id);
       }
       c.registros.push(`publicação: ${res.join("; ")}`);
       return res.join("\n");
@@ -444,7 +465,8 @@ JEITO DE FALAR
 
 COMO TRABALHAR COM AVISOS
 - Avisos não passam por aprovação da EXA: a responsabilidade é da administração do prédio. Mas NUNCA publique sem a pessoa ver a prévia e confirmar ("pode publicar", "ok", "manda").
-- Fluxo: entender o aviso → criar rascunho (criar_aviso_nando ou criar_aviso_arquivo) → mandar o link da prévia → ajustar se pedirem (crie um rascunho novo) → confirmar → publicar_aviso.
+- Fluxo: entender o aviso → criar_aviso_nando (sempre com 3 variações) ou criar_aviso_arquivo → mandar o link da prévia e perguntar "qual das 3 opções você prefere?" → ajustar se pedirem (gere novas opções) → confirmar → publicar_aviso com o código da opção escolhida.
+- O aviso é lido de LONGE no elevador: textos curtos (título até 30 caracteres, "quando" até 35, texto até 110). Menos texto = letra maior.
 - Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data no aviso, pergunte UMA vez, de forma natural: "Ele fica sem data para sair? Se quiser, eu te lembro daqui a 30 dias para ver se ainda vale." Se não quiser lembrete, fica por tempo indeterminado. Faça as perguntas que faltarem juntas, numa mensagem só, e não repita perguntas já respondidas. (3) tempo na tela: SÓ pergunte/mencione se o prédio já tiver outro aviso no ar (aí o rodízio alterna entre eles; padrão 15 s). Se este for o ÚNICO aviso, não fale de segundos: ele fica o tempo todo na tela.
 - Confirme datas por extenso com dia da semana e hora exata (ex: "fica até *domingo, 27/10, às 23h59*, certo?").
 - Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine e informe busca_foto (palavras em inglês) para a foto de fundo, que aparece desfocada atrás do texto. Temas: ${listaTemas()}.

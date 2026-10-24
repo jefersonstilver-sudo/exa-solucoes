@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 type Previa = {
   ok: boolean; erro?: string; tipo?: 'nando' | 'imagem' | 'pdf'; titulo?: string; segundos?: number;
-  inicio?: string; fim?: string | null; predio?: string; outros?: number; dados?: unknown; url?: string | null; expira_em?: string;
+  inicio?: string; fim?: string | null; predio?: string; outros?: number; opcoes?: { opcao: number; dados: unknown }[]; dados?: unknown; url?: string | null; expira_em?: string;
 };
 
 declare global {
@@ -54,14 +54,19 @@ export default function NandoPrevia() {
   }, [p?.expira_em]);
 
   useEffect(() => {
-    if (!p?.ok || !caixa.current) return;
+    if (!p?.ok) return;
     let aviso: { remover: () => void; escalar: () => void } | null = null;
     const onResize = () => aviso?.escalar();
     (async () => {
       if (p.tipo === 'nando') {
         carregarCss('/nando/aviso-nando.css');
         await carregarScript('/nando/aviso-nando.js');
-        if (caixa.current && window.NandoAviso) aviso = window.NandoAviso.montar(caixa.current, p.dados);
+        const lista = p.opcoes?.length ? p.opcoes : [{ opcao: 1, dados: p.dados }];
+        const montados = lista.map((o) => {
+          const el = document.getElementById(`na-op-${o.opcao}`);
+          return el && window.NandoAviso ? window.NandoAviso.montar(el, o.dados) : null;
+        }).filter(Boolean) as { remover: () => void; escalar: () => void }[];
+        aviso = { remover: () => montados.forEach((m) => m.remover()), escalar: () => montados.forEach((m) => m.escalar()) };
         window.addEventListener('resize', onResize);
       } else if (p.tipo === 'pdf' && p.url && canvas.current) {
         await carregarScript('https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.min.js');
@@ -90,8 +95,23 @@ export default function NandoPrevia() {
 
       {p?.ok && (
         <>
+          {p.tipo === 'nando' && (
+            <>
+              {(p.opcoes?.length || 0) > 1 && <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 12 }}>Deslize para ver as {p.opcoes!.length} opções 👉</div>}
+              <div style={{ display: 'flex', gap: 18, overflowX: 'auto', scrollSnapType: 'x mandatory', width: '100%', maxWidth: 1100, padding: '4px 4px 16px', justifyContent: (p.opcoes?.length || 1) > 1 ? 'flex-start' : 'center' }}>
+                {(p.opcoes?.length ? p.opcoes : [{ opcao: 1, dados: p.dados }]).map((o) => (
+                  <div key={o.opcao} style={{ flex: '0 0 auto', scrollSnapAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 auto' }}>
+                    <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8 }}>Opção {o.opcao}</div>
+                    <div style={{ width: 'min(78vw, 320px)', aspectRatio: '502 / 882', borderRadius: 18, padding: 6, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)', boxShadow: '0 30px 80px rgba(0,0,0,.55)' }}>
+                      <div id={`na-op-${o.opcao}`} style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 13, overflow: 'hidden', background: '#140a1c' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           {/* moldura do quadro de avisos do elevador (mesma proporcao da tela) */}
-          <div style={{ width: 'min(86vw, 380px)', aspectRatio: '502 / 882', borderRadius: 18, padding: 6, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)', boxShadow: '0 30px 80px rgba(0,0,0,.55)' }}>
+          {p.tipo !== 'nando' && <div style={{ width: 'min(86vw, 380px)', aspectRatio: '502 / 882', borderRadius: 18, padding: 6, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)', boxShadow: '0 30px 80px rgba(0,0,0,.55)' }}>
             <div ref={caixa} style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 13, overflow: 'hidden', background: '#140a1c' }}>
               {p.tipo === 'imagem' && p.url && (
                 <>
@@ -105,7 +125,7 @@ export default function NandoPrevia() {
                 </div>
               )}
             </div>
-          </div>
+          </div>}
 
           <div style={{ marginTop: 22, width: 'min(86vw, 380px)', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.12)', borderRadius: 16, padding: '14px 16px', fontSize: 14, lineHeight: 1.7 }}>
             <div>⏱️ {p.outros ? <><b>{p.segundos}s</b> na tela a cada rodízio (com {p.outros} outro{p.outros > 1 ? 's' : ''} aviso{p.outros > 1 ? 's' : ''})</> : <>Fica <b>fixo na tela</b> (único aviso do prédio)</>}</div>
@@ -113,7 +133,7 @@ export default function NandoPrevia() {
             <div>⏹️ Sai: <b>{fmt(p.fim) || 'sem data de saída'}</b></div>
           </div>
           <div style={{ marginTop: 16, fontSize: 13, opacity: 0.7, textAlign: 'center', maxWidth: 340 }}>
-            Gostou? Responda o Nando no WhatsApp com <b>"pode publicar"</b> ou peça os ajustes.
+            {(p.opcoes?.length || 0) > 1 ? <>Responda o Nando no WhatsApp com o número da opção (ex: <b>"opção 2"</b>) ou peça os ajustes.</> : <>Gostou? Responda o Nando no WhatsApp com <b>"pode publicar"</b> ou peça os ajustes.</>}
             <br />Este link expira em {min}:{seg}.
           </div>
         </>

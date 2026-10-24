@@ -27,12 +27,23 @@ Deno.serve(async (req) => {
     .eq("building_id", a.building_id).in("status", ["no_ar", "agendado"]);
 
   let dados = null;
-  if (a.tipo === "nando" && a.conteudo?.arquivo_url) {
-    const r = await fetch(a.conteudo.arquivo_url);
-    if (r.ok) dados = await r.json();
+  const opcoes: { opcao: number; dados: unknown }[] = [];
+  if (a.tipo === "nando") {
+    // as 3 variacoes criadas juntas aparecem lado a lado
+    let lista: any[] = [a];
+    if (a.conteudo?.grupo) {
+      const { data: irmaos } = await sb.from("nando_avisos").select("conteudo").eq("conteudo->>grupo", a.conteudo.grupo).eq("status", "rascunho");
+      if (irmaos?.length) lista = irmaos.sort((x: any, y: any) => (x.conteudo?.opcao || 0) - (y.conteudo?.opcao || 0));
+    }
+    for (const it of lista) {
+      if (!it.conteudo?.arquivo_url) continue;
+      const r = await fetch(it.conteudo.arquivo_url);
+      if (r.ok) opcoes.push({ opcao: it.conteudo?.opcao || opcoes.length + 1, dados: await r.json() });
+    }
+    dados = opcoes[0]?.dados || null;
   }
   return json(200, {
     ok: true, tipo: a.tipo, titulo: a.titulo, segundos: a.segundos, inicio: a.inicio, fim: a.fim,
-    predio: b?.nome || "", outros: outros || 0, dados, url: a.tipo === "nando" ? null : a.origem_url, expira_em: p.expira_em,
+    predio: b?.nome || "", outros: outros || 0, dados, opcoes, url: a.tipo === "nando" ? null : a.origem_url, expira_em: p.expira_em,
   });
 });

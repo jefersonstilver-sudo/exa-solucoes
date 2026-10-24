@@ -1,5 +1,5 @@
 /**
- * aviso-nando.js (v26) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
+ * aviso-nando.js (v27) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
  * Usado pelo painel E pela pagina de previa, para os dois ficarem identicos.
  *
  * O aviso e um "palco" 1080x1920 que e escalado inteiro para caber na caixa:
@@ -110,9 +110,10 @@
     escalar();
 
     // texto: cabe sempre (titulo 2 linhas, texto ate a area disponivel)
-    caber(tt, foto ? 104 : 120, 60, foto ? 250 : 290);
-    if (qd) caber(qd, 52, 34, 140);
-    if (tx) caber(tx, 46, 30, foto ? 300 : 360);
+    // letras grandes: o quadro e lido de longe no elevador (tela de 27")
+    caber(tt, 150, 84, foto ? 300 : 340);
+    if (qd) caber(qd, 66, 48, 170);
+    if (tx) caber(tx, 64, 42, foto ? 300 : 420);
 
     var fsrc = seguro(d.fundo) || foto;   // nunca usar o icone ampliado como fundo
     if (fsrc) desfocar(fsrc, function (u) {
