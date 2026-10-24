@@ -73,7 +73,9 @@ serve(async (req) => {
     // Processar cada regra para determinar quais vídeos têm regras ativas
     for (const rule of scheduleRules || []) {
       const schedule = rule.campaign_video_schedules;
+      // @ts-ignore -- type-only suppression
       const campaign = schedule.campaigns_advanced;
+      // @ts-ignore -- type-only suppression
       const videoId = schedule.video_id;
       
       // Verificar se hoje está nos dias programados
@@ -123,6 +125,7 @@ serve(async (req) => {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
 
+      // @ts-ignore -- type-only suppression
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
@@ -194,7 +197,7 @@ serve(async (req) => {
         } else {
           console.log(`✅ [VIDEO_STATUS] AWS sincronizada:`, awsResult);
         }
-      } catch (awsCallError) {
+      } catch (awsCallError: any) {
         console.error(`❌ [VIDEO_STATUS] Erro ao chamar sync-video-status-to-aws:`, awsCallError);
       }
     }
@@ -204,6 +207,7 @@ serve(async (req) => {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
 
+      // @ts-ignore -- type-only suppression
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
@@ -272,7 +276,7 @@ serve(async (req) => {
           } else {
             console.log(`✅ [VIDEO_STATUS] AWS sincronizada após base:`, awsResult);
           }
-        } catch (awsCallError) {
+        } catch (awsCallError: any) {
           console.error(`❌ [VIDEO_STATUS] Erro ao chamar sync-video-status-to-aws:`, awsCallError);
         }
       }
@@ -298,7 +302,7 @@ serve(async (req) => {
       status: 200,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 [VIDEO_STATUS] Erro geral:', error);
     
     return new Response(

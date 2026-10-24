@@ -26,7 +26,7 @@ async function fetchLogoBytes(): Promise<Uint8Array | null> {
     const buf = new Uint8Array(await res.arrayBuffer());
     LOGO_BYTES = buf;
     return buf;
-  } catch (e) {
+  } catch (e: any) {
     console.warn('[pdf v4] fetch logo exceção', (e as any)?.message);
     return null;
   }
@@ -323,7 +323,7 @@ async function isAuthorizedAdmin(req: Request, supa: any): Promise<boolean> {
       const { data: ok } = await supa.rpc('has_role', { _user_id: ud.user.id, _role: r });
       if (ok === true) return true;
     }
-  } catch (_) {}
+  } catch (_: any) {}
   return false;
 }
 
@@ -398,7 +398,7 @@ Deno.serve(async (req) => {
       if (bytes) {
         logoImg = await pdf.embedPng(bytes);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[pdf v4] logo embed falhou', e);
     }
 

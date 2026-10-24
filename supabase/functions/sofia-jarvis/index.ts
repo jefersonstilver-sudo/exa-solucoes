@@ -2926,6 +2926,7 @@ async function handleGetAdminSession(params: any): Promise<{ text: string; data:
   }));
 
   const adminList = adminsWithContext.map(a => 
+    // @ts-ignore -- type-only suppression
     `${a.userName} (${a.userRole}): página "${a.currentPage}", ações: ${a.recentActions?.map(r => r.action).join(', ') || 'nenhuma'}`
   ).join('. ');
 
@@ -3042,7 +3043,7 @@ serve(async (req) => {
     if (body.params_json && typeof body.params_json === 'string') {
       try {
         params = JSON.parse(body.params_json);
-      } catch (e) {
+      } catch (e: any) {
         console.log('[Sofia JARVIS] Failed to parse params_json, using empty params');
         params = {};
       }
@@ -3491,7 +3492,7 @@ serve(async (req) => {
           console.log(`[Sofia JARVIS] ✅ Sessão estendida automaticamente. Expira em: ${extendResult.expires_in_minutes} minutos`);
         }
       }
-    } catch (extendError) {
+    } catch (extendError: any) {
       // Não falhar a resposta por erro na extensão
       console.log('[Sofia JARVIS] ⚠️ Erro ao tentar estender sessão (não crítico):', extendError);
     }
@@ -3504,7 +3505,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Sofia JARVIS] Error:', error);
     return new Response(JSON.stringify({
       success: false,

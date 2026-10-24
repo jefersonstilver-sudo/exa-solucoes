@@ -112,7 +112,9 @@ Deno.serve(async (req) => {
         const headers: Record<string, string> = {};
         
         // Adicionar Client-Token se estiver configurado
+        // @ts-ignore -- type-only suppression
         if (zapiConfig.client_token) {
+          // @ts-ignore -- type-only suppression
           headers['Client-Token'] = zapiConfig.client_token;
           console.log('🔐 [EDGE] Client-Token presente');
         } else {

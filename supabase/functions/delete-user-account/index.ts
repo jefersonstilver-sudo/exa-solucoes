@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
           console.log('✅ [DELETE-USER] Auditoria registrada com sucesso');
         }
       }
-    } catch (auditError) {
+    } catch (auditError: any) {
       console.error('💥 [DELETE-USER] Erro crítico na auditoria:', auditError);
     }
 
@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
           deletedCount++;
           console.log(`✅ [DELETE-USER] Deletado de ${table}`);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`⚠️ [DELETE-USER] Erro ao processar ${table}:`, err);
       }
     }
@@ -343,7 +343,7 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 [DELETE-USER] Erro crítico não tratado:', error);
     
     return new Response(

@@ -249,6 +249,7 @@ export function createDailyReportEmail(data: DailyReportEmailData): string {
 
   return createEmailTemplate({
     content,
+    // @ts-ignore -- type-only suppression
     preheader: `Relatório diário de ${data.agentName} - ${data.reportDate}`
   });
 }

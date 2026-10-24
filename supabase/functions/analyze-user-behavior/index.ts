@@ -314,7 +314,7 @@ CRITÉRIOS PARA AVALIAÇÃO:
       // Remover possível markdown code block
       const cleanedContent = aiContent.replace(/```json\n?|\n?```/g, '').trim();
       analysis = JSON.parse(cleanedContent);
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('❌ Error parsing AI response:', parseError);
       console.log('Raw AI response:', aiContent);
       throw new Error('Failed to parse AI response as JSON');
@@ -351,7 +351,7 @@ CRITÉRIOS PARA AVALIAÇÃO:
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Error in analyze-user-behavior:', error);
     return new Response(
       JSON.stringify({

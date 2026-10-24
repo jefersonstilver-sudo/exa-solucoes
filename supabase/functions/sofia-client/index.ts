@@ -88,7 +88,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[${requestId}] Error:`, error);
     return new Response(JSON.stringify({
       text: 'Desculpe, ocorreu um erro. Tente novamente.',

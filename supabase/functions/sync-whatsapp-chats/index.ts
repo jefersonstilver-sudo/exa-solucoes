@@ -215,16 +215,16 @@ serve(async (req) => {
                   }
                 }
               }
-            } catch (queueError) {
+            } catch (queueError: any) {
               // Silently continue - queue might be empty
             }
 
-          } catch (chatError) {
+          } catch (chatError: any) {
             console.error(`❌ [SYNC-CHATS] Erro processando chat:`, chatError);
           }
         }
 
-      } catch (fetchError) {
+      } catch (fetchError: any) {
         console.error(`❌ [SYNC-CHATS] Erro fetch ${agent.key}:`, fetchError);
         stats.errors.push(`${agent.key}: ${String(fetchError)}`);
       }
@@ -241,7 +241,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [SYNC-CHATS] Erro:', error);
     stats.errors.push(String(error));
     

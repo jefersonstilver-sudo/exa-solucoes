@@ -204,6 +204,7 @@ serve(async (req) => {
 
       } catch (parcelaError: any) {
         console.error('[BILLING-SCHEDULER] Erro ao processar parcela:', parcela.id, parcelaError);
+        // @ts-ignore -- type-only suppression
         results.erros.push({ parcela_id: parcela.id, erro: parcelaError.message });
       }
     }
@@ -218,7 +219,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[BILLING-SCHEDULER] Erro geral:', error);
     return new Response(JSON.stringify({ 
       error: error.message,

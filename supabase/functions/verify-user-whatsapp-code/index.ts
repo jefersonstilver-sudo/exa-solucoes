@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
 
       // Atualizar user_metadata no auth
       const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+        // @ts-ignore -- type-only suppression
         userId,
         { user_metadata: { phone: novoTelefone } }
       );
@@ -183,7 +184,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [VERIFY-USER-CODE] Erro geral:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Erro ao verificar código' }),

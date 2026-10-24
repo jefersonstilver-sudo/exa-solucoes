@@ -100,7 +100,7 @@ const logToHistory = async (
       return false;
     }
     return true;
-  } catch (err) {
+  } catch (err: any) {
     console.error('❌ [MONITOR] Exceção ao gravar histórico:', err);
     return false;
   }
@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
           return { success: false };
         }
         return { success: true, messageId: (sendData as any)?.messageId };
-      } catch (err) {
+      } catch (err: any) {
         console.error('❌ [MONITOR] Erro ao enviar WhatsApp:', err);
         return { success: false };
       }
@@ -738,7 +738,7 @@ Deno.serve(async (req) => {
       status: 200
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [MONITOR] Erro:', error);
     return new Response(JSON.stringify({ error: String(error) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

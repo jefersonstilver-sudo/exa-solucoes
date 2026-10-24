@@ -75,7 +75,9 @@ serve(async (req) => {
       throw new Error(`Upload original failed: ${originalUploadError.message}`);
     }
 
+    // @ts-ignore -- type-only suppression
     const originalUrl = getStorageUrl(supabase, 'arquivos', originalPath);
+    // @ts-ignore -- type-only suppression
     const originalPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', originalPath, originalUrl);
 
     if (onlyUploadOriginal) {
@@ -130,7 +132,9 @@ serve(async (req) => {
       throw new Error(`Upload processed failed: ${processedUploadError.message}`);
     }
 
+    // @ts-ignore -- type-only suppression
     const processedUrl = getStorageUrl(supabase, 'arquivos', processedPath);
+    // @ts-ignore -- type-only suppression
     const processedPreviewUrl = await createSignedPreviewUrl(supabase, 'arquivos', processedPath, processedUrl);
 
     console.log('[PROCESS-CLIENT-LOGO] ✅ Logo processada com sucesso');
@@ -143,7 +147,7 @@ serve(async (req) => {
       processedPreviewUrl,
       processed: true
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[PROCESS-CLIENT-LOGO] 💥 Error:', error);
     return jsonResponse({ success: false, error: error.message || 'Unknown error' }, 500);
   }
@@ -260,7 +264,7 @@ async function callOpenAI(
     }
 
     return null;
-  } catch (err) {
+  } catch (err: any) {
     if (err.name === 'AbortError') {
       console.error('[PROCESS-CLIENT-LOGO] OpenAI timeout (50s)');
     } else {
@@ -312,7 +316,7 @@ async function callLovableGateway(apiKey: string, prompt: string, imageDataUrl: 
     }
 
     return null;
-  } catch (err) {
+  } catch (err: any) {
     if (err.name === 'AbortError') {
       console.error('[PROCESS-CLIENT-LOGO] Gateway timeout (50s)');
     } else {

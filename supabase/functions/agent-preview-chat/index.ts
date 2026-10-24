@@ -134,7 +134,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-      } catch (e) {
+      } catch (e: any) {
         // Se não for JSON, continua com erro genérico
       }
       
@@ -212,7 +212,7 @@ serve(async (req) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
               });
             }
-          } catch (e) {
+          } catch (e: any) {
             // Se não for JSON, continua com erro genérico
           }
           
@@ -247,7 +247,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[PREVIEW] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

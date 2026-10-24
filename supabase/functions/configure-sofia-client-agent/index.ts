@@ -82,6 +82,7 @@ serve(async (req) => {
         
         if (!checkResp.ok) {
           console.log(`[${requestId}] Agent ${clientAgentId} NOT found (${checkResp.status}). Will create new agent.`);
+          // @ts-ignore -- type-only suppression
           clientAgentId = null; // Force creation of new agent
         } else {
           console.log(`[${requestId}] Agent ${clientAgentId} exists. Will update.`);
@@ -278,7 +279,7 @@ Sofia: [Consulta faturas] "Sim, você tem uma parcela de R$ 500,00 vencendo dia 
       status: 400,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[${requestId}] Error:`, error);
     return new Response(JSON.stringify({
       success: false,

@@ -47,7 +47,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ [AUTO-CANCEL-5H] Erro fatal:", error);
     
     return new Response(

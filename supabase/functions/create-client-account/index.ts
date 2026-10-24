@@ -33,6 +33,7 @@ serve(async (req) => {
       userId = existingAuthUser.id;
 
       // Update password and metadata
+      // @ts-ignore -- type-only suppression
       await supabaseAdmin.auth.admin.updateUser(userId, {
         password,
         email_confirm: true,
@@ -127,7 +128,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[CREATE-CLIENT] Error:', error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,

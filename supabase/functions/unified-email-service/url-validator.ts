@@ -11,7 +11,7 @@ export class URLValidator {
       }
       
       return correctedUrl;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [URL-VALIDATION] URL inválida:', url, error);
       return url;
     }

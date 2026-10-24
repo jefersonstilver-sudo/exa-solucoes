@@ -476,7 +476,7 @@ RESPONDA EM JSON VÁLIDO:
         ia_analise_por_tipo = aiContent.analise_por_tipo || {};
         ia_trechos_importantes = aiContent.trechos_importantes || [];
 
-      } catch (aiError) {
+      } catch (aiError: any) {
         console.error('❌ Erro na análise IA:', aiError);
         ia_resumo_executivo = 'Análise IA indisponível no momento';
         ia_padroes_detectados = ['Análise não disponível'];
@@ -573,7 +573,7 @@ RESPONDA EM JSON VÁLIDO:
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [VAR GENERATE] Erro:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Erro desconhecido' }),

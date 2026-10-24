@@ -251,7 +251,7 @@ export async function findCustomerByCpfCnpj(cpfCnpj: string): Promise<AsaasCusto
     }
     
     return null;
-  } catch (error) {
+  } catch (error: any) {
     log('warn', 'Error finding customer', { error: error.message });
     return null;
   }

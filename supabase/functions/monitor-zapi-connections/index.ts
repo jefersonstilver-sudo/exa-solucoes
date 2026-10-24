@@ -132,7 +132,7 @@ serve(async (req) => {
           .update({ zapi_config: newZapiConfig })
           .eq('key', agent.key);
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(`[MONITOR-ZAPI] ❌ Erro ao verificar ${agent.display_name}:`, error);
         results.push({
           agent_key: agent.key,
@@ -166,7 +166,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[MONITOR-ZAPI] ❌ Erro:', error);
     
     return new Response(JSON.stringify({ 

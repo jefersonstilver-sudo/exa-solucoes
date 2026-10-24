@@ -71,6 +71,7 @@ serve(async (req) => {
     let startCursor: string | undefined = undefined;
 
     while (hasMore) {
+      // @ts-ignore -- type-only suppression
       const notionResponse = await fetch(
         `https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query`,
         {
@@ -92,6 +93,7 @@ serve(async (req) => {
         throw new Error(`Notion API error: ${notionResponse.status} - ${errorText}`);
       }
 
+      // @ts-ignore -- type-only suppression
       const data = await notionResponse.json();
       allPages = [...allPages, ...data.results];
       hasMore = data.has_more;

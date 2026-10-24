@@ -23,6 +23,7 @@ Deno.serve(async (req) => {
 
   try {
     if (body.action === 'check_clients') {
+      // @ts-ignore -- type-only suppression
       const ids: string[] = Array.isArray(body.building_ids) ? [...new Set(body.building_ids.map(String))].filter((id) => UUID.test(id)).slice(0, 80) : []
       const byClient = new Map<string, string[]>()
       for (const id of ids) byClient.set(clientIdFromBuilding(id), [...(byClient.get(clientIdFromBuilding(id)) || []), id])

@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
-  } catch (err) {
+  } catch (err: any) {
     console.error("[evolution-proxy] error", (err as Error).message);
     return json(500, { error: "Internal error" });
   }

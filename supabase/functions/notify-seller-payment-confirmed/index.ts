@@ -122,7 +122,7 @@ _EXA Mídia - Vendas_`;
           body: { agentKey: 'exa_alert', phone: sellerPhone, message: whatsappMessage, skipSplit: true },
         });
         if (sendError) console.error('❌ Shim Evolution erro:', sendError);
-      } catch (whatsappErr) {
+      } catch (whatsappErr: any) {
         console.error('❌ Exceção ao enviar WhatsApp:', whatsappErr);
       }
     }
@@ -223,7 +223,7 @@ _EXA Mídia - Vendas_`;
         } else {
           console.log('✅ Email enviado para vendedor:', emailResponse);
         }
-      } catch (emailErr) {
+      } catch (emailErr: any) {
         console.error('❌ Exceção ao enviar email:', emailErr);
       }
     }

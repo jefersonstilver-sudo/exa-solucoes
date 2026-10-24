@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
           .select('id', { count: 'exact' })
           .eq('approval_status', 'pending')
           .in('pedido_id', 
+            // @ts-ignore -- type-only suppression
             supabase.from('pedidos').select('id').eq('client_id', user.id)
           );
 
@@ -67,6 +68,7 @@ Deno.serve(async (req) => {
           .select('id', { count: 'exact' })
           .eq('approval_status', 'approved')
           .in('pedido_id',
+            // @ts-ignore -- type-only suppression
             supabase.from('pedidos').select('id').eq('client_id', user.id)
           );
 
@@ -138,7 +140,7 @@ Deno.serve(async (req) => {
           .eq('user_id', user.id);
 
         console.log(`✅ Updated metrics for user ${user.id} - Score: ${engagementScore}, Stage: ${lifecycleStage}`);
-      } catch (userError) {
+      } catch (userError: any) {
         console.error(`❌ Error processing user ${user.id}:`, userError);
         // Continue processando outros usuários
         continue;
@@ -155,7 +157,7 @@ Deno.serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Error in update-platform-metrics:', error);
     return new Response(
       JSON.stringify({

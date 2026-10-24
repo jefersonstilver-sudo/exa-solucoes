@@ -123,7 +123,7 @@ serve(async (req) => {
           sent++;
           console.log(`[TASK-CANCEL] ✅ Sent to ${contact.nome}`);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[TASK-CANCEL] ❌ Error for ${contact.nome}:`, err);
       }
     }
@@ -148,7 +148,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TASK-CANCEL] 💥 ERROR:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

@@ -83,6 +83,7 @@ serve(async (req) => {
     // ⚡ OTIMIZAÇÃO 2: Filtrar regras válidas ANTES (null-safety)
     const validRules = (scheduleRules || []).filter(rule => {
       const cvs = rule.campaign_video_schedules;
+      // @ts-ignore -- type-only suppression
       const campaign = cvs?.campaigns_advanced;
       return cvs && campaign && campaign.status === 'active' && campaign.pedido_id;
     });
@@ -92,6 +93,7 @@ serve(async (req) => {
     // Agrupar por pedido
     const pedidosMap = new Map<string, any[]>();
     validRules.forEach(rule => {
+      // @ts-ignore -- type-only suppression
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       if (!pedidosMap.has(pedidoId)) {
         pedidosMap.set(pedidoId, []);
@@ -259,7 +261,7 @@ serve(async (req) => {
             resultados.videos_ativados += awsResult.activated || 0;
           }
 
-        } catch (notifyException) {
+        } catch (notifyException: any) {
           log.error(`❌ [VIDEO_SYNC] Exceção ao sincronizar AWS:`, notifyException);
         }
 
@@ -271,7 +273,7 @@ serve(async (req) => {
           trocasRealizadas: 1 
         };
 
-      } catch (error) {
+      } catch (error: any) {
         log.error(`❌ [VIDEO_SYNC] Error processing pedido ${pedidoId}:`, error);
         return { success: false, pedidoId, error: error.message };
       }
@@ -309,7 +311,7 @@ serve(async (req) => {
       status: 200
     });
 
-  } catch (error) {
+  } catch (error: any) {
     log.error('💥 [VIDEO_SYNC] Fatal error:', error);
     
     return new Response(JSON.stringify({

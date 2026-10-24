@@ -203,7 +203,7 @@ EXA Mídia`;
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro no send-proposal-whatsapp:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Erro interno' }),

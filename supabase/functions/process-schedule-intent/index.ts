@@ -533,7 +533,7 @@ O sistema enviará alertas 1 hora antes! 📱`);
         });
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SCHEDULE-INTENT] ❌ Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

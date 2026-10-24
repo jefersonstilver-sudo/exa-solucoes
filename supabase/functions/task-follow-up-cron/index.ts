@@ -149,7 +149,7 @@ serve(async (req) => {
             sentToCreator++;
             console.log(`[TASK-FOLLOWUP] ✅ Phase 1: Sent follow-up to creator for: ${task.titulo}`);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error(`[TASK-FOLLOWUP] ❌ Failed to send for: ${task.titulo}`, err);
         }
 
@@ -191,13 +191,13 @@ serve(async (req) => {
                     sentToResponsaveis++;
                     console.log(`[TASK-FOLLOWUP] ✅ Phase 1.5: Sent to responsável ${user.nome} for: ${task.titulo}`);
                   }
-                } catch (sendErr) {
+                } catch (sendErr: any) {
                   console.error(`[TASK-FOLLOWUP] ❌ Phase 1.5 error for ${user.nome}:`, sendErr);
                 }
               }
             }
           }
-        } catch (respErr) {
+        } catch (respErr: any) {
           console.error(`[TASK-FOLLOWUP] ❌ Phase 1.5 error fetching responsáveis:`, respErr);
         }
       }
@@ -257,7 +257,7 @@ serve(async (req) => {
                   skipSplit: true
                 }
               });
-            } catch (err) {
+            } catch (err: any) {
               console.error(`[TASK-FOLLOWUP] ❌ Escalation failed for ${receipt.contact_name}:`, err);
             }
           }
@@ -306,7 +306,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TASK-FOLLOWUP] 💥 ERROR:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

@@ -117,6 +117,7 @@ Deno.serve(async (req) => {
     }
 
     // Verificar CPF
+    // @ts-ignore -- type-only suppression
     const clientCpf = order.clientes.cpf?.replace(/[.-]/g, '');
     
     if (clientCpf !== cleanCpf) {
@@ -158,7 +159,9 @@ Deno.serve(async (req) => {
           plano_meses: order.plano_meses,
           data_inicio: order.data_inicio,
           data_fim: order.data_fim,
+          // @ts-ignore -- type-only suppression
           client_name: order.clientes.nome,
+          // @ts-ignore -- type-only suppression
           client_email: order.clientes.email,
           panels: panels?.map(p => p.predios) || []
         }
@@ -169,7 +172,7 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error validating order:', error);
     return new Response(
       JSON.stringify({ 

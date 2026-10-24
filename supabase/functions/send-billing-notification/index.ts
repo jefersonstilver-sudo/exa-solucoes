@@ -152,7 +152,7 @@ serve(async (req) => {
           results.whatsapp = true;
           console.log('[SEND-BILLING-NOTIFICATION] WhatsApp enviado com sucesso');
         }
-      } catch (whatsappErr) {
+      } catch (whatsappErr: any) {
         console.error('[SEND-BILLING-NOTIFICATION] Erro WhatsApp:', whatsappErr);
       }
     }
@@ -178,7 +178,7 @@ serve(async (req) => {
           results.email = true;
           console.log('[SEND-BILLING-NOTIFICATION] Email enviado com sucesso');
         }
-      } catch (emailErr) {
+      } catch (emailErr: any) {
         console.error('[SEND-BILLING-NOTIFICATION] Erro Email:', emailErr);
       }
     }
@@ -214,7 +214,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SEND-BILLING-NOTIFICATION] Erro:', error);
     return new Response(JSON.stringify({ 
       error: error.message,

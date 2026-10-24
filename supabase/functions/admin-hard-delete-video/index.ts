@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
         body: { video_id, pedido_id },
       });
       awsResult = awsResp;
-    } catch (e) {
+    } catch (e: any) {
       console.warn('AWS delete falhou:', e);
       awsResult = { error: String(e) };
     }
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     if (videoRow?.storage_path) {
       try {
         await supabase.storage.from('videos').remove([videoRow.storage_path]);
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Storage remove falhou:', e);
       }
     }
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     });
 
     return new Response(JSON.stringify({ ok: true, video_id, aws: awsResult }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  } catch (e) {
+  } catch (e: any) {
     if (e instanceof Response) return e;
     console.error('admin-hard-delete-video error', e);
     return new Response(JSON.stringify({ error: String(e?.message || e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

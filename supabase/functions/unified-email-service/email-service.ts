@@ -40,7 +40,7 @@ export class EmailService {
       if (!response.ok) {
         console.error('❌ [EMAIL LOG] Erro ao salvar log:', await response.text());
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [EMAIL LOG] Erro ao salvar log:', error);
     }
   }

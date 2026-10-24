@@ -121,7 +121,7 @@ serve(async (req) => {
     try {
       const analysisResult = await analyzeMessage(supabase, message.id, conversation.id, text);
       console.log('🤖 [WEBHOOK] Analysis completed:', analysisResult);
-    } catch (analysisError) {
+    } catch (analysisError: any) {
       console.error('⚠️ [WEBHOOK] Analysis failed (non-critical):', analysisError);
     }
 
@@ -135,7 +135,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [WEBHOOK] Fatal error:', error);
     return new Response(
       JSON.stringify({ 
@@ -222,7 +222,7 @@ async function analyzeMessage(supabase: any, messageId: string, conversationId: 
         const openaiData = await openaiResponse.json();
         suggestedReply = openaiData.choices[0]?.message?.content || '';
       }
-    } catch (aiError) {
+    } catch (aiError: any) {
       console.error('⚠️ [ANALYSIS] OpenAI error:', aiError);
     }
   }

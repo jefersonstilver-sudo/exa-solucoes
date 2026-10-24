@@ -172,7 +172,7 @@ serve(async (req) => {
           }
         });
       console.log('[FIDELITY-CHECKOUT] Termo de fidelidade registrado');
-    } catch (termoError) {
+    } catch (termoError: any) {
       console.error('[FIDELITY-CHECKOUT] Erro ao registrar aceite (não crítico):', termoError);
     }
 
@@ -266,7 +266,7 @@ serve(async (req) => {
         } else {
           console.error('[FIDELITY-CHECKOUT] Erro ao gerar boleto:', mpData);
         }
-      } catch (boletoError) {
+      } catch (boletoError: any) {
         console.error('[FIDELITY-CHECKOUT] Erro ao gerar boleto (não crítico):', boletoError);
       }
     }
@@ -293,7 +293,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[FIDELITY-CHECKOUT] Erro:', error);
     return new Response(JSON.stringify({ 
       error: error.message,

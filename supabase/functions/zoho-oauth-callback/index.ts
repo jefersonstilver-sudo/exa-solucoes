@@ -179,7 +179,7 @@ serve(async (req) => {
         console.log('Account ID:', accountId);
         console.log('Account Email:', accountEmail);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error fetching account info:', e);
     }
 
@@ -209,6 +209,7 @@ serve(async (req) => {
           account_id: accountId,
           account_email: accountEmail,
           access_token: tokenData.access_token,
+          // @ts-ignore -- type-only suppression
           refresh_token: tokenData.refresh_token || existingConfig.refresh_token,
           token_expires_at: expiresAt.toISOString(),
           is_active: true,
@@ -294,7 +295,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in zoho-oauth-callback:', error);
     return new Response(
       `<!DOCTYPE html>

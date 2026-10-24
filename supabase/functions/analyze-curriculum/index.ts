@@ -111,7 +111,7 @@ Se NÃO for um currículo, retorne apenas:
         cleanContent = cleanContent.slice(0, -3);
       }
       analysis = JSON.parse(cleanContent.trim());
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to parse AI response:', e);
       analysis = { is_curriculum: false, confidence: 0, reason: 'Falha ao analisar' };
     }
@@ -153,7 +153,7 @@ Se NÃO for um currículo, retorne apenas:
             receivedAt,
           },
         });
-      } catch (e) {
+      } catch (e: any) {
         console.error('Error sending notification:', e);
       }
     }
@@ -167,7 +167,7 @@ Se NÃO for um currículo, retorne apenas:
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in analyze-curriculum:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),

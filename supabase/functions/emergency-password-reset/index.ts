@@ -153,7 +153,7 @@ serve(async (req) => {
         status: 200,
       }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('[emergency-password-reset] Erro crítico:', error)
     return new Response(
       JSON.stringify({

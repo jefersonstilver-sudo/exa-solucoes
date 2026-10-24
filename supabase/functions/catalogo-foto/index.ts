@@ -54,7 +54,7 @@ Deno.serve(async (req: Request) => {
     return new Response(buf, {
       headers: { ...corsHeaders, 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400, immutable' },
     });
-  } catch (e) {
+  } catch (e: any) {
     return new Response('err: ' + String(e), { status: 500, headers: corsHeaders });
   }
 });

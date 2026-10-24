@@ -61,7 +61,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[OPENAI-TEST] Error:', error);
     return new Response(
       JSON.stringify({ 

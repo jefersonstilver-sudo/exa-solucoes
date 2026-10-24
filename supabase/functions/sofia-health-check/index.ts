@@ -68,7 +68,7 @@ serve(async (req) => {
         })) || []
       };
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('🏥 [HEALTH] Supabase check failed:', e);
     results.checks.supabase = { status: 'error', message: e.message };
     results.overall_status = 'unhealthy';
@@ -126,7 +126,7 @@ serve(async (req) => {
         results.overall_status = 'unhealthy';
       }
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('🏥 [HEALTH] ElevenLabs check failed:', e);
     results.checks.elevenlabs = { status: 'error', message: e.message };
     results.overall_status = 'unhealthy';
@@ -167,7 +167,7 @@ serve(async (req) => {
         };
       }
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('🏥 [HEALTH] Z-API check failed:', e);
     results.checks.zapi = { status: 'error', message: e.message };
   }
@@ -202,7 +202,7 @@ serve(async (req) => {
         results.overall_status = results.overall_status === 'healthy' ? 'degraded' : results.overall_status;
       }
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('🏥 [HEALTH] Directors check failed:', e);
     results.checks.directors = { status: 'error', message: e.message };
   }

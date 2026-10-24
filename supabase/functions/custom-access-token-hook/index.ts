@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
           status: 200,
         });
       }
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('❌ JSON parse error:', parseError);
       // Return empty claims to not break auth flow
       return new Response(JSON.stringify({ claims: {} }), {
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
         console.warn('⚠️ No role found in user_roles, using default');
         payload.claims.user_role = 'client';
       }
-    } catch (dbError) {
+    } catch (dbError: any) {
       console.warn('⚠️ Database error, using default role:', dbError);
       payload.claims.user_role = 'client';
     }
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
       status: 200,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Critical auth error:', error);
     
     // IMPORTANT: Never break the auth flow, return minimal valid response

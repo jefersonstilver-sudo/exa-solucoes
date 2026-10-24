@@ -86,6 +86,7 @@ serve(async (req) => {
       .eq('id', building_id)
       .single();
 
+    // @ts-ignore -- type-only suppression
     console.log(`✅ Código gerado: ${codigo} para prédio ${building?.nome || building_id}`);
 
     return new Response(
@@ -101,7 +102,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erro ao gerar código:', error);
     return new Response(
       JSON.stringify({

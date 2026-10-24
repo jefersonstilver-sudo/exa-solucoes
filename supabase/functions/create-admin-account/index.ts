@@ -158,7 +158,7 @@ serve(async (req) => {
         if (!confirmError) {
           console.log('✅ [CREATE-ADMIN] Email de confirmação enviado como alternativa');
         }
-      } catch (fallbackError) {
+      } catch (fallbackError: any) {
         console.error('❌ [CREATE-ADMIN] Falha no envio do email de confirmação:', fallbackError);
       }
     } else {
@@ -218,7 +218,7 @@ serve(async (req) => {
           if (notificationResult.success) {
             notificationsSent++;
           }
-        } catch (notifError) {
+        } catch (notifError: any) {
           console.error(`❌ [CREATE-ADMIN] Erro ao notificar ${admin.email}:`, notifError);
         }
       }
@@ -262,7 +262,7 @@ serve(async (req) => {
       } else {
         console.log('✅ [CREATE-ADMIN] Auditoria registrada com sucesso');
       }
-    } catch (auditError) {
+    } catch (auditError: any) {
       console.error('💥 [CREATE-ADMIN] Erro crítico na auditoria:', auditError);
     }
 
@@ -285,7 +285,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 [CREATE-ADMIN] Erro crítico não tratado:', error);
     
     return new Response(

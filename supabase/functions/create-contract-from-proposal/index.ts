@@ -595,7 +595,7 @@ serve(async (req) => {
         }
       });
       console.log("✅ Notificação EXA Alerts enviada");
-    } catch (notifyErr) {
+    } catch (notifyErr: any) {
       console.warn("⚠️ Erro ao enviar notificação (não crítico):", notifyErr);
     }
 

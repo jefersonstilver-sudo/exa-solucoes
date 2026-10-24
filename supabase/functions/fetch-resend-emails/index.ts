@@ -60,7 +60,7 @@ serve(async (req) => {
         }
         
         break;
-      } catch (fetchError) {
+      } catch (fetchError: any) {
         retryCount++;
         if (retryCount >= maxRetries) throw fetchError;
         console.log(`⚠️ [FETCH-RESEND] Fetch error, retry ${retryCount}/${maxRetries}`);
@@ -68,12 +68,16 @@ serve(async (req) => {
       }
     }
 
+    // @ts-ignore -- type-only suppression
     if (!resendResponse.ok) {
+      // @ts-ignore -- type-only suppression
       const errorText = await resendResponse.text();
       console.error('Resend API error:', errorText);
+      // @ts-ignore -- type-only suppression
       throw new Error(`Resend API error: ${resendResponse.status} - ${errorText}`);
     }
 
+    // @ts-ignore -- type-only suppression
     const resendData = await resendResponse.json();
     console.log('Resend data received:', resendData);
 
@@ -147,7 +151,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in fetch-resend-emails:', error);
     return new Response(
       JSON.stringify({

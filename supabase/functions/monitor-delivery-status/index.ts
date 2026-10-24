@@ -205,7 +205,7 @@ serve(async (req) => {
             results.suspected_failure++;
           }
 
-        } catch (error) {
+        } catch (error: any) {
           console.error(`[MONITOR-DELIVERY] Erro ao verificar mensagem ${message.id}:`, error);
           failuresInBatch++;
         }
@@ -225,7 +225,7 @@ serve(async (req) => {
       ...results
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[MONITOR-DELIVERY] Erro fatal:', error);
     return new Response(JSON.stringify({
       success: false,
@@ -349,6 +349,7 @@ async function updateCircuitBreaker(
       .from('delivery_circuit_breaker')
       .update({
         failure_count: newFailureCount,
+        // @ts-ignore -- type-only suppression
         last_failure_at: failures > 0 ? now.toISOString() : currentState.last_failure_at,
         updated_at: now.toISOString()
       })

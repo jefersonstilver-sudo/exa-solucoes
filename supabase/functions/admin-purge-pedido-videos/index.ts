@@ -58,12 +58,12 @@ Deno.serve(async (req) => {
       try {
         try {
           await supabase.functions.invoke('delete-video-from-external-api', { body: { video_id: vid, pedido_id } });
-        } catch (e) { console.warn('AWS delete failed', e); }
+        } catch (e: any) { console.warn('AWS delete failed', e); }
         await supabase.from('video_schedules').delete().eq('video_id', vid);
         await supabase.from('pedido_videos').delete().eq('video_id', vid).eq('pedido_id', pedido_id);
         await supabase.from('videos').delete().eq('id', vid);
         if (pv.videos?.storage_path) {
-          try { await supabase.storage.from('videos').remove([pv.videos.storage_path]); } catch (_) {}
+          try { await supabase.storage.from('videos').remove([pv.videos.storage_path]); } catch (_: any) {}
         }
         deleted++;
       } catch (e: any) {
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     });
 
     return new Response(JSON.stringify({ ok: true, deleted, errors }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  } catch (e) {
+  } catch (e: any) {
     if (e instanceof Response) return e;
     console.error('admin-purge-pedido-videos error', e);
     return new Response(JSON.stringify({ error: String(e?.message || e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

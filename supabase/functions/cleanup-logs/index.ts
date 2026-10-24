@@ -56,7 +56,7 @@ serve(async (req) => {
           console.log(`✅ Deleted ${deleted} rows from ${table.name}`);
           results.push({ table: table.name, deleted, retention: table.retention });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`❌ Exception deleting from ${table.name}:`, err);
         results.push({ table: table.name, deleted: 0, error: String(err) });
       }
@@ -82,7 +82,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Fatal error:', error);
     return new Response(
       JSON.stringify({ 

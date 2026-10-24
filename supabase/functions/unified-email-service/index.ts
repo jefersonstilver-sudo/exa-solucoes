@@ -96,7 +96,7 @@ serve(async (req: Request) => {
         if (userData?.metadata?.redirectAfterConfirm) {
           redirectAfterConfirm = userData.metadata.redirectAfterConfirm;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.log('⚠️ [RESEND] Usando redirect padrão');
       }
       
@@ -137,7 +137,7 @@ serve(async (req: Request) => {
         if (!userData?.nome && !userData?.id) {
           console.log(`⚠️ [2/5] Usuário não encontrado no banco, usando fallback: ${userName}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('⚠️ [2/5] Erro ao buscar nome:', error);
       }
       
@@ -343,7 +343,7 @@ serve(async (req: Request) => {
         try {
           confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
           console.log('✅ [WEBHOOK] Link gerado via LinkGenerator');
-        } catch (linkGenError) {
+        } catch (linkGenError: any) {
           console.warn('⚠️ [WEBHOOK] Falha no LinkGenerator:', linkGenError);
           
           // ESTRATÉGIA 3: Fallback com token_hash se disponível
@@ -392,7 +392,7 @@ serve(async (req: Request) => {
             userName = user?.email?.split('@')[0] || 'Cliente';
             console.log('⚠️ [WEBHOOK] Nome não encontrado, usando fallback:', userName);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('⚠️ [WEBHOOK] Erro ao buscar nome no banco:', error);
           userName = user?.email?.split('@')[0] || 'Cliente';
         }

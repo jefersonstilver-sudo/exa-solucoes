@@ -203,7 +203,7 @@ serve(async (req) => {
         }
       });
       console.log('[create-proposal-cortesia] Email de boas-vindas enviado');
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('[create-proposal-cortesia] Erro ao enviar email:', emailError);
       // Não falhar por isso
     }
@@ -220,7 +220,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[create-proposal-cortesia] Erro:', error);
     return new Response(JSON.stringify({ error: error.message || 'Erro interno' }), {
       status: 500,

@@ -45,7 +45,7 @@ export async function syncAnyDeskAutomatically() {
 
     const result = await response.json();
     console.log('[CRON] Sincronização automática concluída:', result.summary);
-  } catch (error) {
+  } catch (error: any) {
     console.error('[CRON] Erro crítico na sincronização:', error);
   }
 }

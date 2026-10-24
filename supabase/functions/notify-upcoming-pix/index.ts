@@ -144,7 +144,7 @@ serve(async (req) => {
                 })
                 .eq('id', parcela.id);
             }
-          } catch (qrError) {
+          } catch (qrError: any) {
             console.warn(`⚠️ [NOTIFY-PIX] Erro ao obter QR Code atualizado:`, qrError);
           }
         }
@@ -187,7 +187,7 @@ Dúvidas? Estamos à disposição! 🚀`;
               });
               console.log(`✅ [NOTIFY-PIX] WhatsApp enviado para ${telefone}`);
             }
-          } catch (whatsappError) {
+          } catch (whatsappError: any) {
             console.warn(`⚠️ [NOTIFY-PIX] Erro ao enviar WhatsApp:`, whatsappError);
           }
         }
@@ -234,7 +234,7 @@ Dúvidas? Estamos à disposição! 🚀`;
               }
             });
             console.log(`✅ [NOTIFY-PIX] Email enviado para ${user.email}`);
-          } catch (emailError) {
+          } catch (emailError: any) {
             console.warn(`⚠️ [NOTIFY-PIX] Erro ao enviar Email:`, emailError);
           }
         }
@@ -263,7 +263,7 @@ Dúvidas? Estamos à disposição! 🚀`;
         
         notificacoesEnviadas++;
         
-      } catch (parcelaError) {
+      } catch (parcelaError: any) {
         console.error(`❌ [NOTIFY-PIX] Erro ao processar parcela ${parcela.id}:`, parcelaError);
         erros++;
       }

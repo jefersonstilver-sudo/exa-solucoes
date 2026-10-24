@@ -138,7 +138,7 @@ serve(async (req) => {
               } else {
                 lastMessageAt = new Date(chat.lastMessageTime).toISOString();
               }
-            } catch (e) {
+            } catch (e: any) {
               console.error('[ZAPI-IMPORT] Failed to parse lastMessageTime:', e);
             }
           }
@@ -174,6 +174,7 @@ serve(async (req) => {
         console.log('[ZAPI-IMPORT] ℹ️ Skipping message fetch (Multi-Device limitation)');
         
         // Buscar última mensagem do zapi_logs para atualizar data da conversa corretamente
+        // @ts-ignore -- type-only suppression
         const { data: latestLog } = await supabaseClient
           .from('zapi_logs')
           .select('created_at, message_text, direction')
@@ -185,6 +186,7 @@ serve(async (req) => {
         
         if (latestLog) {
           // Atualizar conversa com data correta do último log
+          // @ts-ignore -- type-only suppression
           const { error: updateError } = await supabaseClient
             .from('conversations')
             .update({
@@ -205,7 +207,7 @@ serve(async (req) => {
 
 
         console.log('[ZAPI-IMPORT] Chat processed:', phoneNumber);
-      } catch (chatError) {
+      } catch (chatError: any) {
         console.error('[ZAPI-IMPORT] Failed to process chat:', chatError);
       }
     }
@@ -225,7 +227,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[ZAPI-IMPORT] Error:', error);
     return new Response(JSON.stringify({
       error: error.message

@@ -143,12 +143,12 @@ serve(async (req) => {
             // Trigger analysis (async)
             try {
               await analyzeMessageSimple(supabase, conv.id, message.text || '');
-            } catch (analysisError) {
+            } catch (analysisError: any) {
               console.error('⚠️ [PULL-SYNC] Analysis error:', analysisError);
             }
           }
         }
-      } catch (convError) {
+      } catch (convError: any) {
         console.error('⚠️ [PULL-SYNC] Error processing conversation:', convError);
         errors.push({ conversation_id: conversation.id, error: (convError as Error).message });
       }
@@ -176,7 +176,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [PULL-SYNC] Fatal error:', error);
     return new Response(
       JSON.stringify({ 

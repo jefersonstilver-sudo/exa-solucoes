@@ -238,7 +238,7 @@ serve(async (req) => {
         }
       });
       console.log('[accept-cortesia-proposal] Email de boas-vindas enviado');
-    } catch (emailErr) {
+    } catch (emailErr: any) {
       console.error('[accept-cortesia-proposal] Erro ao enviar email:', emailErr);
     }
 
@@ -270,7 +270,7 @@ serve(async (req) => {
         }
       });
       console.log('[accept-cortesia-proposal] EXA Alert enviado');
-    } catch (alertErr) {
+    } catch (alertErr: any) {
       console.error('[accept-cortesia-proposal] Erro ao enviar EXA Alert:', alertErr);
     }
 
@@ -290,7 +290,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[accept-cortesia-proposal] Erro:', error);
     return new Response(JSON.stringify({ error: error.message || 'Erro interno' }), {
       status: 500,

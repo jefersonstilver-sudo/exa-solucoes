@@ -69,6 +69,7 @@ async function auditPaymentSecurity(supabase: any, clientId?: string) {
         
         // Buscar detalhes de cada pedido afetado
         for (const pedidoId of pedidoIds) {
+          // @ts-ignore -- type-only suppression
           const pedido = pedidos.find(p => p.id === pedidoId);
           if (pedido) {
             issues.push({

@@ -118,7 +118,7 @@ serve(async (req) => {
         status: 200,
       }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in check-user-sync:', error)
     return new Response(
       JSON.stringify({
