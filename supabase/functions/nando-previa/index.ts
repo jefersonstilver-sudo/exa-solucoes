@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     .eq("building_id", a.building_id).in("status", ["no_ar", "agendado"]);
 
   let dados = null;
-  const opcoes: { opcao: number; dados: unknown }[] = [];
+  const opcoes: { opcao: number; dados: unknown; credito: string | null }[] = [];
   if (a.tipo === "nando") {
     // as 3 variacoes criadas juntas aparecem lado a lado
     let lista: any[] = [a];
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     for (const it of lista) {
       if (!it.conteudo?.arquivo_url) continue;
       const r = await fetch(it.conteudo.arquivo_url);
-      if (r.ok) opcoes.push({ opcao: it.conteudo?.opcao || opcoes.length + 1, dados: await r.json() });
+      if (r.ok) opcoes.push({ opcao: it.conteudo?.opcao || opcoes.length + 1, dados: await r.json(), credito: it.conteudo?.credito_foto || null });
     }
     dados = opcoes[0]?.dados || null;
   }

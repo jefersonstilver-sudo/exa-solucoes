@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 type Previa = {
   ok: boolean; erro?: string; tipo?: 'nando' | 'imagem' | 'pdf'; titulo?: string; segundos?: number;
-  inicio?: string; fim?: string | null; predio?: string; outros?: number; opcoes?: { opcao: number; dados: unknown }[]; dados?: unknown; url?: string | null; expira_em?: string;
+  inicio?: string; fim?: string | null; predio?: string; outros?: number; opcoes?: { opcao: number; dados: unknown; credito?: string | null }[]; dados?: unknown; url?: string | null; expira_em?: string;
 };
 
 declare global {
@@ -105,6 +105,7 @@ export default function NandoPrevia() {
                     <div style={{ width: 'min(78vw, 320px)', aspectRatio: '502 / 882', borderRadius: 18, padding: 6, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)', boxShadow: '0 30px 80px rgba(0,0,0,.55)' }}>
                       <div id={`na-op-${o.opcao}`} style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 13, overflow: 'hidden', background: '#140a1c' }} />
                     </div>
+                    {'credito' in o && o.credito ? <div style={{ fontSize: 11, opacity: 0.55, marginTop: 8 }}>{o.credito}</div> : null}
                   </div>
                 ))}
               </div>

@@ -293,7 +293,8 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         if (!foto) {
           const busca = v._sem_foto ? null : (v.busca_foto || e.busca_foto);
           const f = busca ? await fotoUnsplash(String(busca)) : null;
-          if (f) { dados.fundo = f.url; dados.credito = f.credito; }
+          // o credito NAO entra no aviso (tela limpa); fica registrado e aparece so na pagina de previa
+          if (f) { dados.fundo = f.url; v._credito = f.credito; }
           else dados.fundo = (await fundoGradiente(cor)) || undefined;
         }
         const { data: a, error } = await sb.from("nando_avisos").insert({
@@ -301,7 +302,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
           segundos: clampSeg(e.segundos), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
           lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
           criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
-          conteudo: { tema, grupo, opcao: n + 1, campos: { ...dados, icone: undefined, foto: e.midia_id || undefined } },
+          conteudo: { tema, grupo, opcao: n + 1, credito_foto: v._credito || null, campos: { ...dados, icone: undefined, foto: e.midia_id || undefined } },
         }).select("*").single();
         if (error) throw error;
         const url = await salvarArquivo(c, `avisos/${a.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
