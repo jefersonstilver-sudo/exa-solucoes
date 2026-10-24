@@ -1,5 +1,5 @@
 /**
- * aviso-nando.js (v27) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
+ * aviso-nando.js (v28) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
  * Usado pelo painel E pela pagina de previa, para os dois ficarem identicos.
  *
  * O aviso e um "palco" 1080x1920 que e escalado inteiro para caber na caixa:
@@ -30,20 +30,24 @@
     return /^#[0-9a-f]{6}$/i.test(String(c || "")) ? c : "#7c3aed";
   }
 
-  // fundo desfocado barato: desenha pequeno e amplia (sem filtro pesado no NUC)
+  // fundo desfocado em boa qualidade: blur real no canvas (uma vez so), sem pixelar
   function desfocar(src, cb) {
     var img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = function () {
       try {
-        var p = document.createElement("canvas"); p.width = 108; p.height = 192;
-        var c = p.getContext("2d");
-        var r = Math.max(108 / img.width, 192 / img.height);
-        c.drawImage(img, (108 - img.width * r) / 2, (192 - img.height * r) / 2, img.width * r, img.height * r);
-        var g = document.createElement("canvas"); g.width = 270; g.height = 480;
-        var gc = g.getContext("2d"); gc.imageSmoothingEnabled = true; gc.imageSmoothingQuality = "high";
-        gc.drawImage(p, 0, 0, 270, 480);
-        cb(g.toDataURL("image/jpeg", 0.85));
+        var w = 540, h = 960, g = document.createElement("canvas"); g.width = w; g.height = h;
+        var c = g.getContext("2d");
+        var r = Math.max(w / img.width, h / img.height) * 1.08;   // um pouco maior: o desfoque nao mostra borda
+        var dw = img.width * r, dh = img.height * r;
+        if ("filter" in c) { c.filter = "blur(12px)"; c.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh); }
+        else {   // navegador antigo: reduz e amplia com suavizacao
+          var p = document.createElement("canvas"); p.width = 135; p.height = 240;
+          var pc = p.getContext("2d"); var rp = Math.max(135 / img.width, 240 / img.height);
+          pc.drawImage(img, (135 - img.width * rp) / 2, (240 - img.height * rp) / 2, img.width * rp, img.height * rp);
+          c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high"; c.drawImage(p, 0, 0, w, h);
+        }
+        cb(g.toDataURL("image/jpeg", 0.9));
       } catch (e) { cb(src); }
     };
     img.onerror = function () { cb(""); };
@@ -70,9 +74,12 @@
     var veu = el("div", "na-veu");
     palco.appendChild(fundo); palco.appendChild(veu);
 
-    var topo = el("div", "na-topo na-entra");
-    topo.appendChild(el("span", "na-selo", d.selo || "AVISO DO CONDOMÍNIO"));
-    palco.appendChild(topo);
+    // o titulo "Avisos do <predio>" ja aparece no painel: so mostra selo se vier no aviso
+    if (d.selo) {
+      var topo = el("div", "na-topo na-entra");
+      topo.appendChild(el("span", "na-selo", d.selo));
+      palco.appendChild(topo);
+    }
 
     var foto = seguro(d.foto), icone = seguro(d.icone);
     var midia = el("div", "na-midia na-entra" + (foto ? " com-foto" : ""));
@@ -120,7 +127,11 @@
     if (tx) caber(tx, 64, 42, foto ? 300 : 420);
 
     var fsrc = seguro(d.fundo) || foto;   // nunca usar o icone ampliado como fundo
-    if (fsrc) desfocar(fsrc, function (u) {
+    if (fsrc && d.fundo_nitido && seguro(d.fundo)) {   // wallpaper: nitido, sem desfoque
+      raiz.classList.add("na-nitido");
+      fundo.style.backgroundImage = "url(" + seguro(d.fundo) + ")";
+      bg.style.backgroundImage = "url(" + seguro(d.fundo) + ")";
+    } else if (fsrc) desfocar(fsrc, function (u) {
       if (!u) return;
       fundo.style.backgroundImage = "url(" + u + ")";
       bg.style.backgroundImage = "url(" + u + ")";

@@ -1,5 +1,5 @@
 /* ===== v26: avisos do Nando (palco 1080x1920 escalado; nunca distorce) ===== */
-.na-raiz{position:absolute;inset:0;overflow:hidden;background:#140a1c;font-family:Inter,Ubuntu,"Noto Sans","DejaVu Sans",Arial,sans-serif;color:#fff}
+.na-raiz{position:absolute;inset:0;overflow:hidden;background:#140a1c;font-family:Inter,Ubuntu,"Noto Sans","DejaVu Sans",Arial,sans-serif;color:#fff;white-space:normal;text-align:left}
 .na-bg{position:absolute;inset:-6%;background-size:cover;background-position:center;opacity:.55}
 .na-palco{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0;overflow:hidden;border-radius:6px}
 .na-fundo{position:absolute;inset:-4%;background-size:cover;background-position:center;background-color:#2a1236;
@@ -11,17 +11,17 @@
 .na-topo{position:absolute;top:56px;left:0;right:0;display:flex;justify-content:center}
 .na-selo{padding:16px 40px;border-radius:999px;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.28);
   font-size:38px;font-weight:800;letter-spacing:5px;text-transform:uppercase}
-.na-midia{position:absolute;left:0;right:0;top:150px;height:470px;display:flex;align-items:center;justify-content:center}
-.na-brilho{position:absolute;width:440px;height:440px;border-radius:50%;
+.na-midia{position:absolute;left:0;right:0;top:70px;height:520px;display:flex;align-items:center;justify-content:center}
+.na-brilho{position:absolute;width:480px;height:480px;border-radius:50%;
   background:radial-gradient(circle,color-mix(in srgb,var(--na-cor) 70%,#fff 0%) 0%,transparent 68%);opacity:.55;
   animation:naPulso 3.6s ease-in-out infinite}
-.na-icone{position:relative;width:400px;height:400px;object-fit:contain;filter:drop-shadow(0 40px 50px rgba(0,0,0,.45))}
-.na-midia.com-foto{top:150px;height:560px}
-.na-foto{position:relative;width:900px;height:520px;object-fit:cover;border-radius:36px;border:6px solid rgba(255,255,255,.9);
+.na-icone{position:relative;width:430px;height:430px;object-fit:contain;filter:drop-shadow(0 40px 50px rgba(0,0,0,.45))}
+.na-midia.com-foto{top:70px;height:600px}
+.na-foto{position:relative;width:920px;height:560px;object-fit:cover;border-radius:36px;border:6px solid rgba(255,255,255,.9);
   box-shadow:0 40px 80px rgba(0,0,0,.5)}
 .na-icone-mini{position:absolute;right:50px;bottom:-20px;width:190px;height:190px;object-fit:contain;filter:drop-shadow(0 20px 30px rgba(0,0,0,.5))}
-.na-bloco{position:absolute;left:56px;right:56px;top:640px;bottom:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:30px}
-.na-midia.com-foto ~ .na-bloco{top:740px}
+.na-bloco{position:absolute;left:56px;right:56px;top:610px;bottom:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:30px}
+.na-midia.com-foto ~ .na-bloco{top:700px}
 .na-titulo{font-weight:900;line-height:1.02;letter-spacing:-2px;text-transform:uppercase;text-shadow:0 6px 28px rgba(0,0,0,.45);overflow-wrap:anywhere}
 .na-quando{display:inline-block;padding:18px 40px;border-radius:28px;background:var(--na-cor);font-weight:800;line-height:1.15;
   box-shadow:0 16px 40px rgba(0,0,0,.35);max-width:100%;box-sizing:border-box}
@@ -39,3 +39,6 @@
 @media (prefers-reduced-motion:reduce){.na-fundo,.na-flutua,.na-brilho{animation:none}}
 
 .na-credito{position:absolute;right:28px;bottom:26px;font-size:20px;color:rgba(255,255,255,.55);letter-spacing:.5px}
+/* wallpaper nitido: veu so embaixo, para o fundo aparecer inteiro */
+.na-nitido .na-veu{background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.15) 45%,rgba(0,0,0,.6) 100%)}
+.na-nitido .na-fundo{animation-duration:30s}

@@ -78,6 +78,17 @@ async function iconeDataUrl(tema: string): Promise<string | null> {
   return "data:image/png;base64," + bytesParaB64(new Uint8Array(await r.arrayBuffer()));
 }
 
+// wallpaper abstrato (luzes e arcos) na cor do tema - 3 por cor, gerados pela EXA
+async function wallpaper(cor: string): Promise<string | null> {
+  const c = String(cor || "").replace("#", "").toLowerCase();
+  const arq = (FUNDOS.includes(c) ? c : "7c3aed") + "-" + (1 + Math.floor(Math.random() * 3));
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/jefersonstilver-sudo/exa-solucoes/main/public/nando/wallpapers/${arq}.jpg`);
+    if (!r.ok) return null;
+    return "data:image/jpeg;base64," + bytesParaB64(new Uint8Array(await r.arrayBuffer()));
+  } catch { return null; }
+}
+
 // fundo em degrade (mesh) da cor do tema; nunca usar o icone ampliado como fundo
 const FUNDOS = ["0a84ff", "f5a400", "ff5a1f", "5e5ce6", "30b0c7", "ff2d55", "bf5af2", "34c759", "ff9f0a", "8e8e93", "a2845e", "ff3b30", "ffcc00", "7c3aed"];
 async function fundoGradiente(cor: string): Promise<string | null> {
@@ -168,7 +179,7 @@ export const FERRAMENTAS = [
         midia_id: { type: "string", description: "Opcional: id de uma FOTO enviada pelo síndico para aparecer em destaque" },
         variacoes: {
           type: "array", maxItems: 3,
-          description: "SEMPRE 3 variações visuais para o síndico escolher. Cada uma com tema de ícone, cor e busca_foto diferentes (ex: uma foto do ambiente, uma foto mais conceitual e uma com outra cor). Pode trazer titulo/quando/texto alternativos (ex: uma mais formal, outra mais leve).",
+          description: "SEMPRE 3 variações visuais para o síndico escolher. As opções 1 e 2 usam foto desfocada (busca_foto diferente em cada); a opção 3 é sempre um wallpaper abstrato na cor escolhida (não precisa de busca_foto). Varie tema de ícone e cor entre elas. Pode trazer titulo/quando/texto alternativos (ex: uma mais formal, outra mais leve).",
           items: { type: "object", properties: { tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" } } },
         },
         busca_foto: { type: "string", description: "2 a 4 palavras EM INGLÊS para buscar a foto de fundo (banco Pixabay), ligadas ao tema e ao clima do aviso (ex: 'quiet night city', 'water tap kitchen', 'elevator lobby', 'pool summer'). Evite pessoas em destaque." },
@@ -310,7 +321,11 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
           texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`,
           cor, icone: await iconeDataUrl(tema), foto: foto || undefined,
         };
-        if (!foto) {
+        if (!foto && n === 2) {
+          // a 3a opcao e sempre um wallpaper abstrato (nitido, sem foto)
+          dados.fundo = (await wallpaper(cor)) || (await fundoGradiente(cor)) || undefined;
+          dados.fundo_nitido = true;
+        } else if (!foto) {
           const busca = v._sem_foto ? null : (v.busca_foto || e.busca_foto);
           const f = busca ? (await fotoPixabay(String(busca))) : null;
           // o credito NAO entra no aviso (tela limpa); fica registrado e aparece so na pagina de previa
