@@ -1531,16 +1531,27 @@ serve(async (req) => {
       const status = payload.status; // 'sent', 'delivered', 'read'
       
       if (messageId && status) {
-        // Atualizar status na tabela messages
-        const { error: updateError } = await supabase
+        // Atualizar status na tabela messages (merge de metadata no lado do cliente)
+        const { data: existingMessage, error: fetchError } = await supabase
           .from('messages')
-          .update({ 
-            metadata: supabase.raw(`
-              COALESCE(metadata, '{}'::jsonb) || 
-              jsonb_build_object('delivery_status', '${status}'::text, 'status_updated_at', NOW()::text)
-            `)
-          })
-          .eq('raw_payload->>messageId', messageId);
+          .select('id, metadata')
+          .eq('raw_payload->>messageId', messageId)
+          .limit(1)
+          .maybeSingle();
+
+        let updateError = fetchError;
+        if (!fetchError && existingMessage) {
+          const mergedMetadata = {
+            ...(existingMessage.metadata || {}),
+            delivery_status: status,
+            status_updated_at: new Date().toISOString(),
+          };
+          const { error } = await supabase
+            .from('messages')
+            .update({ metadata: mergedMetadata })
+            .eq('id', existingMessage.id);
+          updateError = error;
+        }
 
         if (updateError) {
           console.error('[ZAPI-WEBHOOK] Failed to update message status:', updateError);
