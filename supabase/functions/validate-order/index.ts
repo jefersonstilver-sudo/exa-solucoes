@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     
     // Importar e validar entrada
     const { validateOrderRequest } = await import('./validation.ts');
-    const { order_id, cpf }: ValidateOrderRequest = validateOrderRequest(body);
+    const { order_id, cpf } = validateOrderRequest(body) as ValidateOrderRequest;
 
     console.log('Validating order:', { order_id, cpf_provided: !!cpf });
 
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     const cleanCpf = cpf.replace(/[.-]/g, '');
 
     // Buscar pedido com informações do cliente - ONLY for authenticated user's orders
-    const { data: order, error: orderError } = await supabaseClient
+    const { data: orderRaw, error: orderError } = await supabaseClient
       .from('pedidos')
       .select(`
         id,
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       .eq('client_id', user.id)
       .single();
 
-    if (orderError || !order) {
+    if (orderError || !orderRaw) {
       console.error('Order not found:', orderError);
       return new Response(
         JSON.stringify({ 
@@ -115,6 +115,9 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    // Supabase infere a relação como array; com !inner + .single() é um objeto único.
+    const order = orderRaw as any;
 
     // Verificar CPF
     const clientCpf = order.clientes.cpf?.replace(/[.-]/g, '');

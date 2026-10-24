@@ -50,7 +50,7 @@ serve(async (req) => {
     console.log('📋 [UPLOAD_EXTERNAL_API] Buscando dados do vídeo:', { pedido_video_id });
 
     // 1. Buscar dados completos do pedido_video
-    const { data: pedidoVideo, error: pvError } = await supabase
+    const { data: pedidoVideoRaw, error: pvError } = await supabase
       .from('pedido_videos')
       .select(`
         id,
@@ -80,10 +80,13 @@ serve(async (req) => {
       .eq('id', pedido_video_id)
       .single();
 
-    if (pvError || !pedidoVideo) {
+    if (pvError || !pedidoVideoRaw) {
       console.error('❌ [UPLOAD_EXTERNAL_API] Erro ao buscar pedido_video:', pvError);
       throw new Error('Vídeo não encontrado');
     }
+
+    // Supabase infere relações como arrays; aqui são objetos únicos (!inner + .single()).
+    const pedidoVideo = pedidoVideoRaw as any;
 
     // 🚧 BLOQUEIO: vídeos com corte metadata-only (sem corte físico) NÃO devem
     // ser enviados aos painéis sem reencode. Caso contrário o painel reproduz o original inteiro.
@@ -174,6 +177,8 @@ serve(async (req) => {
     if (!videoTitle) {
       throw new Error('Título do vídeo (videos.nome) está vazio - não é possível enviar para API externa');
     }
+    // Nome do arquivo enviado à API externa = título cadastrado (ver comentário acima).
+    const storageFileName = videoTitle;
 
     console.log('📝 [UPLOAD_EXTERNAL_API] Título do vídeo:', {
       nome_usuario: pedidoVideo.videos.nome,
