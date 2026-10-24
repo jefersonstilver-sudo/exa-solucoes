@@ -10531,6 +10531,53 @@ export type Database = {
           },
         ]
       }
+      nando_recorrencias: {
+        Row: {
+          ativo: boolean
+          building_id: string
+          created_at: string
+          criado_por_nome: string | null
+          criado_por_tel: string | null
+          id: string
+          lote: string | null
+          modelo_id: string
+          regra: Json
+          ultima_inicio: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          building_id: string
+          created_at?: string
+          criado_por_nome?: string | null
+          criado_por_tel?: string | null
+          id?: string
+          lote?: string | null
+          modelo_id: string
+          regra: Json
+          ultima_inicio?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          building_id?: string
+          created_at?: string
+          criado_por_nome?: string | null
+          criado_por_tel?: string | null
+          id?: string
+          lote?: string | null
+          modelo_id?: string
+          regra?: Json
+          ultima_inicio?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nando_recorrencias_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nando_sessoes: {
         Row: {
           building_id: string
