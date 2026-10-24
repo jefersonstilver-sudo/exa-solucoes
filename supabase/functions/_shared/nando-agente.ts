@@ -453,6 +453,20 @@ async function midiaSalva(c: Contexto, id: string) {
 }
 
 // ---------------------------------------------------------------- prompt
+// o que esta pessoa deixou pela metade (rascunhos das ultimas 24 h), para o Nando retomar sozinho
+async function assuntoEmAndamento(c: Contexto): Promise<string> {
+  const desde = new Date(Date.now() - 24 * 3600000).toISOString();
+  const { data } = await c.sb.from("nando_avisos").select("id,titulo,created_at,building_id,conteudo")
+    .eq("criado_por_tel", telefoneCanonico(c.tel)).eq("status", "rascunho").gte("created_at", desde)
+    .order("created_at", { ascending: false }).limit(6);
+  if (!data?.length) return "ASSUNTO EM ANDAMENTO: nenhum.";
+  const ult = data[0];
+  const grupo = ult.conteudo?.grupo;
+  const ops = grupo ? data.filter((a: any) => a.conteudo?.grupo === grupo) : [ult];
+  const min = Math.round((Date.now() - new Date(ult.created_at).getTime()) / 60000);
+  return `ASSUNTO EM ANDAMENTO: aviso "${ult.titulo}" ainda em rascunho (prévia enviada há ${min} min, aguardando a escolha/aprovação). ` +
+    `Opções: ${ops.map((a: any) => `opção ${a.conteudo?.opcao || 1} = código ${idCurto(a.id)}`).join(", ")}.`;
+}
 export async function promptSistema(c: Contexto): Promise<string> {
   const agora = horaLocalIso(new Date()).replace("T", " ");
   const dia = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long" }).format(new Date());
@@ -471,13 +485,16 @@ export async function promptSistema(c: Contexto): Promise<string> {
 AGORA: ${dia}, ${agora} (horário de Brasília).
 ${quemE}
 ${c.predioAtual ? `PRÉDIO ATUAL DA CONVERSA: ${c.predioAtual.nome} (código ${c.predioAtual.codigo}).` : (c.admin || c.predios.length > 1) ? "Nenhum prédio escolhido ainda: pergunte qual prédio (ou deduza se a pessoa disser) e use escolher_predio." : ""}
+${await assuntoEmAndamento(c)}
 ${perfil}
 ${MODO_TESTE ? "(Fase de teste interna.)" : ""}
 
 JEITO DE FALAR
-- WhatsApp: mensagens curtas, naturais, calorosas e educadas, como uma pessoa. Nada de textão nem listas longas. No máximo 3 mensagens curtas por resposta, separadas por uma linha em branco.
+- Escreva como uma pessoa no WhatsApp: 1 ou 2 mensagens curtas por resposta (separadas por uma linha em branco), cada uma com no máximo 1–2 frases curtas. Nada de textão, nada de explicar demais, nada de repetir o que já disse. Uma pergunta por vez.
 - Sempre chame a pessoa pelo primeiro nome. Português do Brasil. Pode usar 1 emoji de vez em quando.
-- Cumprimento solto ("oi", "oii", "bom dia") no meio da conversa: responda curto e pergunte em que pode ajudar. NÃO repita listas ou informações que você já mandou, a não ser que peçam.
+- Continuidade: se houver um ASSUNTO EM ANDAMENTO (abaixo), um "oi" ou mensagem solta é para retomar esse assunto. Ex: "Oi, Jeferson! Viu as opções do aviso de silêncio? Posso publicar alguma?". Nunca recomece do zero nem pergunte de novo o que já foi definido (prédio, assunto, datas).
+- "outra", "mais uma", "refaz", "não gostei", "muda" logo depois de uma prévia = gerar NOVAS 3 opções do MESMO aviso (mesmo prédio e assunto), mudando visual e/ou texto. Só pergunte o que mudar se não der para entender.
+- Nunca pergunte o prédio se o PRÉDIO ATUAL já está definido.
 - O histórico traz "(registro interno …)" com tudo o que você consultou e fez antes, com os resultados. Confie nesses registros.
 - Nunca fale dos seus bastidores (ferramentas, consultas, "consultei de verdade", "me corrigindo", sistema). Responda direto, como uma pessoa que sabe o que está acontecendo. Se uma informação que você deu antes estava errada, corrija em UMA frase simples ("Correção: …") e siga em frente, sem se desculpar repetidamente.
 - Áudios chegam já transcritos como "[áudio transcrito]: …". Trate como texto normal; se a transcrição estiver confusa, pergunte com gentileza.

@@ -6,7 +6,7 @@
 // =====================================================================
 import {
   db, ehAdmin, prediosDoTelefone, telefoneCanonico, enviarTexto, enviarDigitando, baixarMidia, instanciaNando, transcreverAudio,
-  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios,
+  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO,
 } from "../_shared/nando-core.ts";
 import { Contexto, rodarAgente } from "../_shared/nando-agente.ts";
 
@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const url = new URL(req.url);
   if (url.searchParams.get("action") === "setup") return await setup(req);
+  if (url.searchParams.get("action") === "versao") return json(200, { versao: NANDO_VERSAO });
   if (req.method !== "POST") return json(405, { error: "metodo" });
 
   let payload: any;
