@@ -90,6 +90,26 @@ async function fundoGradiente(cor: string): Promise<string | null> {
   } catch { return null; }
 }
 
+// Foto de fundo do Pixabay (licenca sem credito obrigatorio; a regra da API pede baixar e guardar a imagem,
+// por isso ela vai embutida no proprio aviso, sem link para o Pixabay)
+async function fotoPixabay(busca: string): Promise<{ url: string; credito: string } | null> {
+  const key = Deno.env.get("PIXABAY_API_KEY");
+  if (!key) return null;
+  try {
+    const q = encodeURIComponent(busca.slice(0, 90));
+    const r = await fetch(`https://pixabay.com/api/?key=${encodeURIComponent(key)}&q=${q}&image_type=photo&orientation=vertical&safesearch=true&per_page=20&order=popular`, { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) { console.error("[NANDO] pixabay", r.status); return null; }
+    const j = await r.json();
+    const lista = (j.hits || []).filter((x: any) => x?.webformatURL);
+    if (!lista.length) return null;
+    const foto = lista[Math.floor(Math.random() * Math.min(6, lista.length))];
+    const img = await fetch(foto.webformatURL, { signal: AbortSignal.timeout(15000) });
+    if (!img.ok) return null;
+    const tipo = (img.headers.get("content-type") || "image/jpeg").split(";")[0];
+    return { url: `data:${tipo};base64,` + bytesParaB64(new Uint8Array(await img.arrayBuffer())), credito: `Pixabay (${foto.user || "autor"})` };
+  } catch (err) { console.error("[NANDO] pixabay", (err as Error).message); return null; }
+}
+
 // Foto de fundo do Unsplash (segue as regras da API: usa o link original da foto, registra o download e da o credito)
 async function fotoUnsplash(busca: string): Promise<{ url: string; credito: string } | null> {
   const key = Deno.env.get("UNSPLASH_ACCESS_KEY");
@@ -151,7 +171,7 @@ export const FERRAMENTAS = [
           description: "SEMPRE 3 variações visuais para o síndico escolher. Cada uma com tema de ícone, cor e busca_foto diferentes (ex: uma foto do ambiente, uma foto mais conceitual e uma com outra cor). Pode trazer titulo/quando/texto alternativos (ex: uma mais formal, outra mais leve).",
           items: { type: "object", properties: { tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" } } },
         },
-        busca_foto: { type: "string", description: "2 a 4 palavras EM INGLÊS para buscar a foto de fundo no Unsplash, ligadas ao tema e ao clima do aviso (ex: 'quiet night city', 'water tap kitchen', 'elevator lobby', 'pool summer'). Evite pessoas em destaque." },
+        busca_foto: { type: "string", description: "2 a 4 palavras EM INGLÊS para buscar a foto de fundo (banco Pixabay), ligadas ao tema e ao clima do aviso (ex: 'quiet night city', 'water tap kitchen', 'elevator lobby', 'pool summer'). Evite pessoas em destaque." },
         segundos: { type: "number", description: "Tempo na tela (5 a 120). Padrão 15" },
         inicio: { type: "string", description: "Início 'YYYY-MM-DDTHH:MM' (horário de Brasília). Vazio = assim que publicar" },
         fim: { type: "string", description: "Saída automática 'YYYY-MM-DDTHH:MM'. Vazio = sem data de saída" },
@@ -292,7 +312,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         };
         if (!foto) {
           const busca = v._sem_foto ? null : (v.busca_foto || e.busca_foto);
-          const f = busca ? await fotoUnsplash(String(busca)) : null;
+          const f = busca ? (await fotoPixabay(String(busca))) : null;
           // o credito NAO entra no aviso (tela limpa); fica registrado e aparece so na pagina de previa
           if (f) { dados.fundo = f.url; v._credito = f.credito; }
           else dados.fundo = (await fundoGradiente(cor)) || undefined;
