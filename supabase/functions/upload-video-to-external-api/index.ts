@@ -80,13 +80,13 @@ serve(async (req) => {
       .eq('id', pedido_video_id)
       .single();
 
-    if (pvError || !pedidoVideo) {
+    if (pvError || !pedidoVideoRaw) {
       console.error('❌ [UPLOAD_EXTERNAL_API] Erro ao buscar pedido_video:', pvError);
       throw new Error('Vídeo não encontrado');
     }
 
     // Supabase infere relações como arrays; aqui são objetos únicos (!inner + .single()).
-    const pedidoVideoData = pedidoVideo as any;
+    const pedidoVideo = pedidoVideoRaw as any;
 
     // 🚧 BLOQUEIO: vídeos com corte metadata-only (sem corte físico) NÃO devem
     // ser enviados aos painéis sem reencode. Caso contrário o painel reproduz o original inteiro.
