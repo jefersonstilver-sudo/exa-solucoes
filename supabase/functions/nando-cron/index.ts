@@ -69,7 +69,9 @@ Deno.serve(async (req) => {
   const hora = local.getUTCHours();
 
   // 4) cobranca de predio parado (dia util, 9h-17h)
-  if (!MODO_TESTE && diaSemana >= 1 && diaSemana <= 5 && hora >= 9 && hora < 17) {
+  // so liga quando o Jeferson decidir (secret NANDO_COBRANCA=true); abrir o Nando a todos NAO dispara mensagens proativas
+  const cobrancaLigada = (Deno.env.get("NANDO_COBRANCA") || "false").toLowerCase() === "true";
+  if (!MODO_TESTE && cobrancaLigada && diaSemana >= 1 && diaSemana <= 5 && hora >= 9 && hora < 17) {
     const { data: predios } = await sb.from("buildings").select("id,nome,nome_sindico,contato_sindico").eq("status", "ativo");
     for (const b of predios || []) {
       if (!b.contato_sindico) continue;

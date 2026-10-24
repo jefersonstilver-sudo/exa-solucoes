@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const url = new URL(req.url);
   if (url.searchParams.get("action") === "setup") return await setup(req);
-  if (url.searchParams.get("action") === "versao") return json(200, { versao: NANDO_VERSAO });
+  if (url.searchParams.get("action") === "versao") return json(200, { versao: NANDO_VERSAO, modo_teste: MODO_TESTE, cobranca: (Deno.env.get("NANDO_COBRANCA") || "false").toLowerCase() === "true" });
   if (req.method !== "POST") return json(405, { error: "metodo" });
 
   let payload: any;
