@@ -5,8 +5,7 @@
 #
 # v4 (medido): a gravacao do Luis XV (406x720) saiu fluida, 10 quadros/s reais; a do St. Peter em 1080x1920
 # comprimida pelo processador saiu com menos de 1 quadro/s real (7x mais pixels para o Celeron).
-# Agora: 1) Full HD 1080x1920 comprimido pelo CHIP DE VIDEO do Intel (VAAPI), quase sem usar o processador;
-#        2) se o chip nao der conta, HD 720x1280 pelo processador (mesma receita que foi fluida no Luis XV).
+# Agora grava so em HD 720x1280 (boa qualidade para edicao), com a receita que foi fluida no Luis XV.
 # Antes de gravar, faz um teste de 6 s de cada modo e so usa o que acompanha o tempo real.
 import os, subprocess, shutil, time, urllib.request, urllib.error, json, glob, re
 
@@ -37,16 +36,10 @@ def modos(tam):
     hd = "720:1280" if h > w else "1280:720"
     grab = ["-f", "x11grab", "-draw_mouse", "0", "-thread_queue_size", "512", "-video_size", tam]
     lista = []
-    dev = dispositivo_video()
-    if dev:
-        lista.append(("FullHD-chip-30", ["-vaapi_device", dev] + grab + ["-framerate", "30", "-i", DISPLAY + ".0",
-                      "-vf", "format=nv12,hwupload", "-c:v", "h264_vaapi", "-qp", "20"]))
-        lista.append(("FullHD-chip-24", ["-vaapi_device", dev] + grab + ["-framerate", "24", "-i", DISPLAY + ".0",
-                      "-vf", "format=nv12,hwupload", "-c:v", "h264_vaapi", "-qp", "20"]))
-    lista.append(("HD-processador-15", grab + ["-framerate", "15", "-i", DISPLAY + ".0",
-                  "-vf", f"scale={hd}:flags=fast_bilinear,format=yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-threads", "2"]))
-    lista.append(("HD-processador-10", grab + ["-framerate", "10", "-i", DISPLAY + ".0",
-                  "-vf", f"scale={hd}:flags=fast_bilinear,format=yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-threads", "2"]))
+    # so HD 720x1280 (imagem boa para edicao); testa do mais fluido para o mais leve
+    for fps in ("15", "12", "10"):
+        lista.append((f"HD-{fps}", grab + ["-framerate", fps, "-i", DISPLAY + ".0",
+                      "-vf", f"scale={hd}:flags=bicubic,format=yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "18", "-threads", "2"]))
     return lista
 
 def rodar(args, segundos, saida):
@@ -58,7 +51,7 @@ def rodar(args, segundos, saida):
 def main():
     print("Preparando a gravacao (v4)...", flush=True)
     tam = tamanho_tela()
-    print("tela:", tam, "| chip de video:", dispositivo_video() or "nao encontrado", "|", sh(["sh", "-c", "grep -m1 'model name' /proc/cpuinfo"]), flush=True)
+    print("tela:", tam, "| gravando em HD 720x1280 |", sh(["sh", "-c", "grep -m1 'model name' /proc/cpuinfo"]), flush=True)
     print("MINIMIZE ESTE TERMINAL AGORA (botao _ no canto). O teste comeca em 20 segundos.", flush=True)
     for i in range(20, 0, -5):
         print(f"  comeca em {i} s...", flush=True); time.sleep(5)
