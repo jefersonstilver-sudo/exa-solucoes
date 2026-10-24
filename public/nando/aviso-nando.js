@@ -135,13 +135,22 @@
 
     caixa.appendChild(raiz);
 
-    // escala o palco inteiro para caber (sem distorcer)
+    // escala o palco inteiro para caber (sem distorcer). Nunca desenha em tamanho real:
+    // se a caixa ainda nao tem tamanho, esconde e tenta de novo ate ter.
+    var tentativas = 0, vigia = null;
     function escalar() {
-      var w = caixa.clientWidth || W, h = caixa.clientHeight || H;
+      var w = caixa.clientWidth, h = caixa.clientHeight;
+      if (!(w > 20 && h > 20)) {
+        palco.style.visibility = "hidden";
+        if (tentativas++ < 120) setTimeout(escalar, 50);
+        return;
+      }
       var s = Math.min(w / W, h / H);
       palco.style.transform = "translate(" + ((w - W * s) / 2) + "px," + ((h - H * s) / 2) + "px) scale(" + s + ")";
+      palco.style.visibility = "";
     }
     escalar();
+    if (window.ResizeObserver) { try { vigia = new ResizeObserver(function () { escalar(); }); vigia.observe(caixa); } catch (e) { vigia = null; } }
 
     // texto: cabe sempre (titulo 2 linhas, texto ate a area disponivel)
     // letras grandes: o quadro e lido de longe no elevador (tela de 27")
@@ -174,7 +183,7 @@
     });
 
     requestAnimationFrame(function () { raiz.classList.add("na-on"); });
-    return { raiz: raiz, escalar: escalar, remover: function () { if (raiz.parentNode) raiz.parentNode.removeChild(raiz); } };
+    return { raiz: raiz, escalar: escalar, remover: function () { if (vigia) { try { vigia.disconnect(); } catch (e) {} } if (raiz.parentNode) raiz.parentNode.removeChild(raiz); } };
   }
 
   window.NandoAviso = { montar: montar, W: W, H: H, versao: 30 };

@@ -59,3 +59,11 @@
 .na-qr-img img{width:100%;height:100%;display:block;image-rendering:pixelated}
 .na-qr-tx{font-size:46px;font-weight:800;line-height:1.15;text-shadow:0 4px 20px rgba(0,0,0,.45)}
 .na-on .na-qr{transition-delay:.85s}.na-on .na-itens{transition-delay:.7s}.na-on .na-parte{transition-delay:.2s}
+
+/* ===== painel do elevador: camada do aviso do Nando ocupa a caixa de avisos inteira =====
+   (fica neste arquivo para o painel e o site usarem EXATAMENTE o mesmo CSS; sem isto a camada
+   fica sem tamanho e o aviso aparece gigante, cortado) */
+.aviso-container{position:relative}
+.aviso-icon{object-fit:contain}
+.aviso-nando-camada{position:absolute;inset:0;z-index:1;display:none;overflow:hidden}
+.aviso-nando-camada.on{display:block}
