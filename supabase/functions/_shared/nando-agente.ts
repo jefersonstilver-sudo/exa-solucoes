@@ -161,7 +161,7 @@ export const FERRAMENTAS = [
   },
   {
     name: "listar_avisos",
-    description: "Lista os avisos do prédio atual (no ar, agendados e rascunhos), com código, tempo de tela, início, saída, lembrete e quem criou.",
+    description: "Lista os avisos do prédio atual (no ar, agendados e com problema; rascunhos NUNCA aparecem), com código, tempo de tela, início, saída, lembrete e quem criou.",
     input_schema: { type: "object", properties: {} },
   },
   {
@@ -239,6 +239,13 @@ export const FERRAMENTAS = [
   },
 ];
 
+// rascunho nao se acumula: so existe o aviso que esta sendo montado agora (o resto e descartado; nunca esteve no painel)
+async function descartarRascunhos(c: Contexto, buildingId: string, manterGrupo?: string) {
+  const { data } = await c.sb.from("nando_avisos").select("id,conteudo").eq("building_id", buildingId).eq("status", "rascunho");
+  const ids = (data || []).filter((a: any) => !manterGrupo || (a.conteudo?.grupo || a.id) !== manterGrupo).map((a: any) => a.id);
+  if (ids.length) await c.sb.from("nando_avisos").update({ status: "removido", removido_por: "rascunho descartado", removido_em: new Date().toISOString() }).in("id", ids);
+}
+
 async function avisosAtivos(c: Contexto, buildingId: string) {
   const { count } = await c.sb.from("nando_avisos").select("id", { count: "exact", head: true })
     .eq("building_id", buildingId).in("status", ["no_ar", "agendado"]);
@@ -289,8 +296,12 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
           }
         }
       }
+      // so fica o rascunho da ultima hora (o que esta sendo montado); ele nunca entra na lista
+      const { data: ultRasc } = await sb.from("nando_avisos").select("id,conteudo,created_at").eq("building_id", p.id).eq("status", "rascunho")
+        .gte("created_at", new Date(Date.now() - 3600000).toISOString()).order("created_at", { ascending: false }).limit(1);
+      await descartarRascunhos(c, p.id, ultRasc?.[0] ? (ultRasc[0].conteudo?.grupo || ultRasc[0].id) : undefined);
       const { data } = await sb.from("nando_avisos").select("*").eq("building_id", p.id)
-        .in("status", ["no_ar", "agendado", "rascunho", "erro"]).order("created_at");
+        .in("status", ["no_ar", "agendado", "erro"]).order("created_at");
       if (!data?.length) {
         const { data: antigos } = await sb.from("nando_avisos").select("titulo").eq("building_id", p.id).eq("status", "encerrado").order("created_at", { ascending: false }).limit(5);
         return `${p.nome}: nenhum aviso aparecendo no painel agora (a tela mostra "sem avisos no momento").` +
@@ -298,24 +309,19 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
       }
       const rot: Record<string, string> = { no_ar: "No ar (confirmado no painel)", agendado: "Agendados", rascunho: "Rascunhos (ainda não publicados)", erro: "Com problema (NÃO estão no painel)" };
       const blocos: string[] = [];
-      for (const st of ["no_ar", "agendado", "erro", "rascunho"]) {
-        let grupo = data.filter((a: any) => a.status === st);
-        if (st === "rascunho") {
-          // so o que esta em andamento (ultimas 24h) e uma linha por conjunto de 3 opcoes
-          const vistos = new Set<string>();
-          grupo = grupo.filter((a: any) => Date.now() - new Date(a.created_at).getTime() < 86400000)
-            .filter((a: any) => { const g = a.conteudo?.grupo || a.id; if (vistos.has(g)) return false; vistos.add(g); return true; });
-        }
+      for (const st of ["no_ar", "agendado", "erro"]) {
+        const grupo = data.filter((a: any) => a.status === st);
         if (!grupo.length) continue;
         blocos.push(`*${rot[st]} – ${p.nome}*\n` + grupo.map((a: any, n: number) =>
           `${n + 1}. ${a.titulo} — ${a.segundos}s na tela · ${st === "agendado" ? `começa ${fmtData(a.inicio)} · ` : ""}${a.fim ? `sai ${fmtData(a.fim)}` : "sem data de saída"}${a.lembrar_em ? ` · lembrete ${fmtData(a.lembrar_em)}` : ""}` +
           `   {código interno ${idCurto(a.id)}; criado por ${a.criado_por_nome || "?"}${a.conteudo?.incerto ? "; NÃO CONFIRMADO na lista oficial do painel" : ""}}`,
         ).join("\n"));
       }
-      return blocos.join("\n\n") + "\n\n(Mostre ao síndico exatamente nesse formato, um abaixo do outro, SEM o trecho entre chaves {…}.)";
+      return blocos.join("\n\n") + "\n\n(Mostre ao síndico exatamente nesse formato, um abaixo do outro, SEM o trecho entre chaves {…}. Não fale de rascunhos nem ofereça publicar avisos antigos não publicados.)";
     }
     case "criar_aviso_nando": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      await descartarRascunhos(c, p.id);
       let foto: string | null = null;
       if (e.midia_id) {
         const m = c.midias[e.midia_id] || await midiaSalva(c, e.midia_id);
@@ -371,6 +377,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
     }
     case "criar_aviso_arquivo": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      await descartarRascunhos(c, p.id);
       const m = c.midias[e.midia_id] || await midiaSalva(c, e.midia_id);
       if (!m) return "Não encontrei esse arquivo. Peça para a pessoa enviar de novo.";
       const tipo = m.mime === "application/pdf" ? "pdf" : m.mime.startsWith("image/") ? "imagem" : null;
@@ -485,9 +492,9 @@ async function midiaSalva(c: Contexto, id: string) {
 }
 
 // ---------------------------------------------------------------- prompt
-// o que esta pessoa deixou pela metade (rascunhos das ultimas 24 h), para o Nando retomar sozinho
+// o que esta pessoa deixou pela metade (rascunho das ultimas 2 h), para o Nando retomar sozinho
 async function assuntoEmAndamento(c: Contexto): Promise<string> {
-  const desde = new Date(Date.now() - 24 * 3600000).toISOString();
+  const desde = new Date(Date.now() - 2 * 3600000).toISOString();
   const { data } = await c.sb.from("nando_avisos").select("id,titulo,created_at,building_id,conteudo")
     .eq("criado_por_tel", telefoneCanonico(c.tel)).eq("status", "rascunho").gte("created_at", desde)
     .order("created_at", { ascending: false }).limit(6);

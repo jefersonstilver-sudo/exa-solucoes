@@ -111,6 +111,9 @@ Deno.serve(async (req) => {
     log.push("resumo semanal enviado");
   }
 
+  // 5b) rascunhos com mais de 24 h sao descartados (nunca estiveram no painel)
+  await sb.from("nando_avisos").update({ status: "removido", removido_por: "rascunho descartado", removido_em: agora.toISOString() })
+    .eq("status", "rascunho").lt("created_at", new Date(agora.getTime() - 86400000).toISOString());
   // 6) previas vencidas
   await sb.from("nando_previas").delete().lt("expira_em", new Date(agora.getTime() - 3600000).toISOString());
 
