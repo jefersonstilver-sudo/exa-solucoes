@@ -132,7 +132,7 @@ Gere a saudação agora:`;
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-      } catch (e) {
+      } catch (e: any) {
         // Se não for JSON, continua com fallback padrão
       }
       
@@ -154,7 +154,7 @@ Gere a saudação agora:`;
       } else {
         throw new Error('No JSON array found');
       }
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('[GREETING] Failed to parse OpenAI response:', parseError);
       generatedMessages = [data.choices[0].message.content];
     }
@@ -168,7 +168,7 @@ Gere a saudação agora:`;
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[GREETING] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

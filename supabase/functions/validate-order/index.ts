@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error validating order:', error);
     return new Response(
       JSON.stringify({ 

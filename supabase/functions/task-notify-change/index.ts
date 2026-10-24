@@ -200,7 +200,7 @@ serve(async (req) => {
         } else {
           console.error(`[TASK-CHANGE] ❌ Failed for ${contact.nome}:`, sendError);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[TASK-CHANGE] ❌ Error for ${contact.nome}:`, err);
       }
     }
@@ -226,7 +226,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TASK-CHANGE] 💥 ERROR:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

@@ -102,7 +102,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error processing request:', error);
     
     return new Response(

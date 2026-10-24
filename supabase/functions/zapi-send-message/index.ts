@@ -335,7 +335,7 @@ serve(async (req) => {
             throw new Error(`HTTP ${response.status}: ${typeof result === 'string' ? result : JSON.stringify(result)}`);
           }
           return result;
-        } catch (error) {
+        } catch (error: any) {
           console.error(`[ZAPI-SEND] ⚠️ Attempt ${attempt}/${retries} failed:`, (error as Error).message);
           if (attempt === retries) {
             throw new Error(`Failed after ${retries} attempts: ${(error as Error).message}`);
@@ -396,7 +396,7 @@ serve(async (req) => {
         if (i < messageChunks.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 800));
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[ZAPI-SEND] ❌ Failed chunk', i + 1, ':', (error as Error).message);
         await supabase.from('evolution_logs').insert({
           agent_key: agentKey, direction: 'outbound', phone_number: phone,
@@ -512,7 +512,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[ZAPI-SEND] Error:', error);
     return new Response(JSON.stringify({ 
       error: error.message 

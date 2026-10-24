@@ -264,7 +264,7 @@ async function updateNotionPage(apiKey: string, pageId: string, properties: Reco
     }
     
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[SYNC-NOTION] Error updating Notion page ${pageId}:`, error);
     return false;
   }

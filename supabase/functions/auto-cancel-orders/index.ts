@@ -117,11 +117,11 @@ Deno.serve(async (req) => {
                 valor_total: order.valor_total
               }
             });
-          } catch (auditError) {
+          } catch (auditError: any) {
             console.warn('⚠️ Could not log to audit_logs (table may not exist):', auditError);
           }
         }
-      } catch (orderError) {
+      } catch (orderError: any) {
         console.error(`❌ Unexpected error processing order ${order.id}:`, orderError);
         result.errors.push(`Order ${order.id}: ${String(orderError)}`);
         result.success = false;
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Critical error in auto-cancel function:', error);
     return new Response(
       JSON.stringify({

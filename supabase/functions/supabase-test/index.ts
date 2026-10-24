@@ -42,7 +42,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SUPABASE-TEST] Error:', error);
     return new Response(
       JSON.stringify({ 

@@ -119,7 +119,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[FOLLOW-UP] 💥 ERROR:', error);
     
     return new Response(

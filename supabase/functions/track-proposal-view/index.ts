@@ -51,7 +51,7 @@ async function getGeoLocation(ip: string): Promise<any> {
         };
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.warn('⚠️ Erro ao obter geolocalização:', error);
   }
   
@@ -96,7 +96,7 @@ serve(async (req) => {
       try {
         geoData = await getGeoLocation(ipAddress);
         console.log('📍 [GEO] Geolocalização obtida:', JSON.stringify(geoData));
-      } catch (geoError) {
+      } catch (geoError: any) {
         console.warn('⚠️ [GEO] Falha na geolocalização, continuando sem:', geoError);
       }
 
@@ -200,7 +200,7 @@ serve(async (req) => {
           }
         });
         console.log(`🔔 Notification sent: ${eventType}`);
-      } catch (notifyError) {
+      } catch (notifyError: any) {
         console.error('⚠️ Error sending notification:', notifyError);
         // Não falhar a requisição principal por erro de notificação
       }

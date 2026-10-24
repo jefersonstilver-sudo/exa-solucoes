@@ -40,7 +40,7 @@ async function is2FAEnabled(): Promise<boolean> {
     const is2FA = data?.sofia_2fa_gerente_master ?? true;
     console.log(`🔐 [ADMIN-AUTH] Config sofia_2fa_gerente_master: ${is2FA}`);
     return is2FA;
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔐 [ADMIN-AUTH] ❌ Erro fatal ao verificar 2FA:', error);
     return true; // Default to requiring 2FA on error
   }
@@ -103,7 +103,7 @@ async function activateSessionDirectly(userPhone: string, userName?: string): Pr
       session_id: session.id
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔓 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao ativar sessão.' };
   }
@@ -275,7 +275,7 @@ async function requestVerificationCode(userPhone?: string, userName?: string): P
       message: `Código de verificação enviado para ${adminName}. Aguarde receber o código e repita-o para mim.`
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔐 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao enviar código de verificação.' };
   }
@@ -358,7 +358,7 @@ async function verifyCode(userPhone: string, code: string): Promise<{ success: b
       session_id: session.id
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔓 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao verificar código.' };
   }
@@ -407,7 +407,7 @@ async function checkSession(userPhone: string): Promise<{ session_active: boolea
       session_id: session.id
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔍 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { session_active: false };
   }
@@ -445,7 +445,7 @@ async function endSession(userPhone: string): Promise<{ success: boolean; messag
     
     return { success: true, message: 'Sessão administrativa encerrada. Até a próxima!' };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('🚪 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao encerrar sessão.' };
   }
@@ -530,7 +530,7 @@ async function extendSession(userPhone: string): Promise<{ success: boolean; mes
       expires_in_minutes: minutesRemaining
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔄 [ADMIN-AUTH] ❌ Erro fatal:', error);
     return { success: false, message: 'Erro ao estender sessão.' };
   }
@@ -568,7 +568,7 @@ serve(async (req) => {
         .single();
       
       zapiStatus = agent?.zapi_config ? 'configured' : 'not_configured';
-    } catch (e) {
+    } catch (e: any) {
       zapiStatus = 'error_checking';
     }
     
@@ -580,7 +580,7 @@ serve(async (req) => {
         .limit(1);
       
       directorInfo = directors?.[0] || null;
-    } catch (e) {
+    } catch (e: any) {
       console.error('Erro ao buscar diretor:', e);
     }
     
@@ -671,7 +671,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error(`🔐 [${requestId}] ❌ ERRO FATAL:`, error);
     return new Response(JSON.stringify({
       success: false,

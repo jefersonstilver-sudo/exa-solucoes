@@ -29,7 +29,7 @@ async function asaas(method: 'GET' | 'DELETE', path: string, key: string): Promi
     const t = await r.text();
     let d: J | null = null; try { d = t ? JSON.parse(t) : null; } catch { d = { raw: t.slice(0, 300) }; }
     return { ok: r.ok, status: r.status, data: d };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, status: 0, data: { erro: e instanceof Error ? e.message : String(e) } };
   }
 }

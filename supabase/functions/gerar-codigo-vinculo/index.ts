@@ -101,7 +101,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erro ao gerar código:', error);
     return new Response(
       JSON.stringify({

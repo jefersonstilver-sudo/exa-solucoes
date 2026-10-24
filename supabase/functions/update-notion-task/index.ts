@@ -120,7 +120,7 @@ serve(async (req) => {
             console.error(`⚠️ Notion update failed: ${notionResponse.status} - ${errorText}`);
           }
         }
-      } catch (notionError) {
+      } catch (notionError: any) {
         console.error(`⚠️ Error updating Notion:`, notionError);
         // Continue - Supabase was already updated
       }
@@ -153,7 +153,7 @@ serve(async (req) => {
             },
           });
         console.log(`📋 Activity logged for user ${userId}`);
-      } catch (logError) {
+      } catch (logError: any) {
         console.error(`⚠️ Failed to log activity:`, logError);
       }
     }

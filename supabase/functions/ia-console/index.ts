@@ -178,7 +178,7 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
       } else {
         console.log('[IA-CONSOLE] ⚡ Fast mode: Only essential sections loaded');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[IA-CONSOLE] ❌ Failed to load knowledge:', error);
       
       // 🆕 LOG DETALHADO EM agent_logs
@@ -209,7 +209,7 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
           systemPrompt = contextData.systemPrompt;
           console.log('[IA-CONSOLE] Using enriched context with history and knowledge');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[IA-CONSOLE] Failed to compose context:', error);
       }
     }
@@ -541,7 +541,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
           console.error('[IA-CONSOLE] ❌ OpenAI error response:', errorText);
           throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
           
-        } catch (error) {
+        } catch (error: any) {
           if (attempt === maxRetries) {
             throw error;
           }
@@ -580,7 +580,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
         duration_ms: Date.now() - startTime
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('[IA-CONSOLE] 💥 OpenAI call failed after retries:', error);
       
       // Mensagens de erro contextuais baseadas no tipo de erro
@@ -846,7 +846,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
         tokensUsed = finalData.usage.total_tokens;
         console.log('[IA-CONSOLE] ✅ Second OpenAI call succeeded');
 
-      } catch (error) {
+      } catch (error: any) {
         console.error('[IA-CONSOLE] 💥 Second OpenAI call failed after retries:', error);
         
         // Detectar tipos de erro que podem ser tratados com fallback local
@@ -991,7 +991,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
           } else {
             throw new Error('Retry failed');
           }
-        } catch (retryError) {
+        } catch (retryError: any) {
           console.error('[IA-CONSOLE] Retry also failed:', retryError);
           
           // Log do erro
@@ -1122,7 +1122,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
               console.log('[IA-CONSOLE] 📋 Summary length:', conversationSummary?.length);
             }
           }
-        } catch (enrichError) {
+        } catch (enrichError: any) {
           console.error('[IA-CONSOLE] ⚠️ Error enriching escalation data:', enrichError);
         }
         
@@ -1142,7 +1142,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
             }
           });
           console.log('[IA-CONSOLE] ✅ Escalation created successfully:', escalationResult);
-        } catch (escError) {
+        } catch (escError: any) {
           console.error('[IA-CONSOLE] ❌ Escalation failed:', escError);
         }
       }
@@ -1237,7 +1237,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[IA-CONSOLE] ❌ Error checking duplicate greetings:', error);
         // Continuar com mensagem original em caso de erro
       }
@@ -1301,7 +1301,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
             console.log('[IA-CONSOLE] 📋 Summary length:', conversationSummary?.length);
           }
         }
-      } catch (enrichError) {
+      } catch (enrichError: any) {
         console.error('[IA-CONSOLE] ⚠️ Error enriching escalation data:', enrichError);
       }
       
@@ -1321,7 +1321,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
           }
         });
         console.log('[IA-CONSOLE] ✅ Escalation created successfully:', escalationResult);
-      } catch (escError) {
+      } catch (escError: any) {
         console.error('[IA-CONSOLE] ❌ Escalation failed:', escError);
       }
     }
@@ -1365,7 +1365,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[IA-CONSOLE] Error:', error);
     return new Response(
       JSON.stringify({ 

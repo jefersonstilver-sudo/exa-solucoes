@@ -140,7 +140,7 @@ Deno.serve(async (req: Request) => {
         'Cache-Control': noCache ? 'no-store, no-cache, must-revalidate, max-age=0' : 'public, max-age=600, s-maxage=600',
       },
     });
-  } catch (e) {
+  } catch (e: any) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

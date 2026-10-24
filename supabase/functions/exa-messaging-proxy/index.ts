@@ -95,7 +95,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[EXA-MESSAGING-PROXY] Error:', error);
     
     return new Response(JSON.stringify({ 
@@ -185,7 +185,7 @@ async function sendWhatsApp(
     console.log('[EXA-MESSAGING-PROXY] WhatsApp sent successfully:', data);
     return { success: true, data };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[EXA-MESSAGING-PROXY] WhatsApp error:', error);
     return { success: false, error: error.message };
   }
@@ -229,7 +229,7 @@ async function sendEmail(
     console.log('[EXA-MESSAGING-PROXY] Email sent successfully:', data);
     return { success: true, data };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[EXA-MESSAGING-PROXY] Email error:', error);
     return { success: false, error: error.message };
   }
@@ -259,7 +259,7 @@ async function logNotification(supabase: any, log: {
         },
         response_data: log.metadata
       });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[EXA-MESSAGING-PROXY] Failed to log notification:', error);
   }
 }

@@ -198,7 +198,7 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Erro crítico:', error);
     return new Response(
       JSON.stringify({ error: 'Erro interno', details: error.message }),

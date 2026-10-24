@@ -395,7 +395,7 @@ Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. S
       } else {
         aiInsights = { rawAnalysis: aiContent };
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('[generate-ai-report] Error parsing AI response:', e);
       aiInsights = { rawAnalysis: aiContent };
     }

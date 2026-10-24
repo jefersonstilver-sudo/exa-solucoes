@@ -933,7 +933,7 @@ Exemplo 3 (indecisão):
             
             console.log('[AI-RESPONSE] ✅ Calculation complete:', JSON.stringify(functionResult, null, 2));
           }
-        } catch (calcError) {
+        } catch (calcError: any) {
           console.error('[AI-RESPONSE] ❌ Error in calcular_preco:', calcError);
           functionResult = { error: 'Erro ao processar cálculo de preços' };
         }
@@ -1574,7 +1574,7 @@ Qual te interessou? 😊`;
             timestamp: new Date().toISOString()
           }
         });
-      } catch (escalationError) {
+      } catch (escalationError: any) {
         console.error('[AI-RESPONSE] ❌ Escalation error:', escalationError);
       }
     }
@@ -1682,7 +1682,7 @@ Qual te interessou? 😊`;
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AI-RESPONSE] 💥 FATAL ERROR:', error);
     
     // Liberar lock em caso de erro
@@ -1696,7 +1696,7 @@ Qual te interessou? 😊`;
         const lockKey = `lock_${conversationId}_${message.substring(0, 30)}`;
         await supabase.from('agent_context').delete().eq('key', lockKey);
       }
-    } catch (lockError) {
+    } catch (lockError: any) {
       console.error('[AI-RESPONSE] Failed to release lock:', lockError);
     }
     
@@ -1721,7 +1721,7 @@ Qual te interessou? 😊`;
           }
         });
       }
-    } catch (logError) {
+    } catch (logError: any) {
       console.error('[AI-RESPONSE] Failed to log error:', logError);
     }
     

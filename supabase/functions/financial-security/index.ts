@@ -70,7 +70,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Financial security function error:', error);
     
     return new Response(
@@ -223,7 +223,7 @@ async function decryptSensitiveField(encryptedValue: string, userRole?: string) 
       return '[INVALID_FORMAT]';
     }
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Decryption error:', error);
     return '[DECRYPTION_ERROR]';
   }

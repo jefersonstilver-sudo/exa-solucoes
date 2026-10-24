@@ -172,7 +172,7 @@ serve(async (req) => {
           errors.push(`Falha ao enviar para ${vendedor.nome}`);
         }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[RESEND-ESCALATION] ❌ Erro ao enviar para ${vendedor.nome}:`, err);
         errors.push(`Erro ao enviar para ${vendedor.nome}: ${err.message}`);
       }
@@ -194,7 +194,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[RESEND-ESCALATION] ❌ Erro:', error);
     return new Response(JSON.stringify({ 
       success: false, 

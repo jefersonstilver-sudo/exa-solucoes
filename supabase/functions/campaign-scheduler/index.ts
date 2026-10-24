@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
       }
     )
 
-  } catch (error) {
+  } catch (error: any) {
     log.error('[SCHEDULER] Fatal error:', error)
     
     return new Response(

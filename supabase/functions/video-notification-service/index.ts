@@ -219,7 +219,7 @@ serve(async (req: Request) => {
           emailResult = response.data;
           console.log('✅ Email enviado!');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`❌ Exceção (tentativa ${retryCount + 1}):`, error);
         retryCount++;
         if (retryCount < maxRetries) {

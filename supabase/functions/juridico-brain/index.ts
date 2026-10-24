@@ -349,7 +349,7 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
     let parsedResponse: any;
     try {
       parsedResponse = JSON.parse(assistantMessage);
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('[JURIDICO-BRAIN] ❌ JSON parse error:', parseError);
       throw new Error('Invalid JSON response from AI');
     }
@@ -401,7 +401,7 @@ Analise o contexto acima e retorne APENAS um JSON válido com a estrutura especi
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[JURIDICO-BRAIN] ❌ Error:', error);
     return new Response(
       JSON.stringify({ 

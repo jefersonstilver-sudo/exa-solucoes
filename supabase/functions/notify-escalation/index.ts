@@ -245,7 +245,7 @@ serve(async (req) => {
         } else {
           console.error(`[NOTIFY-ESCALATION] ❌ Failed to send text to ${vendedor.nome}:`, textResult);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`[NOTIFY-ESCALATION] ❌ Error sending to ${vendedor.nome}:`, error);
       }
     }
@@ -280,7 +280,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[NOTIFY-ESCALATION] ❌ Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

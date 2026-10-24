@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
           `Oi${a.criado_por_nome ? ", " + primeiroNome(a.criado_por_nome) : ""}! O aviso *"${a.titulo}"* foi concluído e já foi retirado do painel do ${b?.nome || "prédio"}. ✅\n\nPrecisando de um novo aviso, é só me chamar!`);
       }
       log.push(`encerrado: ${a.titulo}`);
-    } catch (e) { log.push(`falha ao encerrar ${a.id}: ${(e as Error).message}`); }
+    } catch (e: any) { log.push(`falha ao encerrar ${a.id}: ${(e as Error).message}`); }
   }
 
   // 3) lembretes

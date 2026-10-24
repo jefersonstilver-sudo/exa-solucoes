@@ -106,7 +106,7 @@ export class LinkGenerator {
       
       throw new Error(`Falha ao gerar link: ${error?.message || 'Erro desconhecido'}`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [LINK-GENERATOR] Erro crítico ao gerar link:', error);
       
       // Fallback final com recovery que sempre funciona
@@ -127,7 +127,7 @@ export class LinkGenerator {
         }
         
         console.error('❌ [LINK-GENERATOR] Fallback final também falhou:', finalRecoveryError);
-      } catch (fallbackError) {
+      } catch (fallbackError: any) {
         console.error('❌ [LINK-GENERATOR] Erro no fallback final:', fallbackError);
       }
       

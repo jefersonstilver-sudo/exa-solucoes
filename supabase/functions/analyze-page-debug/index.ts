@@ -229,7 +229,7 @@ Seja EXTREMAMENTE crítico e detalhado. Encontre TUDO.`;
       
       aiAnalysis = JSON.parse(cleanedText);
       console.log('[AI Debug] ✅ JSON parseado com sucesso');
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error('[AI Debug] ❌ Falha ao parsear resposta da IA:', parseError);
       console.error('[AI Debug] Texto que falhou:', aiAnalysisText.substring(0, 500));
       
@@ -360,7 +360,7 @@ Seja EXTREMAMENTE crítico e detalhado. Encontre TUDO.`;
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AI Debug] Error:', error);
     return new Response(
       JSON.stringify({

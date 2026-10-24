@@ -202,7 +202,7 @@ serve(async (req) => {
               }
               stats.conversations.created++;
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error('[SYNC-CONTACTS] ❌ Error processing conversation:', conv.id, err);
             stats.total.errors++;
           }
@@ -285,7 +285,7 @@ serve(async (req) => {
               }
               stats.escalacoes.created++;
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error('[SYNC-CONTACTS] ❌ Error processing escalacao:', esc.id, err);
             stats.total.errors++;
           }
@@ -365,7 +365,7 @@ serve(async (req) => {
               }
               stats.pedidos.created++;
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error('[SYNC-CONTACTS] ❌ Error processing pedido:', pedido.id, err);
             stats.total.errors++;
           }
@@ -503,7 +503,7 @@ serve(async (req) => {
               }
               stats.lead_profiles.created++;
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error('[SYNC-CONTACTS] ❌ Error processing lead_profile:', lp.id, err);
             stats.total.errors++;
           }
@@ -616,7 +616,7 @@ serve(async (req) => {
       status: 200
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SYNC-CONTACTS] ❌ Fatal error:', error);
     return new Response(JSON.stringify({
       success: false,

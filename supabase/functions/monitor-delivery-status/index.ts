@@ -205,7 +205,7 @@ serve(async (req) => {
             results.suspected_failure++;
           }
 
-        } catch (error) {
+        } catch (error: any) {
           console.error(`[MONITOR-DELIVERY] Erro ao verificar mensagem ${message.id}:`, error);
           failuresInBatch++;
         }
@@ -225,7 +225,7 @@ serve(async (req) => {
       ...results
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[MONITOR-DELIVERY] Erro fatal:', error);
     return new Response(JSON.stringify({
       success: false,

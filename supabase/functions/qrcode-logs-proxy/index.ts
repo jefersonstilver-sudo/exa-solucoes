@@ -32,7 +32,7 @@ async function fetchChunk(cids: string[], titulo?: string): Promise<ScanLog[]> {
     }
     const data = await res.json().catch(() => []);
     return Array.isArray(data) ? data : [];
-  } catch (e) {
+  } catch (e: any) {
     console.error('[qrcode-logs-proxy] chunk fetch failed', e);
     return [];
   }
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error('[qrcode-logs-proxy] error', e);
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,

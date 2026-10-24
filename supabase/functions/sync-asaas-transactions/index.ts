@@ -83,7 +83,7 @@ serve(async (req) => {
     const { error } = await db.from('sync_runs').update({ finished_at: finished, last_success_at: finished, state: 'completed', pages_count: pages, items_count: items, processed_count: items, updated_at: finished }).eq('id', runId);
     if (error) throw new Error('Cannot persist completed run');
     return respond({ success: true, run_id: runId, pages, items, synced: created, updated, last_sync: finished });
-  } catch (e) {
+  } catch (e: any) {
     console.error('Asaas payment sync failed', { run_id: runId, pages, items, reason: e instanceof Error ? e.message : 'unknown' });
     if (runId) await db.from('sync_runs').update({ finished_at: new Date().toISOString(), state: 'failed', pages_count: pages, items_count: items, processed_count: items, errors: [{ reason: e instanceof Error ? e.message : 'unknown' }] }).eq('id', runId);
     return respond({ success: false, run_id: runId, error: 'Synchronization failed' }, 500);

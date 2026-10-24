@@ -257,7 +257,7 @@ ${reportLink}
             note: 'Email implementação futura'
           });
         }
-      } catch (sendError) {
+      } catch (sendError: any) {
         console.error(`❌ Erro ao enviar para ${director.nome}:`, sendError);
         sendResults.push({
           director_id: director.id,
@@ -300,7 +300,7 @@ ${reportLink}
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [VAR SEND] Erro:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Erro desconhecido' }),

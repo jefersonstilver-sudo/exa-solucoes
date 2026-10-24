@@ -159,7 +159,7 @@ Equipe EXA Mídia`;
             details: { phone: formattedPhone, zapiResult }
           });
         }
-      } catch (whatsappErr) {
+      } catch (whatsappErr: any) {
         console.error('[create-cortesia-proposal] Erro ao enviar WhatsApp:', whatsappErr);
         // Não falhar se WhatsApp der erro
       }
@@ -182,7 +182,7 @@ Equipe EXA Mídia`;
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[create-cortesia-proposal] Erro:', error);
     return new Response(JSON.stringify({ error: error.message || 'Erro interno' }), {
       status: 500,

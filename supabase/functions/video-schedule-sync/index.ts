@@ -259,7 +259,7 @@ serve(async (req) => {
             resultados.videos_ativados += awsResult.activated || 0;
           }
 
-        } catch (notifyException) {
+        } catch (notifyException: any) {
           log.error(`❌ [VIDEO_SYNC] Exceção ao sincronizar AWS:`, notifyException);
         }
 
@@ -271,7 +271,7 @@ serve(async (req) => {
           trocasRealizadas: 1 
         };
 
-      } catch (error) {
+      } catch (error: any) {
         log.error(`❌ [VIDEO_SYNC] Error processing pedido ${pedidoId}:`, error);
         return { success: false, pedidoId, error: error.message };
       }
@@ -309,7 +309,7 @@ serve(async (req) => {
       status: 200
     });
 
-  } catch (error) {
+  } catch (error: any) {
     log.error('💥 [VIDEO_SYNC] Fatal error:', error);
     
     return new Response(JSON.stringify({

@@ -143,7 +143,7 @@ serve(async (req) => {
       processedPreviewUrl,
       processed: true
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[PROCESS-CLIENT-LOGO] 💥 Error:', error);
     return jsonResponse({ success: false, error: error.message || 'Unknown error' }, 500);
   }
@@ -260,7 +260,7 @@ async function callOpenAI(
     }
 
     return null;
-  } catch (err) {
+  } catch (err: any) {
     if (err.name === 'AbortError') {
       console.error('[PROCESS-CLIENT-LOGO] OpenAI timeout (50s)');
     } else {
@@ -312,7 +312,7 @@ async function callLovableGateway(apiKey: string, prompt: string, imageDataUrl: 
     }
 
     return null;
-  } catch (err) {
+  } catch (err: any) {
     if (err.name === 'AbortError') {
       console.error('[PROCESS-CLIENT-LOGO] Gateway timeout (50s)');
     } else {

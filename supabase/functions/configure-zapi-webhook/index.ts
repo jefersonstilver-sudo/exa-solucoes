@@ -245,7 +245,7 @@ serve(async (req) => {
 
     throw new Error(`Invalid action: ${action}. Use "diagnose", "configure", or "test"`);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[CONFIGURE-ZAPI] 💥 Error:', error);
     return new Response(
       JSON.stringify({

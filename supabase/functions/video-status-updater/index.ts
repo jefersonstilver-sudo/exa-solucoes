@@ -194,7 +194,7 @@ serve(async (req) => {
         } else {
           console.log(`✅ [VIDEO_STATUS] AWS sincronizada:`, awsResult);
         }
-      } catch (awsCallError) {
+      } catch (awsCallError: any) {
         console.error(`❌ [VIDEO_STATUS] Erro ao chamar sync-video-status-to-aws:`, awsCallError);
       }
     }
@@ -272,7 +272,7 @@ serve(async (req) => {
           } else {
             console.log(`✅ [VIDEO_STATUS] AWS sincronizada após base:`, awsResult);
           }
-        } catch (awsCallError) {
+        } catch (awsCallError: any) {
           console.error(`❌ [VIDEO_STATUS] Erro ao chamar sync-video-status-to-aws:`, awsCallError);
         }
       }
@@ -298,7 +298,7 @@ serve(async (req) => {
       status: 200,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 [VIDEO_STATUS] Erro geral:', error);
     
     return new Response(

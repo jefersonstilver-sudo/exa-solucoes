@@ -56,7 +56,7 @@ serve(async (req) => {
           is_critical: analysis.is_critical
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ROUTE] Analysis error:', error);
     }
 
@@ -199,7 +199,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[ROUTE] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
@@ -277,7 +277,7 @@ async function notifyWhatsApp(supabase: any, agent: any, message: string, metada
         }
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[NOTIFY] Failed to send WhatsApp notification:', error);
     await supabase.from('agent_logs').insert({
       agent_key: agent.key,

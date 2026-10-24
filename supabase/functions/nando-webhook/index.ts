@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     try {
       await enviarTexto(sb, tel, "Opa, tive um probleminha aqui agora 😅 Já avisei o pessoal da EXA. Pode me mandar de novo daqui a pouco?");
       await registrarOcorrencia(sb, { tipo: "erro", telefone: tel, descricao: `Erro interno do Nando: ${(e as Error).message}` });
-    } catch (_) { /* nada */ }
+    } catch (_: any) { /* nada */ }
   });
   // @ts-ignore EdgeRuntime existe no Supabase
   if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(tarefa); else await tarefa;

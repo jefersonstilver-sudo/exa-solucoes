@@ -253,7 +253,7 @@ serve(async (req) => {
           }
         );
         console.log('📤 [BUTTON-WEBHOOK] Acknowledgment sent');
-      } catch (ackError) {
+      } catch (ackError: any) {
         console.error('⚠️ [BUTTON-WEBHOOK] Error sending ack:', ackError);
       }
     }
@@ -270,7 +270,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [BUTTON-WEBHOOK] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

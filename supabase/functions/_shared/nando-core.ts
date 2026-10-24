@@ -127,7 +127,7 @@ export async function enviarDigitando(sb: SupabaseClient, tel: string, ms = 1500
       method: "POST", headers: { "Content-Type": "application/json", apikey: key },
       body: JSON.stringify({ number: telefoneCanonico(tel), presence: "composing", delay: ms }),
     });
-  } catch (_) { /* opcional */ }
+  } catch (_: any) { /* opcional */ }
 }
 export async function enviarContatoSofia(sb: SupabaseClient, tel: string) {
   const { url, key } = evo();
@@ -182,7 +182,7 @@ export async function registrarOcorrencia(sb: SupabaseClient, o: { tipo: string;
   try {
     await enviarTexto(sb, ALERTA_NUMERO, texto);
     if (data?.id) await sb.from("nando_ocorrencias").update({ alertado_em: new Date().toISOString() }).eq("id", data.id);
-  } catch (e) { console.error("[NANDO] alerta falhou", (e as Error).message); }
+  } catch (e: any) { console.error("[NANDO] alerta falhou", (e as Error).message); }
 }
 
 // ---------------- API dos paineis (AWS) ----------------
@@ -208,7 +208,7 @@ export async function avisosOficiais(clienteId: string): Promise<any[] | null> {
     if (!Array.isArray(rows) || !rows.length) return null;
     const lista = rows[0]?.json_data?.CondominiumNotices;
     return Array.isArray(lista) ? lista : [];
-  } catch (e) { console.error("[NANDO] exasistema", (e as Error).message); return null; }
+  } catch (e: any) { console.error("[NANDO] exasistema", (e as Error).message); return null; }
 }
 // mesma regra do painel (avisos.js): apagado, sem arquivo, antes do inicio ou depois do fim = fora do ar
 function dataLocal(s: unknown): Date | null {
@@ -250,7 +250,7 @@ export async function enviarAoPainel(clienteId: string, arquivo: { nome: string;
     const j = JSON.parse(txt);
     const res = (j.results || []).find((x: any) => x.filename === arquivo.nome) || (j.results || [])[0];
     if (res && /error|erro|inv/i.test(String(res.status || ""))) throw new Error(`painel recusou o arquivo: ${res.status}`);
-  } catch (e) { if ((e as Error).message.startsWith("painel recusou")) throw e; }
+  } catch (e: any) { if ((e as Error).message.startsWith("painel recusou")) throw e; }
   // e confere se o arquivo realmente esta na pasta do predio
   const lista = await listarArquivosPainel(clienteId).catch(() => null);
   if (lista && !lista.includes(arquivo.nome)) throw new Error("o arquivo não apareceu na pasta do painel depois do envio");
@@ -294,7 +294,7 @@ export async function removerDoPainel(clienteId: string, nomes: string[]) {
 // A situacao (no ar / encerrado) segue a lista oficial que o painel le, nao so os arquivos guardados.
 export async function sincronizarLegado(sb: SupabaseClient, p: Predio) {
   let arquivos: string[] = [];
-  try { arquivos = await listarArquivosPainel(p.cliente_id); } catch (e) { console.error("[NANDO] listar", (e as Error).message); }
+  try { arquivos = await listarArquivosPainel(p.cliente_id); } catch (e: any) { console.error("[NANDO] listar", (e as Error).message); }
   const oficiais = await avisosOficiais(p.cliente_id);
   const nomes = new Set<string>([...arquivos, ...(oficiais || []).map((o: any) => nomeBase(o.mensagem)).filter(Boolean)]);
   const { data: conhecidos } = await sb.from("nando_avisos").select("id,arquivo,status,conteudo").eq("building_id", p.id);

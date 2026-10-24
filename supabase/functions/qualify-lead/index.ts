@@ -173,7 +173,7 @@ ${knowledgeText}
           }
         });
         console.log('[QUALIFY] Eduardo notified about risk of loss');
-      } catch (err) {
+      } catch (err: any) {
         console.error('[QUALIFY] Error notifying Eduardo:', err);
       }
       
@@ -196,7 +196,7 @@ ${knowledgeText}
           }
         });
         console.log('[QUALIFY] Directors notified via EXA Alert');
-      } catch (err) {
+      } catch (err: any) {
         console.error('[QUALIFY] Error sending EXA Alert:', err);
       }
     } 
@@ -216,7 +216,7 @@ ${knowledgeText}
           }
         });
         console.log('[QUALIFY] Eduardo notified about hot lead');
-      } catch (err) {
+      } catch (err: any) {
         console.error('[QUALIFY] Error notifying Eduardo:', err);
       }
     }
@@ -237,7 +237,7 @@ ${knowledgeText}
           }
         });
         console.log('[QUALIFY] EXA Alert sent for very hot lead');
-      } catch (err) {
+      } catch (err: any) {
         console.error('[QUALIFY] Error sending EXA Alert:', err);
       }
     }
@@ -246,7 +246,7 @@ ${knowledgeText}
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[QUALIFY] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

@@ -187,7 +187,7 @@ serve(async (req) => {
             const errorText = await simpleResponse.text();
             console.error(`❌ Failed to send reminder to ${recipient.name}:`, errorText);
           }
-        } catch (sendError) {
+        } catch (sendError: any) {
           console.error(`❌ Error sending to ${recipient.name}:`, sendError);
         }
       }

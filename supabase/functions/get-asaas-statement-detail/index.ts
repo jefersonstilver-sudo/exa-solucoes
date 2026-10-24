@@ -104,7 +104,7 @@ serve(async (req) => {
     const statementFields = Object.fromEntries(['invoiceId', 'splitId', 'anticipationId', 'paymentDunningId', 'creditBureauReportId']
       .filter(field => value(raw[field]) !== null).map(field => [field, value(raw[field])]));
     return response({ id, references: refs, statementFields, details, available: results.filter(r => r.data).map(r => r.name), unavailable: results.filter(r => !r.data).map(r => ({ resource: r.name, status: r.status })) });
-  } catch (e) {
+  } catch (e: any) {
     console.error('Statement detail unavailable', e instanceof Error ? e.name : 'Unknown');
     return response({ error: 'Details temporarily unavailable' }, 503);
   }

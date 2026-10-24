@@ -170,7 +170,7 @@ serve(async (req) => {
             if (attachmentsData.data && attachmentsData.data.length > 0) {
               attachmentContent = `\n\nAnexos: ${attachmentsData.data.map((a: any) => a.attachmentName).join(', ')}`;
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Error fetching attachments:', e);
           }
         }
@@ -190,7 +190,7 @@ serve(async (req) => {
         console.log('Analysis response:', analysisResponse);
         processedCount++;
 
-      } catch (e) {
+      } catch (e: any) {
         console.error(`Error processing email ${email.messageId}:`, e);
         errors.push(`${email.messageId}: ${e.message}`);
       }
@@ -212,7 +212,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in check-zoho-emails:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),

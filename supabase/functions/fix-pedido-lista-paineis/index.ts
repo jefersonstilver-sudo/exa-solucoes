@@ -157,7 +157,7 @@ serve(async (req) => {
           contratos_count: contratos.length
         })
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(`❌ Error processing pedido ${pedido.id}:`, error)
         results.pedidos_failed++
         results.details.push({
@@ -191,7 +191,7 @@ serve(async (req) => {
         status: 200
       }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [FIX_LISTA_PAINEIS] Error:', error)
     return new Response(
       JSON.stringify({

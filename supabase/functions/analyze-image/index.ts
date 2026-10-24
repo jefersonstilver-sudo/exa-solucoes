@@ -110,7 +110,7 @@ Seja detalhado e preciso.`
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[ANALYZE-IMAGE] 💥 Error:', error);
     return new Response(
       JSON.stringify({ 

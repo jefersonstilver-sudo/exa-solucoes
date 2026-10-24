@@ -110,7 +110,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[validate-cortesia-code] Erro:', error);
     return new Response(JSON.stringify({ error: error.message || 'Erro interno' }), {
       status: 500,

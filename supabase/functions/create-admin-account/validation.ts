@@ -146,7 +146,7 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
             : !!whatsapp_verification_required,
       } 
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [VALIDATION] Erro ao processar requisição:', error);
     return {
       error: { 

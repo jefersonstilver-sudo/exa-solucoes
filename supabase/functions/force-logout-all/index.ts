@@ -117,7 +117,7 @@ serve(async (req) => {
           usersLoggedOut++
           console.log(`✅ Signed out: ${authUser.email}`)
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Exception signing out ${authUser.email}:`, err)
         errors.push(`${authUser.email}: ${err.message}`)
       }
@@ -159,7 +159,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔴 FORCE LOGOUT ERROR:', error)
     return new Response(
       JSON.stringify({ 

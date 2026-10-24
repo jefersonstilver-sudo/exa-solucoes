@@ -126,7 +126,7 @@ const requestId = crypto.randomUUID().slice(0, 8);
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[${requestId}] ❌ Error:`, error);
     return new Response(JSON.stringify({
       success: false,

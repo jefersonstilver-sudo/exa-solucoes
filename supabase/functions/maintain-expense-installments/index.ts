@@ -231,7 +231,7 @@ serve(async (req) => {
               console.log(`[maintain-expense-installments] Criadas ${novasParcelas.length} parcelas para despesa ${despesa.id}`);
             }
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error(`[maintain-expense-installments] Erro processando despesa ${despesa.id}:`, err);
           results.erros.push(`Erro despesa ${despesa.id}: ${err}`);
         }
@@ -372,12 +372,12 @@ serve(async (req) => {
               if (!alertError) {
                 results.alertas_assinaturas_criados++;
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error(`[maintain-expense-installments] Erro criando alerta para assinatura ${assinatura.nome}:`, err);
             }
           }
 
-        } catch (err) {
+        } catch (err: any) {
           console.error(`[maintain-expense-installments] Erro processando assinatura ${assinatura.id}:`, err);
           results.erros.push(`Erro assinatura ${assinatura.id}: ${err}`);
         }
@@ -418,7 +418,7 @@ serve(async (req) => {
         if (!alertError) {
           results.alertas_criados++;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[maintain-expense-installments] Erro criando alerta vencendo:`, err);
       }
     }
@@ -447,7 +447,7 @@ serve(async (req) => {
         if (!alertError) {
           results.alertas_criados++;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[maintain-expense-installments] Erro criando alerta inadimplência:`, err);
       }
     }
@@ -467,7 +467,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[maintain-expense-installments] Erro crítico:', error);
     
     return new Response(

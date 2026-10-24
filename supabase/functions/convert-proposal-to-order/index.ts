@@ -519,7 +519,7 @@ serve(async (req) => {
         if (produtoData) {
           videoSpecs = `${produtoData.duracao_video_segundos} segundos, horizontal ${produtoData.proporcao || '4:3'}`;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('⚠️ Erro ao buscar specs do produto, usando default');
       }
 
@@ -531,11 +531,11 @@ serve(async (req) => {
           }
         });
         console.log('✅ WhatsApp de confirmação enviado');
-      } catch (whatsappError) {
+      } catch (whatsappError: any) {
         console.error('⚠️ Erro ao enviar WhatsApp (não crítico):', whatsappError);
       }
       
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('⚠️ Erro ao enviar emails (não crítico):', emailError);
     }
 

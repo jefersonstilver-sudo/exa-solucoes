@@ -100,7 +100,7 @@ async function geocodeWithNominatim(address: string) {
       provider: 'nominatim',
       raw: r,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('[GEOCODE] Nominatim error:', error);
     return null;
   }
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ lat: result.lat, lng: result.lng, precision: result.precision, provider: result.provider, cached: false, address: fullAddress }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (e) {
+  } catch (e: any) {
     console.error('geocode_v1 error', e);
     return new Response(JSON.stringify({ error: 'Unexpected error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }

@@ -116,7 +116,7 @@ serve(async (req) => {
           } else {
             console.log(`[NOTIFY-EXA-ALERT] Sent to ${director.nome}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error(`[NOTIFY-EXA-ALERT] Error sending to ${director.nome}:`, error);
         }
       }
@@ -142,7 +142,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[NOTIFY-EXA-ALERT] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

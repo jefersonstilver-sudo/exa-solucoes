@@ -138,7 +138,7 @@ serve(async (req) => {
               } else {
                 lastMessageAt = new Date(chat.lastMessageTime).toISOString();
               }
-            } catch (e) {
+            } catch (e: any) {
               console.error('[ZAPI-IMPORT] Failed to parse lastMessageTime:', e);
             }
           }
@@ -205,7 +205,7 @@ serve(async (req) => {
 
 
         console.log('[ZAPI-IMPORT] Chat processed:', phoneNumber);
-      } catch (chatError) {
+      } catch (chatError: any) {
         console.error('[ZAPI-IMPORT] Failed to process chat:', chatError);
       }
     }
@@ -225,7 +225,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[ZAPI-IMPORT] Error:', error);
     return new Response(JSON.stringify({
       error: error.message

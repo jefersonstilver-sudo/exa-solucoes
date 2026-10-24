@@ -179,7 +179,7 @@ serve(async (req) => {
         console.log('Account ID:', accountId);
         console.log('Account Email:', accountEmail);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error fetching account info:', e);
     }
 
@@ -294,7 +294,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in zoho-oauth-callback:', error);
     return new Response(
       `<!DOCTYPE html>

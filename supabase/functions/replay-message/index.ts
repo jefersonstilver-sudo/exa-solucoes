@@ -257,7 +257,7 @@ serve(async (req) => {
       });
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[REPLAY-MESSAGE] Erro fatal:', error);
     return new Response(JSON.stringify({
       success: false,

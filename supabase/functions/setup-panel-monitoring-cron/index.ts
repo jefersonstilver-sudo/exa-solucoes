@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [CRON SETUP] Erro:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

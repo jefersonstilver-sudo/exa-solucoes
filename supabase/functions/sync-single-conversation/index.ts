@@ -264,7 +264,7 @@ serve(async (req) => {
         console.log('[SYNC-SINGLE] Erro ao buscar /chats:', zapiResponse.status, errorText);
         stats.errors.push(`Z-API /chats: ${zapiResponse.status}`);
       }
-    } catch (zapiError) {
+    } catch (zapiError: any) {
       console.error('[SYNC-SINGLE] Erro ao consultar Z-API /chats:', zapiError);
       stats.errors.push(`Z-API /chats: ${String(zapiError)}`);
     }
@@ -360,7 +360,7 @@ serve(async (req) => {
         console.log('[SYNC-SINGLE] Erro ao buscar /chat-messages:', messagesResponse.status, errorText);
         stats.errors.push(`Z-API /chat-messages: ${messagesResponse.status} - ${errorText}`);
       }
-    } catch (messagesError) {
+    } catch (messagesError: any) {
       console.error('[SYNC-SINGLE] Erro ao consultar Z-API /chat-messages:', messagesError);
       stats.errors.push(`Z-API /chat-messages: ${String(messagesError)}`);
     }
@@ -405,7 +405,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SYNC-SINGLE] Erro geral:', error);
     return new Response(
       JSON.stringify({ success: false, error: String(error) }),

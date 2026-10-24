@@ -118,7 +118,7 @@ async function fotoPixabay(busca: string): Promise<{ url: string; credito: strin
     if (!img.ok) return null;
     const tipo = (img.headers.get("content-type") || "image/jpeg").split(";")[0];
     return { url: `data:${tipo};base64,` + bytesParaB64(new Uint8Array(await img.arrayBuffer())), credito: `Pixabay (${foto.user || "autor"})` };
-  } catch (err) { console.error("[NANDO] pixabay", (err as Error).message); return null; }
+  } catch (err: any) { console.error("[NANDO] pixabay", (err as Error).message); return null; }
 }
 
 // Foto de fundo do Unsplash (segue as regras da API: usa o link original da foto, registra o download e da o credito)
@@ -140,7 +140,7 @@ async function fotoUnsplash(busca: string): Promise<{ url: string; credito: stri
     const raw = String(foto.urls.raw);
     const url = raw + (raw.includes("?") ? "&" : "?") + "w=1080&h=1920&fit=crop&crop=entropy&q=72&fm=jpg";
     return { url, credito: `Foto: ${foto.user?.name || "Unsplash"} / Unsplash` };
-  } catch (err) { console.error("[NANDO] unsplash", (err as Error).message); return null; }
+  } catch (err: any) { console.error("[NANDO] unsplash", (err as Error).message); return null; }
 }
 
 function parseData(s: unknown): Date | null {
@@ -505,7 +505,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           await sb.from("nando_avisos").update({ arquivo, status: st, erro: null }).eq("id", linha.id);
           await historico(sb, linha.id, quem(c), "publicou", { predio: p.nome });
           res.push(`${p.nome}: "${linha.titulo}" ${st === "agendado" ? `agendado para ${fmtData(linha.inicio)}` : "publicado e confirmado na pasta do painel (aparece na tela em até ~10 min)"} [${idCurto(linha.id)}]`);
-        } catch (err) {
+        } catch (err: any) {
           await sb.from("nando_avisos").update({ status: "erro", erro: (err as Error).message }).eq("id", linha.id);
           await registrarOcorrencia(sb, { tipo: "erro_publicacao", telefone: c.tel, nome: c.nomePessoa, building_id: p.id, descricao: `Falha ao publicar "${linha.titulo}" no ${p.nome}: ${(err as Error).message}` });
           res.push(`${p.nome}: "${linha.titulo}" ERRO ao publicar, NÃO está no painel (o Jeferson já foi avisado)`);
@@ -721,7 +721,7 @@ export async function rodarAgente(c: Contexto, mensagens: any[]): Promise<string
     for (const u of usos) {
       let saida: Saida;
       try { saida = await executar(c, u.name, u.input || {}); }
-      catch (err) { saida = "ERRO: " + (err as Error).message; console.error("[NANDO] ferramenta", u.name, err); }
+      catch (err: any) { saida = "ERRO: " + (err as Error).message; console.error("[NANDO] ferramenta", u.name, err); }
       const texto = typeof saida === "string" ? saida : saida.texto;
       resultados.push({ type: "tool_result", tool_use_id: u.id, content: typeof saida === "string" ? saida : [...saida.blocos, { type: "text", text: saida.texto }] });
       c.registros.push(`${u.name}(${JSON.stringify(u.input || {}).slice(0, 300)}) → ${texto.slice(0, 900)}`);

@@ -424,7 +424,7 @@ serve(async (req) => {
               body: { contratoId: contractId }
             });
             console.log('✅ [ADMIN-CLOSE] Contrato enviado para ClickSign');
-          } catch (clickSignError) {
+          } catch (clickSignError: any) {
             console.error('⚠️ [ADMIN-CLOSE] Erro ao enviar para ClickSign:', clickSignError);
           }
         }

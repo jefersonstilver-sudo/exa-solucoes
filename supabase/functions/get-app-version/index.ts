@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({ version: data?.value || "0" });
-  } catch (err) {
+  } catch (err: any) {
     console.error("get-app-version error:", err);
     if (req.method === "GET") {
       return jsonResponse({ version: null, status: "temporarily_unavailable" });

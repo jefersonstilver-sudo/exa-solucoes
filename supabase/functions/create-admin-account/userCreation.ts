@@ -80,7 +80,7 @@ export const createAdminUser = async (
       console.log(`✅ [CREATE-ADMIN] Usuário criado com sucesso na tentativa ${attempt}:`, newUser.id);
       break;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`💥 [CREATE-ADMIN] Erro na tentativa ${attempt}:`, error);
       lastError = error;
       
@@ -111,7 +111,7 @@ export const createAdminUser = async (
     try {
       await supabaseServiceRole.auth.admin.deleteUser(newUser.id);
       console.log('🔄 [CREATE-ADMIN] Usuário removido do Auth devido ao erro na tabela users');
-    } catch (cleanupError) {
+    } catch (cleanupError: any) {
       console.error('💥 [CREATE-ADMIN] Erro ao limpar usuário após falha:', cleanupError);
     }
 
@@ -242,7 +242,7 @@ const insertUserRecord = async (
       
       break;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`💥 [CREATE-ADMIN] Erro na inserção (tentativa ${attempt}):`, error);
       lastError = error;
       

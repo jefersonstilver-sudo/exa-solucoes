@@ -167,7 +167,7 @@ serve(async (req) => {
           lastError = new Error(`AnyDesk API error: ${response.status} - ${errorText}`);
           console.warn(`[SYNC-ANYDESK] ⚠️ API returned ${response.status} on attempt ${attempt}`);
         }
-      } catch (fetchError) {
+      } catch (fetchError: any) {
         lastError = fetchError;
         console.warn(`[SYNC-ANYDESK] ⚠️ Fetch error on attempt ${attempt}:`, fetchError.message);
         
@@ -496,7 +496,7 @@ serve(async (req) => {
             });
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         errors.push(`Processing error for ${client.cid}: ${error.message}`);
       }
     }
@@ -590,7 +590,7 @@ serve(async (req) => {
           }
         }
       }
-    } catch (staleError) {
+    } catch (staleError: any) {
       console.error('[SYNC-ANYDESK] ⚠️ Stale detection block failed:', staleError);
     }
     // ============ END STALE DETECTION ============
@@ -616,7 +616,7 @@ serve(async (req) => {
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SYNC-ANYDESK] 💥 Critical error:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message, timestamp: new Date().toISOString() }),

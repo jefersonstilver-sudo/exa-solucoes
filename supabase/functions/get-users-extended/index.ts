@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
           cpf: userDbData?.cpf || authUser.user.user_metadata?.cpf || null,
           email_confirmed_at: authUser.user.email_confirmed_at || null,
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error processing user ${userId}:`, error);
       }
     }
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Edge function error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),

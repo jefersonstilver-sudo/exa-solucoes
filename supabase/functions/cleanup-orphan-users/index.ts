@@ -127,7 +127,7 @@ serve(async (req) => {
             id: orphan.id
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`💥 [CLEANUP] Erro crítico ao deletar ${orphan.email}:`, error);
         failedDeletes.push({
           email: orphan.email,
@@ -187,7 +187,7 @@ serve(async (req) => {
       } else {
         console.log('✅ [CLEANUP] Auditoria registrada com sucesso');
       }
-    } catch (auditError) {
+    } catch (auditError: any) {
       console.error('💥 [CLEANUP] Erro crítico na auditoria:', auditError);
     }
 
@@ -213,7 +213,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 [CLEANUP] Erro crítico não tratado:', error);
     
     return new Response(

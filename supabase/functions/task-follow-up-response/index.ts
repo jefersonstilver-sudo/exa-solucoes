@@ -66,7 +66,7 @@ serve(async (req) => {
           if (notif) activeNotif = notif;
         }
       }
-    } catch (recErr) {
+    } catch (recErr: any) {
       console.warn('[TASK-RESPONSE] ⚠️ Receipts lookup failed:', (recErr as Error).message);
     }
 
@@ -151,7 +151,7 @@ serve(async (req) => {
               skipSplit: true,
             },
           });
-        } catch (_e) {
+        } catch (_e: any) {
           // silencioso
         }
       }
@@ -549,7 +549,7 @@ serve(async (req) => {
             .eq('id', chosen.id);
           updatedReceiptId = chosen.id;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('[TASK-RESPONSE] confirm receipt update failed:', (e as Error).message);
       }
 
@@ -619,7 +619,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TASK-RESPONSE] 💥 ERROR:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

@@ -187,7 +187,7 @@ serve(async (req) => {
           } else {
             console.error(`❌ Failed to send WhatsApp to ${recipient.name}:`, sendError);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error(`❌ Error sending to ${recipient.name}:`, err);
         }
       }

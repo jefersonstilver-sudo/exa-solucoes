@@ -60,7 +60,7 @@ serve(async (req) => {
         }
         
         break;
-      } catch (fetchError) {
+      } catch (fetchError: any) {
         retryCount++;
         if (retryCount >= maxRetries) throw fetchError;
         console.log(`⚠️ [FETCH-RESEND] Fetch error, retry ${retryCount}/${maxRetries}`);
@@ -147,7 +147,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in fetch-resend-emails:', error);
     return new Response(
       JSON.stringify({

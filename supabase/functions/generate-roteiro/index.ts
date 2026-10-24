@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify(data),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
-  } catch (err) {
+  } catch (err: any) {
     console.error('[generate-roteiro] EXCEPTION:', err);
     return new Response(
       JSON.stringify({ error: { message: err instanceof Error ? err.message : 'Erro interno na Edge Function.' } }),

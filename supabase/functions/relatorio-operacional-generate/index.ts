@@ -325,7 +325,7 @@ Deno.serve(async (req) => {
           const errorText = await response.text();
           console.error(`[relatorio-operacional] Erro ao enviar para ${director.nome}:`, errorText);
         }
-      } catch (error) {
+      } catch (error: any) {
         errorCount++;
         console.error(`[relatorio-operacional] Erro ao enviar para ${director.nome}:`, error);
       }
@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[relatorio-operacional] Error:', error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

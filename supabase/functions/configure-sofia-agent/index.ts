@@ -437,7 +437,7 @@ async function configureElevenLabsAgent(): Promise<{ success: boolean; message: 
       }
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[CONFIGURE-SOFIA] Error:', error);
     return {
       success: false,
@@ -478,7 +478,7 @@ async function getAgentStatus(): Promise<any> {
       language: agent.conversation_config?.agent?.language
     };
 
-  } catch (error) {
+  } catch (error: any) {
     return { error: error.message };
   }
 }
@@ -527,7 +527,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('[CONFIGURE-SOFIA] Error:', error);
     return new Response(JSON.stringify({
       success: false,

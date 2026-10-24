@@ -40,7 +40,7 @@ async function sendReply(supabase: any, phone: string, message: string) {
       body: { agentKey: "exa_alert", phone, message, skipSplit: true },
     });
     if (error) console.error("[EVO-WEBHOOK] sendReply error in data:", error);
-  } catch (e) {
+  } catch (e: any) {
     console.error("[EVO-WEBHOOK] sendReply exception:", (e as Error).message);
   }
 }
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
         const text = await r.text();
         results.push({ path, status: r.status, body: text.slice(0, 400) });
         if (r.ok) break;
-      } catch (e) {
+      } catch (e: any) {
         results.push({ path, error: (e as Error).message });
       }
     }
@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
       } else {
         console.log("[EVO-WEBHOOK] task-follow-up-response NOT handled:", taskRes?.reason);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn("[EVO-WEBHOOK] task-follow-up-response exception:", (e as Error).message);
     }
 
@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
     }
 
     return json(200, { handled: false, reason: "no_route_matched" });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[EVO-WEBHOOK] global error:", (err as Error).message);
     return json(500, { error: (err as Error).message });
   }

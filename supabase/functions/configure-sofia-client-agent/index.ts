@@ -278,7 +278,7 @@ Sofia: [Consulta faturas] "Sim, você tem uma parcela de R$ 500,00 vencendo dia 
       status: 400,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[${requestId}] Error:`, error);
     return new Response(JSON.stringify({
       success: false,

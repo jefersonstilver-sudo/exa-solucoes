@@ -278,7 +278,7 @@ serve(async (req) => {
             sent_at: new Date().toISOString(),
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[TASK-NOTIFY] ❌ Error sending to ${contact.nome}:`, err);
       }
     }
@@ -311,7 +311,7 @@ serve(async (req) => {
       } else {
         console.log('[TASK-NOTIFY] ℹ️ task_notification_queue já existia para task:', task_id);
       }
-    } catch (queueErr) {
+    } catch (queueErr: any) {
       console.error('[TASK-NOTIFY] ⚠️ Falha ao criar task_notification_queue:', queueErr);
     }
 
@@ -336,7 +336,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TASK-NOTIFY] 💥 ERROR:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

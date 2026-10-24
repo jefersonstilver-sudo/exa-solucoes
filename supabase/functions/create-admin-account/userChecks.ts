@@ -90,7 +90,7 @@ export const checkExistingUser = async (email: string): Promise<CheckResult> => 
 
     console.log('✅ [CREATE-ADMIN] Email verificado, não existe duplicata');
     return {};
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 [CREATE-ADMIN] Erro ao verificar usuário:', error);
     return {
       error: { 

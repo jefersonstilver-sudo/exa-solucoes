@@ -138,7 +138,7 @@ serve(async (req) => {
             const raw = match[2];
             return { bucket: match[1], pathDecoded: decodeURIComponent(raw), pathRaw: raw };
           }
-        } catch (_) {}
+        } catch (_: any) {}
         if (!urlOrPath.startsWith('http') && urlOrPath.includes('/')) {
           const [bucket, ...rest] = urlOrPath.split('/');
           const raw = rest.join('/');
@@ -232,7 +232,7 @@ serve(async (req) => {
             };
             
             return null;
-          } catch (e) {
+          } catch (e: any) {
             return null;
           }
         }));
@@ -597,7 +597,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('🚨 Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }), 

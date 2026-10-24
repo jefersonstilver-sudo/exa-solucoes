@@ -68,7 +68,7 @@ serve(async (req) => {
           toDate: toDate?.toISOString(),
           limitConversations 
         });
-      } catch (e) {
+      } catch (e: any) {
         console.log('📥 [FETCH-ZAPI-HISTORY] Sem body ou body inválido, usando defaults');
       }
     }
@@ -322,7 +322,7 @@ serve(async (req) => {
         // Pequena pausa para não sobrecarregar a API
         await new Promise(resolve => setTimeout(resolve, 300));
 
-      } catch (chatError) {
+      } catch (chatError: any) {
         console.error(`❌ Erro ao processar chat ${phone}:`, chatError);
         stats.errors.push(`Chat ${phone}: ${chatError}`);
       }
@@ -341,7 +341,7 @@ serve(async (req) => {
         } else {
           console.log('✅ [FETCH-ZAPI-HISTORY] Contadores de auditoria atualizados');
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('⚠️ Função update_conversation_audit_counts não encontrada');
       }
     }
@@ -361,7 +361,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [FETCH-ZAPI-HISTORY] Erro:', error);
     return new Response(JSON.stringify({
       success: false,
