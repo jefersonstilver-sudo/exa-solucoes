@@ -1,15 +1,52 @@
-// NANDO - dados da previa temporaria de um aviso (link de 10 minutos).
-// Usado pela pagina publica /nando/previa/:token do site. Nao exige login: o token e secreto e expira.
-import { db } from "../_shared/nando-core.ts";
+// NANDO - dados publicos temporarios para o site:
+//  ?t=<token>  previa de um aviso (link de 10 minutos), com as 3 opcoes ou os cartoes da serie
+//  ?p=<token>  pagina do predio (link assinado de 1 hora): avisos no ar e agendados, como aparecem na tela
+// Nao exige login: os tokens sao secretos e expiram.
+import { db, lerTokenPredio, listarArquivosPainel, nomeBase } from "../_shared/nando-core.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+
+async function dadosNando(url: string | undefined): Promise<unknown> {
+  if (!url) return null;
+  try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
+async function paginaPredio(token: string) {
+  const t = await lerTokenPredio(token);
+  if (!t) return json(410, { ok: false, erro: "Esse link expirou. Peça um novo ao Nando no WhatsApp." });
+  const sb = db();
+  const { data: b } = await sb.from("buildings").select("nome").eq("id", t.buildingId).single();
+  const { data: rows } = await sb.from("nando_avisos")
+    .select("id,tipo,titulo,segundos,inicio,fim,status,arquivo,origem_url,criado_por_nome,created_at,conteudo")
+    .eq("building_id", t.buildingId).in("status", ["no_ar", "agendado"]).order("created_at");
+  // so mostra como "no ar" o que esta mesmo na pasta do painel
+  const pasta = await listarArquivosPainel(String(t.buildingId).replace(/-/g, "").slice(0, 4)).catch(() => null);
+  const avisos = [];
+  for (const a of rows || []) {
+    const c: any = a.conteudo || {};
+    const confirmado = !pasta || !a.arquivo || pasta.includes(nomeBase(a.arquivo));
+    if (!confirmado) continue;
+    let url: string | null = null;
+    if (a.tipo !== "nando") url = a.origem_url || null;
+    avisos.push({
+      id: String(a.id).slice(0, 8), tipo: a.tipo, titulo: String(a.titulo || "").replace(/\s*\[\d+s\]/, ""), segundos: a.segundos,
+      inicio: a.inicio, fim: a.fim, status: a.status, criado_por: c.legado ? "anterior ao Nando" : (a.criado_por_nome || ""),
+      dados: a.tipo === "nando" ? await dadosNando(c.arquivo_url) : null, url, antigo: !!c.legado,
+    });
+  }
+  return json(200, { ok: true, modo: "predio", predio: b?.nome || "", avisos, expira_em: t.expira.toISOString() });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const url = new URL(req.url);
   let token = url.searchParams.get("t") || "";
-  if (!token && req.method === "POST") { try { token = (await req.json()).t || ""; } catch { /* */ } }
+  let tokenPredio = url.searchParams.get("p") || "";
+  if (!token && !tokenPredio && req.method === "POST") {
+    try { const b = await req.json(); token = b.t || ""; tokenPredio = b.p || ""; } catch { /* */ }
+  }
+  if (tokenPredio) return await paginaPredio(tokenPredio);
   token = token.replace(/[^a-f0-9]/gi, "").slice(0, 64);
   if (!token) return json(400, { ok: false, erro: "link inválido" });
 
@@ -27,23 +64,26 @@ Deno.serve(async (req) => {
     .eq("building_id", a.building_id).in("status", ["no_ar", "agendado"]);
 
   let dados = null;
-  const opcoes: { opcao: number; dados: unknown; credito: string | null }[] = [];
+  const serie = !!a.conteudo?.serie;
+  const opcoes: { opcao: number; rotulo: string; dados: unknown; credito: string | null }[] = [];
   if (a.tipo === "nando") {
-    // as 3 variacoes criadas juntas aparecem lado a lado
+    // as 3 variacoes (ou os cartoes da serie) criadas juntas aparecem lado a lado
     let lista: any[] = [a];
     if (a.conteudo?.grupo) {
-      const { data: irmaos } = await sb.from("nando_avisos").select("conteudo").eq("conteudo->>grupo", a.conteudo.grupo).eq("status", "rascunho");
+      const { data: irmaos } = await sb.from("nando_avisos").select("conteudo").eq("conteudo->>grupo", a.conteudo.grupo).in("status", ["rascunho", "no_ar", "agendado"]);
       if (irmaos?.length) lista = irmaos.sort((x: any, y: any) => (x.conteudo?.opcao || 0) - (y.conteudo?.opcao || 0));
     }
     for (const it of lista) {
       if (!it.conteudo?.arquivo_url) continue;
-      const r = await fetch(it.conteudo.arquivo_url);
-      if (r.ok) opcoes.push({ opcao: it.conteudo?.opcao || opcoes.length + 1, dados: await r.json(), credito: it.conteudo?.credito_foto || null });
+      const d = await dadosNando(it.conteudo.arquivo_url);
+      if (!d) continue;
+      const n = it.conteudo?.opcao || opcoes.length + 1;
+      opcoes.push({ opcao: n, rotulo: serie ? `Cartão ${n} de ${it.conteudo?.total || lista.length}` : `Opção ${n}`, dados: d, credito: it.conteudo?.credito_foto || null });
     }
     dados = opcoes[0]?.dados || null;
   }
   return json(200, {
-    ok: true, tipo: a.tipo, titulo: a.titulo, segundos: a.segundos, inicio: a.inicio, fim: a.fim,
+    ok: true, tipo: a.tipo, serie, titulo: String(a.titulo || "").replace(/\s*\(\d+\/\d+\)$/, ""), segundos: a.segundos, inicio: a.inicio, fim: a.fim,
     predio: b?.nome || "", outros: outros || 0, dados, opcoes, url: a.tipo === "nando" ? null : a.origem_url, expira_em: p.expira_em,
   });
 });

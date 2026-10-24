@@ -1,5 +1,5 @@
 /**
- * aviso-nando.js (v28) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
+ * aviso-nando.js (v30) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
  * Usado pelo painel E pela pagina de previa, para os dois ficarem identicos.
  *
  * O aviso e um "palco" 1080x1920 que e escalado inteiro para caber na caixa:
@@ -8,7 +8,9 @@
  * Dados (arquivo .nando.json):
  * { v:1, titulo, quando, texto, assinatura, cor, icone (dataURL/URL), fundo (dataURL/URL),
  *   foto (dataURL/URL, opcional: foto enviada pelo sindico, aparece nitida em destaque),
- *   selo (texto do selo no topo, padrao "AVISO DO CONDOMINIO") }
+ *   selo (texto do selo no topo, padrao "AVISO DO CONDOMINIO"),
+ *   itens [{icone, texto}] (v30: lista de regras com icone, ate 6), parte ("1/3", cartao de uma serie),
+ *   qr (dataURL do QR code do documento completo), qr_legenda }
  * Somente texto e imagens: nada de codigo vindo de fora.
  */
 (function () {
@@ -24,7 +26,7 @@
   }
   function seguro(u) {
     u = String(u || "");
-    return /^(data:image\/(png|jpe?g|webp);base64,|https:\/\/|\.\.?\/|\/)/i.test(u) ? u : "";
+    return /^(data:image\/(png|jpe?g|webp|svg\+xml);base64,|https:\/\/|\.\.?\/|\/)/i.test(u) ? u : "";
   }
   function cor(c) {
     return /^#[0-9a-f]{6}$/i.test(String(c || "")) ? c : "#7c3aed";
@@ -58,12 +60,16 @@
   function caber(no, maxPx, minPx, alturaMax) {
     var t = maxPx;
     no.style.fontSize = t + "px";
-    while (t > minPx && no.scrollHeight > alturaMax) { t -= 4; no.style.fontSize = t + "px"; }
+    // tambem nao deixa palavra longa passar da largura (nunca quebra no meio da palavra)
+    while (t > minPx && (no.scrollHeight > alturaMax || no.scrollWidth > no.clientWidth + 1)) { t -= 4; no.style.fontSize = t + "px"; }
+    if (no.scrollWidth > no.clientWidth + 1) no.style.overflowWrap = "anywhere";
   }
 
   function montar(caixa, d) {
     d = d || {};
-    var raiz = el("div", "na-raiz");
+    var itens = Array.isArray(d.itens) ? d.itens.slice(0, 6) : [];
+    var qr = seguro(d.qr);
+    var raiz = el("div", "na-raiz" + (itens.length ? " na-com-itens" : "") + (qr ? " na-com-qr" : ""));
     raiz.style.setProperty("--na-cor", cor(d.cor));
 
     var bg = el("div", "na-bg");
@@ -93,6 +99,7 @@
       midia.appendChild(ic);
     }
     palco.appendChild(midia);
+    if (d.parte) palco.appendChild(el("div", "na-parte na-entra", String(d.parte).slice(0, 7)));
 
     var bloco = el("div", "na-bloco");
     var tt = el("div", "na-titulo na-entra", d.titulo || "");
@@ -100,7 +107,27 @@
     var qd = null, tx = null;
     if (d.quando) { qd = el("div", "na-quando na-entra", d.quando); bloco.appendChild(qd); }
     if (d.texto) { tx = el("div", "na-texto na-entra", d.texto); bloco.appendChild(tx); }
+    var lista = null;
+    if (itens.length) {
+      lista = el("div", "na-itens na-entra");
+      itens.forEach(function (it) {
+        var li = el("div", "na-item");
+        var ii = seguro(it && it.icone);
+        if (ii) { var im = el("img", "na-item-ic"); im.src = ii; im.alt = ""; li.appendChild(im); }
+        li.appendChild(el("div", "na-item-tx", (it && it.texto) || ""));
+        lista.appendChild(li);
+      });
+      bloco.appendChild(lista);
+    }
     palco.appendChild(bloco);
+
+    if (qr) {
+      var cq = el("div", "na-qr na-entra");
+      var qi = el("div", "na-qr-img"); var qimg = el("img"); qimg.src = qr; qimg.alt = "QR code"; qi.appendChild(qimg);
+      cq.appendChild(qi);
+      cq.appendChild(el("div", "na-qr-tx", d.qr_legenda || "Aponte a câmera e veja o documento completo"));
+      palco.appendChild(cq);
+    }
 
     if (d.credito) palco.appendChild(el("div", "na-credito", String(d.credito).slice(0, 60)));
     palco.appendChild(el("div", "na-assina na-entra", d.assinatura || "Administração do Condomínio"));
@@ -118,13 +145,22 @@
 
     // texto: cabe sempre (titulo 2 linhas, texto ate a area disponivel)
     // letras grandes: o quadro e lido de longe no elevador (tela de 27")
-    caber(tt, 150, 84, foto ? 300 : 340);
+    caber(tt, itens.length ? 110 : 150, itens.length ? 64 : 84, itens.length ? 230 : (foto ? 300 : 340));
     if (qd) { // data/horario numa linha so, se couber
-      qd.style.whiteSpace = "nowrap"; var tq = 66; qd.style.fontSize = tq + "px";
+      qd.style.whiteSpace = "nowrap"; var tq = 58; qd.style.fontSize = tq + "px";
       while (tq > 44 && qd.scrollWidth > qd.clientWidth + 1) { tq -= 2; qd.style.fontSize = tq + "px"; }
       if (qd.scrollWidth > qd.clientWidth + 1) { qd.style.whiteSpace = "normal"; caber(qd, 60, 44, 170); }
     }
-    if (tx) caber(tx, 64, 42, foto ? 300 : 420);
+    if (tx) caber(tx, itens.length ? 50 : 64, itens.length ? 36 : 42, itens.length ? 160 : (foto ? 300 : 420));
+    if (lista) { // itens: letra o maior possivel sem passar da area do bloco
+      var fi = 54;
+      var aplicar = function () {
+        lista.style.fontSize = fi + "px";
+        lista.style.setProperty("--na-ic", Math.round(fi * 2.1) + "px");
+      };
+      aplicar();
+      while (fi > 30 && bloco.scrollHeight > bloco.clientHeight + 2) { fi -= 2; aplicar(); }
+    }
 
     var fsrc = seguro(d.fundo) || foto;   // nunca usar o icone ampliado como fundo
     if (fsrc && d.fundo_nitido && seguro(d.fundo)) {   // wallpaper: nitido, sem desfoque
@@ -141,5 +177,5 @@
     return { raiz: raiz, escalar: escalar, remover: function () { if (raiz.parentNode) raiz.parentNode.removeChild(raiz); } };
   }
 
-  window.NandoAviso = { montar: montar, W: W, H: H, versao: 1 };
+  window.NandoAviso = { montar: montar, W: W, H: H, versao: 30 };
 })();

@@ -5,7 +5,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   Predio, nomeBase, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
-  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso,
+  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 
@@ -177,6 +177,19 @@ export const FERRAMENTAS = [
         tema: { type: "string", description: "Tema do ícone 3D (uma das chaves da biblioteca)" },
         cor: { type: "string", description: "Cor de destaque em #RRGGBB (opcional; padrão do tema)" },
         midia_id: { type: "string", description: "Opcional: id de uma FOTO enviada pelo síndico para aparecer em destaque" },
+        itens: {
+          type: "array", maxItems: 6,
+          description: "Opcional: lista de regras/itens, cada um com ícone 3D próprio (ex: regras da piscina). ATÉ 6 por cartão; texto de cada item ATÉ 70 caracteres, direto (ex: 'Proibido som alto'). Com itens, o campo texto pode ficar vazio.",
+          items: { type: "object", properties: { tema: { type: "string" }, texto: { type: "string" } }, required: ["texto"] },
+        },
+        cartoes: {
+          type: "array", maxItems: 5,
+          description: "Use para uma SÉRIE (conteúdo que não cabe num cartão só, ex: 18 regras da piscina = 3 cartões de 6). Cada cartão: titulo, quando, texto, itens. A série tem UM visual só (não gera 3 variações) e vai ao ar inteira, um cartão depois do outro.",
+          items: { type: "object", properties: { titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" }, itens: { type: "array", items: { type: "object", properties: { tema: { type: "string" }, texto: { type: "string" } } } } } },
+        },
+        qr_midia_id: { type: "string", description: "Opcional: midia_id do PDF/imagem original que o síndico mandou. Coloca um QR code no aviso que abre o documento completo no celular. Use em todo resumo de documento." },
+        qr_url: { type: "string", description: "Opcional: link https para o QR code (quando não for um arquivo enviado)" },
+        qr_legenda: { type: "string", description: "Texto ao lado do QR, ATÉ 50 caracteres. Padrão: 'Aponte a câmera e veja o documento completo'" },
         variacoes: {
           type: "array", maxItems: 3,
           description: "SEMPRE 3 variações visuais para o síndico escolher. As opções 1 e 2 usam foto desfocada (busca_foto diferente em cada); a opção 3 é sempre um wallpaper abstrato na cor escolhida (não precisa de busca_foto). Varie tema de ícone e cor entre elas. Pode trazer titulo/quando/texto alternativos (ex: uma mais formal, outra mais leve).",
@@ -188,8 +201,18 @@ export const FERRAMENTAS = [
         fim: { type: "string", description: "Saída automática 'YYYY-MM-DDTHH:MM'. Vazio = sem data de saída" },
         lembrar_dias: { type: "number", description: "Lembrar o síndico após N dias (opcional)" },
       },
-      required: ["titulo", "texto", "tema"],
+      required: ["titulo", "tema"],
     },
+  },
+  {
+    name: "ver_arquivo",
+    description: "Abre de novo uma foto ou PDF que a pessoa mandou antes (pelo midia_id), para você ler o conteúdo. Use sempre que precisar do conteúdo de um arquivo de mensagens anteriores. Nunca diga que não consegue ver um arquivo sem usar esta ferramenta.",
+    input_schema: { type: "object", properties: { midia_id: { type: "string" } }, required: ["midia_id"] },
+  },
+  {
+    name: "link_dos_avisos",
+    description: "Gera o link (vale 1 hora) da página do prédio atual com todos os avisos no ar e agendados, desenhados como na tela, com o rodízio, o tempo de cada um, quando sai e quem criou. Ofereça depois de publicar, alterar ou listar avisos.",
+    input_schema: { type: "object", properties: {} },
   },
   {
     name: "criar_aviso_arquivo",
@@ -271,7 +294,8 @@ async function publicarEm(c: Contexto, a: any, p: Predio): Promise<string> {
   return nome;
 }
 
-export async function executar(c: Contexto, nome: string, e: any): Promise<string> {
+type Saida = string | { texto: string; blocos: any[] };
+export async function executar(c: Contexto, nome: string, e: any): Promise<Saida> {
   const sb = c.sb;
   switch (nome) {
     case "escolher_predio": {
@@ -329,7 +353,66 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         const r = await fetch(m.url);
         foto = `data:${m.mime};base64,` + bytesParaB64(new Uint8Array(await r.arrayBuffer()));
       }
+      const icCache = new Map<string, string | null>();
+      const icone = async (t: string) => { const k = ICONES[t] ? t : "megafone"; if (!icCache.has(k)) icCache.set(k, await iconeDataUrl(k)); return icCache.get(k) || undefined; };
+      const itensDe = async (lista: any) => Array.isArray(lista) && lista.length
+        ? await Promise.all(lista.slice(0, 6).map(async (it: any) => ({ icone: await icone(String(it?.tema || "")), texto: String(it?.texto || "").slice(0, 90) })))
+        : undefined;
+      // QR code para o documento original (abre no celular)
+      let qr: string | undefined, qrAlvo = "";
+      if (e.qr_midia_id) {
+        const mq = c.midias[e.qr_midia_id] || await midiaSalva(c, e.qr_midia_id);
+        if (!mq) return "qr_midia_id não encontrado. Use o midia_id do arquivo que a pessoa mandou.";
+        qrAlvo = mq.url;
+      } else if (/^https:\/\/\S+$/i.test(String(e.qr_url || ""))) qrAlvo = String(e.qr_url);
+      if (qrAlvo) qr = await qrDataUrl(qrAlvo);
+      const qrLegenda = qr ? String(e.qr_legenda || "Aponte a câmera e veja o documento completo").slice(0, 60) : undefined;
+
+      // SERIE: varios cartoes com um visual so, publicados juntos
+      if (Array.isArray(e.cartoes) && e.cartoes.length > 1) {
+        const cartoes = e.cartoes.slice(0, 5);
+        const tema = ICONES[e.tema] ? e.tema : "megafone";
+        const cor = /^#[0-9a-f]{6}$/i.test(e.cor || "") ? e.cor : ICONES[tema].cor;
+        let fundo: string | undefined, nitido = false, credito: string | null = null;
+        const f = e.busca_foto ? await fotoPixabay(String(e.busca_foto)) : null;
+        if (f) { fundo = f.url; credito = f.credito; } else { fundo = (await wallpaper(cor)) || (await fundoGradiente(cor)) || undefined; nitido = !!fundo; }
+        const grupo = crypto.randomUUID();
+        const ini = parseData(e.inicio), fim = parseData(e.fim);
+        const criados: any[] = [];
+        let totalItens = 0;
+        for (let k = 0; k < cartoes.length; k++) {
+          const cd = cartoes[k] || {};
+          const itens = await itensDe(cd.itens);
+          totalItens += itens?.length || 0;
+          const dados: any = {
+            v: 1, titulo: String(cd.titulo || e.titulo || "").slice(0, 60), quando: (cd.quando || e.quando) ? String(cd.quando || e.quando).slice(0, 60) : undefined,
+            texto: String(cd.texto || "").slice(0, 160) || undefined, itens, assinatura: e.assinatura || `Administração do ${p.nome}`,
+            cor, icone: await icone(tema), foto: foto || undefined, fundo, fundo_nitido: nitido || undefined, parte: `${k + 1}/${cartoes.length}`,
+            qr: k === cartoes.length - 1 ? qr : undefined, qr_legenda: k === cartoes.length - 1 ? qrLegenda : undefined,
+          };
+          const { data: a, error } = await sb.from("nando_avisos").insert({
+            building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: `${dados.titulo} (${k + 1}/${cartoes.length})`.slice(0, 70), status: "rascunho",
+            segundos: clampSeg(e.segundos || 20), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
+            lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
+            criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
+            conteudo: { tema, grupo, serie: true, parte: k + 1, total: cartoes.length, opcao: k + 1, credito_foto: credito, qr_alvo: qrAlvo || null, campos: { ...dados, icone: undefined, fundo: undefined, qr: undefined, itens: (cd.itens || []).map((x: any) => x?.texto) } },
+          }).select("*").single();
+          if (error) throw error;
+          const url = await salvarArquivo(c, `avisos/${a.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
+          await sb.from("nando_avisos").update({ conteudo: { ...a.conteudo, arquivo_url: url } }).eq("id", a.id);
+          await historico(sb, a.id, quem(c), `criou rascunho (série, cartão ${k + 1}/${cartoes.length})`);
+          criados.push(a);
+        }
+        const link = await criarPrevia(c, criados[0].id);
+        const ativos = await avisosAtivos(c, p.id);
+        c.registros.push(`série criada: ${criados.map((a, k) => `cartão ${k + 1} = [${idCurto(a.id)}]`).join(", ")}; ${totalItens} itens`);
+        return `Série de ${criados.length} cartões criada (vão ao ar JUNTOS, um depois do outro; para publicar use o código do cartão 1: ${idCurto(criados[0].id)}).\n` +
+          `Itens incluídos no total: ${totalItens}. Confira com o documento original antes de dizer que está tudo.${qr ? " O último cartão tem o QR code do documento completo." : ""}\n` +
+          `Link da prévia com os cartões lado a lado (vale 10 min): ${link}\nAvisos já no ar neste prédio: ${ativos}; com a série ficam ${ativos + criados.length} no rodízio.`;
+      }
+
       // sempre 3 variacoes para o sindico escolher (o mesmo texto, visuais diferentes, salvo se a variacao trouxer outro texto)
+      const itensUnico = await itensDe(e.itens);
       const vars: any[] = (Array.isArray(e.variacoes) && e.variacoes.length ? e.variacoes : [{}]).slice(0, 3);
       while (vars.length < 3) vars.push({ ...vars[vars.length - 1], _sem_foto: vars.length === 2 });
       const grupo = crypto.randomUUID();
@@ -342,7 +425,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         const dados: any = {
           v: 1, titulo: String(v.titulo || e.titulo || "").slice(0, 60), quando: (v.quando || e.quando) ? String(v.quando || e.quando).slice(0, 60) : undefined,
           texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`,
-          cor, icone: await iconeDataUrl(tema), foto: foto || undefined,
+          cor, icone: await icone(tema), foto: foto || undefined, itens: itensUnico, qr, qr_legenda: qrLegenda,
         };
         if (!foto && n === 2) {
           // a 3a opcao e sempre um wallpaper abstrato (nitido, sem foto)
@@ -360,7 +443,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
           segundos: clampSeg(e.segundos), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
           lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
           criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
-          conteudo: { tema, grupo, opcao: n + 1, credito_foto: v._credito || null, campos: { ...dados, icone: undefined, foto: e.midia_id || undefined } },
+          conteudo: { tema, grupo, opcao: n + 1, credito_foto: v._credito || null, qr_alvo: qrAlvo || null, campos: { ...dados, icone: undefined, fundo: undefined, qr: undefined, itens: (e.itens || []).map((x: any) => x?.texto), foto: e.midia_id || undefined } },
         }).select("*").single();
         if (error) throw error;
         const url = await salvarArquivo(c, `avisos/${a.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
@@ -398,15 +481,22 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
     case "publicar_aviso": {
       const a = await acharAviso(c, e.aviso);
       if (!["rascunho", "erro"].includes(a.status)) return `Esse aviso já está ${a.status}.`;
+      // serie: todos os cartoes vao juntos, na ordem
+      let bases: any[] = [a];
+      if (a.conteudo?.serie && a.conteudo?.grupo) {
+        const { data: irmaos } = await sb.from("nando_avisos").select("*").eq("conteudo->>grupo", a.conteudo.grupo).in("status", ["rascunho", "erro"]);
+        bases = (irmaos || []).sort((x: any, y: any) => (x.conteudo?.parte || 0) - (y.conteudo?.parte || 0));
+      }
       const alvos: Predio[] = [];
       if (Array.isArray(e.predios) && e.predios.length) for (const cod of e.predios) alvos.push(await predioDoCodigo(c, cod));
       else alvos.push(await predioPorId(c, a.building_id));
       const res: string[] = [];
       for (const p of alvos) {
-        if (await avisosAtivos(c, p.id) >= LIMITE_AVISOS) { res.push(`${p.nome}: NÃO publicado (já tem ${LIMITE_AVISOS} avisos; tire um antes)`); continue; }
-        let linha = a;
-        if (p.id !== a.building_id) {
-          const { data: copia } = await sb.from("nando_avisos").insert({ ...a, id: undefined, building_id: p.id, cliente_id: p.cliente_id, created_at: undefined, updated_at: undefined }).select("*").single();
+        if (await avisosAtivos(c, p.id) + bases.length > LIMITE_AVISOS) { res.push(`${p.nome}: NÃO publicado (passaria de ${LIMITE_AVISOS} avisos no ar; tire algum antes)`); continue; }
+        for (const base of bases) {
+        let linha = base;
+        if (p.id !== base.building_id) {
+          const { data: copia } = await sb.from("nando_avisos").insert({ ...base, id: undefined, building_id: p.id, cliente_id: p.cliente_id, created_at: undefined, updated_at: undefined }).select("*").single();
           linha = copia;
         }
         try {
@@ -414,14 +504,15 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
           const st = new Date(linha.inicio) > new Date(Date.now() + 60000) ? "agendado" : "no_ar";
           await sb.from("nando_avisos").update({ arquivo, status: st, erro: null }).eq("id", linha.id);
           await historico(sb, linha.id, quem(c), "publicou", { predio: p.nome });
-          res.push(`${p.nome}: ${st === "agendado" ? `agendado para ${fmtData(linha.inicio)}` : "publicado (aparece em até ~10 min)"} [${idCurto(linha.id)}]`);
+          res.push(`${p.nome}: "${linha.titulo}" ${st === "agendado" ? `agendado para ${fmtData(linha.inicio)}` : "publicado e confirmado na pasta do painel (aparece na tela em até ~10 min)"} [${idCurto(linha.id)}]`);
         } catch (err) {
           await sb.from("nando_avisos").update({ status: "erro", erro: (err as Error).message }).eq("id", linha.id);
           await registrarOcorrencia(sb, { tipo: "erro_publicacao", telefone: c.tel, nome: c.nomePessoa, building_id: p.id, descricao: `Falha ao publicar "${linha.titulo}" no ${p.nome}: ${(err as Error).message}` });
-          res.push(`${p.nome}: ERRO ao publicar (o Jeferson já foi avisado)`);
+          res.push(`${p.nome}: "${linha.titulo}" ERRO ao publicar, NÃO está no painel (o Jeferson já foi avisado)`);
+        }
         }
       }
-      if (a.conteudo?.grupo) {
+      if (a.conteudo?.grupo && !a.conteudo?.serie) {
         await sb.from("nando_avisos").update({ status: "removido", removido_por: "opção não escolhida", removido_em: new Date().toISOString() })
           .eq("status", "rascunho").eq("conteudo->>grupo", a.conteudo.grupo).neq("id", a.id);
       }
@@ -459,6 +550,27 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
       c.registros.push(`aviso ${idCurto(a.id)} removido: ${a.titulo}`);
       return `Aviso "${a.titulo}" retirado (some do painel em até ~10 min).`;
     }
+    case "ver_arquivo": {
+      const m = c.midias[e.midia_id] || await midiaSalva(c, String(e.midia_id || ""));
+      if (!m) return "Não encontrei esse arquivo (midia_id). Peça para a pessoa mandar de novo.";
+      const r = await fetch(m.url);
+      if (!r.ok) return "Não consegui abrir o arquivo agora.";
+      const bytes = new Uint8Array(await r.arrayBuffer());
+      const b64 = bytesParaB64(bytes);
+      if (m.mime.startsWith("image/") && bytes.length < 4_500_000) {
+        return { texto: `Arquivo ${e.midia_id} (imagem) aberto acima. Leia TODO o conteúdo.`, blocos: [{ type: "image", source: { type: "base64", media_type: m.mime, data: b64 } }] };
+      }
+      if (m.mime.includes("pdf") && bytes.length < 9_000_000) {
+        return { texto: `Arquivo ${e.midia_id} (PDF) aberto acima. Leia TODO o conteúdo.`, blocos: [{ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } }] };
+      }
+      return "Esse arquivo não é imagem nem PDF (ou é grande demais).";
+    }
+    case "link_dos_avisos": {
+      const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      const link = `${SITE_URL}/nando/predio/${await tokenPredio(p.id, 60)}`;
+      c.registros.push(`link dos avisos do ${p.nome} enviado`);
+      return `Link da página de avisos do ${p.nome} (vale 1 hora): ${link}`;
+    }
     case "salvar_preferencia": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro.";
       const { data } = await sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle();
@@ -485,7 +597,7 @@ function clampSeg(s: unknown) { const n = Math.round(Number(s) || 15); return Ma
 
 async function midiaSalva(c: Contexto, id: string) {
   const { data } = await c.sb.storage.from(BUCKET).list("recebidas", { search: id });
-  const f = (data || []).find((x: any) => x.name.startsWith(id));
+  const f = (data || []).find((x: any) => x.name.split(".")[0] === id);
   if (!f) return null;
   const caminho = `recebidas/${f.name}`;
   return { mime: (f.metadata as any)?.mimetype || "application/octet-stream", caminho, url: urlPublica(c, caminho) };
@@ -503,6 +615,10 @@ async function assuntoEmAndamento(c: Contexto): Promise<string> {
   const grupo = ult.conteudo?.grupo;
   const ops = grupo ? data.filter((a: any) => a.conteudo?.grupo === grupo) : [ult];
   const min = Math.round((Date.now() - new Date(ult.created_at).getTime()) / 60000);
+  if (ult.conteudo?.serie) {
+    const primeiro = ops.find((a: any) => a.conteudo?.parte === 1) || ult;
+    return `ASSUNTO EM ANDAMENTO: série "${String(ult.titulo).replace(/\s*\(\d+\/\d+\)$/, "")}" (${ult.conteudo?.total || ops.length} cartões) ainda em rascunho, prévia enviada há ${min} min. Para publicar a série inteira: publicar_aviso com o código ${idCurto(primeiro.id)}.`;
+  }
   return `ASSUNTO EM ANDAMENTO: aviso "${ult.titulo}" ainda em rascunho (prévia enviada há ${min} min, aguardando a escolha/aprovação). ` +
     `Opções: ${ops.map((a: any) => `opção ${a.conteudo?.opcao || 1} = código ${idCurto(a.id)}`).join(", ")}.`;
 }
@@ -544,13 +660,24 @@ JEITO DE FALAR
 
 COMO TRABALHAR COM AVISOS
 - Avisos não passam por aprovação da EXA: a responsabilidade é da administração do prédio. Mas NUNCA publique sem a pessoa ver a prévia e confirmar ("pode publicar", "ok", "manda").
-- Fluxo: entender o aviso → criar_aviso_nando (sempre com 3 variações) ou criar_aviso_arquivo → mandar o link da prévia e perguntar "qual das 3 opções você prefere?" → ajustar se pedirem (gere novas opções) → confirmar → publicar_aviso com o código da opção escolhida.
+- Fluxo: entender o aviso → criar_aviso_nando (3 variações; ou série com cartoes) → mandar o link da prévia e perguntar "qual das 3 opções você prefere?" → ajustar se pedirem (gere novas opções) → confirmar → publicar_aviso com o código da opção escolhida.
 - O aviso é lido de LONGE no elevador: textos curtos (título até 30 caracteres, "quando" até 35, texto até 110). Menos texto = letra maior.
 - Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data no aviso, pergunte UMA vez, de forma natural: "Ele fica sem data para sair? Se quiser, eu te lembro daqui a 30 dias para ver se ainda vale." Se não quiser lembrete, fica por tempo indeterminado. Faça as perguntas que faltarem juntas, numa mensagem só, e não repita perguntas já respondidas. (3) tempo na tela: SÓ pergunte/mencione se o prédio já tiver outro aviso no ar (aí o rodízio alterna entre eles; padrão 15 s). Se este for o ÚNICO aviso, não fale de segundos: ele fica o tempo todo na tela.
 - Confirme datas por extenso com dia da semana e hora exata (ex: "fica até *domingo, 27/10, às 23h59*, certo?").
 - Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine e informe busca_foto (palavras em inglês) para a foto de fundo, que aparece desfocada atrás do texto. Temas: ${listaTemas()}.
-- Se mandarem uma foto (ex: o portão), você pode usar a foto em destaque no aviso do Nando (midia_id) ou publicar a foto como está.
-- PDF / documento de assembleia: nunca publique minúsculo sem avisar. Pergunte se prefere: (a) publicar o PDF como está (ajustado à tela, letras pequenas), (b) transformar num aviso curto e visual do Nando com os pontos principais, ou (c) aviso visual resumido dizendo onde o documento completo está disponível. Recomende (b) quando o texto for longo.
+- Se mandarem uma foto de um lugar (ex: o portão), você pode usar a foto em destaque no aviso do Nando (midia_id).
+
+DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
+- Você ENXERGA as imagens e PDFs. Quando chegar um, leia TUDO na hora, antes de responder. Se precisar de novo de um arquivo de mensagens anteriores, use ver_arquivo com o midia_id. Nunca diga que não consegue ler um arquivo sem antes usar ver_arquivo.
+- Não publique o documento cru como primeira opção (no elevador as letras ficam miúdas). Já traga a proposta pronta, sem perguntar o que a pessoa prefere:
+  • Comunicado/informativo (ex: dedetização, obra, assembleia): aviso animado do Nando com o resumo (o quê, quando, o que o morador precisa fazer) + QR code do documento completo (qr_midia_id = o midia_id do arquivo). Tire do documento as datas e horários; não pergunte o que está escrito nele.
+  • Lista de regras/proibições (ex: regras da piscina): conte os itens e transcreva TODOS. Até 6 itens = um cartão com itens; mais que isso = SÉRIE (cartoes), até 6 itens por cartão, cada item com um tema de ícone que combine. Ao mandar a prévia, diga quantos itens o documento tem e que todos entraram (ex: "São 18 regras e todas estão nos 3 cartões"). Se faltar algum, refaça antes de mandar. Pode pôr o QR do original no último cartão.
+- Se algo no documento não bate (data que já passou, nome de outro condomínio), aponte em UMA frase junto com a proposta, sem travar o trabalho.
+- Só publique o arquivo como está (criar_aviso_arquivo) se a pessoa pedir isso depois de ver a proposta; nesse caso sugira 30 segundos na tela.
+- Série: a prévia mostra os cartões lado a lado; publicar_aviso com o código do cartão 1 publica a série inteira.
+
+LINK DOS AVISOS DO PRÉDIO
+- Depois de publicar, alterar ou listar avisos, ofereça o link da página do prédio (link_dos_avisos): mostra todos os avisos no ar e agendados como aparecem na tela, a ordem do rodízio e até quando cada um fica. Se a pessoa pedir para "ver como está", mande o link direto.
 - Uma administradora com vários prédios pode pedir o mesmo aviso em vários prédios: publique com publicar_aviso passando a lista de códigos.
 - Máximo de ${LIMITE_AVISOS} avisos no ar por prédio. Acima de 6, avise que o rodízio fica longo e cada aviso aparece menos.
 - Para tirar um aviso, confirme qual é (pelo título) antes de usar remover_aviso. Avisos antigos (anteriores ao Nando) também aparecem na lista; só tire se pedirem.
@@ -577,7 +704,7 @@ export async function rodarAgente(c: Contexto, mensagens: any[]): Promise<string
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: MODELOS[modeloIdx], max_tokens: 1200, system, tools: FERRAMENTAS, messages: msgs }),
+      body: JSON.stringify({ model: MODELOS[modeloIdx], max_tokens: 4000, system, tools: FERRAMENTAS, messages: msgs }),
     });
     if (!r.ok) {
       const t = await r.text();
@@ -592,11 +719,12 @@ export async function rodarAgente(c: Contexto, mensagens: any[]): Promise<string
     }
     const resultados = [];
     for (const u of usos) {
-      let saida: string;
+      let saida: Saida;
       try { saida = await executar(c, u.name, u.input || {}); }
       catch (err) { saida = "ERRO: " + (err as Error).message; console.error("[NANDO] ferramenta", u.name, err); }
-      resultados.push({ type: "tool_result", tool_use_id: u.id, content: saida });
-      c.registros.push(`${u.name}(${JSON.stringify(u.input || {}).slice(0, 160)}) → ${saida.slice(0, 700)}`);
+      const texto = typeof saida === "string" ? saida : saida.texto;
+      resultados.push({ type: "tool_result", tool_use_id: u.id, content: typeof saida === "string" ? saida : [...saida.blocos, { type: "text", text: saida.texto }] });
+      c.registros.push(`${u.name}(${JSON.stringify(u.input || {}).slice(0, 300)}) → ${texto.slice(0, 900)}`);
     }
     msgs.push({ role: "user", content: resultados });
   }

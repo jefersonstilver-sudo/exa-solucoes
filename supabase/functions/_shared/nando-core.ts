@@ -5,6 +5,7 @@
 // nunca apaga aviso que o sindico/administrador nao pediu para tirar.
 // =====================================================================
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import QRCode from "npm:qrcode@1.5.4";
 
 export const API_EXTERNA = "http://18.228.252.149:8000";
 export const EXASISTEMA_URL = "https://iwlscwsenzgyylopnwpu.supabase.co";
@@ -17,7 +18,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.14";
+export const NANDO_VERSAO = "2026-10-24.15";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -361,4 +362,34 @@ export function slug(t: string): string {
 }
 export function carimbo(): string {
   return horaLocalIso(new Date()).replace(/\D/g, "");
+}
+
+// ---------------- QR code (leva ao documento original no celular) ----------------
+export async function qrDataUrl(texto: string): Promise<string> {
+  const svg: string = await QRCode.toString(texto, { type: "svg", errorCorrectionLevel: "M", margin: 1, color: { dark: "#111111", light: "#ffffff" } });
+  return "data:image/svg+xml;base64," + bytesParaB64(new TextEncoder().encode(svg));
+}
+
+// ---------------- link do predio (avisos no ar), assinado e temporario ----------------
+async function chaveLink(): Promise<CryptoKey> {
+  const seg = Deno.env.get("NANDO_LINK_SEGREDO") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  return await crypto.subtle.importKey("raw", new TextEncoder().encode("nando-predio:" + seg), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+}
+function hex(b: ArrayBuffer): string { return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, "0")).join(""); }
+export async function tokenPredio(buildingId: string, minutos = 60): Promise<string> {
+  const exp = Math.floor(Date.now() / 1000) + minutos * 60;
+  const base = `${buildingId.replace(/-/g, "")}${exp.toString(16)}`;
+  const sig = hex(await crypto.subtle.sign("HMAC", await chaveLink(), new TextEncoder().encode(base))).slice(0, 24);
+  return base + sig;
+}
+export async function lerTokenPredio(token: string): Promise<{ buildingId: string; expira: Date } | null> {
+  const t = String(token || "").toLowerCase().replace(/[^0-9a-f]/g, "");
+  if (t.length < 32 + 8 + 24) return null;
+  const sig = t.slice(-24), base = t.slice(0, -24);
+  const certo = hex(await crypto.subtle.sign("HMAC", await chaveLink(), new TextEncoder().encode(base))).slice(0, 24);
+  if (certo !== sig) return null;
+  const exp = parseInt(base.slice(32), 16);
+  if (!exp || exp * 1000 < Date.now()) return null;
+  const h = base.slice(0, 32);
+  return { buildingId: `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`, expira: new Date(exp * 1000) };
 }

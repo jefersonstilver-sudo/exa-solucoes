@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 type Previa = {
   ok: boolean; erro?: string; tipo?: 'nando' | 'imagem' | 'pdf'; titulo?: string; segundos?: number;
-  inicio?: string; fim?: string | null; predio?: string; outros?: number; opcoes?: { opcao: number; dados: unknown; credito?: string | null }[]; dados?: unknown; url?: string | null; expira_em?: string;
+  inicio?: string; fim?: string | null; predio?: string; outros?: number; opcoes?: { opcao: number; rotulo?: string; dados: unknown; credito?: string | null }[]; serie?: boolean; dados?: unknown; url?: string | null; expira_em?: string;
 };
 
 declare global {
@@ -97,11 +97,11 @@ export default function NandoPrevia() {
         <>
           {p.tipo === 'nando' && (
             <>
-              {(p.opcoes?.length || 0) > 1 && <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 12 }}>Deslize para ver as {p.opcoes!.length} opções 👉</div>}
+              {(p.opcoes?.length || 0) > 1 && <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 12 }}>Deslize para ver {p.serie ? `os ${p.opcoes!.length} cartões` : `as ${p.opcoes!.length} opções`} 👉</div>}
               <div style={{ display: 'flex', gap: 18, overflowX: 'auto', scrollSnapType: 'x mandatory', width: '100%', maxWidth: 1100, padding: '4px 4px 16px', justifyContent: (p.opcoes?.length || 1) > 1 ? 'flex-start' : 'center' }}>
                 {(p.opcoes?.length ? p.opcoes : [{ opcao: 1, dados: p.dados }]).map((o) => (
                   <div key={o.opcao} style={{ flex: '0 0 auto', scrollSnapAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 auto' }}>
-                    <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8 }}>Opção {o.opcao}</div>
+                    <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{'rotulo' in o && o.rotulo ? o.rotulo : `Opção ${o.opcao}`}</div>
                     <div style={{ width: 'min(78vw, 320px)', aspectRatio: '502 / 882', borderRadius: 18, padding: 6, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)', boxShadow: '0 30px 80px rgba(0,0,0,.55)' }}>
                       <div id={`na-op-${o.opcao}`} style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 13, overflow: 'hidden', background: '#140a1c' }} />
                     </div>
@@ -134,7 +134,7 @@ export default function NandoPrevia() {
             <div>⏹️ Sai: <b>{fmt(p.fim) || 'sem data de saída'}</b></div>
           </div>
           <div style={{ marginTop: 16, fontSize: 13, opacity: 0.7, textAlign: 'center', maxWidth: 340 }}>
-            {(p.opcoes?.length || 0) > 1 ? <>Responda o Nando no WhatsApp com o número da opção (ex: <b>"opção 2"</b>) ou peça os ajustes.</> : <>Gostou? Responda o Nando no WhatsApp com <b>"pode publicar"</b> ou peça os ajustes.</>}
+            {p.serie ? <>Os cartões vão ao ar juntos, um depois do outro. Responda o Nando no WhatsApp com <b>"pode publicar"</b> ou peça os ajustes.</> : (p.opcoes?.length || 0) > 1 ? <>Responda o Nando no WhatsApp com o número da opção (ex: <b>"opção 2"</b>) ou peça os ajustes.</> : <>Gostou? Responda o Nando no WhatsApp com <b>"pode publicar"</b> ou peça os ajustes.</>}
             <br />Este link expira em {min}:{seg}.
           </div>
         </>

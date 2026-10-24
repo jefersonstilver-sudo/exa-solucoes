@@ -159,7 +159,10 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
     const c = l.conteudo || {};
     if (l.papel === "nando") push("assistant", String(c.texto || "").slice(0, 2000) || "(ok)");
     else if (l.papel === "sistema") push("assistant", `(registro interno do que consultei/fiz: ${String(c.texto || "").slice(0, 2500)})`);
-    else if (!novas.includes(l)) push("user", c.texto ? c.texto : `[${c.midia || "mídia"} enviada${c.midia_id ? `, midia_id=${c.midia_id}` : ""}]`);
+    else if (!novas.includes(l)) {
+      const anexo = c.midia && c.midia !== "audio" ? `[${c.midia} enviada${c.midia_id ? `, midia_id=${c.midia_id} (use ver_arquivo para ler de novo)` : ""}]` : "";
+      push("user", [anexo, c.texto || ""].filter(Boolean).join("\n") || "(mensagem)");
+    }
   }
   // mensagens novas, com as midias anexadas para o Claude ver
   const blocos: any[] = [];
