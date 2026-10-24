@@ -76,3 +76,9 @@
 .na-com-itens .na-veu{background:linear-gradient(180deg,rgba(8,3,14,.62) 0%,rgba(8,3,14,.74) 40%,rgba(8,3,14,.88) 100%)}
 .na-item{background:rgba(10,4,18,.58);border-color:rgba(255,255,255,.18)}
 .na-item-tx,.na-texto,.na-titulo,.na-qr-tx{text-shadow:0 3px 14px rgba(0,0,0,.65)}
+/* v33: fundo e veu ocupam a caixa inteira (o palco so tem o conteudo): sem borda clara em volta */
+.na-raiz{background:#0b0610}
+.na-bg{display:none}
+.na-raiz>.na-fundo{z-index:0}
+.na-raiz>.na-veu{z-index:0}
+.na-palco{z-index:1;border-radius:0;background:transparent}

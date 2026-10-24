@@ -1,5 +1,5 @@
 /**
- * aviso-nando.js (v32) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
+ * aviso-nando.js (v33) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
  * Usado pelo painel E pela pagina de previa, para os dois ficarem identicos.
  *
  * O aviso e um "palco" 1080x1920 que e escalado inteiro para caber na caixa:
@@ -75,10 +75,11 @@
     var bg = el("div", "na-bg");
     raiz.appendChild(bg);
 
-    var palco = el("div", "na-palco");
+    // v33: fundo e veu ocupam a caixa INTEIRA (sem emenda nem borda clara); o palco so leva o conteudo
     var fundo = el("div", "na-fundo");
     var veu = el("div", "na-veu");
-    palco.appendChild(fundo); palco.appendChild(veu);
+    raiz.appendChild(fundo); raiz.appendChild(veu);
+    var palco = el("div", "na-palco");
 
     // o titulo "Avisos do <predio>" ja aparece no painel: so mostra selo se vier no aviso
     if (d.selo) {
@@ -146,7 +147,7 @@
         return;
       }
       var s = Math.min(w / W, h / H);
-      palco.style.transform = "translate(" + ((w - W * s) / 2) + "px," + ((h - H * s) / 2) + "px) scale(" + s + ")";
+      palco.style.transform = "translate(" + Math.round((w - W * s) / 2) + "px," + Math.round((h - H * s) / 2) + "px) scale(" + s + ")";
       palco.style.visibility = "";
     }
     escalar();
@@ -188,5 +189,5 @@
     return { raiz: raiz, escalar: escalar, remover: function () { if (vigia) { try { vigia.disconnect(); } catch (e) {} } if (raiz.parentNode) raiz.parentNode.removeChild(raiz); } };
   }
 
-  window.NandoAviso = { montar: montar, W: W, H: H, versao: 32 };
+  window.NandoAviso = { montar: montar, W: W, H: H, versao: 33 };
 })();
