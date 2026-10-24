@@ -177,6 +177,8 @@ serve(async (req) => {
     if (!videoTitle) {
       throw new Error('Título do vídeo (videos.nome) está vazio - não é possível enviar para API externa');
     }
+    // Nome do arquivo enviado à API externa = título cadastrado (ver comentário acima).
+    const storageFileName = videoTitle;
 
     console.log('📝 [UPLOAD_EXTERNAL_API] Título do vídeo:', {
       nome_usuario: pedidoVideo.videos.nome,
