@@ -23,6 +23,7 @@ def resolucao(display):
     return "1080x1920"
 
 def main():
+    print("Preparando a gravacao...", flush=True)
     if not shutil.which("ffmpeg"):
         print("ERRO: este painel nao tem o ffmpeg instalado. Avise a EXA.")
         return
@@ -31,7 +32,10 @@ def main():
     w, h = [int(x) for x in tam.lower().split("x")]
     # Full HD: o lado maior fica em ate 1920 (sem esticar)
     escala = "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',format=yuv420p"
-    print(f"Gravando a tela {tam} por {SEGUNDOS // 60} minutos... (nao feche este terminal)")
+    print("MINIMIZE ESTE TERMINAL AGORA (botao _ no canto). A gravacao comeca em 20 segundos.", flush=True)
+    for i in range(20, 0, -5):
+        print(f"  comeca em {i} s...", flush=True); time.sleep(5)
+    print(f"Gravando a tela {tam} por {SEGUNDOS // 60} minutos... (nao feche este terminal)", flush=True)
     t0 = time.time()
     r = subprocess.run([
         "nice", "-n", "5", "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
@@ -43,7 +47,7 @@ def main():
         print("ERRO: a gravacao falhou. Mande um print deste terminal para a EXA.")
         return
     mb = os.path.getsize(ARQ) / 1e6
-    print(f"Gravacao pronta ({mb:.0f} MB, {time.time() - t0:.0f} s). Enviando...")
+    print(f"Gravacao pronta ({mb:.0f} MB, {time.time() - t0:.0f} s). Enviando...", flush=True)
     destino = json.loads(urllib.request.urlopen(ENDERECO_ENVIO + "?t=" + str(int(time.time())), timeout=30).read())["url"]
     with open(ARQ, "rb") as f:
         req = urllib.request.Request(destino, data=f.read(), method="PUT", headers={"Content-Type": "video/mp4"})
