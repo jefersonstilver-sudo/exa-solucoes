@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     const cleanCpf = cpf.replace(/[.-]/g, '');
 
     // Buscar pedido com informações do cliente - ONLY for authenticated user's orders
-    const { data: order, error: orderError } = await supabaseClient
+    const { data: orderRaw, error: orderError } = await supabaseClient
       .from('pedidos')
       .select(`
         id,
