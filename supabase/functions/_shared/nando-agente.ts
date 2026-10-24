@@ -47,8 +47,15 @@ async function acharAviso(c: Contexto, id: string) {
 async function predioDoCodigo(c: Contexto, codigo: string): Promise<Predio> {
   const cod = String(codigo || "").trim();
   const lista = c.admin ? await todosPredios(c.sb) : c.predios;
-  const p = lista.find((x) => x.codigo === cod || x.id === cod || x.nome.toLowerCase() === cod.toLowerCase());
-  if (!p) throw new Error("Prédio não encontrado entre os que esta pessoa administra.");
+  const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const alvo = norm(cod);
+  let p = lista.find((x) => x.codigo === cod || x.id === cod || norm(x.nome) === alvo);
+  if (!p && alvo.length >= 3) {
+    const parecidos = lista.filter((x) => norm(x.nome).includes(alvo) || alvo.includes(norm(x.nome)));
+    if (parecidos.length === 1) p = parecidos[0];
+    else if (parecidos.length > 1) throw new Error(`Mais de um prédio parecido: ${parecidos.map((x) => `${x.nome} (${x.codigo})`).join("; ")}. Pergunte qual.`);
+  }
+  if (!p) throw new Error("Prédio não encontrado entre os que esta pessoa administra. Use listar_predios para ver os nomes e códigos.");
   return p;
 }
 
@@ -271,6 +278,11 @@ export const FERRAMENTAS = [
     input_schema: { type: "object", properties: { codigo: { type: "string" } }, required: ["codigo"] },
   },
   {
+    name: "listar_predios",
+    description: "Lista os prédios em que a pessoa pode mexer (o Jeferson/administrador: TODOS os prédios ativos), com nome, código e quantos avisos estão no ar. Use sempre que perguntarem quais prédios podem mexer ou quando não souber o código.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
     name: "listar_avisos",
     description: "Lista os avisos do prédio atual (no ar, agendados e com problema; rascunhos NUNCA aparecem), com código, tempo de tela, início, saída, lembrete e quem criou.",
     input_schema: { type: "object", properties: {} },
@@ -452,6 +464,15 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       await sincronizarLegado(sb, p);
       c.registros.push(`prédio escolhido: ${p.nome} (${p.codigo})`);
       return `Prédio atual: ${p.nome} (código ${p.codigo}).`;
+    }
+    case "listar_predios": {
+      const lista = c.admin ? await todosPredios(sb) : c.predios;
+      if (!lista.length) return "Nenhum prédio ligado a este número.";
+      const { data: noAr } = await sb.from("nando_avisos").select("building_id").eq("status", "no_ar").in("building_id", lista.map((x) => x.id));
+      const cont = new Map<string, number>();
+      for (const a of noAr || []) cont.set(a.building_id, (cont.get(a.building_id) || 0) + 1);
+      return `${lista.length} prédio(s):\n` + lista.map((x) => `- ${x.nome} (código ${x.codigo})${cont.get(x.id) ? ` · ${cont.get(x.id)} aviso(s) do Nando no ar` : ""}`).join("\n") +
+        "\n(Ao responder no WhatsApp, mande a lista inteira, um prédio por linha, com o código.)";
     }
     case "listar_avisos": {
       const p = c.predioAtual; if (!p) return "Nenhum prédio escolhido ainda.";
@@ -796,7 +817,7 @@ export async function promptSistema(c: Contexto): Promise<string> {
     if (data?.preferencias && Object.keys(data.preferencias).length) perfil = `Preferências já combinadas neste prédio: ${JSON.stringify(data.preferencias)}`;
   }
   const quemE = c.admin
-    ? `Você está falando com o JEFERSON, dono da EXA Mídia (administrador). Ele pode ver e mexer em QUALQUER prédio. Trate-o como "Jeferson".`
+    ? `Você está falando com o JEFERSON, dono da EXA Mídia (administrador). Ele pode ver e mexer em QUALQUER prédio. Trate-o como "Jeferson". Se ele perguntar quais prédios existem/pode mexer, use listar_predios e mande a lista completa; para trocar de prédio, use escolher_predio com o nome ou o código.`
     : c.predios.length
       ? `Você está falando com ${c.nomePessoa || "um administrador do prédio"} (chame de "${primeiroNome(c.nomePessoa) || "você"}"). Prédios que essa pessoa administra: ${c.predios.map((p) => `${p.nome} (código ${p.codigo}, ${p.papel})`).join("; ")}.`
       : `NÚMERO NÃO CADASTRADO: não existe em nenhum prédio. Não mexa em avisos. Seja educado: diga que não encontrou o número em nenhum prédio, pergunte o nome, se é síndico ou gestor/administradora e de qual prédio. Quando tiver essas informações, use registrar_ocorrencia (tipo numero_desconhecido) e diga que o responsável da EXA vai entrar em contato.`;
