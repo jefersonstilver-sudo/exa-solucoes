@@ -142,6 +142,11 @@ serve(async (req) => {
       createdBy: createdByName
     });
     
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     if (!emailResult.success) {
       console.warn('⚠️ [CREATE-ADMIN] Conta criada mas email de boas-vindas não enviado:', emailResult.error);
       
@@ -167,11 +172,6 @@ serve(async (req) => {
 
     // Buscar todos os super admins para notificar
     console.log('📨 [CREATE-ADMIN] Notificando super administradores...');
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     const { data: superAdmins, error: superAdminError } = await supabase
       .from('users')
       .select('email, nome')
