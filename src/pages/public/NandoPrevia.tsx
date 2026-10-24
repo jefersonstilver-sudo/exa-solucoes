@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 type Previa = {
   ok: boolean; erro?: string; tipo?: 'nando' | 'imagem' | 'pdf'; titulo?: string; segundos?: number;
-  inicio?: string; fim?: string | null; predio?: string; dados?: unknown; url?: string | null; expira_em?: string;
+  inicio?: string; fim?: string | null; predio?: string; outros?: number; dados?: unknown; url?: string | null; expira_em?: string;
 };
 
 declare global {
@@ -108,7 +108,7 @@ export default function NandoPrevia() {
           </div>
 
           <div style={{ marginTop: 22, width: 'min(86vw, 380px)', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.12)', borderRadius: 16, padding: '14px 16px', fontSize: 14, lineHeight: 1.7 }}>
-            <div>⏱️ <b>{p.segundos}s</b> na tela a cada rodízio</div>
+            <div>⏱️ {p.outros ? <><b>{p.segundos}s</b> na tela a cada rodízio (com {p.outros} outro{p.outros > 1 ? 's' : ''} aviso{p.outros > 1 ? 's' : ''})</> : <>Fica <b>fixo na tela</b> (único aviso do prédio)</>}</div>
             <div>▶️ Começa: <b>{fmt(p.inicio) || 'assim que publicar'}</b></div>
             <div>⏹️ Sai: <b>{fmt(p.fim) || 'sem data de saída'}</b></div>
           </div>

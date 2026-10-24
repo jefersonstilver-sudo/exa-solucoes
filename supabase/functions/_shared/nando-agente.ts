@@ -78,6 +78,18 @@ async function iconeDataUrl(tema: string): Promise<string | null> {
   return "data:image/png;base64," + bytesParaB64(new Uint8Array(await r.arrayBuffer()));
 }
 
+// fundo em degrade (mesh) da cor do tema; nunca usar o icone ampliado como fundo
+const FUNDOS = ["0a84ff", "f5a400", "ff5a1f", "5e5ce6", "30b0c7", "ff2d55", "bf5af2", "34c759", "ff9f0a", "8e8e93", "a2845e", "ff3b30", "ffcc00", "7c3aed"];
+async function fundoGradiente(cor: string): Promise<string | null> {
+  const c = String(cor || "").replace("#", "").toLowerCase();
+  const arq = FUNDOS.includes(c) ? c : "7c3aed";
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/jefersonstilver-sudo/exa-solucoes/main/public/nando/fundos/${arq}.jpg`);
+    if (!r.ok) return null;
+    return "data:image/jpeg;base64," + bytesParaB64(new Uint8Array(await r.arrayBuffer()));
+  } catch { return null; }
+}
+
 function parseData(s: unknown): Date | null {
   if (!s) return null;
   let t = String(s).trim();
@@ -241,6 +253,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
         v: 1, titulo: String(e.titulo || "").slice(0, 70), quando: e.quando ? String(e.quando).slice(0, 80) : undefined,
         texto: String(e.texto || "").slice(0, 260), assinatura: e.assinatura || `Administração do ${p.nome}`,
         cor: /^#[0-9a-f]{6}$/i.test(e.cor || "") ? e.cor : ICONES[tema].cor, icone, foto: foto || undefined,
+        fundo: foto ? undefined : (await fundoGradiente(ICONES[tema].cor)) || undefined,
       };
       const ini = parseData(e.inicio), fim = parseData(e.fim);
       const { data: a, error } = await sb.from("nando_avisos").insert({
@@ -256,7 +269,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
       await historico(sb, a.id, quem(c), "criou rascunho");
       const link = await criarPrevia(c, a.id);
       c.registros.push(`rascunho ${idCurto(a.id)} criado: ${dados.titulo}`);
-      return `Rascunho criado [${idCurto(a.id)}]. Link de prévia (vale 10 min): ${link}`;
+      return `Rascunho criado [${idCurto(a.id)}]. Link de prévia (vale 10 min): ${link}\nAvisos já no ar neste prédio: ${await avisosAtivos(c, p.id)}${(await avisosAtivos(c, p.id)) === 0 ? " (este será o único: não fale de segundos de tela)" : ""}.`;
     }
     case "criar_aviso_arquivo": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
@@ -275,7 +288,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<strin
       await historico(sb, a.id, quem(c), "criou rascunho");
       const link = await criarPrevia(c, a.id);
       c.registros.push(`rascunho ${idCurto(a.id)} criado: ${a.titulo}`);
-      return `Rascunho criado [${idCurto(a.id)}]. Link de prévia (vale 10 min): ${link}`;
+      return `Rascunho criado [${idCurto(a.id)}]. Link de prévia (vale 10 min): ${link}\nAvisos já no ar neste prédio: ${await avisosAtivos(c, p.id)}${(await avisosAtivos(c, p.id)) === 0 ? " (este será o único: não fale de segundos de tela)" : ""}.`;
     }
     case "publicar_aviso": {
       const a = await acharAviso(c, e.aviso);
@@ -404,7 +417,7 @@ JEITO DE FALAR
 COMO TRABALHAR COM AVISOS
 - Avisos não passam por aprovação da EXA: a responsabilidade é da administração do prédio. Mas NUNCA publique sem a pessoa ver a prévia e confirmar ("pode publicar", "ok", "manda").
 - Fluxo: entender o aviso → criar rascunho (criar_aviso_nando ou criar_aviso_arquivo) → mandar o link da prévia → ajustar se pedirem (crie um rascunho novo) → confirmar → publicar_aviso.
-- Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data, pergunte UMA vez: "quer que eu te lembre daqui 30 dias ou já tiro em 30 dias?". Se não quiser data, fica por tempo indeterminado. (3) tempo na tela: padrão 15 segundos.
+- Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data no aviso, pergunte UMA vez, de forma natural: "Ele fica sem data para sair? Se quiser, eu te lembro daqui a 30 dias para ver se ainda vale." Se não quiser lembrete, fica por tempo indeterminado. Faça as perguntas que faltarem juntas, numa mensagem só, e não repita perguntas já respondidas. (3) tempo na tela: SÓ pergunte/mencione se o prédio já tiver outro aviso no ar (aí o rodízio alterna entre eles; padrão 15 s). Se este for o ÚNICO aviso, não fale de segundos: ele fica o tempo todo na tela.
 - Confirme datas por extenso com dia da semana e hora exata (ex: "fica até *domingo, 27/10, às 23h59*, certo?").
 - Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine. Temas: ${listaTemas()}.
 - Se mandarem uma foto (ex: o portão), você pode usar a foto em destaque no aviso do Nando (midia_id) ou publicar a foto como está.

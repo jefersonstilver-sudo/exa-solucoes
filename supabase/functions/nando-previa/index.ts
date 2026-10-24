@@ -23,6 +23,8 @@ Deno.serve(async (req) => {
   const { data: a } = await sb.from("nando_avisos").select("tipo,titulo,segundos,inicio,fim,conteudo,origem_url,building_id").eq("id", p.aviso_id).single();
   if (!a) return json(404, { ok: false, erro: "Aviso não encontrado." });
   const { data: b } = await sb.from("buildings").select("nome").eq("id", a.building_id).single();
+  const { count: outros } = await sb.from("nando_avisos").select("id", { count: "exact", head: true })
+    .eq("building_id", a.building_id).in("status", ["no_ar", "agendado"]);
 
   let dados = null;
   if (a.tipo === "nando" && a.conteudo?.arquivo_url) {
@@ -31,6 +33,6 @@ Deno.serve(async (req) => {
   }
   return json(200, {
     ok: true, tipo: a.tipo, titulo: a.titulo, segundos: a.segundos, inicio: a.inicio, fim: a.fim,
-    predio: b?.nome || "", dados, url: a.tipo === "nando" ? null : a.origem_url, expira_em: p.expira_em,
+    predio: b?.nome || "", outros: outros || 0, dados, url: a.tipo === "nando" ? null : a.origem_url, expira_em: p.expira_em,
   });
 });
