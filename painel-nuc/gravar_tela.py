@@ -2,7 +2,7 @@
 # Uso no terminal do NUC (uma linha):
 #   python3 -c "import urllib.request as u;exec(u.urlopen('https://raw.githubusercontent.com/jefersonstilver-sudo/exa-solucoes/main/painel-nuc/gravar_tela.py').read())"
 # So le a tela; nao altera nada no painel. O endereco de envio e temporario e vale para um unico arquivo.
-import os, subprocess, shutil, time, urllib.request, json
+import os, subprocess, shutil, time, urllib.request, urllib.error, json
 
 SEGUNDOS = 240
 ENDERECO_ENVIO = "https://sistema-update.s3.sa-east-1.amazonaws.com/diag/envio_gravacao.json"
@@ -40,7 +40,7 @@ def main():
     r = subprocess.run([
         "nice", "-n", "5", "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
         "-f", "x11grab", "-framerate", "25", "-video_size", f"{w}x{h}", "-i", display + ".0",
-        "-t", str(SEGUNDOS), "-vf", escala, "-c:v", "libx264", "-preset", "superfast", "-crf", "23",
+        "-t", str(SEGUNDOS), "-vf", escala, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "24",
         "-movflags", "+faststart", ARQ,
     ])
     if r.returncode != 0 or not os.path.exists(ARQ):
@@ -51,7 +51,12 @@ def main():
     destino = json.loads(urllib.request.urlopen(ENDERECO_ENVIO + "?t=" + str(int(time.time())), timeout=30).read())["url"]
     with open(ARQ, "rb") as f:
         req = urllib.request.Request(destino, data=f.read(), method="PUT", headers={"Content-Type": "video/mp4"})
-    resp = urllib.request.urlopen(req, timeout=1800)
+    try:
+        resp = urllib.request.urlopen(req, timeout=1800)
+    except urllib.error.HTTPError as e:
+        print("ERRO NO ENVIO", e.code, e.read()[:300].decode("utf-8", "replace"))
+        print("A gravacao ficou guardada no NUC; a EXA manda outro comando so para enviar.")
+        return
     print("ENVIADO_OK" if resp.status in (200, 201) else f"Envio respondeu {resp.status}")
     os.remove(ARQ)
 
