@@ -5,7 +5,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   Predio, nomeBase, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
-  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio,
+  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 
@@ -357,8 +357,8 @@ export const FERRAMENTAS = [
   },
   {
     name: "link_dos_avisos",
-    description: "Gera o link (vale 1 hora) da página do prédio atual com todos os avisos no ar e agendados, desenhados como na tela, com o rodízio, o tempo de cada um, quando sai e quem criou. Ofereça depois de publicar, alterar ou listar avisos.",
-    input_schema: { type: "object", properties: {} },
+    description: "Gera o link da página com os avisos no ar e agendados, desenhados como na tela, com o rodízio, o tempo de cada um, quando sai e quem criou. Padrão: só o prédio atual (vale 1 hora). Com todos=true: a CARTEIRA inteira (todos os prédios que a pessoa pode mexer, numa página só, sempre atualizada, vale 24 horas) — ofereça esse para quem cuida de mais de um prédio. Ofereça depois de publicar, alterar ou listar avisos.",
+    input_schema: { type: "object", properties: { todos: { type: "boolean" } } },
   },
   {
     name: "criar_aviso_arquivo",
@@ -374,22 +374,23 @@ export const FERRAMENTAS = [
   },
   {
     name: "publicar_aviso",
-    description: "Publica um rascunho já aprovado pelo síndico. Opcional: lista de códigos de prédios para publicar o MESMO aviso em vários prédios que a pessoa administra. O painel atualiza em até ~10 minutos.",
-    input_schema: { type: "object", properties: { aviso: { type: "string" }, predios: { type: "array", items: { type: "string" } } }, required: ["aviso"] },
+    description: "Publica um rascunho já aprovado pelo síndico. Para publicar o MESMO aviso em vários prédios: 'predios' com os códigos ou nomes (ou ['todos'] = todos os prédios que a pessoa pode mexer) e, se quiser, 'exceto'. As cópias ficam ligadas (mesmo grupo): depois dá para alterar ou tirar de todos de uma vez. Cada prédio recebe a assinatura dele. O painel atualiza em até ~10 minutos.",
+    input_schema: { type: "object", properties: { aviso: { type: "string" }, predios: { type: "array", items: { type: "string" } }, exceto: { type: "array", items: { type: "string" } } }, required: ["aviso"] },
   },
   {
     name: "alterar_aviso",
     description: "Altera tempo de tela, início, saída ou lembrete de um aviso (rascunho ou publicado). Para mudar texto/visual, crie um rascunho novo.",
     input_schema: {
       type: "object",
-      properties: { aviso: { type: "string" }, segundos: { type: "number" }, inicio: { type: "string" }, fim: { type: "string" }, sem_fim: { type: "boolean" }, lembrar_dias: { type: "number" } },
+      properties: { aviso: { type: "string" }, segundos: { type: "number" }, inicio: { type: "string" }, fim: { type: "string" }, sem_fim: { type: "boolean" }, lembrar_dias: { type: "number" },
+        todos_os_predios: { type: "boolean", description: "true = aplica em TODOS os prédios onde esse mesmo aviso foi publicado junto (o grupo)" } },
       required: ["aviso"],
     },
   },
   {
     name: "remover_aviso",
-    description: "Tira um aviso do painel AGORA. Só use quando a pessoa pedir claramente para tirar aquele aviso.",
-    input_schema: { type: "object", properties: { aviso: { type: "string" } }, required: ["aviso"] },
+    description: "Tira um aviso do painel AGORA. Só use quando a pessoa pedir claramente para tirar aquele aviso. Se o aviso foi publicado junto em vários prédios, use todos_os_predios=true quando ela pedir para tirar de todos (ou 'predios' para só alguns).",
+    input_schema: { type: "object", properties: { aviso: { type: "string" }, todos_os_predios: { type: "boolean" }, predios: { type: "array", items: { type: "string" } } }, required: ["aviso"] },
   },
   {
     name: "salvar_preferencia",
@@ -432,6 +433,43 @@ async function avisosAtivos(c: Contexto, buildingId: string) {
   const { count } = await c.sb.from("nando_avisos").select("id", { count: "exact", head: true })
     .eq("building_id", buildingId).in("status", ["no_ar", "agendado"]);
   return count || 0;
+}
+
+// prédios-alvo a partir de nomes/códigos (aceita "todos") menos os "exceto"
+async function resolverAlvos(c: Contexto, lista: unknown, exceto: unknown): Promise<Predio[]> {
+  const nomes = (Array.isArray(lista) ? lista : []).map((x) => String(x));
+  const todos = c.admin ? await todosPredios(c.sb) : c.predios;
+  let alvos: Predio[] = [];
+  if (nomes.some((n) => /^(todos|todos os meus|all)$/i.test(n.trim()))) alvos = [...todos];
+  else for (const n of nomes) { const p = await predioDoCodigo(c, n); if (!alvos.some((x) => x.id === p.id)) alvos.push(p); }
+  const fora: string[] = [];
+  for (const n of (Array.isArray(exceto) ? exceto : []).map((x) => String(x))) fora.push((await predioDoCodigo(c, n)).id);
+  return alvos.filter((p) => !fora.includes(p.id));
+}
+
+// avisos do mesmo grupo de prédios (publicados juntos), que a pessoa pode mexer
+async function doLote(c: Contexto, a: any, filtro?: Predio[]): Promise<any[]> {
+  if (!a.conteudo?.lote) return [a];
+  const { data } = await c.sb.from("nando_avisos").select("*").eq("conteudo->>lote", a.conteudo.lote).in("status", ["no_ar", "agendado", "erro"]);
+  const pode = c.admin ? null : new Set(c.predios.map((p) => p.id));
+  let rows = (data || []).filter((r: any) => !pode || pode.has(r.building_id));
+  // na serie, o grupo e por cartao: fica so o mesmo cartao (parte) em cada predio
+  rows = rows.filter((r: any) => (r.conteudo?.parte || 1) === (a.conteudo?.parte || 1) || !a.conteudo?.serie);
+  if (filtro?.length) rows = rows.filter((r: any) => filtro.some((p) => p.id === r.building_id));
+  return rows.length ? rows : [a];
+}
+
+// copia do aviso do Nando para outro predio: troca a assinatura padrao pela do predio novo
+async function ajustarAssinatura(c: Contexto, copia: any, origemNome: string, p: Predio) {
+  if (copia.tipo !== "nando" || !copia.conteudo?.arquivo_url) return copia;
+  const r = await fetch(copia.conteudo.arquivo_url); if (!r.ok) return copia;
+  const dados = await r.json();
+  if (String(dados.assinatura || "").trim() !== `Administração do ${origemNome}`.trim()) return copia; // assinatura escolhida pela pessoa: mantem
+  dados.assinatura = `Administração do ${p.nome}`;
+  const url = await salvarArquivo(c, `avisos/${copia.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
+  const conteudo = { ...copia.conteudo, arquivo_url: url, campos: { ...(copia.conteudo.campos || {}), assinatura: dados.assinatura } };
+  await c.sb.from("nando_avisos").update({ conteudo }).eq("id", copia.id);
+  return { ...copia, conteudo };
 }
 
 async function publicarEm(c: Contexto, a: any, p: Predio): Promise<string> {
@@ -661,17 +699,24 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         const { data: irmaos } = await sb.from("nando_avisos").select("*").eq("conteudo->>grupo", a.conteudo.grupo).in("status", ["rascunho", "erro"]);
         bases = (irmaos || []).sort((x: any, y: any) => (x.conteudo?.parte || 0) - (y.conteudo?.parte || 0));
       }
-      const alvos: Predio[] = [];
-      if (Array.isArray(e.predios) && e.predios.length) for (const cod of e.predios) alvos.push(await predioDoCodigo(c, cod));
+      let alvos: Predio[] = [];
+      if (Array.isArray(e.predios) && e.predios.length) alvos = await resolverAlvos(c, e.predios, e.exceto);
       else alvos.push(await predioPorId(c, a.building_id));
+      if (!alvos.length) return "Nenhum prédio sobrou para publicar (confira a lista e o 'exceto').";
+      const origem = await predioPorId(c, a.building_id).catch(() => null);
+      const lote = alvos.length > 1 ? crypto.randomUUID() : null;
       const res: string[] = [];
       for (const p of alvos) {
         if (await avisosAtivos(c, p.id) + bases.length > LIMITE_AVISOS) { res.push(`${p.nome}: NÃO publicado (passaria de ${LIMITE_AVISOS} avisos no ar; tire algum antes)`); continue; }
         for (const base of bases) {
         let linha = base;
         if (p.id !== base.building_id) {
-          const { data: copia } = await sb.from("nando_avisos").insert({ ...base, id: undefined, building_id: p.id, cliente_id: p.cliente_id, created_at: undefined, updated_at: undefined }).select("*").single();
-          linha = copia;
+          const { data: copia } = await sb.from("nando_avisos").insert({ ...base, id: undefined, building_id: p.id, cliente_id: p.cliente_id, created_at: undefined, updated_at: undefined,
+            conteudo: { ...base.conteudo, ...(lote ? { lote } : {}) } }).select("*").single();
+          linha = await ajustarAssinatura(c, copia, origem?.nome || "", p);
+        } else if (lote) {
+          linha = { ...base, conteudo: { ...base.conteudo, lote } };
+          await sb.from("nando_avisos").update({ conteudo: linha.conteudo }).eq("id", base.id);
         }
         try {
           const arquivo = await publicarEm(c, linha, p);
@@ -691,38 +736,61 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           .eq("status", "rascunho").eq("conteudo->>grupo", a.conteudo.grupo).neq("id", a.id);
       }
       c.registros.push(`publicação: ${res.join("; ")}`);
-      return res.join("\n");
+      return res.join("\n") + (lote ? `\n(Publicado junto em ${alvos.length} prédios: dá para alterar ou tirar de todos de uma vez com todos_os_predios=true.)` : "");
     }
     case "alterar_aviso": {
-      const a = await acharAviso(c, e.aviso);
-      const mud: any = {};
-      if (e.segundos) mud.segundos = clampSeg(e.segundos);
-      if (e.inicio) { const d = parseData(e.inicio); if (d) mud.inicio = d.toISOString(); }
-      if (e.sem_fim) mud.fim = null; else if (e.fim) { const d = parseData(e.fim); if (d) mud.fim = d.toISOString(); }
-      if (e.lembrar_dias) mud.lembrar_em = new Date(Date.now() + e.lembrar_dias * 86400000).toISOString();
-      if (!Object.keys(mud).length) return "Nada para alterar.";
-      const novo = { ...a, ...mud };
-      // tempo/datas publicados: reenvia com as novas informacoes e so depois tira a versao antiga
-      if (["no_ar", "agendado"].includes(a.status) && ("segundos" in mud || "inicio" in mud || "fim" in mud)) {
-        if (a.conteudo?.legado) return "Esse aviso é anterior ao Nando: para mudar tempo ou datas, peça para eu criar um novo igual e tirar o antigo.";
+      const a0 = await acharAviso(c, e.aviso);
+      const mud0: any = {};
+      if (e.segundos) mud0.segundos = clampSeg(e.segundos);
+      if (e.inicio) { const d = parseData(e.inicio); if (d) mud0.inicio = d.toISOString(); }
+      if (e.sem_fim) mud0.fim = null; else if (e.fim) { const d = parseData(e.fim); if (d) mud0.fim = d.toISOString(); }
+      if (e.lembrar_dias) mud0.lembrar_em = new Date(Date.now() + e.lembrar_dias * 86400000).toISOString();
+      if (!Object.keys(mud0).length) return "Nada para alterar.";
+      const lista = e.todos_os_predios ? await doLote(c, a0) : [a0];
+      const res: string[] = [];
+      for (const a of lista) {
+        const mud: any = { ...mud0 };
         const p = await predioPorId(c, a.building_id);
-        const arquivo = await publicarEm(c, novo, p);
-        if (a.arquivo) await removerDoPainel(p.cliente_id, [a.arquivo]).catch(() => {});
-        mud.arquivo = arquivo;
+        try {
+          const novo = { ...a, ...mud };
+          // tempo/datas publicados: reenvia com as novas informacoes e so depois tira a versao antiga
+          if (["no_ar", "agendado"].includes(a.status) && ("segundos" in mud || "inicio" in mud || "fim" in mud)) {
+            if (a.conteudo?.legado) { res.push(`${p.nome}: aviso anterior ao Nando, não dá para mudar tempo/datas (posso criar um novo igual e tirar o antigo)`); continue; }
+            const arquivo = await publicarEm(c, novo, p);
+            if (a.arquivo) await removerDoPainel(p.cliente_id, [a.arquivo]).catch(() => {});
+            mud.arquivo = arquivo;
+          }
+          await sb.from("nando_avisos").update(mud).eq("id", a.id);
+          await historico(sb, a.id, quem(c), "alterou", mud);
+          res.push(`${p.nome}: [${idCurto(a.id)}] atualizado (${Object.keys(mud).filter((k) => k !== "arquivo").join(", ")})`);
+        } catch (err) { res.push(`${p.nome}: [${idCurto(a.id)}] ERRO ao alterar: ${(err as Error).message}`); }
       }
-      await sb.from("nando_avisos").update(mud).eq("id", a.id);
-      await historico(sb, a.id, quem(c), "alterou", mud);
-      c.registros.push(`aviso ${idCurto(a.id)} alterado: ${JSON.stringify(mud)}`);
-      return `Aviso [${idCurto(a.id)}] atualizado: ${Object.keys(mud).filter((k) => k !== "arquivo").join(", ")}.`;
+      c.registros.push(`alteração: ${res.join("; ")}`);
+      const outros = !e.todos_os_predios && a0.conteudo?.lote ? (await doLote(c, a0)).length - 1 : 0;
+      return res.join("\n") + (outros > 0 ? `\n(Esse aviso também está em mais ${outros} prédio(s) do mesmo grupo; se a pessoa quiser mudar em todos, use todos_os_predios=true.)` : "");
     }
     case "remover_aviso": {
-      const a = await acharAviso(c, e.aviso);
-      if (["removido", "encerrado"].includes(a.status)) return "Esse aviso já não está no painel.";
-      if (a.arquivo && a.status !== "rascunho") await removerDoPainel(a.cliente_id, [a.arquivo]);
-      await sb.from("nando_avisos").update({ status: "removido", removido_por: quem(c), removido_em: new Date().toISOString() }).eq("id", a.id);
-      await historico(sb, a.id, quem(c), "removeu");
-      c.registros.push(`aviso ${idCurto(a.id)} removido: ${a.titulo}`);
-      return `Aviso "${a.titulo}" retirado (some do painel em até ~10 min).`;
+      const a0 = await acharAviso(c, e.aviso);
+      let lista = [a0];
+      if (e.todos_os_predios || (Array.isArray(e.predios) && e.predios.length)) {
+        const filtro = Array.isArray(e.predios) && e.predios.length && !e.todos_os_predios ? await resolverAlvos(c, e.predios, []) : undefined;
+        lista = await doLote(c, a0, filtro);
+      }
+      const res: string[] = [];
+      for (const a of lista) {
+        if (["removido", "encerrado"].includes(a.status)) continue;
+        const p = await predioPorId(c, a.building_id).catch(() => null);
+        try {
+          if (a.arquivo && a.status !== "rascunho") await removerDoPainel(a.cliente_id, [a.arquivo]);
+          await sb.from("nando_avisos").update({ status: "removido", removido_por: quem(c), removido_em: new Date().toISOString() }).eq("id", a.id);
+          await historico(sb, a.id, quem(c), "removeu");
+          res.push(`${p?.nome || "prédio"}: "${a.titulo}" retirado (some do painel em até ~10 min)`);
+        } catch (err) { res.push(`${p?.nome || "prédio"}: "${a.titulo}" ERRO ao tirar: ${(err as Error).message}`); }
+      }
+      if (!res.length) return "Esse aviso já não está no painel.";
+      c.registros.push(`remoção: ${res.join("; ")}`);
+      const outros = lista.length === 1 && a0.conteudo?.lote ? (await doLote(c, a0)).filter((r: any) => r.id !== a0.id && ["no_ar", "agendado"].includes(r.status)).length : 0;
+      return res.join("\n") + (outros > 0 ? `\n(O mesmo aviso continua em mais ${outros} prédio(s) do grupo; se a pessoa quiser tirar de todos, use todos_os_predios=true.)` : "");
     }
     case "descartar_rascunhos": {
       const n = await descartarTodosDaPessoa(c);
@@ -745,6 +813,13 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       return "Esse arquivo não é imagem nem PDF (ou é grande demais).";
     }
     case "link_dos_avisos": {
+      if (e.todos) {
+        const lista = c.admin ? await todosPredios(sb) : c.predios;
+        if (!lista.length) return "Nenhum prédio ligado a este número.";
+        const link = `${SITE_URL}/nando/predio/${await tokenCarteira(telefoneCanonico(c.tel), 24 * 60)}`;
+        c.registros.push(`link da carteira (${lista.length} prédios) enviado`);
+        return `Link da carteira com os ${lista.length} prédios (sempre atualizado, vale 24 horas): ${link}`;
+      }
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
       const link = `${SITE_URL}/nando/predio/${await tokenPredio(p.id, 60)}`;
       c.registros.push(`link dos avisos do ${p.nome} enviado`);
@@ -866,7 +941,9 @@ DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
 
 LINK DOS AVISOS DO PRÉDIO
 - Depois de publicar, alterar ou listar avisos, ofereça o link da página do prédio (link_dos_avisos): mostra todos os avisos no ar e agendados como aparecem na tela, a ordem do rodízio e até quando cada um fica. Se a pessoa pedir para "ver como está", mande o link direto.
-- Uma administradora com vários prédios pode pedir o mesmo aviso em vários prédios: publique com publicar_aviso passando a lista de códigos.
+- VÁRIOS PRÉDIOS (gestor/administradora ou o Jeferson): o mesmo aviso pode ir para vários prédios de uma vez. Crie o rascunho UMA vez (no prédio atual), mostre a prévia e, aprovado, publique com publicar_aviso passando 'predios' (nomes ou códigos, ou ['todos']) e 'exceto' se ela disser "menos o X". Cada prédio recebe a assinatura dele automaticamente. Antes de publicar em vários, confirme em uma frase a lista de prédios ("Vou colocar no A, B e C, pode ser?").
+- Aviso publicado junto em vários prédios fica no mesmo grupo: para "tirar de todos", "mudar a data em todos" etc., use remover_aviso/alterar_aviso com todos_os_predios=true (UM pedido resolve todos; para série, faça para cada cartão). Se ela pedir só para um prédio, mexa só naquele e avise que nos outros continua. Responda prédio por prédio o que deu certo.
+- Para quem cuida de mais de um prédio, ofereça o link da CARTEIRA (link_dos_avisos com todos=true): uma página só, com todos os prédios e avisos, sempre atualizada, válida por 24 horas.
 - Máximo de ${LIMITE_AVISOS} avisos no ar por prédio. Acima de 6, avise que o rodízio fica longo e cada aviso aparece menos.
 - Para tirar um aviso, confirme qual é (pelo título) antes de usar remover_aviso. Avisos antigos (anteriores ao Nando) também aparecem na lista; só tire se pedirem.
 - Quando perguntarem "quais avisos estão no ar?", SEMPRE use listar_avisos naquele momento (nunca responda de memória) e mostre a lista exatamente no formato que a ferramenta devolve: título em negrito e um aviso por linha, numerados, um abaixo do outro. Se não houver nenhum no ar, diga isso claramente e ofereça criar um.

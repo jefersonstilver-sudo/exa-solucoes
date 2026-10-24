@@ -2,7 +2,7 @@
 //  ?t=<token>  previa de um aviso (link de 10 minutos), com as 3 opcoes ou os cartoes da serie
 //  ?p=<token>  pagina do predio (link assinado de 1 hora): avisos no ar e agendados, como aparecem na tela
 // Nao exige login: os tokens sao secretos e expiram.
-import { db, lerTokenPredio, listarArquivosPainel, nomeBase } from "../_shared/nando-core.ts";
+import { db, lerTokenPredio, lerTokenCarteira, listarArquivosPainel, nomeBase, ehAdmin, prediosDoTelefone, todosPredios } from "../_shared/nando-core.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -12,16 +12,12 @@ async function dadosNando(url: string | undefined): Promise<unknown> {
   try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch { return null; }
 }
 
-async function paginaPredio(token: string) {
-  const t = await lerTokenPredio(token);
-  if (!t) return json(410, { ok: false, erro: "Esse link expirou. Peça um novo ao Nando no WhatsApp." });
-  const sb = db();
-  const { data: b } = await sb.from("buildings").select("nome").eq("id", t.buildingId).single();
+async function avisosDoPredio(sb: ReturnType<typeof db>, buildingId: string) {
   const { data: rows } = await sb.from("nando_avisos")
     .select("id,tipo,titulo,segundos,inicio,fim,status,arquivo,origem_url,criado_por_nome,created_at,conteudo")
-    .eq("building_id", t.buildingId).in("status", ["no_ar", "agendado"]).order("created_at");
+    .eq("building_id", buildingId).in("status", ["no_ar", "agendado"]).order("created_at");
   // so mostra como "no ar" o que esta mesmo na pasta do painel
-  const pasta = await listarArquivosPainel(String(t.buildingId).replace(/-/g, "").slice(0, 4)).catch(() => null);
+  const pasta = await listarArquivosPainel(String(buildingId).replace(/-/g, "").slice(0, 4)).catch(() => null);
   const avisos = [];
   for (const a of rows || []) {
     const c: any = a.conteudo || {};
@@ -32,10 +28,25 @@ async function paginaPredio(token: string) {
     avisos.push({
       id: String(a.id).slice(0, 8), tipo: a.tipo, titulo: String(a.titulo || "").replace(/\s*\[\d+s\]/, ""), segundos: a.segundos,
       inicio: a.inicio, fim: a.fim, status: a.status, criado_por: c.legado ? "anterior ao Nando" : (a.criado_por_nome || ""),
-      dados: a.tipo === "nando" ? await dadosNando(c.arquivo_url) : null, url, antigo: !!c.legado,
+      dados: a.tipo === "nando" ? await dadosNando(c.arquivo_url) : null, url, antigo: !!c.legado, em_grupo: !!c.lote,
     });
   }
-  return json(200, { ok: true, modo: "predio", predio: b?.nome || "", avisos, expira_em: t.expira.toISOString() });
+  return avisos;
+}
+
+async function paginaPredio(token: string) {
+  const sb = db();
+  // link da carteira (varios predios)
+  const cart = await lerTokenCarteira(token);
+  if (cart) {
+    const lista = ehAdmin(cart.telefone) ? await todosPredios(sb) : (await prediosDoTelefone(sb, cart.telefone)).predios;
+    const predios = await Promise.all(lista.map(async (p) => ({ id: p.id.slice(0, 8), predio: p.nome, codigo: p.codigo, avisos: await avisosDoPredio(sb, p.id) })));
+    return json(200, { ok: true, modo: "carteira", predio: `${lista.length} prédios`, predios, avisos: [], expira_em: cart.expira.toISOString() });
+  }
+  const t = await lerTokenPredio(token);
+  if (!t) return json(410, { ok: false, erro: "Esse link expirou. Peça um novo ao Nando no WhatsApp." });
+  const { data: b } = await sb.from("buildings").select("nome").eq("id", t.buildingId).single();
+  return json(200, { ok: true, modo: "predio", predio: b?.nome || "", avisos: await avisosDoPredio(sb, t.buildingId), expira_em: t.expira.toISOString() });
 }
 
 Deno.serve(async (req) => {

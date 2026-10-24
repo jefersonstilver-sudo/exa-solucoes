@@ -5,9 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 type Aviso = {
   id: string; tipo: 'nando' | 'imagem' | 'pdf'; titulo: string; segundos: number; inicio: string; fim: string | null;
-  status: 'no_ar' | 'agendado'; criado_por: string; dados: unknown; url: string | null; antigo: boolean;
+  status: 'no_ar' | 'agendado'; criado_por: string; dados: unknown; url: string | null; antigo: boolean; em_grupo?: boolean;
 };
-type Pagina = { ok: boolean; erro?: string; predio?: string; avisos?: Aviso[]; expira_em?: string };
+type Grupo = { id?: string; predio: string; codigo?: string; avisos: Aviso[] };
+type Pagina = { ok: boolean; erro?: string; modo?: 'predio' | 'carteira'; predio?: string; avisos?: Aviso[]; predios?: Grupo[]; expira_em?: string };
 
 function carregarScript(src: string) {
   return new Promise<void>((ok, erro) => {
@@ -28,13 +29,21 @@ const fmt = (d?: string | null) => d
 const moldura: React.CSSProperties = { width: '100%', aspectRatio: '502 / 882', borderRadius: 18, padding: 6, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)', boxShadow: '0 24px 60px rgba(0,0,0,.5)' };
 const tela: React.CSSProperties = { position: 'relative', width: '100%', height: '100%', borderRadius: 13, overflow: 'hidden', background: '#140a1c' };
 
+function resumo(g?: Grupo) {
+  const noAr = (g?.avisos || []).filter((a) => a.status === 'no_ar');
+  const ag = (g?.avisos || []).filter((a) => a.status === 'agendado').length;
+  const volta = noAr.reduce((s, a) => s + (a.segundos || 15), 0);
+  return (noAr.length === 0 ? 'Nenhum aviso no ar agora' : noAr.length === 1 ? '1 aviso no ar, fixo na tela' : `${noAr.length} avisos no rodízio · uma volta completa a cada ${volta}s`)
+    + (ag ? ` · ${ag} agendado${ag > 1 ? 's' : ''}` : '');
+}
+
 export default function NandoPredio() {
   const token = window.location.pathname.split('/').filter(Boolean).pop() || '';
   const [p, setP] = useState<Pagina | null>(null);
   const [resta, setResta] = useState(0);
 
   useEffect(() => {
-    document.title = 'Avisos do prédio · Nando · EXA';
+    document.title = 'Avisos · Nando · EXA';
     supabase.functions.invoke('nando-previa', { body: { p: token } }).then(({ data, error }) => {
       if (error || !data) setP({ ok: false, erro: 'Esse link expirou ou está incompleto. Peça um novo ao Nando no WhatsApp.' });
       else setP(data as Pagina);
@@ -47,16 +56,20 @@ export default function NandoPredio() {
     return () => clearInterval(t);
   }, [p?.expira_em]);
 
+  const carteira = p?.modo === 'carteira';
+  const grupos: Grupo[] = !p?.ok ? [] : carteira ? (p.predios || []) : [{ predio: p.predio || '', avisos: p.avisos || [] }];
+  const todosAvisos = grupos.flatMap((g) => g.avisos);
+
   useEffect(() => {
-    if (!p?.ok || !p.avisos?.length) return;
+    if (!p?.ok || !todosAvisos.length) return;
     const montados: { remover: () => void; escalar: () => void }[] = [];
     const onResize = () => montados.forEach((m) => m.escalar());
     (async () => {
-      if (p.avisos!.some((a) => a.tipo === 'nando')) {
+      if (todosAvisos.some((a) => a.tipo === 'nando')) {
         carregarCss('/nando/aviso-nando.css');
         await carregarScript('/nando/aviso-nando.js');
       }
-      for (const a of p.avisos!) {
+      for (const a of todosAvisos) {
         const el = document.getElementById(`na-av-${a.id}`);
         if (!el) continue;
         if (a.tipo === 'nando' && a.dados && window.NandoAviso) montados.push(window.NandoAviso.montar(el, a.dados));
@@ -78,12 +91,10 @@ export default function NandoPredio() {
     return () => { montados.forEach((m) => m.remover()); window.removeEventListener('resize', onResize); };
   }, [p]);
 
-  const noAr = (p?.avisos || []).filter((a) => a.status === 'no_ar');
-  const agendados = (p?.avisos || []).filter((a) => a.status === 'agendado');
-  const volta = noAr.reduce((s, a) => s + (a.segundos || 15), 0);
   const min = Math.floor(resta / 60), seg = String(resta % 60).padStart(2, '0');
+  const hh = Math.floor(min / 60), mm = String(min % 60).padStart(2, '0');
 
-  const cartao = (a: Aviso, ordem: number | null) => (
+  const cartao = (a: Aviso, ordem: number | null, noArQtd: number) => (
     <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={moldura}>
         <div id={`na-av-${a.id}`} style={tela}>
@@ -106,10 +117,10 @@ export default function NandoPredio() {
           <b style={{ fontSize: 15 }}>{a.titulo}</b>
         </div>
         <div style={{ opacity: 0.8 }}>
-          {a.status === 'agendado' ? <>🗓️ Começa <b>{fmt(a.inicio)}</b></> : noAr.length > 1 ? <>⏱️ <b>{a.segundos}s</b> na tela a cada volta</> : <>📌 Fica <b>fixo na tela</b></>}
+          {a.status === 'agendado' ? <>🗓️ Começa <b>{fmt(a.inicio)}</b></> : noArQtd > 1 ? <>⏱️ <b>{a.segundos}s</b> na tela a cada volta</> : <>📌 Fica <b>fixo na tela</b></>}
         </div>
         <div style={{ opacity: 0.8 }}>⏹️ {a.fim ? <>Sai <b>{fmt(a.fim)}</b></> : 'Sem data de saída'}</div>
-        {a.criado_por && <div style={{ opacity: 0.55, fontSize: 12 }}>Criado por {a.criado_por}</div>}
+        {a.criado_por && <div style={{ opacity: 0.55, fontSize: 12 }}>Criado por {a.criado_por}{a.em_grupo ? ' · publicado junto em outros prédios' : ''}</div>}
       </div>
     </div>
   );
@@ -122,8 +133,7 @@ export default function NandoPredio() {
           <h1 style={{ fontSize: 26, fontWeight: 800, margin: '6px 0 4px' }}>{p?.ok ? p.predio : 'Nando · EXA Mídia'}</h1>
           {p?.ok && (
             <div style={{ fontSize: 14, opacity: 0.75 }}>
-              {noAr.length === 0 ? 'Nenhum aviso no ar agora' : noAr.length === 1 ? '1 aviso no ar, fixo na tela' : `${noAr.length} avisos no rodízio · uma volta completa a cada ${volta}s`}
-              {agendados.length ? ` · ${agendados.length} agendado${agendados.length > 1 ? 's' : ''}` : ''}
+              {carteira ? `${grupos.length} prédios · ${todosAvisos.filter((x) => x.status === 'no_ar').length} avisos no ar` : resumo(grupos[0])}
             </div>
           )}
         </div>
@@ -131,26 +141,40 @@ export default function NandoPredio() {
         {!p && <div style={{ marginTop: 80, textAlign: 'center', opacity: 0.7 }}>Carregando…</div>}
         {p && !p.ok && <div style={{ margin: '60px auto 0', maxWidth: 360, textAlign: 'center', lineHeight: 1.5, opacity: 0.85 }}>{p.erro}</div>}
 
-        {p?.ok && noAr.length > 0 && (
-          <>
-            <div style={{ margin: '28px 0 14px', fontSize: 13, letterSpacing: 2, fontWeight: 800, opacity: 0.7 }}>NO AR AGORA</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: 22 }}>
-              {noAr.map((a, i) => cartao(a, noAr.length > 1 ? i + 1 : null))}
-            </div>
-          </>
-        )}
-        {p?.ok && agendados.length > 0 && (
-          <>
-            <div style={{ margin: '34px 0 14px', fontSize: 13, letterSpacing: 2, fontWeight: 800, opacity: 0.7 }}>AGENDADOS</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: 22 }}>
-              {agendados.map((a) => cartao(a, null))}
-            </div>
-          </>
-        )}
+        {grupos.map((g, gi) => {
+          const noAr = g.avisos.filter((a) => a.status === 'no_ar');
+          const agendados = g.avisos.filter((a) => a.status === 'agendado');
+          return (
+            <section key={g.id || gi} style={{ marginTop: carteira ? 40 : 0 }}>
+              {carteira && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,.15)', paddingTop: 22 }}>
+                  <div style={{ fontSize: 20, fontWeight: 800 }}>{g.predio}{g.codigo ? <span style={{ opacity: 0.5, fontWeight: 600, fontSize: 14 }}> · {g.codigo}</span> : null}</div>
+                  <div style={{ fontSize: 13, opacity: 0.7, marginTop: 2 }}>{resumo(g)}</div>
+                </div>
+              )}
+              {noAr.length > 0 && (
+                <>
+                  <div style={{ margin: '22px 0 14px', fontSize: 13, letterSpacing: 2, fontWeight: 800, opacity: 0.7 }}>NO AR AGORA</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: 22 }}>
+                    {noAr.map((a, i) => cartao(a, noAr.length > 1 ? i + 1 : null, noAr.length))}
+                  </div>
+                </>
+              )}
+              {agendados.length > 0 && (
+                <>
+                  <div style={{ margin: '30px 0 14px', fontSize: 13, letterSpacing: 2, fontWeight: 800, opacity: 0.7 }}>AGENDADOS</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: 22 }}>
+                    {agendados.map((a) => cartao(a, null, noAr.length))}
+                  </div>
+                </>
+              )}
+            </section>
+          );
+        })}
 
         {p?.ok && (
           <div style={{ marginTop: 34, textAlign: 'center', fontSize: 13, opacity: 0.65, lineHeight: 1.6 }}>
-            Para criar, mudar ou tirar um aviso, é só falar com o Nando no WhatsApp.<br />Este link expira em {min}:{seg}.
+            Para criar, mudar ou tirar um aviso, é só falar com o Nando no WhatsApp.<br />Este link expira em {hh > 0 ? `${hh}h${mm}` : `${min}:${seg}`}.
           </div>
         )}
       </div>

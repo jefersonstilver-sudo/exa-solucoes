@@ -18,7 +18,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.22";
+export const NANDO_VERSAO = "2026-10-24.23";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -381,6 +381,25 @@ export async function tokenPredio(buildingId: string, minutos = 60): Promise<str
   const base = `${buildingId.replace(/-/g, "")}${exp.toString(16)}`;
   const sig = hex(await crypto.subtle.sign("HMAC", await chaveLink(), new TextEncoder().encode(base))).slice(0, 24);
   return base + sig;
+}
+// link da CARTEIRA (todos os predios de um sindico/gestor): o token leva o telefone, e a lista de predios
+// e calculada na hora (sempre atualizada). 16 digitos do telefone + validade + assinatura = 48 caracteres.
+export async function tokenCarteira(telefone: string, minutos = 1440): Promise<string> {
+  const tel = String(telefone).replace(/\D/g, "").padStart(16, "0").slice(-16);
+  const exp = Math.floor(Date.now() / 1000) + minutos * 60;
+  const base = `${tel}${exp.toString(16)}`;
+  const sig = hex(await crypto.subtle.sign("HMAC", await chaveLink(), new TextEncoder().encode("carteira:" + base))).slice(0, 24);
+  return base + sig;
+}
+export async function lerTokenCarteira(token: string): Promise<{ telefone: string; expira: Date } | null> {
+  const t = String(token || "").toLowerCase().replace(/[^0-9a-f]/g, "");
+  if (t.length !== 16 + 8 + 24) return null;
+  const sig = t.slice(-24), base = t.slice(0, -24);
+  const certo = hex(await crypto.subtle.sign("HMAC", await chaveLink(), new TextEncoder().encode("carteira:" + base))).slice(0, 24);
+  if (certo !== sig) return null;
+  const exp = parseInt(base.slice(16), 16);
+  if (!exp || exp * 1000 < Date.now()) return null;
+  return { telefone: base.slice(0, 16).replace(/^0+/, ""), expira: new Date(exp * 1000) };
 }
 export async function lerTokenPredio(token: string): Promise<{ buildingId: string; expira: Date } | null> {
   const t = String(token || "").toLowerCase().replace(/[^0-9a-f]/g, "");
