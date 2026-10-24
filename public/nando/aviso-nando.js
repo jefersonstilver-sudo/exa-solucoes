@@ -1,5 +1,5 @@
 /**
- * aviso-nando.js (v30) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
+ * aviso-nando.js (v32) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
  * Usado pelo painel E pela pagina de previa, para os dois ficarem identicos.
  *
  * O aviso e um "palco" 1080x1920 que e escalado inteiro para caber na caixa:
@@ -168,7 +168,9 @@
         lista.style.setProperty("--na-ic", Math.round(fi * 2.1) + "px");
       };
       aplicar();
-      while (fi > 30 && bloco.scrollHeight > bloco.clientHeight + 2) { fi -= 2; aplicar(); }
+      while (fi > 26 && bloco.scrollHeight > bloco.clientHeight + 2) { fi -= 2; aplicar(); }
+      // ultimo recurso: nunca deixa a lista invadir o QR code nem a assinatura
+      if (bloco.scrollHeight > bloco.clientHeight + 2) bloco.style.overflow = "hidden";
     }
 
     var fsrc = seguro(d.fundo) || foto;   // nunca usar o icone ampliado como fundo
@@ -186,5 +188,5 @@
     return { raiz: raiz, escalar: escalar, remover: function () { if (vigia) { try { vigia.disconnect(); } catch (e) {} } if (raiz.parentNode) raiz.parentNode.removeChild(raiz); } };
   }
 
-  window.NandoAviso = { montar: montar, W: W, H: H, versao: 30 };
+  window.NandoAviso = { montar: montar, W: W, H: H, versao: 32 };
 })();

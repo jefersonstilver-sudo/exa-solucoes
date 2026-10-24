@@ -63,6 +63,26 @@ Deno.serve(async (req) => {
   const { count: outros } = await sb.from("nando_avisos").select("id", { count: "exact", head: true })
     .eq("building_id", a.building_id).in("status", ["no_ar", "agendado"]);
 
+  // varias opcoes de um documento (cartoes / resumo com QR / original), todas na mesma previa
+  if (a.conteudo?.proposta) {
+    const { data: rows } = await sb.from("nando_avisos").select("tipo,titulo,origem_url,conteudo")
+      .eq("conteudo->>proposta", a.conteudo.proposta).in("status", ["rascunho", "no_ar", "agendado"]);
+    const porOpcao = new Map<number, any[]>();
+    for (const r of rows || []) { const n = Number(r.conteudo?.opcao_proposta) || 1; porOpcao.set(n, [...(porOpcao.get(n) || []), r]); }
+    const secoes = [];
+    for (const n of [...porOpcao.keys()].sort((x, y) => x - y)) {
+      const lista = porOpcao.get(n)!.sort((x: any, y: any) => (x.conteudo?.parte || 0) - (y.conteudo?.parte || 0));
+      const prim = lista[0];
+      const cartoes = [];
+      if (prim.tipo === "nando") for (const r of lista) { const d = await dadosNando(r.conteudo?.arquivo_url); if (d) cartoes.push(d); }
+      secoes.push({ opcao: n, rotulo: prim.conteudo?.rotulo_opcao || `Opção ${n}`, tipo: prim.tipo, cartoes, url: prim.tipo === "nando" ? null : prim.origem_url, credito: prim.conteudo?.credito_foto || null });
+    }
+    return json(200, {
+      ok: true, tipo: "proposta", titulo: String(a.titulo || "").replace(/\s*\(\d+\/\d+\)$/, ""), segundos: a.segundos, inicio: a.inicio, fim: a.fim,
+      predio: b?.nome || "", outros: outros || 0, secoes, expira_em: p.expira_em,
+    });
+  }
+
   let dados = null;
   const serie = !!a.conteudo?.serie;
   const opcoes: { opcao: number; rotulo: string; dados: unknown; credito: string | null }[] = [];

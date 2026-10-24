@@ -67,3 +67,12 @@
 .aviso-icon{object-fit:contain}
 .aviso-nando-camada{position:absolute;inset:0;z-index:1;display:none;overflow:hidden}
 .aviso-nando-camada.on{display:block}
+
+/* ===== v32: mais contraste (fundo mais escuro) ===== */
+.na-veu{background:
+  radial-gradient(ellipse 80% 45% at 50% 30%,color-mix(in srgb,var(--na-cor) 22%,transparent),transparent 70%),
+  linear-gradient(180deg,rgba(8,3,14,.50) 0%,rgba(8,3,14,.62) 40%,rgba(8,3,14,.86) 100%)}
+.na-nitido .na-veu{background:linear-gradient(180deg,rgba(0,0,0,.30) 0%,rgba(0,0,0,.45) 45%,rgba(0,0,0,.78) 100%)}
+.na-com-itens .na-veu{background:linear-gradient(180deg,rgba(8,3,14,.62) 0%,rgba(8,3,14,.74) 40%,rgba(8,3,14,.88) 100%)}
+.na-item{background:rgba(10,4,18,.58);border-color:rgba(255,255,255,.18)}
+.na-item-tx,.na-texto,.na-titulo,.na-qr-tx{text-shadow:0 3px 14px rgba(0,0,0,.65)}

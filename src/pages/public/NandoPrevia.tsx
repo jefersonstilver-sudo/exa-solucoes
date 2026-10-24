@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+type Secao = { opcao: number; rotulo: string; tipo: 'nando' | 'imagem' | 'pdf'; cartoes: unknown[]; url: string | null; credito?: string | null };
 type Previa = {
-  ok: boolean; erro?: string; tipo?: 'nando' | 'imagem' | 'pdf'; titulo?: string; segundos?: number;
+  secoes?: Secao[];
+  ok: boolean; erro?: string; tipo?: 'nando' | 'imagem' | 'pdf' | 'proposta'; titulo?: string; segundos?: number;
   inicio?: string; fim?: string | null; predio?: string; outros?: number; opcoes?: { opcao: number; rotulo?: string; dados: unknown; credito?: string | null }[]; serie?: boolean; dados?: unknown; url?: string | null; expira_em?: string;
 };
 
@@ -58,7 +60,29 @@ export default function NandoPrevia() {
     let aviso: { remover: () => void; escalar: () => void } | null = null;
     const onResize = () => aviso?.escalar();
     (async () => {
-      if (p.tipo === 'nando') {
+      if (p.tipo === 'proposta' && p.secoes) {
+        carregarCss('/nando/aviso-nando.css');
+        await carregarScript('/nando/aviso-nando.js');
+        const montados: { remover: () => void; escalar: () => void }[] = [];
+        for (const s of p.secoes) {
+          if (s.tipo === 'nando') s.cartoes.forEach((d, i) => {
+            const el = document.getElementById(`na-s${s.opcao}-${i}`);
+            if (el && window.NandoAviso) montados.push(window.NandoAviso.montar(el, d));
+          });
+          if (s.tipo === 'pdf' && s.url) {
+            await carregarScript('https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.min.js');
+            const lib = window.pdfjsLib;
+            lib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+            const doc = await lib.getDocument({ url: s.url, isEvalSupported: false }).promise;
+            const pg = await doc.getPage(1);
+            const v = pg.getViewport({ scale: 1.6 });
+            const cv = document.getElementById(`na-pdf-${s.opcao}`) as HTMLCanvasElement | null;
+            if (cv) { cv.width = v.width; cv.height = v.height; await pg.render({ canvasContext: cv.getContext('2d'), viewport: v }).promise; }
+          }
+        }
+        aviso = { remover: () => montados.forEach((m) => m.remover()), escalar: () => montados.forEach((m) => m.escalar()) };
+        window.addEventListener('resize', onResize);
+      } else if (p.tipo === 'nando') {
         carregarCss('/nando/aviso-nando.css');
         await carregarScript('/nando/aviso-nando.js');
         const lista = p.opcoes?.length ? p.opcoes : [{ opcao: 1, dados: p.dados }];
@@ -93,7 +117,38 @@ export default function NandoPrevia() {
       {!p && <div style={{ marginTop: 80, opacity: 0.7 }}>Carregando…</div>}
       {p && !p.ok && <div style={{ marginTop: 60, maxWidth: 360, textAlign: 'center', lineHeight: 1.5, opacity: 0.85 }}>{p.erro}</div>}
 
-      {p?.ok && (
+      {p?.ok && p.tipo === 'proposta' && (
+        <div style={{ width: '100%', maxWidth: 1100 }}>
+          <div style={{ fontSize: 14, opacity: 0.8, textAlign: 'center', marginBottom: 6 }}>Escolha uma ou mais opções e responda o Nando com o número 👇</div>
+          {p.secoes!.map((s) => (
+            <div key={s.opcao} style={{ marginTop: 22, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 18, padding: '14px 12px 16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, padding: '0 4px' }}>
+                <span style={{ background: '#7c3aed', borderRadius: 999, padding: '4px 12px', fontWeight: 800, fontSize: 14 }}>Opção {s.opcao}</span>
+                <b style={{ fontSize: 15 }}>{s.rotulo}</b>
+              </div>
+              <div style={{ display: 'flex', gap: 14, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 6 }}>
+                {s.tipo === 'nando' && s.cartoes.map((_, i) => (
+                  <div key={i} style={{ flex: '0 0 auto', width: 'min(62vw, 250px)', aspectRatio: '502 / 882', borderRadius: 16, padding: 5, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)', scrollSnapAlign: 'start' }}>
+                    <div id={`na-s${s.opcao}-${i}`} style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 12, overflow: 'hidden', background: '#140a1c' }} />
+                  </div>
+                ))}
+                {s.tipo !== 'nando' && (
+                  <div style={{ flex: '0 0 auto', width: 'min(62vw, 250px)', aspectRatio: '502 / 882', borderRadius: 16, padding: 5, background: 'linear-gradient(160deg,#4b4b52,#1c1c20)' }}>
+                    <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 12, overflow: 'hidden', background: '#1a1022', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {s.tipo === 'imagem' && s.url && <img src={s.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
+                      {s.tipo === 'pdf' && <canvas id={`na-pdf-${s.opcao}`} style={{ maxWidth: '100%', maxHeight: '100%' }} />}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {s.tipo === 'nando' && s.cartoes.length > 1 && <div style={{ fontSize: 12, opacity: 0.6, marginTop: 6, padding: '0 4px' }}>Os {s.cartoes.length} cartões vão ao ar juntos, um depois do outro. Deslize para ver todos.</div>}
+            </div>
+          ))}
+          <div style={{ marginTop: 18, fontSize: 13, opacity: 0.7, textAlign: 'center' }}>Este link expira em {min}:{seg}.</div>
+        </div>
+      )}
+
+      {p?.ok && p.tipo !== 'proposta' && (
         <>
           {p.tipo === 'nando' && (
             <>
