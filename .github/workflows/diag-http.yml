@@ -1,0 +1,14 @@
+name: diag-http
+# diagnostico: mostra os cabecalhos que um endereco publico devolve (aparece nas anotacoes da execucao)
+on:
+  workflow_dispatch:
+    inputs:
+      url: { description: endereco, required: true }
+jobs:
+  ver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: |
+          H=$(curl -sS -I --max-time 30 "${{ inputs.url }}" | tr -d '\r' | grep -i -E '^(HTTP|content-type|content-security|x-frame|cache-control|server)' | tr '\n' ' ' | cut -c1-3500)
+          echo "::notice title=cabecalhos::$H"
