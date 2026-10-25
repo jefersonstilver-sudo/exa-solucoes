@@ -40,5 +40,10 @@ jobs:
                   out.append(f"{nome}: {h.status} cors={h.headers.get('Access-Control-Allow-Origin')} tipo={h.headers.get('Content-Type')} url={u}")
               except Exception as e:
                   out.append(f"{nome}: FALHA {e} url={u}")
+          for k in ("Propagandas", "Banners"):
+              v = d.get(k)
+              out.append(f"{k}: tipo={type(v).__name__} n={len(v) if hasattr(v,'__len__') else '-'}")
+              itens = v if isinstance(v, list) else (list(v.values()) if isinstance(v, dict) else [])
+              for it in itens[:3]: out.append(f"{k}_ex=" + json.dumps(it, ensure_ascii=False)[:850])
           for l in out: print("::notice title=replica::" + l.replace("\n", " ")[:900])
           PY
