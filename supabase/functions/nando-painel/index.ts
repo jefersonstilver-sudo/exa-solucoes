@@ -54,9 +54,9 @@ async function resolverTelefone(sb: ReturnType<typeof db>, b: any): Promise<{ te
 
 async function sessaoValida(sb: ReturnType<typeof db>, token: string) {
   if (!token) return null;
-  const { data } = await sb.from("nando_sessoes").select("*").eq("token_hash", await sha(token)).maybeSingle();
+  const { data } = await sb.from("nando_painel_acessos").select("*").eq("token_hash", await sha(token)).maybeSingle();
   if (!data || data.revogada || new Date(data.expira_em) < new Date()) return null;
-  await sb.from("nando_sessoes").update({ ultimo_uso: new Date().toISOString() }).eq("id", data.id);
+  await sb.from("nando_painel_acessos").update({ ultimo_uso: new Date().toISOString() }).eq("id", data.id);
   return data;
 }
 
@@ -74,11 +74,13 @@ async function pedirCodigo(sb: ReturnType<typeof db>, b: any) {
   const { lista } = await predios(sb, tel);
   if (!lista.length) return json(400, { ok: false, erro: "Esse número não está cadastrado em nenhum prédio da EXA. Fale com o Nando no WhatsApp." });
   const umaHora = new Date(Date.now() - 3600000).toISOString();
-  const { count } = await sb.from("nando_codigos").select("id", { count: "exact", head: true }).eq("telefone", tel).gte("created_at", umaHora);
+  const { count } = await sb.from("nando_painel_codigos").select("id", { count: "exact", head: true }).eq("telefone", tel).gte("created_at", umaHora);
   if ((count || 0) >= MAX_POR_HORA) return json(429, { ok: false, erro: "Muitos códigos pedidos. Espere um pouco e tente de novo." });
   const cod = codigo6();
-  await sb.from("nando_codigos").update({ usado: true }).eq("telefone", tel).eq("finalidade", finalidade).eq("usado", false);
-  await sb.from("nando_codigos").insert({ telefone: tel, finalidade, codigo_hash: await sha(tel + ":" + cod), sessao_id: sessaoId, expira_em: new Date(Date.now() + MIN_CODIGO * 60000).toISOString() });
+  await sb.from("nando_painel_codigos").update({ usado: true }).eq("telefone", tel).eq("finalidade", finalidade).eq("usado", false);
+  const { error: errIns } = await sb.from("nando_painel_codigos").insert({ telefone: tel, finalidade, codigo_hash: await sha(tel + ":" + cod), sessao_id: sessaoId, expira_em: new Date(Date.now() + MIN_CODIGO * 60000).toISOString() });
+  // so manda o codigo se ele ficou guardado (senao a pessoa receberia um codigo que nunca funciona)
+  if (errIns) { console.error("[PAINEL] gravar codigo", errIns.message); return json(500, { ok: false, erro: "Não consegui gerar o código agora. Tente de novo em instantes." }); }
   const fmt = `${cod.slice(0, 3)} ${cod.slice(3)}`;
   const texto = finalidade === "alterar"
     ? `🔐 Código para confirmar a alteração no painel do síndico: *${fmt}*\n\nVale ${MIN_CODIGO} minutos. Se não foi você, ignore e me avise.`
@@ -103,25 +105,26 @@ async function verificar(sb: ReturnType<typeof db>, b: any) {
     tel = r.tel;
   }
   const cod = String(b.codigo || "").replace(/\D/g, "");
-  const { data: c } = await sb.from("nando_codigos").select("*").eq("telefone", tel).eq("finalidade", finalidade).eq("usado", false)
+  const { data: c } = await sb.from("nando_painel_codigos").select("*").eq("telefone", tel).eq("finalidade", finalidade).eq("usado", false)
     .order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (!c || new Date(c.expira_em) < new Date()) return json(400, { ok: false, erro: "Esse código expirou. Peça um novo." });
   if (c.tentativas >= MAX_TENTATIVAS) return json(429, { ok: false, erro: "Muitas tentativas erradas. Peça um código novo." });
   if (cod.length !== 6 || (await sha(tel + ":" + cod)) !== c.codigo_hash) {
-    await sb.from("nando_codigos").update({ tentativas: c.tentativas + 1 }).eq("id", c.id);
+    await sb.from("nando_painel_codigos").update({ tentativas: c.tentativas + 1 }).eq("id", c.id);
     const resta = MAX_TENTATIVAS - c.tentativas - 1;
     return json(400, { ok: false, erro: resta > 0 ? `Código errado. Você ainda tem ${resta} tentativa${resta > 1 ? "s" : ""}.` : "Código errado. Peça um código novo." });
   }
-  await sb.from("nando_codigos").update({ usado: true }).eq("id", c.id);
+  await sb.from("nando_painel_codigos").update({ usado: true }).eq("id", c.id);
   if (finalidade === "alterar") {
     const ate = new Date(Date.now() + MIN_ALTERAR * 60000).toISOString();
-    await sb.from("nando_sessoes").update({ alterar_ate: ate }).eq("id", sess.id);
+    await sb.from("nando_painel_acessos").update({ alterar_ate: ate }).eq("id", sess.id);
     return json(200, { ok: true, alterar_ate: ate });
   }
   const token = aleatorio();
   const lembrar = !!b.lembrar;
   const expira = new Date(Date.now() + (lembrar ? DIAS_LEMBRAR * 86400000 : HORAS_ACESSO * 3600000)).toISOString();
-  await sb.from("nando_sessoes").insert({ token_hash: await sha(token), telefone: tel, aparelho: String(b.aparelho || "").slice(0, 160), lembrar, expira_em: expira });
+  const { error: errSes } = await sb.from("nando_painel_acessos").insert({ token_hash: await sha(token), telefone: tel, aparelho: String(b.aparelho || "").slice(0, 160), lembrar, expira_em: expira });
+  if (errSes) { console.error("[PAINEL] gravar acesso", errSes.message); return json(500, { ok: false, erro: "Não consegui liberar o acesso agora. Tente de novo." }); }
   return json(200, { ok: true, sessao: token, expira_em: expira });
 }
 
@@ -133,7 +136,7 @@ async function dados(sb: ReturnType<typeof db>, b: any) {
   let foco: string | null = null;
   if (b.link) { const t = await lerTokenPredio(String(b.link)); if (t) foco = t.buildingId.slice(0, 8); }
   const grupos = await Promise.all(lista.map(async (p) => ({ id: p.id.slice(0, 8), predio: p.nome, codigo: p.codigo, avisos: await avisosDoPredio(sb, p).catch(() => []) })));
-  const { count: aparelhos } = await sb.from("nando_sessoes").select("id", { count: "exact", head: true }).eq("telefone", s.telefone).eq("revogada", false).gt("expira_em", new Date().toISOString());
+  const { count: aparelhos } = await sb.from("nando_painel_acessos").select("id", { count: "exact", head: true }).eq("telefone", s.telefone).eq("revogada", false).gt("expira_em", new Date().toISOString());
   return json(200, {
     ok: true, pessoa: nome || "", primeiro_nome: primeiroNome(nome || "") || "", admin, telefone: mascarar(s.telefone),
     expira_em: s.expira_em, lembrar: s.lembrar, alterar_ate: s.alterar_ate, aparelhos: aparelhos || 1,
@@ -170,8 +173,8 @@ async function alterar(sb: ReturnType<typeof db>, b: any) {
 async function sair(sb: ReturnType<typeof db>, b: any) {
   const s = await sessaoValida(sb, String(b.sessao || ""));
   if (!s) return json(200, { ok: true });
-  if (b.todos) await sb.from("nando_sessoes").update({ revogada: true }).eq("telefone", s.telefone);
-  else await sb.from("nando_sessoes").update({ revogada: true }).eq("id", s.id);
+  if (b.todos) await sb.from("nando_painel_acessos").update({ revogada: true }).eq("telefone", s.telefone);
+  else await sb.from("nando_painel_acessos").update({ revogada: true }).eq("id", s.id);
   return json(200, { ok: true });
 }
 
