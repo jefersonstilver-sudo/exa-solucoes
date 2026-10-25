@@ -26,10 +26,11 @@ type Acao =
 
 const LOGO = '/exa-logo.png';
 const FONTE = { fontFamily: 'Montserrat, Inter, system-ui, -apple-system, sans-serif' };
-const CABECALHO = 'bg-gradient-to-r from-[#9C1E1E] to-[#180A0A]';
-const BTN = 'inline-flex items-center justify-center gap-2 rounded-lg bg-[#9C1E1E] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#7E1717] disabled:cursor-not-allowed disabled:opacity-40';
-const BTN2 = 'inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50';
-const CAMPO = 'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/15';
+const FUNDO = { ...FONTE, backgroundColor: '#0d0b0c', backgroundImage: 'radial-gradient(1200px 520px at 15% -10%, rgba(196,32,38,.35), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(120,20,24,.28), transparent 60%)', backgroundAttachment: 'fixed' };
+const VIDRO = 'border border-white/10 bg-white/[0.06] shadow-[0_8px_30px_rgba(0,0,0,.35)] backdrop-blur-xl';
+const BTN = 'inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#D9262C] to-[#9C1E1E] px-4 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(200,30,36,.35)] ring-1 ring-white/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40';
+const BTN2 = 'inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10';
+const CAMPO = 'w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E0282E] focus:ring-2 focus:ring-[#E0282E]/25 [color-scheme:dark]';
 
 const CHAVE = 'nando_sessao';
 const lerSessao = () => { try { const s = JSON.parse(localStorage.getItem(CHAVE) || 'null'); return s && new Date(s.expira) > new Date() ? s.token as string : null; } catch { return null; } };
@@ -98,8 +99,8 @@ function TelaAviso({ a, grande = false }: { a: Aviso; grande?: boolean }) {
     return () => { vivo = false; m?.remover(); el.querySelectorAll('canvas').forEach((c) => c.remove()); };
   }, [a.id, a.tipo, a.url, a.dados, grande]);
   return (
-    <div className="rounded-xl bg-neutral-900 p-1 shadow-sm ring-1 ring-black/5">
-      <div className="relative w-full overflow-hidden rounded-lg bg-[#140a1c]" style={{ aspectRatio: '502 / 882' }}>
+    <div className="rounded-2xl bg-gradient-to-b from-[#3a3a40] to-[#121214] p-[5px] shadow-[0_12px_30px_rgba(0,0,0,.5)] ring-1 ring-white/10">
+      <div className="relative w-full overflow-hidden rounded-[12px] bg-[#140a1c]" style={{ aspectRatio: '502 / 882' }}>
         <div ref={ref} className="absolute inset-0">
           {a.tipo === 'imagem' && a.url && (<>
             <img src={a.url} alt="" className="absolute inset-[-10%] h-[120%] w-[120%] object-cover blur-2xl brightness-50" />
@@ -132,7 +133,7 @@ function CampoCodigo({ valor, aoMudar, aoCompletar, desativado }: { valor: strin
             if (novo.length === 6) aoCompletar(novo);
           }}
           onKeyDown={(e) => { if (e.key === 'Backspace' && !c.trim() && i > 0) refs.current[i - 1]?.focus(); }}
-          className="h-14 w-full rounded-lg border border-neutral-300 bg-white text-center text-2xl font-bold text-neutral-900 outline-none transition focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/15 disabled:bg-neutral-100" />
+          className="h-14 w-full rounded-xl border border-white/15 bg-black/30 text-center text-2xl font-bold text-white outline-none transition focus:border-[#E0282E] focus:ring-2 focus:ring-[#E0282E]/25 disabled:opacity-50" />
       ))}
     </div>
   );
@@ -167,9 +168,9 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-100 lg:flex-row" style={FONTE}>
+    <div className="flex min-h-screen flex-col text-white lg:flex-row" style={FUNDO}>
       {/* marca */}
-      <div className={`${CABECALHO} flex flex-col justify-between px-6 py-6 text-white lg:w-[44%] lg:px-14 lg:py-12`}>
+      <div className="flex flex-col justify-between px-6 pb-2 pt-[calc(env(safe-area-inset-top,0px)+24px)] text-white lg:w-[44%] lg:bg-gradient-to-br lg:from-[#9C1E1E]/90 lg:to-[#180A0A]/90 lg:px-14 lg:py-12">
         <img src={LOGO} alt="EXA Mídia" className="h-9 w-auto self-start lg:h-12" />
         <div className="hidden lg:block">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Área do síndico</div>
@@ -182,15 +183,15 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
       {/* formulário */}
       <div className="flex flex-1 items-start justify-center px-4 py-8 sm:items-center">
         <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#9C1E1E]"><Lock className="h-3.5 w-3.5" /> Acesso seguro</div>
-            <h2 className="mt-2 text-2xl font-bold text-neutral-900">Painel do Síndico</h2>
+          <div className={`rounded-2xl p-6 sm:p-8 ${VIDRO}`}>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#FF6B6B]"><Lock className="h-3.5 w-3.5" /> Acesso seguro</div>
+            <h2 className="mt-2 text-2xl font-bold text-white">Painel do Síndico</h2>
             {etapa === 'tel' ? (
               <>
-                <p className="mt-2 text-sm text-neutral-600">{carteira ? 'Vamos enviar um código de confirmação para o WhatsApp que recebeu este link.' : 'Informe o celular cadastrado no seu prédio. Enviaremos um código de confirmação pelo WhatsApp.'}</p>
+                <p className="mt-2 text-sm text-white/65">{carteira ? 'Vamos enviar um código de confirmação para o WhatsApp que recebeu este link.' : 'Informe o celular cadastrado no seu prédio. Enviaremos um código de confirmação pelo WhatsApp.'}</p>
                 {!carteira && (
                   <label className="mt-6 block">
-                    <span className="mb-1.5 block text-sm font-medium text-neutral-700">Celular com DDD</span>
+                    <span className="mb-1.5 block text-sm font-medium text-white/80">Celular com DDD</span>
                     <input inputMode="tel" autoComplete="tel" placeholder="(45) 99999-9999" value={tel} onChange={(e) => setTel(mascaraTel(e.target.value))}
                       onKeyDown={(e) => e.key === 'Enter' && pedir()} className={`${CAMPO} py-3 text-base`} />
                   </label>
@@ -201,21 +202,21 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
               </>
             ) : (
               <>
-                <p className="mt-2 text-sm text-neutral-600">Digite o código de 6 dígitos enviado para o WhatsApp <b className="text-neutral-900">{destino}</b>. Ele vale 10 minutos.</p>
+                <p className="mt-2 text-sm text-white/65">Digite o código de 6 dígitos enviado para o WhatsApp <b className="text-white">{destino}</b>. Ele vale 10 minutos.</p>
                 <div className="mt-6"><CampoCodigo valor={cod} aoMudar={setCod} aoCompletar={verificar} desativado={carregando} /></div>
-                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm">
-                  <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#9C1E1E]" />
-                  <span className="text-neutral-700"><b className="text-neutral-900">Lembrar este aparelho por 30 dias</b><br /><span className="text-xs text-neutral-500">Sem marcar, o acesso vale 12 horas. Alterações pelo site sempre pedem um novo código.</span></span>
+                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 text-sm">
+                  <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#E0282E]" />
+                  <span className="text-white/80"><b className="text-white">Lembrar este aparelho por 30 dias</b><br /><span className="text-xs text-white/55">Sem marcar, o acesso vale 12 horas. Alterações pelo site sempre pedem um novo código.</span></span>
                 </label>
                 <button onClick={() => verificar()} disabled={carregando || cod.length !== 6} className={`${BTN} mt-5 w-full`}>
                   {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} Entrar
                 </button>
-                <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-sm text-neutral-500 hover:text-neutral-800">Não recebeu? Enviar novo código</button>
+                <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-sm text-white/55 hover:text-white/90">Não recebeu? Enviar novo código</button>
               </>
             )}
-            {erro && <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">{erro}</div>}
+            {erro && <div className="mt-4 rounded-lg border border-red-400/30 bg-red-500/100/10 px-3 py-2.5 text-sm text-red-200">{erro}</div>}
           </div>
-          <p className="mt-4 text-center text-xs text-neutral-500">A EXA nunca pede este código por telefone, e-mail ou mensagem.</p>
+          <p className="mt-4 text-center text-xs text-white/55">A EXA nunca pede este código por telefone, e-mail ou mensagem.</p>
         </div>
       </div>
     </div>
@@ -226,14 +227,14 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
 function Modal({ titulo, sub, children, aoFechar, largo = false }: { titulo: string; sub?: string; children: ReactNode; aoFechar: () => void; largo?: boolean }) {
   useEffect(() => { const f = (e: KeyboardEvent) => e.key === 'Escape' && aoFechar(); window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f); }, [aoFechar]);
   return (
-    <div onClick={aoFechar} className="fixed inset-0 z-50 flex items-end justify-center bg-neutral-900/60 sm:items-center sm:p-4" style={FONTE}>
-      <div onClick={(e) => e.stopPropagation()} className={`max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 text-neutral-900 shadow-2xl sm:rounded-2xl sm:p-6 ${largo ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
-        <div className="mb-4 flex items-start justify-between gap-3 border-b border-neutral-100 pb-3">
+    <div onClick={aoFechar} className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4" style={FONTE}>
+      <div onClick={(e) => e.stopPropagation()} className={`max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-white/10 bg-[#171214]/95 p-5 text-white shadow-2xl backdrop-blur-xl sm:rounded-2xl sm:p-6 ${largo ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}>
+        <div className="mb-4 flex items-start justify-between gap-3 border-b border-white/10 pb-3">
           <div className="min-w-0">
-            {sub && <div className="text-xs font-semibold uppercase tracking-wider text-[#9C1E1E]">{sub}</div>}
+            {sub && <div className="text-xs font-semibold uppercase tracking-wider text-[#FF6B6B]">{sub}</div>}
             <h2 className="text-lg font-bold leading-snug first-letter:uppercase">{titulo}</h2>
           </div>
-          <button onClick={aoFechar} aria-label="Fechar" className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100"><X className="h-5 w-5" /></button>
+          <button onClick={aoFechar} aria-label="Fechar" className="rounded-lg p-1.5 text-white/55 hover:bg-white/10"><X className="h-5 w-5" /></button>
         </div>
         {children}
       </div>
@@ -260,11 +261,11 @@ function ConfirmarCodigo({ sessao, aoConfirmar, aoFechar }: { sessao: string; ao
   };
   return (
     <Modal aoFechar={aoFechar} sub="Confirmação de segurança" titulo="Confirme a alteração">
-      <p className="text-sm text-neutral-600">Enviamos um código para o WhatsApp {destino ? <b className="text-neutral-900">{destino}</b> : 'cadastrado'}. Depois de confirmado, você pode fazer alterações pelos próximos 15 minutos.</p>
+      <p className="text-sm text-white/65">Enviamos um código para o WhatsApp {destino ? <b className="text-white">{destino}</b> : 'cadastrado'}. Depois de confirmado, você pode fazer alterações pelos próximos 15 minutos.</p>
       <div className="mt-5"><CampoCodigo valor={cod} aoMudar={setCod} aoCompletar={verificar} desativado={carregando && !destino} /></div>
-      {carregando && <div className="mt-3 flex items-center gap-2 text-sm text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" /> Aguarde…</div>}
-      {erro && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">{erro}</div>}
-      <button onClick={pedir} className="mt-4 text-sm text-neutral-500 hover:text-neutral-800">Enviar novo código</button>
+      {carregando && <div className="mt-3 flex items-center gap-2 text-sm text-white/55"><Loader2 className="h-4 w-4 animate-spin" /> Aguarde…</div>}
+      {erro && <div className="mt-3 rounded-lg border border-red-400/30 bg-red-500/100/10 px-3 py-2.5 text-sm text-red-200">{erro}</div>}
+      <button onClick={pedir} className="mt-4 text-sm text-white/55 hover:text-white/90">Enviar novo código</button>
     </Modal>
   );
 }
@@ -287,7 +288,16 @@ export default function NandoPainel() {
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
   const [menu, setMenu] = useState(false);
 
-  useEffect(() => { document.title = 'Painel do Síndico · EXA Mídia'; }, []);
+  useEffect(() => {
+    document.title = 'Painel do Síndico · EXA Mídia';
+    // barra de status do iPhone/Android no mesmo tom do fundo (evita a "segunda tarja" vermelha do site)
+    const metas = [...document.querySelectorAll('meta[name="theme-color"]')] as HTMLMetaElement[];
+    const antes = metas.map((m) => m.content);
+    if (!metas.length) { const m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); metas.push(m); antes.push(''); }
+    metas.forEach((m) => { m.content = '#0d0b0c'; });
+    document.documentElement.style.backgroundColor = '#0d0b0c';
+    return () => { metas.forEach((m, i) => { m.content = antes[i]; }); };
+  }, []);
 
   const carregar = useCallback(async (s = sessao) => {
     if (!s) { setCarregando(false); return; }
@@ -341,9 +351,9 @@ export default function NandoPainel() {
   const inicial = (d?.primeiro_nome || d?.pessoa || 'S').trim().charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-neutral-100 pb-24 text-neutral-900" style={FONTE}>
+    <div className="min-h-screen pb-24 text-white" style={FUNDO}>
       {/* cabeçalho no padrão do site */}
-      <header className={`${CABECALHO} sticky top-0 z-30 shadow-lg`}>
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0b0c]/75 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-4">
             <img src={LOGO} alt="EXA Mídia" className="h-8 w-auto sm:h-9" />
@@ -356,15 +366,15 @@ export default function NandoPainel() {
               <span className="hidden text-sm font-medium sm:inline">{d ? (d.primeiro_nome || d.pessoa || 'Síndico') : '…'}</span>
             </button>
             {menu && d && (
-              <div className="absolute right-0 mt-2 w-72 rounded-xl border border-neutral-200 bg-white p-2 text-sm text-neutral-800 shadow-xl">
+              <div className="absolute right-0 mt-2 w-72 rounded-xl border border-white/10 bg-[#171214]/95 p-2 text-sm text-white shadow-2xl backdrop-blur-xl">
                 <div className="px-3 py-2">
                   <div className="font-semibold">{d.pessoa || 'Síndico'}</div>
-                  <div className="text-xs text-neutral-500">WhatsApp {d.telefone}</div>
-                  <div className="mt-1 flex items-center gap-1 text-xs text-emerald-700"><ShieldCheck className="h-3.5 w-3.5" /> {d.lembrar ? 'Aparelho lembrado' : 'Acesso de 12 horas'} até {fmt(d.expira_em)}</div>
+                  <div className="text-xs text-white/55">WhatsApp {d.telefone}</div>
+                  <div className="mt-1 flex items-center gap-1 text-xs text-emerald-300"><ShieldCheck className="h-3.5 w-3.5" /> {d.lembrar ? 'Aparelho lembrado' : 'Acesso de 12 horas'} até {fmt(d.expira_em)}</div>
                 </div>
-                <div className="my-1 h-px bg-neutral-100" />
-                <button onClick={() => sair(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-50"><LogOut className="h-4 w-4" /> Sair deste aparelho</button>
-                <button onClick={() => sair(true)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-red-700 hover:bg-red-50"><LogOut className="h-4 w-4" /> Sair de todos os aparelhos ({d.aparelhos})</button>
+                <div className="my-1 h-px bg-white/10" />
+                <button onClick={() => sair(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-white/[0.04]"><LogOut className="h-4 w-4" /> Sair deste aparelho</button>
+                <button onClick={() => sair(true)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-red-300 hover:bg-red-500/100/10"><LogOut className="h-4 w-4" /> Sair de todos os aparelhos ({d.aparelhos})</button>
               </div>
             )}
           </div>
@@ -372,15 +382,15 @@ export default function NandoPainel() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4">
-        {carregando && !d && <div className="flex items-center justify-center gap-2 py-24 text-neutral-500"><Loader2 className="h-5 w-5 animate-spin" /> Consultando as telas dos prédios…</div>}
-        {erro && <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{erro} <button onClick={() => carregar()} className="ml-2 font-semibold underline">Tentar de novo</button></div>}
+        {carregando && !d && <div className="flex items-center justify-center gap-2 py-24 text-white/55"><Loader2 className="h-5 w-5 animate-spin" /> Consultando as telas dos prédios…</div>}
+        {erro && <div className="mt-6 rounded-xl border border-red-400/30 bg-red-500/100/10 p-4 text-sm text-red-200">{erro} <button onClick={() => carregar()} className="ml-2 font-semibold underline">Tentar de novo</button></div>}
 
         {d && (
           <>
             <div className="mt-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h1 className="text-2xl font-bold">Olá, {d.primeiro_nome || d.pessoa || 'síndico'}</h1>
-                <p className="text-sm text-neutral-500">{umSo ? `Avisos do ${d.predios[0].predio}` : `Avisos dos seus ${d.predios.length} prédios`}, conferidos agora nas telas dos elevadores.</p>
+                <p className="text-sm text-white/55">{umSo ? `Avisos do ${d.predios[0].predio}` : `Avisos dos seus ${d.predios.length} prédios`}, conferidos agora nas telas dos elevadores.</p>
               </div>
               <a href={whats} target="_blank" rel="noreferrer" className={`${BTN} mt-3 hidden sm:inline-flex`}><MessageCircle className="h-4 w-4" /> Criar aviso com o Nando</a>
             </div>
@@ -394,21 +404,21 @@ export default function NandoPainel() {
                 { t: 'Saem em 7 dias', v: kpi.saindo, s: 'Confira se ainda valem', i: Timer, f: 'saindo' as const },
               ].map((k) => (
                 <button key={k.t} onClick={() => k.f && setFiltro(filtro === k.f ? 'todos' : k.f)} disabled={!k.f}
-                  className={`rounded-xl border bg-white p-4 text-left shadow-sm transition ${k.f && filtro === k.f ? 'border-[#9C1E1E] ring-2 ring-[#9C1E1E]/15' : 'border-neutral-200 enabled:hover:border-neutral-300'}`}>
-                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-neutral-500">{k.t}<k.i className="h-4 w-4 text-[#9C1E1E]" /></div>
-                  <div className={`mt-2 font-bold text-neutral-900 ${typeof k.v === 'string' ? 'truncate text-lg' : 'text-3xl'}`}>{k.v}</div>
-                  {k.s && <div className="mt-0.5 truncate text-xs text-neutral-500">{k.s}</div>}
+                  className={`rounded-2xl border p-4 text-left backdrop-blur-xl transition ${k.f && filtro === k.f ? 'border-[#E0282E]/70 bg-[#E0282E]/15 ring-2 ring-[#E0282E]/25' : 'border-white/10 bg-white/[0.06] enabled:hover:bg-white/[0.09]'}`}>
+                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-white/55">{k.t}<k.i className="h-4 w-4 text-[#FF6B6B]" /></div>
+                  <div className={`mt-2 font-bold text-white ${typeof k.v === 'string' ? 'truncate text-lg' : 'text-3xl'}`}>{k.v}</div>
+                  {k.s && <div className="mt-0.5 truncate text-xs text-white/55">{k.s}</div>}
                 </button>
               ))}
             </section>
 
             {/* prédios e busca */}
             {!umSo && (
-              <section className="mt-5 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
+              <section className={`mt-5 rounded-2xl p-3 ${VIDRO}`}>
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                  <div className="flex items-center gap-2 rounded-lg border border-neutral-300 px-3 lg:w-72">
-                    <Search className="h-4 w-4 text-neutral-400" />
-                    <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio ou aviso" className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-neutral-400" />
+                  <div className="flex items-center gap-2 rounded-lg border border-white/15 px-3 lg:w-72">
+                    <Search className="h-4 w-4 text-white/40" />
+                    <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio ou aviso" className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-white/40" />
                   </div>
                   <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
                     {[{ id: 'todos', predio: `Todos os prédios` }, ...d.predios].map((g) => {
@@ -416,8 +426,8 @@ export default function NandoPainel() {
                       const ativo = predioSel === g.id;
                       return (
                         <button key={g.id} onClick={() => setPredioSel(g.id)}
-                          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${ativo ? 'bg-[#9C1E1E] text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}>
-                          {g.predio} <span className={ativo ? 'text-white/70' : 'text-neutral-400'}>{n}</span>
+                          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${ativo ? 'bg-gradient-to-b from-[#D9262C] to-[#9C1E1E] text-white shadow-lg' : 'bg-white/[0.07] text-white/80 hover:bg-white/[0.12]'}`}>
+                          {g.predio} <span className={ativo ? 'text-white/70' : 'text-white/40'}>{n}</span>
                         </button>
                       );
                     })}
@@ -432,33 +442,33 @@ export default function NandoPainel() {
               const totalNoAr = original.filter((a) => a.status === 'no_ar').length;
               const volta = original.filter((a) => a.status === 'no_ar').reduce((s, a) => s + (a.segundos || 15), 0);
               return (
-                <section key={g.id} className="mt-6 rounded-xl border border-neutral-200 bg-white shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 py-4">
+                <section key={g.id} className={`mt-6 rounded-2xl ${VIDRO}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#9C1E1E]/10 text-[#9C1E1E]"><Building2 className="h-5 w-5" /></span>
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#E0282E]/15 text-[#FF6B6B]"><Building2 className="h-5 w-5" /></span>
                       <div>
-                        <h2 className="text-base font-bold">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-neutral-400">· {g.codigo}</span>}</h2>
-                        <div className="text-xs text-neutral-500">{totalNoAr === 0 ? 'Nenhum aviso no ar' : totalNoAr === 1 ? '1 aviso no ar · fixo na tela' : `${totalNoAr} avisos no rodízio · ciclo completo de ${volta}s`}</div>
+                        <h2 className="text-base font-bold">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-white/40">· {g.codigo}</span>}</h2>
+                        <div className="text-xs text-white/55">{totalNoAr === 0 ? 'Nenhum aviso no ar' : totalNoAr === 1 ? '1 aviso no ar · fixo na tela' : `${totalNoAr} avisos no rodízio · ciclo completo de ${volta}s`}</div>
                       </div>
                     </div>
                   </div>
                   {g.avisos.length === 0 ? (
-                    <div className="px-5 py-8 text-center text-sm text-neutral-500">
+                    <div className="px-5 py-8 text-center text-sm text-white/55">
                       {filtro === 'todos' ? 'O quadro de avisos deste prédio está vazio.' : 'Nenhum aviso neste filtro.'}{' '}
-                      <a href={whats} target="_blank" rel="noreferrer" className="font-semibold text-[#9C1E1E] hover:underline">Criar um aviso com o Nando</a>
+                      <a href={whats} target="_blank" rel="noreferrer" className="font-semibold text-[#FF6B6B] hover:underline">Criar um aviso com o Nando</a>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-x-4 gap-y-6 p-5 sm:grid-cols-3 lg:grid-cols-5">
                       {g.avisos.map((a) => (
-                        <button key={a.id} onClick={() => { setAberto({ a, g }); setEditar(null); }} className="group text-left">
+                        <button key={a.id} onClick={() => { setAberto({ a, g }); setEditar(null); }} className="group flex h-full flex-col items-stretch justify-start text-left align-top">
                           <div className="transition group-hover:-translate-y-0.5 group-hover:drop-shadow-md"><TelaAviso a={a} /></div>
                           <div className="mt-2.5">
                             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
-                              <span className={`h-1.5 w-1.5 rounded-full ${a.status === 'no_ar' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                              <span className={a.status === 'no_ar' ? 'text-emerald-700' : 'text-amber-700'}>{a.status === 'no_ar' ? 'No ar' : 'Agendado'}</span>
+                              <span className={`h-1.5 w-1.5 rounded-full ${a.status === 'no_ar' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]' : 'bg-amber-400'}`} />
+                              <span className={a.status === 'no_ar' ? 'text-emerald-300' : 'text-amber-300'}>{a.status === 'no_ar' ? 'No ar' : 'Agendado'}</span>
                             </div>
-                            <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-neutral-900 first-letter:uppercase">{a.titulo}</div>
-                            <div className="mt-0.5 text-xs text-neutral-500">
+                            <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-white first-letter:uppercase">{a.titulo}</div>
+                            <div className="mt-0.5 text-xs text-white/55">
                               {a.status === 'agendado' ? `Começa ${fmt(a.inicio)}` : totalNoAr > 1 ? `${a.segundos}s por ciclo` : 'Fixo na tela'} · {a.fim ? `até ${fmt(a.fim)}` : 'sem data de saída'}
                             </div>
                             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -474,7 +484,7 @@ export default function NandoPainel() {
                 </section>
               );
             })}
-            <p className="mt-8 text-center text-xs text-neutral-400">EXA Mídia · Publicidade inteligente em elevadores · Foz do Iguaçu/PR</p>
+            <p className="mt-8 text-center text-xs text-white/40">EXA Mídia · Publicidade inteligente em elevadores · Foz do Iguaçu/PR</p>
           </>
         )}
       </main>
@@ -490,7 +500,7 @@ export default function NandoPainel() {
           <div className="grid gap-6 sm:grid-cols-[220px_1fr]">
             <div className="mx-auto w-full max-w-[220px]">
               <TelaAviso a={aberto.a} grande />
-              {aberto.a.url && <a href={aberto.a.url} target="_blank" rel="noreferrer" className="mt-2 block text-center text-xs font-semibold text-[#9C1E1E] hover:underline">Abrir arquivo original</a>}
+              {aberto.a.url && <a href={aberto.a.url} target="_blank" rel="noreferrer" className="mt-2 block text-center text-xs font-semibold text-[#FF6B6B] hover:underline">Abrir arquivo original</a>}
             </div>
             <div className="min-w-0">
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
@@ -514,10 +524,10 @@ export default function NandoPainel() {
 
               {!!aberto.a.historico?.length && (
                 <div className="mt-6">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500"><History className="h-3.5 w-3.5" /> Histórico</div>
-                  <ol className="space-y-2 border-l-2 border-neutral-100 pl-3 text-xs">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/55"><History className="h-3.5 w-3.5" /> Histórico</div>
+                  <ol className="space-y-2 border-l-2 border-white/10 pl-3 text-xs">
                     {[...aberto.a.historico].reverse().map((h, i) => (
-                      <li key={i} className="text-neutral-600"><span className="text-neutral-400">{fmt(h.em, true)}</span> · <b className="text-neutral-800">{h.quem}</b> {h.acao}</li>
+                      <li key={i} className="text-white/65"><span className="text-white/40">{fmt(h.em, true)}</span> · <b className="text-white/90">{h.quem}</b> {h.acao}</li>
                     ))}
                   </ol>
                 </div>
@@ -534,10 +544,10 @@ export default function NandoPainel() {
 
       {aviso && (
         <div className="fixed inset-x-0 bottom-24 z-50 mx-auto w-[min(92%,480px)] sm:bottom-6" style={FONTE}>
-          <div className={`flex items-start gap-3 rounded-xl border bg-white p-4 text-sm shadow-2xl ${aviso.ok ? 'border-emerald-200' : 'border-red-200'}`}>
-            <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${aviso.ok ? 'bg-emerald-500' : 'bg-red-500'}`} />
-            <div className="min-w-0 flex-1 whitespace-pre-line text-neutral-800">{aviso.texto}</div>
-            <button onClick={() => setAviso(null)} aria-label="Fechar" className="text-neutral-400 hover:text-neutral-700"><X className="h-4 w-4" /></button>
+          <div className={`flex items-start gap-3 rounded-xl border bg-[#171214]/95 p-4 text-sm shadow-2xl backdrop-blur-xl ${aviso.ok ? 'border-emerald-400/40' : 'border-red-400/40'}`}>
+            <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${aviso.ok ? 'bg-emerald-500' : 'bg-red-500/100'}`} />
+            <div className="min-w-0 flex-1 whitespace-pre-line text-white/90">{aviso.texto}</div>
+            <button onClick={() => setAviso(null)} aria-label="Fechar" className="text-white/40 hover:text-white/80"><X className="h-4 w-4" /></button>
           </div>
         </div>
       )}
@@ -546,19 +556,19 @@ export default function NandoPainel() {
 }
 
 function Etiqueta({ children, cor = 'neutro' }: { children: ReactNode; cor?: 'neutro' | 'amber' }) {
-  return <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${cor === 'amber' ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'bg-neutral-100 text-neutral-600'}`}>{children}</span>;
+  return <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${cor === 'amber' ? 'bg-amber-400/15 text-amber-200 ring-1 ring-amber-300/30' : 'bg-white/10 text-white/70'}`}>{children}</span>;
 }
 function Linha({ i: I, t, v }: { i: any; t: string; v: string }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-lg bg-neutral-50 p-3">
-      <I className="mt-0.5 h-4 w-4 shrink-0 text-[#9C1E1E]" />
-      <div className="min-w-0"><dt className="text-xs text-neutral-500">{t}</dt><dd className="font-semibold text-neutral-900">{v}</dd></div>
+    <div className="flex items-start gap-2.5 rounded-lg bg-white/[0.04] p-3">
+      <I className="mt-0.5 h-4 w-4 shrink-0 text-[#FF6B6B]" />
+      <div className="min-w-0"><dt className="text-xs text-white/55">{t}</dt><dd className="font-semibold text-white">{v}</dd></div>
     </div>
   );
 }
 function BotaoAcao({ i: I, t, onClick, perigo = false }: { i: any; t: string; onClick: () => void; perigo?: boolean }) {
   return (
-    <button onClick={onClick} className={`flex items-center justify-between gap-2 rounded-lg border px-3.5 py-3 text-sm font-semibold transition ${perigo ? 'border-red-200 text-red-700 hover:bg-red-50' : 'border-neutral-200 text-neutral-800 hover:bg-neutral-50'}`}>
+    <button onClick={onClick} className={`flex items-center justify-between gap-2 rounded-lg border px-3.5 py-3 text-sm font-semibold transition ${perigo ? 'border-red-400/30 text-red-300 hover:bg-red-500/100/100/10' : 'border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]'}`}>
       <span className="flex items-center gap-2"><I className="h-4 w-4" /> {t}</span><ChevronRight className="h-4 w-4 opacity-40" />
     </button>
   );
@@ -577,42 +587,42 @@ function FormAcao({ tipo, a, aoCancelar, aoEnviar }: { tipo: 'datas' | 'tempo' |
   const outros = (a.grupo_predios || []).length - 1;
   const enviar = (acao: Acao) => { setEnviando(true); aoEnviar(acao, todos); setTimeout(() => setEnviando(false), 4000); };
   return (
-    <div className="mt-6 rounded-xl border border-neutral-200 p-4">
+    <div className="mt-6 rounded-xl border border-white/10 p-4">
       {tipo === 'datas' && (<>
         <div className="mb-2 text-sm font-semibold">Quando o aviso deve sair da tela?</div>
         <input type="datetime-local" disabled={semFim} value={fim} onChange={(e) => setFim(e.target.value)} className={CAMPO} />
-        <label className="mt-2 flex items-center gap-2 text-sm text-neutral-700"><input type="checkbox" checked={semFim} onChange={(e) => setSemFim(e.target.checked)} className="accent-[#9C1E1E]" /> Sem data de saída</label>
+        <label className="mt-2 flex items-center gap-2 text-sm text-white/80"><input type="checkbox" checked={semFim} onChange={(e) => setSemFim(e.target.checked)} className="accent-[#E0282E]" /> Sem data de saída</label>
       </>)}
       {tipo === 'tempo' && (<>
-        <div className="mb-2 flex items-center justify-between text-sm font-semibold">Tempo na tela por ciclo <span className="text-[#9C1E1E]">{seg}s</span></div>
-        <input type="range" min={5} max={60} step={5} value={seg} onChange={(e) => setSeg(Number(e.target.value))} className="w-full accent-[#9C1E1E]" />
-        <div className="mt-1 text-xs text-neutral-500">Avisos com listas ou regras ficam melhores com 20 a 30 segundos.</div>
+        <div className="mb-2 flex items-center justify-between text-sm font-semibold">Tempo na tela por ciclo <span className="text-[#FF6B6B]">{seg}s</span></div>
+        <input type="range" min={5} max={60} step={5} value={seg} onChange={(e) => setSeg(Number(e.target.value))} className="w-full accent-[#E0282E]" />
+        <div className="mt-1 text-xs text-white/55">Avisos com listas ou regras ficam melhores com 20 a 30 segundos.</div>
       </>)}
       {tipo === 'texto' && (<div className="grid gap-3">
-        <label className="text-xs font-medium text-neutral-600">Título<input value={titulo} maxLength={60} onChange={(e) => setTitulo(e.target.value)} className={`${CAMPO} mt-1`} /></label>
-        <label className="text-xs font-medium text-neutral-600">Data, horário ou local<input value={quando} maxLength={60} onChange={(e) => setQuando(e.target.value)} className={`${CAMPO} mt-1`} /></label>
+        <label className="text-xs font-medium text-white/65">Título<input value={titulo} maxLength={60} onChange={(e) => setTitulo(e.target.value)} className={`${CAMPO} mt-1`} /></label>
+        <label className="text-xs font-medium text-white/65">Data, horário ou local<input value={quando} maxLength={60} onChange={(e) => setQuando(e.target.value)} className={`${CAMPO} mt-1`} /></label>
         {(a.dados?.itens || []).length ? (
-          <label className="text-xs font-medium text-neutral-600">Itens (um por linha)<textarea rows={6} value={itens} onChange={(e) => setItens(e.target.value)} className={`${CAMPO} mt-1`} /></label>
+          <label className="text-xs font-medium text-white/65">Itens (um por linha)<textarea rows={6} value={itens} onChange={(e) => setItens(e.target.value)} className={`${CAMPO} mt-1`} /></label>
         ) : (
-          <label className="text-xs font-medium text-neutral-600">Texto<textarea rows={3} value={texto} maxLength={160} onChange={(e) => setTexto(e.target.value)} className={`${CAMPO} mt-1`} /></label>
+          <label className="text-xs font-medium text-white/65">Texto<textarea rows={3} value={texto} maxLength={160} onChange={(e) => setTexto(e.target.value)} className={`${CAMPO} mt-1`} /></label>
         )}
       </div>)}
-      {tipo === 'remover' && <div className="text-sm text-neutral-700">Retirar <b className="text-neutral-900">“{a.titulo}”</b> das telas agora? Ele deixa de aparecer no elevador em até 10 minutos.</div>}
+      {tipo === 'remover' && <div className="text-sm text-white/80">Retirar <b className="text-white">“{a.titulo}”</b> das telas agora? Ele deixa de aparecer no elevador em até 10 minutos.</div>}
       {outros > 0 && (
-        <label className="mt-4 flex items-start gap-2.5 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
-          <input type="checkbox" checked={todos} onChange={(e) => setTodos(e.target.checked)} className="mt-0.5 accent-[#9C1E1E]" />
-          <span>Aplicar também nos outros {outros} prédio{outros > 1 ? 's' : ''} onde este aviso está publicado<br /><span className="text-xs text-neutral-500">{(a.grupo_predios || []).join(', ')}</span></span>
+        <label className="mt-4 flex items-start gap-2.5 rounded-lg bg-white/[0.04] p-3 text-sm text-white/80">
+          <input type="checkbox" checked={todos} onChange={(e) => setTodos(e.target.checked)} className="mt-0.5 accent-[#E0282E]" />
+          <span>Aplicar também nos outros {outros} prédio{outros > 1 ? 's' : ''} onde este aviso está publicado<br /><span className="text-xs text-white/55">{(a.grupo_predios || []).join(', ')}</span></span>
         </label>
       )}
       <div className="mt-4 flex gap-2">
         <button onClick={aoCancelar} className={`${BTN2} flex-1`}>Cancelar</button>
         <button disabled={enviando}
           onClick={() => enviar(tipo === 'datas' ? { op: 'datas', fim, sem_fim: semFim } : tipo === 'tempo' ? { op: 'tempo', segundos: seg } : tipo === 'texto' ? { op: 'texto', titulo, quando, texto, itens: itens.split('\n') } : { op: 'remover' })}
-          className={`${tipo === 'remover' ? BTN.replace('bg-[#9C1E1E]', 'bg-red-600').replace('hover:bg-[#7E1717]', 'hover:bg-red-700') : BTN} flex-1 py-2.5`}>
+          className={`${tipo === 'remover' ? BTN : BTN} flex-1 py-2.5`}>
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} {tipo === 'remover' ? 'Retirar do ar' : 'Salvar alteração'}
         </button>
       </div>
-      <div className="mt-2 flex items-center justify-center gap-1 text-[11px] text-neutral-500"><Lock className="h-3 w-3" /> Alterações são confirmadas com um código no WhatsApp.</div>
+      <div className="mt-2 flex items-center justify-center gap-1 text-[11px] text-white/55"><Lock className="h-3 w-3" /> Alterações são confirmadas com um código no WhatsApp.</div>
     </div>
   );
 }
