@@ -127,8 +127,15 @@ function TelaAoVivo({ predioId, sessao, nome }: { predioId: string; sessao: stri
       if (!('serviceWorker' in navigator) || !('caches' in window)) throw new Error('Este navegador não mostra a tela ao vivo. Use Chrome, Safari ou Edge atualizados.');
       const c = await caches.open('replica');
       await c.put('/painel-web/__cfg', new Response(JSON.stringify({ sessao })));
-      await navigator.serviceWorker.register('/painel-web/sw.js', { scope: '/painel-web/' });
-      await navigator.serviceWorker.ready;
+      // (navigator.serviceWorker.ready nao serve aqui: esta pagina fica fora do escopo /painel-web/)
+      const reg = await navigator.serviceWorker.register('/painel-web/sw.js', { scope: '/painel-web/' });
+      if (!reg.active) {
+        await new Promise<void>((ok) => {
+          const w = reg.installing || reg.waiting;
+          if (!w) return ok();
+          w.addEventListener('statechange', () => { if (w.state === 'activated') ok(); });
+        });
+      }
       if (vivo) setPronto(true);
     })().catch((e) => vivo && setErro(e?.message || 'Não consegui abrir a tela.'));
     const msg = (e: MessageEvent) => { if (e.data?.tipo === 'replica-lida') setLida(e.data.em); };
