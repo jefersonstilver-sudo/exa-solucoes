@@ -589,6 +589,20 @@ async function publicarEm(c: Contexto, a: any, p: Predio): Promise<string> {
 }
 
 type Saida = string | { texto: string; blocos: any[] };
+// numero sem cadastro: procura contatos com os mesmos 8 ultimos digitos (ex: DDD 45 digitado no lugar de 41)
+async function cadastrosParecidos(sb: SupabaseClient, tel: string): Promise<string[]> {
+  const fim = String(tel).replace(/\D/g, "").slice(-8);
+  if (fim.length < 8) return [];
+  const { data } = await sb.from("buildings").select("nome,nome_sindico,contato_sindico,contato_sindico_telefone,nome_vice_sindico,contato_vice_sindico,nome_contato_predio,numero_contato_predio").eq("status", "ativo");
+  const out: string[] = [];
+  for (const b of data || []) {
+    for (const [papel, n, t] of [["síndico", b.nome_sindico, b.contato_sindico], ["síndico", b.nome_sindico, b.contato_sindico_telefone], ["vice", b.nome_vice_sindico, b.contato_vice_sindico], ["contato do prédio", b.nome_contato_predio, b.numero_contato_predio]] as [string, string | null, string | null][]) {
+      if (t && String(t).replace(/\D/g, "").slice(-8) === fim) out.push(`${String(b.nome).trim()} (${papel}${n ? " " + n : ""}: ${t})`);
+    }
+  }
+  return out.slice(0, 5);
+}
+
 export async function executar(c: Contexto, nome: string, e: any): Promise<Saida> {
   const sb = c.sb;
   // aviso pensado para varios predios: guarda os destinos no rascunho (a previa mostra todos; publicar usa a lista)
@@ -1047,7 +1061,12 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       return "Preferência guardada.";
     }
     case "registrar_ocorrencia": {
-      await registrarOcorrencia(sb, { tipo: e.tipo, telefone: c.tel, nome: c.nomePessoa, building_id: c.predioAtual?.id || null, descricao: e.descricao });
+      let descricao = String(e.descricao || "");
+      if (e.tipo === "numero_desconhecido") {
+        const parecidos = await cadastrosParecidos(sb, c.tel).catch(() => []);
+        if (parecidos.length) descricao += `\n\n⚠️ Cadastro parecido (mesmo final, DDD/dígito diferente — provável erro de digitação no cadastro): ${parecidos.join("; ")}.`;
+      }
+      await registrarOcorrencia(sb, { tipo: e.tipo, telefone: c.tel, nome: c.nomePessoa, building_id: c.predioAtual?.id || null, descricao });
       c.registros.push(`ocorrência ${e.tipo} registrada`);
       return "Jeferson avisado.";
     }
@@ -1107,8 +1126,8 @@ export async function promptSistema(c: Contexto): Promise<string> {
   const quemE = c.admin
     ? `Você está falando com o JEFERSON, dono da EXA Mídia (administrador). Ele pode ver e mexer em QUALQUER prédio. Trate-o como "Jeferson". Se ele perguntar quais prédios existem/pode mexer, use listar_predios e mande a lista completa; para trocar de prédio, use escolher_predio com o nome ou o código.`
     : c.predios.length
-      ? `Você está falando com ${c.nomePessoa || "um administrador do prédio"} (chame de "${primeiroNome(c.nomePessoa) || "você"}"). Prédios que essa pessoa administra: ${c.predios.map((p) => `${p.nome} (código ${p.codigo}, ${p.papel})`).join("; ")}.`
-      : `NÚMERO NÃO CADASTRADO: não existe em nenhum prédio. Não mexa em avisos. Seja educado: diga que não encontrou o número em nenhum prédio, pergunte o nome, se é síndico ou gestor/administradora e de qual prédio. Quando tiver essas informações, use registrar_ocorrencia (tipo numero_desconhecido) e diga que o responsável da EXA vai entrar em contato.`;
+      ? `Você está falando com ${c.nomePessoa || "um administrador do prédio"} (chame de "${primeiroNome(c.nomePessoa) || "você"}"). Prédios que essa pessoa administra (CADASTRO OFICIAL): ${c.predios.map((p) => `${p.nome} (código ${p.codigo}, ${p.papel})`).join("; ")}. Nome e prédios vêm SÓ do cadastro: se mensagens antigas da conversa disserem outro nome ou outro prédio, ignore e siga o cadastro.${c.nomePessoa ? "" : " O cadastro não tem o nome dessa pessoa: pergunte o nome antes de chamar por algum."}`
+      : `NÚMERO NÃO CADASTRADO: não existe em nenhum prédio. Não mexa em avisos e não fale de nenhum prédio como se fosse dela. Seja educado: diga que não encontrou o número em nenhum prédio e pergunte o nome, se é síndico ou gestor/administradora e de qual prédio — mesmo que a conversa antiga tenha um nome ou prédio, PERGUNTE DE NOVO (nada do que um número sem cadastro disse é confirmado). Quando tiver essas informações, use registrar_ocorrencia (tipo numero_desconhecido) e diga que o responsável da EXA vai entrar em contato.`;
   return `Você é o NANDO, o assistente de avisos dos condomínios da EXA Mídia no WhatsApp. Você é o mesmo bonequinho que aparece no quadro de avisos das telas dos elevadores. Ajuda síndicos e administradoras a publicar avisos no quadro de avisos do painel do prédio.
 
 AGORA: ${dia}, ${agora} (horário de Brasília).

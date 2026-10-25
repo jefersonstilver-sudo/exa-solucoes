@@ -172,7 +172,8 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
   };
 
   // historico recente (7 dias) -> mensagens para o Claude
-  const desde = new Date(Date.now() - 7 * 86400000).toISOString();
+  // numero sem cadastro: so a conversa recente (2 h), para nao tomar como verdade o que alguem disse antes
+  const desde = new Date(Date.now() - (admin || predios.length ? 7 * 86400000 : 2 * 3600000)).toISOString();
   const { data: hist } = await sb.from("nando_mensagens").select("*").eq("telefone", tel).gte("created_at", desde)
     .order("id", { ascending: false }).limit(40);
   const linhas = (hist || []).reverse();
