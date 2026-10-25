@@ -1,12 +1,20 @@
 name: importar-ui-painel
-# Traz o pacote da tela do painel (o mesmo que roda nos NUCs) para public/painel-web/ui, para a replica web.
+# Traz o pacote da tela do painel (o mesmo que roda nos NUCs) para public/painel-web/, para a replica web.
 on:
   workflow_dispatch:
     inputs:
       zip:
-        description: endereco do pacote da tela
+        description: endereco do pacote (zip) ou vazio
         required: false
-        default: "https://sistema-update.s3.sa-east-1.amazonaws.com/ui_v33_nando.zip"
+        default: ""
+      destino:
+        description: pasta dentro de public/painel-web
+        required: false
+        default: "ui"
+      listar:
+        description: endereco de bucket para listar (salva em public/painel-web/_lista.xml)
+        required: false
+        default: ""
 permissions:
   contents: write
 jobs:
@@ -15,17 +23,26 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: baixar e extrair
+      - name: listar
+        if: ${{ inputs.listar != '' }}
         run: |
-          curl -fsSL --max-time 120 -o /tmp/ui.zip "${{ inputs.zip }}"
-          rm -rf /tmp/ui && mkdir -p /tmp/ui && unzip -q /tmp/ui.zip -d /tmp/ui
-          find /tmp/ui -maxdepth 3 | head -50
-          rm -rf public/painel-web/ui && mkdir -p public/painel-web
-          if [ -d /tmp/ui/ui ]; then cp -r /tmp/ui/ui public/painel-web/ui; else cp -r /tmp/ui public/painel-web/ui; fi
-          ls -la public/painel-web/ui
+          mkdir -p public/painel-web
+          curl -sSL --max-time 60 "${{ inputs.listar }}" -o public/painel-web/_lista.xml || true
+          head -c 3000 public/painel-web/_lista.xml
+      - name: baixar e extrair
+        if: ${{ inputs.zip != '' }}
+        run: |
+          curl -fsSL --max-time 120 -o /tmp/p.zip "${{ inputs.zip }}"
+          rm -rf /tmp/p && mkdir -p /tmp/p && unzip -q /tmp/p.zip -d /tmp/p
+          find /tmp/p -maxdepth 3 | head -80
+          D="public/painel-web/${{ inputs.destino }}"
+          rm -rf "$D" && mkdir -p "$(dirname "$D")"
+          N="$(basename "$D")"
+          if [ -d "/tmp/p/$N" ]; then cp -r "/tmp/p/$N" "$D"; else cp -r /tmp/p "$D"; fi
+          ls -la "$D"
       - name: salvar no repositorio
         run: |
           git config user.name "exa-bot"; git config user.email "bot@examidia.com.br"
-          git add public/painel-web/ui
-          git commit -m "Replica web: importa a tela do painel ($(basename '${{ inputs.zip }}'))" || echo "sem mudancas"
+          git add public/painel-web
+          git commit -m "Replica web: importa arquivos da tela do painel" || echo "sem mudancas"
           git pull --rebase origin main && git push origin HEAD:main
