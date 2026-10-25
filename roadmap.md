@@ -56,3 +56,7 @@
 - [x] Cupons: tipo "Valor fixo por mês".
 - [ ] Validar com sessão real do CEO o pedido 7ce35fb8 — bloqueado: Supabase externo sem sessão de teste neste ambiente.
 - [ ] sofia_aceites sem regra de leitura no navegador — aceite por código não é lido diretamente; usar contrato assinado/cobranças da Sofia até liberar leitura (mudança de banco não autorizada).
+
+# Nando — versão 2026-10-24.31
+- [x] Sincronizar com a main do GitHub (commit 9ccd779) e publicar somente nando-webhook, nando-cron, nando-previa e nando-painel, sem alterar código.
+- [ ] Site ainda não publicado — esta versão do Nando está só nas funções; o painel do prédio continua o pacote enviado separadamente.
