@@ -1,0 +1,27 @@
+/* ===== v23: boneco animado do quadro de avisos (so sem avisos) ===== */
+.aviso-container{position:relative}
+.mascote{position:absolute;inset:0;z-index:2;display:none;background:#9e0a2e;font-family:var(--fonte)}
+.mascote.on{display:block}
+.mascote-parado,.mascote-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0;display:block}
+.mascote-video{opacity:0;background:transparent}
+/* opacidade sempre animando enquanto toca: evita o Firefox esconder o video (mesmo truque da camera) */
+.mascote.em-cena .mascote-video{opacity:1;animation:mascoteVivo 1.6s ease-in-out infinite alternate}
+@keyframes mascoteVivo{from{opacity:.99}to{opacity:1}}
+.mascote-texto{position:absolute;left:0;right:0;top:0;height:33%;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;transition:opacity .35s ease;pointer-events:none}
+.mascote.texto-fora .mascote-texto{opacity:0}
+.mascote-logo{height:44px;width:auto;margin-bottom:22px}
+.mascote-t1{font-size:54px;font-weight:900;line-height:1;letter-spacing:-1px;color:#fff;text-shadow:0 3px 14px rgba(0,0,0,.35)}
+.mascote-t2{font-size:64px;font-weight:900;line-height:1.02;letter-spacing:-1.5px;color:#ffb000;text-shadow:0 3px 14px rgba(0,0,0,.35)}
+.mascote-selo{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;white-space:nowrap;
+  padding:10px 26px;border-radius:999px;background:#6b2fa8;color:#fff;font-size:20px;font-weight:800;letter-spacing:2px;
+  box-shadow:0 6px 18px rgba(0,0,0,.35)}
+/* ===== v25: modo "traz o aviso" (o quadro do boneco entra por cima, ele empurra uma placa branca, o branco vira o aviso) ===== */
+.mascote .tx-aviso{display:none}
+.mascote.apresenta .mascote-texto,.mascote.apresenta .mascote-selo{display:none}
+.mascote-branco{position:absolute;inset:0;z-index:4;background:#fff;opacity:0;pointer-events:none}
+.mascote.branco .mascote-branco{opacity:1}
+.mascote.apresenta{transform:translateX(100%);transition:transform .45s cubic-bezier(.2,.7,.2,1),opacity .45s ease}
+.mascote.apresenta.entrando{transform:translateX(0)}
+.mascote.apresenta.entrando.saindo{opacity:0}
+@media (prefers-reduced-motion:reduce){.mascote.apresenta{transition:none}}

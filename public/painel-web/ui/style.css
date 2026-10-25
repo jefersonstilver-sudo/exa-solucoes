@@ -1,0 +1,272 @@
+/* =====================================================================
+   EXA Painel v11 — layout novo (vidro + fundo vermelho animado)
+   Medidas travadas iguais ao v10: player 1080x765 | avisos 510x1050
+   (titulo 100 + imagem 502x942) | coluna direita 510: 200/310/280/200
+   Animacoes so com transform/opacity (leve para o NUC).
+   ===================================================================== */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --line:rgba(255,255,255,.14);--sub:rgba(255,255,255,.66);--mut:rgba(255,255,255,.45);
+  --azul:#5aa9ff;--frio:#9fd6ff;--verde:#25D366;--vermelho:#ff4d5e;--r:20px;
+  --fonte:Inter,Ubuntu,"Noto Sans","DejaVu Sans",Arial,sans-serif;
+}
+body{font-family:var(--fonte);background:#0c0610;color:#fff;height:100vh;overflow:hidden;position:relative;display:flex;flex-direction:column}
+video[data-fullscreen="true"]{margin-left:0 !important}
+
+/* ===== fundo: manchas de luz vermelhas em movimento ===== */
+.fundo{position:fixed;inset:0;z-index:0;overflow:hidden;background:#0c0610;pointer-events:none}
+.fundo i{position:absolute;border-radius:50%}
+.fundo .m1{width:900px;height:900px;left:-280px;top:700px;background:radial-gradient(circle,rgba(230,30,60,.55) 0%,rgba(230,30,60,0) 65%)}
+.fundo .m2{width:800px;height:800px;right:-300px;top:1000px;background:radial-gradient(circle,rgba(150,20,90,.55) 0%,rgba(150,20,90,0) 65%)}
+.fundo .m3{width:700px;height:700px;left:200px;top:1350px;background:radial-gradient(circle,rgba(255,90,60,.38) 0%,rgba(255,90,60,0) 65%)}
+.fundo .m4{width:600px;height:600px;left:380px;top:760px;background:radial-gradient(circle,rgba(90,20,140,.40) 0%,rgba(90,20,140,0) 65%)}
+.fundo .luz{left:-60%;top:765px;width:220%;height:1155px;border-radius:0;background:linear-gradient(110deg,transparent 40%,rgba(255,120,140,.16) 50%,transparent 60%)}
+@keyframes m1{to{transform:translate(480px,-160px) scale(1.15)}}
+@keyframes m2{to{transform:translate(-420px,260px) scale(.9)}}
+@keyframes m3{to{transform:translate(260px,-420px) scale(1.2)}}
+@keyframes m4{to{transform:translate(-380px,520px) scale(1.1)}}
+@keyframes luz{0%{transform:translateX(-30%)}100%{transform:translateX(30%)}}
+
+/* ===== player (igual ao v10) ===== */
+.video-container{flex:0 0 765px;height:765px;width:100%;background:black;display:flex;align-items:center;justify-content:flex-start;position:relative;overflow:hidden}
+.video-wrapper{position:relative;width:100%;height:100%;overflow:hidden}
+.video-wrapper video{position:absolute;top:0;width:calc(100%);height:100%;border-bottom:4px solid #fff;object-fit:fill;transition:opacity 300ms linear}
+#video-buffer{opacity:0;pointer-events:none}
+
+/* ===== grade ===== */
+.main{flex:0 0 1090px;height:1090px;display:flex;flex-direction:row;gap:20px;padding:20px;position:relative;z-index:1}
+.left,.right{flex:1;display:flex;flex-direction:column;gap:20px;min-width:0}
+
+/* ===== cartao de vidro ===== */
+.card{position:relative;overflow:hidden;border-radius:var(--r);
+  background:linear-gradient(160deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.035) 40%,rgba(255,255,255,.02) 100%);
+  border:1px solid var(--line);border-top-color:rgba(255,255,255,.28);
+  box-shadow:0 14px 34px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.10);color:#fff}
+.card::before{content:"";position:absolute;inset:0;background:linear-gradient(125deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 35%);pointer-events:none;z-index:3}
+
+/* ===== avisos (510x1050; imagem 502x942 como hoje) ===== */
+.widget-avisos{height:1050px;display:flex;flex-direction:column;border:4px solid rgba(255,255,255,.16);border-top-color:rgba(255,255,255,.30);border-radius:16px}
+.TituloAviso{height:100px;flex:0 0 100px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 16px;
+  border-bottom:1px solid var(--line);background:radial-gradient(ellipse at 50% 0%,rgba(230,40,70,.34),rgba(230,40,70,0) 75%)}
+.aviso-k{font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--sub)}
+.aviso-nome{font-size:32px;font-weight:800;line-height:1.1;letter-spacing:-.3px;margin-top:3px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.aviso-container{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:0 0 12px 12px}
+.aviso-icon{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:fill;display:block}
+
+/* ===== noticias (200) ===== */
+.widget-noticias{height:200px;flex:0 0 200px;padding:16px 18px;display:flex;flex-direction:column}
+.noticia-header{flex-shrink:0;margin-bottom:8px}
+.noticia-header-left{font-size:13px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:9px}
+.noticia-dot{width:8px;height:8px;border-radius:50%;background:var(--azul);box-shadow:0 0 10px var(--azul)}
+.noticia-body{flex:1;min-height:0;display:flex}
+.noticia-card{flex:1;display:flex;gap:14px;align-items:center;min-width:0}
+.noticia-info{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0;height:100%}
+.noticia-categoria{align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#1a0a0d;background:#ffc35a;padding:3px 9px;border-radius:20px}
+.noticia-titulo{font-size:19px;font-weight:700;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.noticia-titulo .w{display:inline-block;white-space:pre;opacity:0;transform:translateY(16px);filter:blur(6px);animation:wIn .55s cubic-bezier(.2,.8,.2,1) forwards}
+.noticia-titulo.sai{animation:hOut .45s ease-in forwards}
+@keyframes wIn{to{opacity:1;transform:none;filter:none}}
+@keyframes hOut{to{opacity:0;transform:translateY(-12px);filter:blur(6px)}}
+.noticia-hint{font-size:12px;color:var(--mut);margin-top:auto}
+.noticia-qr{width:104px;height:104px;flex:0 0 104px;background:#fff;border-radius:12px;padding:5px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.noticia-qr img{width:94px;height:94px;display:block;object-fit:contain}
+.noticia-prog{position:absolute;left:0;bottom:0;height:3px;width:100%;background:linear-gradient(90deg,#ff4d5e,#ffc35a);transform-origin:left;transform:scaleX(0)}
+.noticia-prog.corre{animation:nprog 30s linear forwards}
+@keyframes nprog{to{transform:scaleX(1)}}
+
+/* ===== camera (310) ===== */
+.widget-camera{height:310px;flex:0 0 310px}
+.camera-header{display:none}
+.camera-body,.camera-video-wrapper{position:absolute;inset:0}
+.camera-video-wrapper{background:linear-gradient(160deg,#1b1f2b,#0e1018);overflow:hidden}
+.camera-video-wrapper video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:transparent;z-index:1;opacity:0;transition:opacity .7s ease}
+.camera-video-wrapper video.on{opacity:.99}
+.camera-congelada{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;transition:opacity .4s}
+.camera-congelada.on{opacity:1}
+.camera-video-wrapper video{z-index:2}
+.camera-overlay-top,.camera-overlay-bottom{z-index:3}
+.camera-diag{font-size:9px;color:rgba(255,255,255,.35);font-family:monospace;max-width:300px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.camera-location-full:empty,.camera-city:empty{display:none}
+.camera-espera{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:600;color:var(--mut);letter-spacing:.5px}
+.camera-espera-dot{width:9px;height:9px;border-radius:50%;background:var(--vermelho);animation:pisca 1.6s ease-in-out infinite}
+.camera-overlay-top{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;z-index:3}
+.camera-overlay-bottom{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:space-between;align-items:center;z-index:3}
+.camera-live-badge,.camera-location-full,.camera-city{font-size:12px;font-weight:800;letter-spacing:1.2px;padding:4px 10px;border-radius:20px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;gap:6px;color:#fff;font-family:var(--fonte)}
+.camera-live-badge i{width:8px;height:8px;border-radius:50%;background:var(--vermelho);box-shadow:0 0 10px var(--vermelho);animation:pisca 1.6s ease-in-out infinite}
+@keyframes pisca{50%{opacity:.25}}
+
+/* ===== clima (280) ===== */
+.widget-clima{height:280px;flex:0 0 280px;padding:14px 18px;isolation:isolate}
+.clima-ceu{position:absolute;inset:0;z-index:-2;transition:opacity 1s}
+.clima-ceu.sol{background:linear-gradient(155deg,#2e86e8 0%,#1b62c4 50%,#123f8f 100%)}
+.clima-ceu.nublado{background:linear-gradient(155deg,#56708f 0%,#3b5272 50%,#26364f 100%)}
+.clima-ceu.chuva{background:linear-gradient(155deg,#34465f 0%,#222f44 55%,#141c2b 100%)}
+.clima-ceu.noite{background:linear-gradient(155deg,#25205e 0%,#16153f 55%,#0b0b24 100%)}
+.clima-tit{font-size:13px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:rgba(255,255,255,.88)}
+.clima-linha{display:flex;align-items:flex-end;gap:14px;margin-top:4px;max-width:330px}
+.clima-temp{font-size:86px;font-weight:200;letter-spacing:-4px;line-height:1}
+.clima-temp sup{font-size:28px;font-weight:300;letter-spacing:0;vertical-align:top;margin-left:3px}
+.clima-cond{font-size:18px;font-weight:700;padding-bottom:12px;line-height:1.15;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.clima-meta{display:flex;gap:14px;font-size:13px;color:rgba(255,255,255,.88);margin-top:4px}
+.clima-meta b{font-weight:800}
+.clima-msg{height:100%;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--mut)}
+.clima-cena{position:absolute;right:0;top:12px;width:170px;height:120px;z-index:-1}
+.c-sol{position:absolute;right:40px;top:8px;width:70px;height:70px;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff7cf,#ffd23f 55%,#ffa51f);box-shadow:0 0 44px rgba(255,205,60,.8);animation:pulsa 4s ease-in-out infinite}
+.c-raios{position:absolute;right:15px;top:-17px;width:120px;height:120px;border-radius:50%;background:repeating-conic-gradient(rgba(255,232,150,.45) 0 6deg,transparent 6deg 30deg);-webkit-mask:radial-gradient(circle,transparent 38px,#000 40px,#000 58px,transparent 60px);animation:gira 26s linear infinite}
+.c-nuvem{position:absolute;width:100px;height:34px;border-radius:34px;background:linear-gradient(#fbfcff,#d5deeb);box-shadow:0 8px 16px rgba(0,0,0,.22)}
+.c-nuvem::before,.c-nuvem::after{content:"";position:absolute;background:inherit;border-radius:50%}
+.c-nuvem::before{width:46px;height:46px;left:14px;top:-23px}.c-nuvem::after{width:34px;height:34px;left:50px;top:-14px}
+.c-nuvem.n1{right:22px;top:62px;animation:deriva 9s ease-in-out infinite}
+.c-nuvem.n2{right:84px;top:34px;transform:scale(.7);opacity:.8;animation:deriva2 12s ease-in-out infinite}
+.escura .c-nuvem{background:linear-gradient(#bcc7d8,#8b98ae)}
+.c-gota{position:absolute;width:2px;height:14px;border-radius:2px;background:linear-gradient(transparent,#a9d4ff);opacity:0;animation:cai 1s linear infinite}
+.c-gota.g1{right:110px;top:96px}.c-gota.g2{right:88px;top:100px;animation-delay:.25s}.c-gota.g3{right:66px;top:96px;animation-delay:.5s}
+.c-gota.g4{right:99px;top:100px;animation-delay:.75s}.c-gota.g5{right:77px;top:96px;animation-delay:.4s}.c-gota.g6{right:55px;top:100px;animation-delay:.9s}
+.c-lua{position:absolute;right:50px;top:10px;width:60px;height:60px;border-radius:50%;box-shadow:-13px 7px 0 0 #f5f1d8;transform:rotate(-20deg);filter:drop-shadow(0 0 12px rgba(245,241,216,.5))}
+.c-estrela{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;animation:pisca 3s ease-in-out infinite}
+.c-estrela.e1{right:140px;top:16px}.c-estrela.e2{right:24px;top:86px;animation-delay:1s}.c-estrela.e3{right:156px;top:70px;animation-delay:2s}.c-estrela.e4{right:14px;top:14px;animation-delay:.5s}
+@keyframes gira{to{transform:rotate(360deg)}}
+@keyframes pulsa{50%{transform:scale(1.05)}}
+@keyframes deriva{50%{transform:translateX(-12px)}}
+@keyframes deriva2{50%{transform:translateX(10px) scale(.7)}}
+@keyframes cai{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(40px);opacity:0}}
+.clima-dias{position:absolute;left:14px;right:14px;bottom:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.clima-dias.d2{grid-template-columns:repeat(2,1fr)}
+.clima-dia{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.clima-dia .l{display:flex;flex-direction:column;gap:2px}
+.clima-dia .d{font-size:16px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.clima-dia .ch{font-size:12px;color:rgba(255,255,255,.78)}
+.clima-dia svg,.clima-dia img{width:38px;height:38px;flex:0 0 auto}
+.clima-dia .mm{font-size:18px;font-weight:800;display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}
+.clima-dia .mx{color:#ffe08a}.clima-dia .mn{color:var(--frio)}
+
+/* ===== relogio + CTA (200) ===== */
+.widget-relogio{height:200px;flex:0 0 200px;padding:14px 14px 14px 22px}
+.relogio-body,.relogio-content{height:100%}
+.relogio-content{display:flex;gap:14px}
+.relogio-left{flex:1;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.relogio-data{display:flex;flex-direction:column}
+.relogio-data .dsem{font-size:18px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#ff6b7a}
+.relogio-data .dt{font-size:30px;font-weight:700;letter-spacing:-.3px;line-height:1.1;margin-top:2px;white-space:nowrap}
+.relogio-hora{font-size:92px;font-weight:200;letter-spacing:-4px;line-height:.95;margin-top:4px;font-variant-numeric:tabular-nums;display:flex;align-items:flex-start}
+.relogio-hora .pt.off{opacity:.15}
+.relogio-hora .seg{font-size:26px;letter-spacing:0;color:var(--mut);font-weight:400;margin:12px 0 0 6px}
+.cta-exa{width:160px;flex:0 0 160px;border-left:1px solid rgba(37,211,102,.3);padding-left:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
+.cta-big{font-size:13px;font-weight:900;letter-spacing:.3px;white-space:nowrap}
+.cta-big em{font-style:normal;color:var(--verde)}
+.cta-qr-box{background:#fff;border-radius:12px;padding:6px;box-shadow:0 0 0 2px rgba(37,211,102,.6),0 0 22px rgba(37,211,102,.35);position:relative}
+.cta-qr-box img{width:108px;height:108px;display:block;image-rendering:pixelated}
+.cta-scan{position:absolute;left:6px;right:6px;top:6px;height:3px;background:linear-gradient(90deg,transparent,var(--verde),transparent);box-shadow:0 0 10px var(--verde);animation:scan 2.4s ease-in-out infinite}
+@keyframes scan{0%{transform:translateY(0);opacity:0}10%,90%{opacity:1}100%{transform:translateY(106px);opacity:0}}
+.cta-wa{font-size:12px;font-weight:800;color:#06210f;background:var(--verde);border-radius:20px;padding:3px 10px;white-space:nowrap}
+
+/* ===== rodape cotacoes (65) ===== */
+footer{flex:0 0 65px;height:65px;width:100%;border-top:1px solid var(--line);background:rgba(0,0,0,.45);display:flex;align-items:center;overflow:hidden;position:relative;z-index:1;font-family:var(--fonte)}
+.ticker-wrapper{display:flex;gap:18px;white-space:nowrap;padding-left:18px;animation:tickerScroll 40s linear infinite;font-size:22px}
+.ticker-item{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:30px;padding:6px 18px}
+.ticker-label{font-weight:600;color:var(--sub);font-size:20px;letter-spacing:1px;text-transform:uppercase}
+.ticker-value{font-weight:800}
+.ticker-change{font-weight:800;font-size:17px}
+.ticker-up{color:#3ddc84}.ticker-down{color:var(--vermelho)}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* v14: indicador de cameras + barra de tempo ate a proxima */
+.camera-dots{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.14);font-size:11px;font-weight:800;letter-spacing:1px;color:#fff}
+.camera-dots:empty{display:none}
+.camera-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45)}
+.camera-dots i.atual{background:#fff;box-shadow:0 0 8px #fff;width:9px;height:9px}
+.camera-dots i.off{background:transparent;border:1.5px solid rgba(255,90,90,.8);width:7px;height:7px}
+.camera-dots span{margin-left:4px;color:rgba(255,255,255,.8)}
+.camera-prog{position:absolute;left:0;bottom:0;height:4px;width:100%;z-index:4;background:linear-gradient(90deg,#ff4d5e,#ffc35a);transform-origin:left;transform:scaleX(0)}
+.camera-prog.corre{transition-property:transform;transition-timing-function:linear;transform:scaleX(1)}
+
+/* v14: Firefox (Linux) esconde o video quando ele esta parado dentro de uma area com canto
+   arredondado. 1) camera sem recorte arredondado  2) opacidade sempre "em animacao" (o video
+   so aparecia enquanto a opacidade estava mudando) */
+.widget-camera{overflow:visible;border-radius:6px}
+.widget-camera::before{display:none}
+.camera-video-wrapper{overflow:visible;border-radius:0}
+.camera-video-wrapper video.on{opacity:1;animation:camVivo 1.6s ease-in-out infinite alternate}
+@keyframes camVivo{from{opacity:.96}to{opacity:1}}
+
+/* ===== v15 producao: esconde o diagnostico da camera ===== */
+.camera-diag{display:none}
+
+/* ===== v15 Wi-Fi: mesmas medidas do layout Wi-Fi atual (player 709, faixa 116, avisos 510x990) ===== */
+.video-container{flex:0 0 709px;height:709px}
+.banner-wifi{flex:0 0 116px;height:116px;position:relative;z-index:1;display:flex;align-items:center;gap:22px;padding:0 30px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(40,120,255,.20),rgba(255,255,255,.04) 60%,rgba(230,40,70,.12));border-bottom:1px solid var(--line)}
+.banner-wifi-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 8% 50%,rgba(90,169,255,.38),transparent 55%);pointer-events:none}
+.banner-wifi-icon{position:relative;width:62px;height:62px;flex:0 0 62px;filter:drop-shadow(0 0 12px rgba(90,169,255,.7))}
+.banner-wifi-content{position:relative;flex:1;min-width:0}
+.banner-wifi-title{font-size:30px;font-weight:700;line-height:1.15;color:#fff;letter-spacing:-.2px}
+.banner-wifi-highlight{color:#6fb6ff;font-weight:900}
+.banner-wifi-sponsor{position:relative;text-align:right;padding:8px 16px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+.sponsor-name{font-size:17px;font-weight:800;color:#fff;white-space:nowrap}
+.main{flex:0 0 1030px;height:1030px}
+.widget-avisos{height:990px}
+.widget-noticias{height:180px;flex:0 0 180px}
+.noticia-titulo{-webkit-line-clamp:2}
+.widget-camera{height:290px;flex:0 0 290px}
+.widget-relogio{height:180px;flex:0 0 180px;padding:12px 14px 12px 22px}
+.relogio-data .dt{font-size:28px}
+.relogio-hora{font-size:80px}
+.cta-qr-box img{width:94px;height:94px}
+.cta-scan{animation-name:scanW}
+@keyframes scanW{0%{transform:translateY(0);opacity:0}10%,90%{opacity:1}100%{transform:translateY(92px);opacity:0}}
+
+
+/* ===== v17 TESTE Foz Residence: sem faixa Wi-Fi, sem rodape de cotacoes, sem card de noticias; player 1080x890;
+   camera 400, clima 300, relogio+QR 250 (soma 950 + 2 gaps de 20 = 990) ===== */
+.banner-wifi{display:none!important}
+footer{display:none!important}
+.widget-noticias{display:none!important}
+.video-container{flex:0 0 890px;height:890px}
+.fundo .luz{top:890px;height:1030px}
+.main{flex:0 0 1030px;height:1030px}
+.widget-camera{height:400px;flex:0 0 400px}
+.widget-clima{height:300px;flex:0 0 300px;padding:18px 20px}
+.clima-tit{font-size:15px}
+.clima-linha{max-width:340px}
+.clima-temp{font-size:104px}
+.clima-temp sup{font-size:32px}
+.clima-cond{font-size:22px}
+.clima-meta{font-size:15px;gap:16px}
+.clima-cena{transform:scale(1.15);transform-origin:top right}
+.clima-dia{padding:10px 12px}
+.clima-dia .d{font-size:18px}
+.clima-dia .ch{font-size:13px}
+.clima-dia svg,.clima-dia img{width:44px;height:44px}
+.clima-dia .mm{font-size:21px}
+.widget-relogio{height:250px;flex:0 0 250px;padding:16px 16px 16px 24px}
+.relogio-data .dsem{font-size:22px}
+.relogio-data .dt{font-size:34px}
+.relogio-hora{font-size:112px}
+.relogio-hora .seg{font-size:30px;margin-top:16px}
+.cta-exa{width:200px;flex:0 0 200px;gap:9px}
+.cta-big{font-size:16px}
+.cta-qr-box img{width:150px;height:150px}
+.cta-scan{animation-name:scanG}
+@keyframes scanG{0%{transform:translateY(0);opacity:0}10%,90%{opacity:1}100%{transform:translateY(148px);opacity:0}}
+.cta-wa{font-size:15px;padding:4px 12px}
+
+/* ===== v18 TESTE Saint Peter: tarja no topo da camera (cobre a marca do Portal da Cidade),
+   nome da camera grande, AO VIVO destacado, troca de camera com entrada suave ===== */
+.camera-overlay-top{left:0;right:0;top:0;height:104px;padding:12px 18px 0;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:7px;
+  background:linear-gradient(180deg,#090b12 0,#090b12 72px,rgba(9,11,18,0) 104px)}
+.camera-live-badge{background:#e5243b;border:0;border-radius:6px;padding:3px 9px;font-size:13px;letter-spacing:1.6px;box-shadow:0 2px 10px rgba(229,36,59,.45)}
+.camera-live-badge i{background:#fff;box-shadow:0 0 8px #fff;width:7px;height:7px}
+.camera-location-full{background:none;border:0;padding:0;border-radius:0;font-size:19px;font-weight:800;letter-spacing:.3px;line-height:1.15;
+  max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.camera-location-full.novo{animation:nomeEntra .7s cubic-bezier(.2,.7,.2,1) both}
+@keyframes nomeEntra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.camera-congelada.on{transition:opacity .5s ease}
+.camera-video-wrapper.trocando .camera-congelada.on{opacity:.5}
+.camera-video-wrapper video.on.entra{animation:camEntra 1.1s cubic-bezier(.2,.7,.2,1) both,camVivo 1.6s ease-in-out 1.1s infinite alternate}
+@keyframes camEntra{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:scale(1)}}
+
+/* ===== v19 TESTE Saint Peter: tarja da camera centralizada; relogio um pouco menor para os segundos caberem ===== */
+.camera-overlay-top{align-items:center;text-align:center}
+.camera-location-full{text-align:center}
+.relogio-hora{font-size:92px;letter-spacing:-3px}
+.relogio-hora .seg{font-size:26px;margin:13px 0 0 5px;flex:0 0 auto}

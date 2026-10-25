@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Indexa Tela Kiosk</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mascote.css">
+  <link rel="stylesheet" href="aviso-nando.css">
+</head>
+<body>
+<div class="fundo"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i><i class="luz"></i></div>
+
+<div class="video-container">
+  <div class="video-wrapper">
+    <video id="video-propaganda" autoplay muted></video>
+  </div>
+</div>
+
+<div class="banner-wifi">
+  <div class="banner-wifi-glow"></div>
+  <img src="../assets/wifi_icon.svg" alt="Wi-Fi Icon" class="banner-wifi-icon">
+  <div class="banner-wifi-content">
+    <div class="banner-wifi-title">Elevador equipado com <span class="banner-wifi-highlight">Wi-Fi grátis</span></div>
+  </div>
+  <div class="banner-wifi-sponsor">
+    <div class="sponsor-container">
+      <div class="sponsor-text">
+        <div class="sponsor-name">Rede: ExaPaineis</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="main">
+    <div class="left">
+      <div class="widget-avisos card">
+        <div class="TituloAviso" id="avisos-titulo"><span class="aviso-k">Avisos do</span><span class="aviso-nome">&nbsp;</span></div>
+        <div class="aviso-container">
+          <img id="aviso-img" src="../assets/no_notices.png" alt="Aviso" class="aviso-icon">
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="widget-noticias card">
+        <div class="noticia-header">
+          <div class="noticia-header-left">
+            <span class="noticia-dot"></span>
+            Notícias · <span class="noticia-fonte"></span>
+          </div>
+        </div>
+        <div class="noticia-body">
+          <div class="noticia-card">
+            <div class="noticia-info">
+              <span class="noticia-categoria"></span>
+              <div class="noticia-titulo"></div>
+              <div class="noticia-hint">Aponte a câmera no QR para ler completo</div>
+            </div>
+            <div class="noticia-qr">
+              <img src="" alt="QR Code" />
+            </div>
+          </div>
+        </div>
+        <i class="noticia-prog"></i>
+      </div>
+      <div class="widget-camera card">
+        <div class="camera-header">
+          <div class="camera-header-left">
+            <span class="camera-dot"></span>
+            Câmera ao vivo · Ponte da Amizade
+          </div>
+        </div>
+        <div class="camera-body">
+          <div class="camera-video-wrapper">
+            <div class="camera-espera"><span class="camera-espera-dot"></span><span class="camera-espera-txt">Ponte da Amizade · conectando ao vivo</span></div>
+            <video id="live-video" autoplay muted playsinline></video>
+            <div class="camera-overlay-top">
+              <span class="camera-live-badge"><i></i>AO VIVO</span>
+              <span class="camera-location-full">PONTE DA AMIZADE · BR-277</span>
+            </div>
+            <i class="camera-prog"></i>
+            <div class="camera-overlay-bottom">
+              <span class="camera-dots"></span>
+              <span class="camera-diag"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget Clima (preenchido por scripts/clima.js) -->
+      <div class="widget-clima card" id="widget-clima"></div>
+
+      <div class="widget-relogio card">
+        <div class="relogio-body">
+          <div class="relogio-content">
+            <div class="relogio-left">
+              <div id="data-relogio" class="relogio-data"></div>
+              <div id="hora-relogio" class="relogio-hora"></div>
+            </div>
+            <div class="relogio-right cta-exa">
+              <div class="cta-big">ANUNCIE <em>COM A EXA</em></div>
+              <div class="cta-qr-box">
+                <img src="../assets/qr-sofia.png" alt="QR WhatsApp Sofia">
+                <span class="cta-scan"></span>
+              </div>
+              <span class="cta-wa">Fale com a Sofia</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="ticker-wrapper" id="cotacao-lista">
+      <span id="cotacao-texto">Carregando cotações...</span>
+    </div>
+  </footer>
+
+  <!-- Scripts principais -->
+  <script src="./scripts/NomeTela.js"></script>
+  <script src="./scripts/noticias.js"></script>
+  <script src="./scripts/propagandas.js"></script>
+  <script src="./scripts/aviso-nando.js"></script>
+  <script src="./scripts/avisos.js"></script>
+  <script src="./scripts/mascote.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+  <script src="./scripts/lives.js"></script>
+  <script src="./scripts/clima.js"></script>
+  <script src="./scripts/relogio.js"></script>
+  <script src="./scripts/cotacao.js"></script>
+
+  <!-- ✅ Watchdog (sem preloader) -->
+  <script>
+    let reloadCount = 0;
+    const MAX_RELOADS = 5;
+    const CHECK_INTERVAL = 15000; // 15 segundos
+
+    function painelCarregado() {
+      if (
+        window.__avisosLoaded &&
+        window.__cotacaoLoaded &&
+        window.__livesLoaded &&
+        window.__noticiasLoaded &&
+        window.__nomeTelaLoaded &&
+        window.__relogioLoaded &&
+        window.__propagandasLoaded &&
+        window.__climaLoaded
+      ) {
+        console.log("✅ Todos os módulos principais carregaram com sucesso.");
+        return true;
+      }
+
+      const avisoImg = document.getElementById("aviso-img");
+      const cotacaoTxt = document.getElementById("cotacao-texto")?.textContent || "";
+      const avisoOk = avisoImg && !avisoImg.src.includes("no_notices");
+      const cotacaoOk = cotacaoTxt && !cotacaoTxt.includes("Carregando") && !cotacaoTxt.includes("Erro");
+
+      return avisoOk || cotacaoOk;
+    }
+
+    function verificarPainel() {
+      if (painelCarregado()) {
+        console.log("✅ Painel carregado e estável.");
+        return;
+      }
+      if (reloadCount < MAX_RELOADS) {
+        reloadCount++;
+        console.warn(`⚠️ Painel incompleto — recarregando tentativa ${reloadCount}/${MAX_RELOADS}...`);
+        location.reload();
+      } else {
+        console.error("🚨 Painel não carregou completamente após múltiplas tentativas.");
+      }
+    }
+
+    // Primeira verificação após 10s
+    setTimeout(verificarPainel, 10000);
+    // Verificações periódicas a cada 15s
+    setInterval(verificarPainel, CHECK_INTERVAL);
+  </script>
+</body>
+</html>
