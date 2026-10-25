@@ -58,8 +58,16 @@ def main():
         for a in avisos:
             dados = baixar_json(a["url"])
             predio = (a.get("predio") or "").replace("<", "").replace(">", "")
-            pg.set_content(HTML % {"site": SITE, "t": agora, "predio": predio}, wait_until="networkidle", timeout=45000)
-            pg.wait_for_function("window.NandoAviso && window.NandoAviso.montar", timeout=30000)
+            # a pagina e montada no endereco do proprio site (mesma origem dos arquivos do aviso)
+            pg.route(f"{SITE}/__nando_imagem__", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=HTML % {"site": SITE, "t": agora, "predio": predio}))
+            pg.goto(f"{SITE}/__nando_imagem__", wait_until="load", timeout=45000)
+            for _ in range(80):  # espera o script do aviso carregar (sem wait_for_function)
+                if pg.evaluate("() => !!(window.NandoAviso && window.NandoAviso.montar)"):
+                    break
+                pg.wait_for_timeout(250)
+            else:
+                raise RuntimeError("o script do aviso (aviso-nando.js) nao carregou")
+            pg.unroute(f"{SITE}/__nando_imagem__")
             pg.evaluate("d => { window.__m = window.NandoAviso.montar(document.getElementById('tela'), d); }", dados)
             pg.wait_for_timeout(400)
             pg.evaluate("() => document.querySelectorAll('.na-raiz').forEach(r => r.classList.add('na-on'))")
