@@ -5,7 +5,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   Predio, nomeBase, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
-  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos,
+  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos, enviarImagem, enviarDocumento,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 
@@ -401,6 +401,11 @@ export const FERRAMENTAS = [
     description: "Muda o TEXTO de um aviso animado do Nando já publicado (ou rascunho) sem criar outro: título, quando/onde, texto, itens ou assinatura. Republica no painel e tira a versão antiga. Com todos_os_predios=true muda em todos os prédios do mesmo grupo (cada um mantém a assinatura dele). Num cartão de série, muda só aquele cartão.",
     input_schema: { type: "object", properties: { aviso: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" },
       itens: { type: "array", items: { type: "string" }, description: "a lista completa nova de itens deste cartão" }, assinatura: { type: "string" }, todos_os_predios: { type: "boolean" } }, required: ["aviso"] },
+  },
+  {
+    name: "enviar_imagem_whatsapp",
+    description: "Manda para a pessoa, aqui no WhatsApp, a versão em IMAGEM do aviso (vertical, formato de celular, com o nome do prédio) para ela encaminhar nos grupos de WhatsApp do condomínio. Só use quando a pessoa ACEITAR (depois de perguntar). Série: manda todos os cartões em ordem. Aviso que é imagem/PDF do síndico: manda o próprio arquivo. A imagem do Nando chega em 1 a 3 minutos.",
+    input_schema: { type: "object", properties: { aviso: { type: "string" } }, required: ["aviso"] },
   },
   {
     name: "listar_repeticoes",
@@ -881,15 +886,8 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           .eq("status", "rascunho").eq("conteudo->>grupo", a.conteudo.grupo).neq("id", a.id);
       }
       c.registros.push(`publicação: ${res.join("; ")}`);
-      // foto do aviso pronto no WhatsApp (do primeiro predio), para o sindico ver e encaminhar aos moradores
-      let foto = false;
-      if (a.tipo === "nando" && res.some((r) => !/ERRO|NÃO publicado/.test(r))) {
-        const prim = publicados.find((x) => x.predio)?.predio;
-        const lista = publicados.filter((x) => x.predio === prim && x.url).sort((x, y) => x.parte - y.parte);
-        foto = await pedirFotos(c.tel, lista.map((x) => ({ id: x.id, url: x.url })),
-          `Assim ficou na tela do ${prim} ✅ Se quiser, encaminhe para o grupo dos moradores.`);
-      }
-      return res.join("\n") + (foto ? "\n(A foto do aviso como aparece na tela chega aqui no WhatsApp em 1 a 3 minutos; avise isso em poucas palavras.)" : "") + (lote ? `\n(Publicado junto em ${alvos.length} prédios: dá para alterar ou tirar de todos de uma vez com todos_os_predios=true.)` : "");
+      const algumOk = res.some((r) => !/ERRO|NÃO publicado/.test(r));
+      return res.join("\n") + (algumOk ? `\n(Depois de confirmar a publicação, PERGUNTE em uma frase: "Quer que eu te mande uma versão em imagem para encaminhar nos grupos de WhatsApp do prédio?". Só se a pessoa disser sim, use enviar_imagem_whatsapp com o código [${idCurto(publicados[0]?.id || a.id)}].)` : "") + (lote ? `\n(Publicado junto em ${alvos.length} prédios: dá para alterar ou tirar de todos de uma vez com todos_os_predios=true.)` : "");
     }
     case "alterar_aviso": {
       const a0 = await acharAviso(c, e.aviso);
@@ -981,6 +979,23 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const outros = !e.todos_os_predios && a0.conteudo?.lote ? (await doLote(c, a0)).length - 1 : 0;
       const link = a0.status === "rascunho" ? `\nNova prévia (10 min): ${await criarPrevia(c, a0.id)}` : "";
       return res.join("\n") + link + (outros > 0 ? `\n(O mesmo aviso está em mais ${outros} prédio(s) do grupo; para mudar em todos, use todos_os_predios=true.)` : "");
+    }
+    case "enviar_imagem_whatsapp": {
+      const a = await acharAviso(c, e.aviso);
+      const p = await predioPorId(c, a.building_id);
+      const legenda = `📢 Aviso do ${p.nome} — pode encaminhar nos grupos do condomínio.`;
+      if (a.tipo === "imagem" && a.origem_url) { await enviarImagem(sb, c.tel, a.origem_url, legenda); c.registros.push(`imagem do aviso ${idCurto(a.id)} enviada`); return "Imagem enviada agora."; }
+      if (a.tipo === "pdf" && a.origem_url) { await enviarDocumento(sb, c.tel, a.origem_url, `${slug(a.titulo) || "aviso"}.pdf`, legenda); c.registros.push(`PDF do aviso ${idCurto(a.id)} enviado`); return "PDF enviado agora."; }
+      let lista: any[] = [a];
+      if (a.conteudo?.serie && a.conteudo?.grupo) {
+        const { data } = await sb.from("nando_avisos").select("id,conteudo,status").eq("conteudo->>grupo", a.conteudo.grupo).eq("building_id", a.building_id).in("status", ["no_ar", "agendado", "rascunho"]);
+        if (data?.length) lista = data.sort((x: any, y: any) => (x.conteudo?.parte || 0) - (y.conteudo?.parte || 0));
+      }
+      const itens = lista.filter((x: any) => x.conteudo?.arquivo_url).map((x: any) => ({ id: x.id, url: x.conteudo.arquivo_url, predio: p.nome }));
+      if (!itens.length) return "Esse aviso não tem versão em imagem.";
+      const ok = await pedirFotos(c.tel, itens, legenda);
+      c.registros.push(`imagem para WhatsApp pedida (${itens.length}) do aviso ${idCurto(a.id)}: ${ok ? "ok" : "falhou"}`);
+      return ok ? `Pedido feito: ${itens.length > 1 ? `as ${itens.length} imagens chegam` : "a imagem chega"} aqui em 1 a 3 minutos. Avise isso em poucas palavras.` : "Não consegui gerar a imagem agora. Peça desculpas e diga para tentar de novo daqui a pouco.";
     }
     case "listar_repeticoes": {
       const lista = e.todos ? (c.admin ? await todosPredios(sb) : c.predios) : (c.predioAtual ? [c.predioAtual] : []);
@@ -1176,6 +1191,7 @@ LINK DOS AVISOS DO PRÉDIO
 - VÁRIOS PRÉDIOS (gestor/administradora ou o Jeferson): o mesmo aviso pode ir para vários prédios de uma vez. Crie o rascunho UMA vez já passando 'predios' (assim a prévia mostra todos os prédios de destino e a assinatura de cada um), mostre a prévia e, aprovado, publique com publicar_aviso passando 'predios' (nomes ou códigos, ou ['todos']) e 'exceto' se ela disser "menos o X". Cada prédio recebe a assinatura dele automaticamente. Antes de publicar em vários, confirme em uma frase a lista de prédios ("Vou colocar no A, B e C, pode ser?").
 - Aviso publicado junto em vários prédios fica no mesmo grupo: para "tirar de todos", "mudar a data em todos" etc., use remover_aviso/alterar_aviso com todos_os_predios=true (UM pedido resolve todos; para série, faça para cada cartão). Se ela pedir só para um prédio, mexa só naquele e avise que nos outros continua. Responda prédio por prédio o que deu certo.
 - AVISO QUE SE REPETE (coleta de lixo toda terça, dedetização todo dia 10, limpeza da caixa d'água...): crie o rascunho uma vez, mostre a prévia e publique com publicar_aviso + 'repetir' (frequência, dias, hora de aparecer e de sumir). Confirme a regra em uma frase antes ("Vai aparecer toda terça das 7h às 20h, pode ser?"). Para ver ou parar: listar_repeticoes / parar_repeticao. Quando a pessoa disser "todo/toda/sempre/todo mês", ofereça a repetição.
+- IMAGEM PARA GRUPOS DE WHATSAPP: depois de publicar, SEMPRE pergunte uma vez se a pessoa quer a versão em imagem para encaminhar nos grupos do condomínio. Nunca mande sem ela aceitar (para não lotar o WhatsApp). Aceitou → enviar_imagem_whatsapp. Ela também pode pedir a imagem de qualquer aviso no ar a qualquer momento.
 - Para corrigir o TEXTO de um aviso do Nando já publicado ("troca a data para sábado", "corrige o horário"), use editar_aviso (não crie outro). Datas de quando aparece/sai continuam em alterar_aviso.
 - PAINEL DO SÍNDICO no site (${SITE_URL}/nando/painel): mostra todos os avisos no ar e agendados de todos os prédios da pessoa, com miniatura, programação, histórico, e deixa mudar data, tempo, texto ou tirar do ar. Entrar exige um código de 6 dígitos que chega aqui no WhatsApp (o site manda sozinho); toda alteração pelo site pede um código novo. Se a pessoa receber um código sem ter pedido, diga para ignorar e não passar para ninguém. NUNCA diga nem repita códigos.
 - Para quem cuida de mais de um prédio, ofereça o link da CARTEIRA (link_dos_avisos com todos=true): uma página só, com todos os prédios e avisos, sempre atualizada, válida por 24 horas.

@@ -1,5 +1,5 @@
 name: render-nando
-# Foto do aviso do Nando para o WhatsApp do sindico (disparado pelo nando-webhook depois de publicar).
+# Imagem do aviso do Nando para o sindico encaminhar nos grupos de WhatsApp (disparado pelo Nando quando o sindico aceita).
 on:
   workflow_dispatch:
     inputs:
@@ -13,6 +13,10 @@ on:
         description: legenda da primeira foto
         required: false
         default: ""
+      teste:
+        description: "1 = so monta e guarda a imagem, sem mandar no WhatsApp"
+        required: false
+        default: ""
 jobs:
   foto:
     runs-on: ubuntu-latest
@@ -21,6 +25,7 @@ jobs:
       AVISOS: ${{ inputs.avisos }}
       TELEFONE: ${{ inputs.telefone }}
       LEGENDA: ${{ inputs.legenda }}
+      TESTE: ${{ inputs.teste }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:

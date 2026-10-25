@@ -62,8 +62,20 @@ Deno.serve(async (req) => {
     const b = await req.json().catch(() => ({}));
     const imagens: string[] = Array.isArray(b.imagens) ? b.imagens.slice(0, 5) : [];
     const sbF = db();
-    for (let i = 0; i < imagens.length; i++) await enviarImagem(sbF, String(b.telefone || ""), imagens[i], i === 0 ? String(b.legenda || "") : "");
-    if (imagens.length) await sbF.from("nando_mensagens").insert({ telefone: telefoneCanonico(String(b.telefone || "")), papel: "nando", conteudo: { texto: `(enviei ${imagens.length} foto(s) do aviso como aparece na tela)` } });
+    const telF = telefoneCanonico(String(b.telefone || ""));
+    // robo falhou: fica registrado (e o sindico fica sabendo, em vez de esperar para sempre)
+    if (b.erro) {
+      console.error("[NANDO] robo da imagem falhou:", b.erro);
+      await sbF.from("nando_mensagens").insert({ telefone: telF, papel: "sistema", conteudo: { texto: `robô da imagem para WhatsApp FALHOU: ${String(b.erro).slice(0, 500)}` } });
+      if (!b.teste) await enviarTexto(sbF, telF, "Não consegui gerar a imagem do aviso agora. 😕 Já avisei a equipe da EXA; se quiser, tente pedir de novo daqui a pouco.").catch(() => {});
+      return json(200, { ok: true, registrado: true });
+    }
+    if (b.teste) {
+      await sbF.from("nando_mensagens").insert({ telefone: telF, papel: "sistema", conteudo: { texto: `teste do robô da imagem OK (nada enviado): ${imagens.join(" ")}` } });
+      return json(200, { ok: true, teste: true, imagens });
+    }
+    for (let i = 0; i < imagens.length; i++) await enviarImagem(sbF, telF, imagens[i], i === 0 ? String(b.legenda || "") : "");
+    if (imagens.length) await sbF.from("nando_mensagens").insert({ telefone: telF, papel: "nando", conteudo: { texto: `(enviei ${imagens.length} imagem(ns) do aviso no formato de celular, para encaminhar nos grupos)` } });
     return json(200, { ok: true, enviadas: imagens.length });
   }
   if (url.searchParams.get("action") === "versao") return json(200, { versao: NANDO_VERSAO, modo_teste: MODO_TESTE, cobranca: (Deno.env.get("NANDO_COBRANCA") || "false").toLowerCase() === "true" });

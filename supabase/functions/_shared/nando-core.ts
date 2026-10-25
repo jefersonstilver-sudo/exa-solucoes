@@ -18,7 +18,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.30";
+export const NANDO_VERSAO = "2026-10-24.31";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -129,13 +129,22 @@ export async function enviarImagem(sb: SupabaseClient, tel: string, urlImagem: s
   if (!r.ok) throw new Error(`Evolution sendMedia ${r.status}: ${(await r.text()).slice(0, 200)}`);
 }
 // pede ao robo do GitHub (render-nando.yml) a foto dos avisos do Nando, que chega no WhatsApp em 1-3 min
-export async function pedirFotos(tel: string, avisos: { id: string; url: string }[], legenda: string): Promise<boolean> {
+export async function enviarDocumento(sb: SupabaseClient, tel: string, urlArquivo: string, nome: string, legenda = "") {
+  const { url, key } = evo();
+  const inst = await instanciaNando(sb);
+  const r = await fetch(`${url}/message/sendMedia/${inst}`, {
+    method: "POST", headers: { "Content-Type": "application/json", apikey: key },
+    body: JSON.stringify({ number: telefoneCanonico(tel), mediatype: "document", mimetype: "application/pdf", media: urlArquivo, caption: legenda, fileName: nome }),
+  });
+  if (!r.ok) throw new Error(`Evolution sendMedia(doc) ${r.status}: ${(await r.text()).slice(0, 200)}`);
+}
+export async function pedirFotos(tel: string, avisos: { id: string; url: string; predio?: string }[], legenda: string, teste = false): Promise<boolean> {
   const tok = Deno.env.get("GH_DISPATCH_TOKEN"), repo = Deno.env.get("GH_REPO");
   if (!tok || !repo || !avisos.length) return false;
   try {
     const r = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/render-nando.yml/dispatches`, {
       method: "POST", headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.github+json", "Content-Type": "application/json", "User-Agent": "nando" },
-      body: JSON.stringify({ ref: "main", inputs: { avisos: JSON.stringify(avisos.slice(0, 5)), telefone: telefoneCanonico(tel), legenda: legenda.slice(0, 500) } }),
+      body: JSON.stringify({ ref: "main", inputs: { avisos: JSON.stringify(avisos.slice(0, 5)), telefone: telefoneCanonico(tel), legenda: legenda.slice(0, 500), teste: teste ? "1" : "" } }),
     });
     if (!r.ok) console.error("[NANDO] fotos dispatch", r.status, (await r.text()).slice(0, 200));
     return r.ok;
