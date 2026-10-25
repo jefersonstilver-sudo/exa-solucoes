@@ -1,0 +1,1 @@
+# replica web da tela do painel: public/painel-web (ver sw.js)
