@@ -7,7 +7,7 @@
 // =====================================================================
 import {
   db, ehAdmin, prediosDoTelefone, todosPredios, telefoneCanonico, enviarTexto, lerTokenCarteira, lerTokenPredio,
-  primeiroNome, registrarOcorrencia, type Predio,
+  primeiroNome, registrarOcorrencia, type Predio, EXASISTEMA_URL,
 } from "../_shared/nando-core.ts";
 import { avisosDoPredio } from "../_shared/nando-site.ts";
 import { executar, type Contexto } from "../_shared/nando-agente.ts";
@@ -170,6 +170,40 @@ async function alterar(sb: ReturnType<typeof db>, b: any) {
   return json(200, { ok: !/ERRO|NÃO/.test(texto), resultado: texto.split("\n(")[0] });
 }
 
+// ---------- replica web do painel: o MESMO updates.json que o NUC do predio le (ExaSistema), ao vivo ----------
+async function exaSistema(caminho: string): Promise<any> {
+  const key = Deno.env.get("EXASISTEMA_ANON_KEY");
+  if (!key) throw new Error("sem chave do ExaSistema");
+  const r = await fetch(`${EXASISTEMA_URL}/rest/v1/${caminho}`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error(`ExaSistema ${r.status}`);
+  return await r.json();
+}
+const ehServico = (req: Request) => (req.headers.get("Authorization") || "").replace("Bearer ", "") === (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "-");
+async function replica(sb: ReturnType<typeof db>, b: any, servico: boolean) {
+  let lista: Predio[];
+  if (servico) lista = await todosPredios(sb);
+  else {
+    const s = await sessaoValida(sb, String(b.sessao || ""));
+    if (!s) return json(401, { ok: false, erro: "Entre no painel do síndico para ver a tela ao vivo.", precisa_login: true });
+    lista = (await predios(sb, s.telefone)).lista;
+  }
+  const arq = String(b.arq || "updates");
+  if (arq === "predios") return json(200, { ok: true, predios: lista.map((p) => ({ id: p.id.slice(0, 8), predio: p.nome })) });
+  if (arq === "noticias") {
+    const rows = await exaSistema("noticias?select=*&order=created_at.desc&limit=60").catch(() => []);
+    if (b.diag && servico) return json(200, { ok: true, colunas: Object.keys(rows?.[0] || {}), exemplo: (rows || []).slice(0, 2) });
+    return json(200, { ok: true, linhas: rows || [] });
+  }
+  const id = String(b.predio || "").toLowerCase();
+  const p = lista.find((x) => x.id.startsWith(id) && id.length >= 4);
+  if (!p) return json(403, { ok: false, erro: "Esse prédio não está no seu acesso." });
+  const rows = await exaSistema(`updates_clientes?cliente_id=eq.${encodeURIComponent(p.cliente_id)}&select=json_data`);
+  const j = rows?.[0]?.json_data;
+  if (!j) return json(404, { ok: false, erro: "A tela desse prédio ainda não tem programação." });
+  if (b.diag && servico) return json(200, { ok: true, chaves: Object.keys(j), pasta_s3: j.pasta_s3, ex_playlist: (j.PlaylistPronta || []).slice(0, 2), ex_aviso: (j.CondominiumNotices || []).slice(0, 2) });
+  return json(200, { ok: true, predio: p.nome, updates: j });
+}
+
 async function sair(sb: ReturnType<typeof db>, b: any) {
   const s = await sessaoValida(sb, String(b.sessao || ""));
   if (!s) return json(200, { ok: true });
@@ -190,6 +224,7 @@ Deno.serve(async (req) => {
       case "dados": return await dados(sb, b);
       case "alterar": return await alterar(sb, b);
       case "sair": return await sair(sb, b);
+      case "replica": return await replica(sb, b, ehServico(req));
       default: return json(400, { ok: false, erro: "ação inválida" });
     }
   } catch (e) {

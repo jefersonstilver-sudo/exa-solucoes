@@ -344,7 +344,12 @@ export default function NandoPainel() {
     limparSessao(); setSessao(null); setD(null); setMenu(false);
   };
 
-  if (!sessao) return <Entrar link={link} aoEntrar={(t, e) => { salvarSessao(t, e); setSessao(t); }} />;
+  if (!sessao) return <Entrar link={link} aoEntrar={(t, e) => {
+    salvarSessao(t, e); setSessao(t);
+    // veio da tela ao vivo: volta para ela depois de entrar
+    const volta = new URLSearchParams(window.location.search).get('volta') || '';
+    if (volta.startsWith('/painel-web/')) window.location.href = volta;
+  }} />;
 
   const whats = `https://wa.me/${d?.whatsapp_nando || '554591132351'}?text=${encodeURIComponent('Olá, Nando! Quero criar um aviso.')}`;
   const umSo = (d?.predios.length || 0) === 1;
@@ -451,6 +456,10 @@ export default function NandoPainel() {
                         <div className="text-xs text-white/55">{totalNoAr === 0 ? 'Nenhum aviso no ar' : totalNoAr === 1 ? '1 aviso no ar · fixo na tela' : `${totalNoAr} avisos no rodízio · ciclo completo de ${volta}s`}</div>
                       </div>
                     </div>
+                    <a href={`/painel-web/tela.html?p=${g.id}`} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/[0.07] px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/[0.12]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]" /> Ver a tela ao vivo
+                    </a>
                   </div>
                   {g.avisos.length === 0 ? (
                     <div className="px-5 py-8 text-center text-sm text-white/55">

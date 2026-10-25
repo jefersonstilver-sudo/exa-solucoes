@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0b0c">
+<meta name="robots" content="noindex">
+<title>Tela ao vivo · EXA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--fundo:#0d0b0c;--vidro:rgba(255,255,255,.06);--linha:rgba(255,255,255,.1);--txt:#f4f1f2;--sub:rgba(244,241,242,.62);--vermelho:#e0282e}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--fundo);color:var(--txt);font-family:Montserrat,system-ui,sans-serif}
+body{background:radial-gradient(900px 500px at 15% -10%,rgba(199,20,26,.28),transparent 60%),radial-gradient(700px 500px at 100% 110%,rgba(199,20,26,.16),transparent 60%),var(--fundo);display:flex;flex-direction:column;min-height:100dvh}
+header{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;background:rgba(13,11,12,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--linha)}
+header img{height:22px}
+.tit{flex:1;min-width:0}
+.tit b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tit span{font-size:11.5px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#2ecc71;box-shadow:0 0 8px #2ecc71;animation:pisca 1.6s infinite}
+@keyframes pisca{50%{opacity:.35}}
+select,button{font:inherit;font-size:13px;color:var(--txt);background:var(--vidro);border:1px solid var(--linha);border-radius:10px;padding:8px 10px}
+button{cursor:pointer}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:14px;min-height:0}
+#moldura{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px var(--linha);background:#000}
+#moldura iframe{position:absolute;left:0;top:0;width:1080px;height:1920px;border:0;transform-origin:0 0;pointer-events:none}
+.aviso{max-width:420px;text-align:center;padding:28px;border-radius:18px;background:var(--vidro);border:1px solid var(--linha);backdrop-filter:blur(14px)}
+.aviso h1{font-size:19px;margin:0 0 8px}
+.aviso p{color:var(--sub);font-size:14px;line-height:1.5;margin:0 0 18px}
+.btn{display:inline-block;text-decoration:none;color:#fff;font-weight:700;padding:12px 18px;border-radius:12px;background:linear-gradient(135deg,#e0282e,#a10f14);border:0}
+footer{font-size:11px;color:var(--sub);text-align:center;padding:0 16px calc(env(safe-area-inset-bottom) + 10px)}
+</style>
+</head>
+<body>
+<header>
+  <img src="/painel-web/assets/logo-exa-branca.png" alt="EXA">
+  <div class="tit"><b id="nome">Tela ao vivo</b><span><i class="dot"></i><em id="estado" style="font-style:normal">conectando…</em></span></div>
+  <select id="predios" hidden aria-label="Prédio"></select>
+  <button id="cheia" title="Tela cheia">⤢</button>
+</header>
+<main id="area"></main>
+<footer>Mesma programação e os mesmos arquivos do painel do elevador, atualizados sozinhos. O vídeo daqui não fica no mesmo segundo do elevador.</footer>
+<script>
+(() => {
+  const FN = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/nando-painel";
+  const area = document.getElementById("area"), estado = document.getElementById("estado"), nome = document.getElementById("nome"), sel = document.getElementById("predios");
+  const params = new URLSearchParams(location.search);
+  let predio = (params.get("p") || "").toLowerCase();
+  const sessao = (() => { try { const s = JSON.parse(localStorage.getItem("nando_sessao") || "null"); return s && new Date(s.expira) > new Date() ? s.token : null; } catch { return null; } })();
+
+  const mensagem = (t, p, link, txt) => { area.innerHTML = `<div class="aviso"><h1>${t}</h1><p>${p}</p>${link ? `<a class="btn" href="${link}">${txt}</a>` : ""}</div>`; estado.textContent = "fora do ar"; };
+  const entrar = () => mensagem("Entre para ver a tela", "A tela ao vivo é só para o síndico e a administração do prédio. Entre com o código que o Nando manda no seu WhatsApp.", "/nando/painel?volta=" + encodeURIComponent(location.pathname + location.search), "Entrar no painel do síndico");
+
+  function encaixar() {
+    const m = document.getElementById("moldura"); if (!m) return;
+    const H = area.clientHeight - 28, W = area.clientWidth - 28;
+    const k = Math.min(H / 1920, W / 1080);
+    m.style.width = Math.floor(1080 * k) + "px"; m.style.height = Math.floor(1920 * k) + "px";
+    m.querySelector("iframe").style.transform = `scale(${k})`;
+  }
+  addEventListener("resize", encaixar);
+  document.getElementById("cheia").onclick = () => { const m = document.getElementById("moldura"); (m && m.requestFullscreen ? m : document.documentElement).requestFullscreen?.().catch(() => {}); };
+  document.addEventListener("fullscreenchange", () => setTimeout(encaixar, 60));
+
+  navigator.serviceWorker?.addEventListener("message", (e) => {
+    const d = e.data || {};
+    if (d.tipo !== "replica-lida") return;
+    if (d.nome) nome.textContent = d.nome;
+    estado.textContent = "ao vivo · programação lida às " + new Date(d.em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  });
+
+  async function iniciar() {
+    if (!("serviceWorker" in navigator)) return mensagem("Navegador sem suporte", "Abra este link no Chrome, Safari ou Edge atualizados.");
+    if (!sessao) return entrar();
+    // guarda o acesso para o motor da tela (sw.js) e liga o motor
+    const c = await caches.open("replica");
+    await c.put("/painel-web/__cfg", new Response(JSON.stringify({ sessao })));
+    await navigator.serviceWorker.register("/painel-web/sw.js", { scope: "/painel-web/" });
+    await navigator.serviceWorker.ready;
+    // predios que esse acesso pode ver
+    const r = await fetch(FN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ acao: "replica", arq: "predios", sessao }) });
+    if (r.status === 401) return entrar();
+    const j = await r.json().catch(() => ({}));
+    const lista = j.predios || [];
+    if (!lista.length) return mensagem("Nenhum prédio", "Esse acesso não tem nenhum prédio com tela.");
+    if (!predio || !lista.some((x) => x.id.startsWith(predio))) predio = lista[0].id;
+    if (lista.length > 1) {
+      sel.hidden = false;
+      sel.innerHTML = lista.map((x) => `<option value="${x.id}">${x.predio}</option>`).join("");
+      sel.value = lista.find((x) => x.id.startsWith(predio)).id;
+      sel.onchange = () => { predio = sel.value; history.replaceState(null, "", "?p=" + predio); montar(); };
+    }
+    nome.textContent = (lista.find((x) => x.id.startsWith(predio)) || {}).predio || "Tela ao vivo";
+    montar();
+  }
+  function montar() {
+    estado.textContent = "conectando…";
+    area.innerHTML = `<div id="moldura"><iframe src="/painel-web/ui/index.html?p=${encodeURIComponent(predio)}" title="Tela do painel" allow="autoplay; fullscreen"></iframe></div>`;
+    requestAnimationFrame(encaixar);
+  }
+  iniciar().catch((e) => mensagem("Não deu para abrir a tela", "Tente de novo em instantes. (" + (e && e.message || e) + ")"));
+})();
+</script>
+</body>
+</html>
