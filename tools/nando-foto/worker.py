@@ -76,6 +76,9 @@ if __name__ == "__main__":
     except Exception as e:
         erro = f"{type(e).__name__}: {e}"[:600]
         print("FALHOU:", erro); traceback.print_exc()
+        linha = traceback.format_exc().strip().splitlines()
+        onde = " | ".join(l.strip() for l in linha[-6:])[:900]
+        print(f"::error title=robo da imagem::{erro} || {onde}", flush=True)  # aparece nas anotacoes do GitHub
         try: avisar({"telefone": telefone, "imagens": [], "erro": erro, "teste": teste})
         except Exception as e2: print("nem consegui avisar:", e2)
         sys.exit(1)
