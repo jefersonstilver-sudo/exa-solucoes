@@ -998,7 +998,7 @@ Exemplo 3 (indecisão):
         console.log('[AI-RESPONSE] 🔍 Iniciando validação de valores na resposta...');
         
         // Extrair todos os valores monetários da resposta (formato R$ X.XXX,XX ou R$ XXX,XX)
-        const valoresNaResposta = aiReply.match(/R\$\s*[\d.]+,\d{2}/g) || [];
+        const valoresNaResposta: string[] = aiReply.match(/R\$\s*[\d.]+,\d{2}/g) || [];
         console.log('[AI-RESPONSE] 💰 Valores encontrados na resposta:', valoresNaResposta);
         
         // Valores esperados da função (formato com ponto de milhar e vírgula decimal)
