@@ -500,7 +500,7 @@ export default function NandoPainel() {
                         </select>
                       ) : <div className="min-w-0 flex-1 truncate text-sm font-semibold">{telaG.predio}</div>}
                     </div>
-                    <div className="mx-auto w-full max-w-[340px] lg:max-w-none">
+                    <div className="mx-auto w-full max-w-[min(340px,calc((100svh-290px)*0.5625))] lg:max-w-none">
                       <TelaAoVivo predioId={telaG.id} sessao={sessao} nome={telaG.predio} />
                     </div>
                     <p className="mt-3 hidden text-[11px] leading-relaxed text-white/45 lg:block">A mesma programação e os mesmos arquivos do elevador. Anúncios, avisos e trocas de vídeo aparecem aqui sozinhos; o vídeo não fica no mesmo segundo do elevador.</p>
