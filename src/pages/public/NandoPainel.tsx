@@ -563,13 +563,15 @@ export default function NandoPainel() {
                         <div className="flex min-w-0 items-center gap-3">
                           <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E0282E]/15 text-[#FF6B6B] sm:flex"><Building2 className="h-5 w-5" /></span>
                           <div className="min-w-0">
-                            <h2 className="truncate text-[15px] font-bold sm:text-base">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-white/40">· {g.codigo}</span>}</h2>
+                            <h2 className="line-clamp-2 text-[15px] font-bold leading-tight sm:text-base">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-white/40">· {g.codigo}</span>}</h2>
                             <div className="text-xs text-white/55">{totalNoAr === 0 ? 'Nenhum aviso no ar' : totalNoAr === 1 ? '1 aviso no ar · fixo na tela' : `${totalNoAr} avisos no rodízio · ciclo completo de ${volta}s`}</div>
                           </div>
                         </div>
                         <button onClick={() => { setTelaId(g.id); setAba('tela'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                           className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${telaId === g.id ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' : 'border-white/15 bg-white/[0.07] text-white hover:bg-white/[0.12]'}`}>
-                          <MonitorPlay className="h-3.5 w-3.5" /> {telaId === g.id ? 'Exibindo na tela' : 'Ver na tela'}
+                          <MonitorPlay className="h-3.5 w-3.5" />
+                          <span className="sm:hidden">{telaId === g.id ? 'Na tela' : 'Ver'}</span>
+                          <span className="hidden sm:inline">{telaId === g.id ? 'Exibindo na tela' : 'Ver na tela'}</span>
                         </button>
                       </div>
                       {g.avisos.length === 0 ? (
