@@ -84,6 +84,18 @@ self.addEventListener("fetch", (e) => {
     // a tela usa /assets/no_notices.png (absoluto) e ../assets/ (relativo): os dois vem de /painel-web/assets/
     if (/\.(png|svg|jpg|mp4|webm)$/i.test(u.pathname)) { e.respondWith(fetch("/painel-web" + u.pathname)); return; }
   }
+  // clima: a tela chama a API da EXA em http (o navegador bloqueia); a replica usa a mesma API por https
+  if (u.pathname === "/painel-web/ui/scripts/clima.js") {
+    e.respondWith(fetch(e.request.url, { cache: "no-store" }).then((r) => r.text()).then((t) => new Response(t.replace('"http://18.228.252.149:8000"', '"/__api"'), { headers: { "Content-Type": "text/javascript; charset=utf-8" } })));
+    return;
+  }
+  if (u.pathname === "/__api/api/clima") {
+    e.respondWith((async () => {
+      const r = await fetch(FN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ acao: "replica", arq: "clima", sessao: await sessao() }) });
+      return new Response(await r.text(), { status: r.status, headers: { "Content-Type": "application/json" } });
+    })());
+    return;
+  }
   if (!u.pathname.startsWith("/cache/")) return;
   const arq = decodeURIComponent(u.pathname.slice(7));
   e.respondWith((async () => {
@@ -98,8 +110,17 @@ self.addEventListener("fetch", (e) => {
       const pasta = String(d.pasta_s3 || "").replace(/^\/+|\/+$/g, "");
       const alvo = `${S3}/${pasta}/${arq.split("/").map(encodeURIComponent).join("/")}`;
       if (/\.(mp4|webm|mov|m4v)$/i.test(arq) || e.request.destination === "video") return Response.redirect(alvo, 302);
-      const r = await fetch(alvo, { mode: "cors", cache: "no-store" });
-      return new Response(r.body, { status: r.status, headers: { "Content-Type": r.headers.get("Content-Type") || "application/octet-stream", "Cache-Control": "no-store" } });
+      // imagens, PDFs e avisos do Nando: o S3 nao libera o navegador, entao vem pelo nando-painel (e ficam guardados aqui;
+      // os nomes dos arquivos mudam a cada aviso novo, entao o mesmo nome e sempre o mesmo arquivo)
+      const caixa = await caches.open("replica-arquivos");
+      const chave = `/painel-web/__arq/${pasta}/${arq}`;
+      const guardado = await caixa.match(chave);
+      if (guardado) return guardado;
+      const r = await fetch(FN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ acao: "replica", arq: "arquivo", predio, caminho: arq, sessao: await sessao() }) });
+      const corpo = await r.blob();
+      const pronto = new Response(corpo, { status: r.status, headers: { "Content-Type": r.headers.get("Content-Type") || "application/octet-stream" } });
+      if (r.ok) await caixa.put(chave, pronto.clone());
+      return pronto;
     } catch (err) {
       return resp({ erro: String(err && err.message || err) }, err && err.status || 502);
     }

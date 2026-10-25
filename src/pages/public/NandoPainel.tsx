@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, CalendarClock, ChevronRight, Clock, Eye, History, Layers, Loader2, Lock, LogOut, MessageCircle, Pencil, Repeat,
-  Search, ShieldCheck, Timer, Trash2, X,
+  Search, ShieldCheck, Timer, Trash2, X, Maximize2, MonitorPlay, LayoutGrid,
 } from 'lucide-react';
 
 type Hist = { em: string; quem: string; acao: string };
@@ -108,6 +108,59 @@ function TelaAviso({ a, grande = false }: { a: Aviso; grande?: boolean }) {
           </>)}
           {!a.url && a.tipo !== 'nando' && <div className="absolute inset-0 flex items-center justify-center p-4 text-center text-xs text-white/60">Aviso na tela</div>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------------- réplica da tela do elevador (ao vivo)
+// A tela é a MESMA dos NUCs (public/painel-web/ui); o motor /painel-web/sw.js entrega a programação do prédio ao vivo.
+function TelaAoVivo({ predioId, sessao, nome }: { predioId: string; sessao: string; nome: string }) {
+  const caixa = useRef<HTMLDivElement>(null);
+  const [k, setK] = useState(0.3);
+  const [pronto, setPronto] = useState(false);
+  const [erro, setErro] = useState('');
+  const [lida, setLida] = useState<number | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      if (!('serviceWorker' in navigator) || !('caches' in window)) throw new Error('Este navegador não mostra a tela ao vivo. Use Chrome, Safari ou Edge atualizados.');
+      const c = await caches.open('replica');
+      await c.put('/painel-web/__cfg', new Response(JSON.stringify({ sessao })));
+      await navigator.serviceWorker.register('/painel-web/sw.js', { scope: '/painel-web/' });
+      await navigator.serviceWorker.ready;
+      if (vivo) setPronto(true);
+    })().catch((e) => vivo && setErro(e?.message || 'Não consegui abrir a tela.'));
+    const msg = (e: MessageEvent) => { if (e.data?.tipo === 'replica-lida') setLida(e.data.em); };
+    navigator.serviceWorker?.addEventListener('message', msg);
+    return () => { vivo = false; navigator.serviceWorker?.removeEventListener('message', msg); };
+  }, [sessao]);
+  useEffect(() => { setLida(null); }, [predioId]);
+  useEffect(() => {
+    const el = caixa.current; if (!el) return;
+    const ro = new ResizeObserver(() => setK(el.clientWidth / 1080));
+    ro.observe(el); setK(el.clientWidth / 1080);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div>
+      <div className="rounded-[26px] bg-gradient-to-b from-[#3a3a40] to-[#111113] p-[7px] shadow-[0_24px_60px_rgba(0,0,0,.55)] ring-1 ring-white/10">
+        <div ref={caixa} className="relative w-full overflow-hidden rounded-[20px] bg-black" style={{ aspectRatio: '1080 / 1920' }}>
+          {pronto && (
+            <iframe key={predioId} title={`Tela do elevador · ${nome}`} src={`/painel-web/ui/index.html?p=${encodeURIComponent(predioId)}`}
+              allow="autoplay" className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
+              style={{ width: 1080, height: 1920, transform: `scale(${k})` }} />
+          )}
+          {!pronto && !erro && <div className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-white/55"><Loader2 className="h-4 w-4 animate-spin" /> Ligando a tela…</div>}
+          {erro && <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-xs text-white/65">{erro}</div>}
+        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2 px-1 text-[11px] text-white/55">
+        <span className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]" />
+          {lida ? `Ao vivo · conferido às ${new Date(lida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'Ao vivo'}
+        </span>
+        <a href={`/painel-web/tela.html?p=${encodeURIComponent(predioId)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-semibold text-white/70 hover:text-white"><Maximize2 className="h-3.5 w-3.5" /> Tela cheia</a>
       </div>
     </div>
   );
@@ -287,6 +340,8 @@ export default function NandoPainel() {
   const [pedirCodigo, setPedirCodigo] = useState(false);
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
   const [menu, setMenu] = useState(false);
+  const [telaId, setTelaId] = useState<string | null>(null);
+  const [aba, setAba] = useState<'tela' | 'avisos'>('tela');
 
   useEffect(() => {
     document.title = 'Painel do Síndico · EXA Mídia';
@@ -309,6 +364,7 @@ export default function NandoPainel() {
     setD(r);
     if (r.foco && r.predios.some((g: Grupo) => g.id === r.foco)) setPredioSel(r.foco);
     else if (r.predios.length === 1) setPredioSel(r.predios[0].id);
+    setTelaId((atual) => (atual && r.predios.some((g: Grupo) => g.id === atual)) ? atual : (r.foco && r.predios.some((g: Grupo) => g.id === r.foco) ? r.foco : r.predios[0]?.id || null));
   }, [sessao, link]);
   useEffect(() => { carregar(); }, [carregar]);
 
@@ -359,7 +415,7 @@ export default function NandoPainel() {
     <div className="min-h-screen pb-24 text-white" style={FUNDO}>
       {/* cabeçalho no padrão do site */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0b0c]/75 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-4">
             <img src={LOGO} alt="EXA Mídia" className="h-8 w-auto sm:h-9" />
             <div className="hidden h-8 w-px bg-white/25 sm:block" />
@@ -386,116 +442,156 @@ export default function NandoPainel() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4">
+      <main className="mx-auto max-w-7xl px-4">
         {carregando && !d && <div className="flex items-center justify-center gap-2 py-24 text-white/55"><Loader2 className="h-5 w-5 animate-spin" /> Consultando as telas dos prédios…</div>}
         {erro && <div className="mt-6 rounded-xl border border-red-400/30 bg-red-500/100/10 p-4 text-sm text-red-200">{erro} <button onClick={() => carregar()} className="ml-2 font-semibold underline">Tentar de novo</button></div>}
 
-        {d && (
+        {d && (() => {
+          const telaG = d.predios.find((g) => g.id === telaId) || d.predios[0];
+          const noArTela = telaG ? telaG.avisos.filter((a) => a.status === 'no_ar').length : 0;
+          return (
           <>
-            <div className="mt-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">Olá, {d.primeiro_nome || d.pessoa || 'síndico'}</h1>
-                <p className="text-sm text-white/55">{umSo ? `Avisos do ${d.predios[0].predio}` : `Avisos dos seus ${d.predios.length} prédios`}, conferidos agora nas telas dos elevadores.</p>
+            <div className="mt-6 flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold tracking-tight">Olá, {d.primeiro_nome || d.pessoa || 'síndico'}</h1>
+                <p className="text-sm text-white/55">{umSo ? d.predios[0].predio : `${d.predios.length} prédios`} · tela e avisos ao vivo</p>
               </div>
-              <a href={whats} target="_blank" rel="noreferrer" className={`${BTN} mt-3 hidden sm:inline-flex`}><MessageCircle className="h-4 w-4" /> Criar aviso com o Nando</a>
+              <a href={whats} target="_blank" rel="noreferrer" className={`${BTN} hidden shrink-0 sm:inline-flex`}><MessageCircle className="h-4 w-4" /> Criar aviso com o Nando</a>
             </div>
 
-            {/* indicadores */}
-            <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {[
-                { t: umSo ? 'Prédio' : 'Prédios', v: umSo ? d.predios[0].predio : kpi.predios, s: !umSo && kpi.vazios ? `${kpi.vazios} sem aviso no ar` : d.predios[0]?.codigo ? `Código ${d.predios[0].codigo}` : '', i: Building2, f: null },
-                { t: 'No ar agora', v: kpi.noAr, s: 'Passando nas telas', i: Eye, f: 'no_ar' as const },
-                { t: 'Agendados', v: kpi.agendados, s: 'Entram automaticamente', i: CalendarClock, f: 'agendado' as const },
-                { t: 'Saem em 7 dias', v: kpi.saindo, s: 'Confira se ainda valem', i: Timer, f: 'saindo' as const },
-              ].map((k) => (
-                <button key={k.t} onClick={() => k.f && setFiltro(filtro === k.f ? 'todos' : k.f)} disabled={!k.f}
-                  className={`rounded-2xl border p-4 text-left backdrop-blur-xl transition ${k.f && filtro === k.f ? 'border-[#E0282E]/70 bg-[#E0282E]/15 ring-2 ring-[#E0282E]/25' : 'border-white/10 bg-white/[0.06] enabled:hover:bg-white/[0.09]'}`}>
-                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-white/55">{k.t}<k.i className="h-4 w-4 text-[#FF6B6B]" /></div>
-                  <div className={`mt-2 font-bold text-white ${typeof k.v === 'string' ? 'truncate text-lg' : 'text-3xl'}`}>{k.v}</div>
-                  {k.s && <div className="mt-0.5 truncate text-xs text-white/55">{k.s}</div>}
+            {/* celular: alterna tela / avisos */}
+            <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/[0.05] p-1 lg:hidden">
+              {([['tela', 'Tela ao vivo', MonitorPlay], ['avisos', 'Avisos', LayoutGrid]] as const).map(([v, t, I]) => (
+                <button key={v} onClick={() => setAba(v)} className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition ${aba === v ? 'bg-white text-[#9C1E1E] shadow' : 'text-white/70'}`}>
+                  <I className="h-4 w-4" /> {t}
                 </button>
               ))}
-            </section>
+            </div>
 
-            {/* prédios e busca */}
-            {!umSo && (
-              <section className={`mt-5 rounded-2xl p-3 ${VIDRO}`}>
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                  <div className="flex items-center gap-2 rounded-lg border border-white/15 px-3 lg:w-72">
-                    <Search className="h-4 w-4 text-white/40" />
-                    <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio ou aviso" className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-white/40" />
+            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(300px,360px)_1fr] lg:items-start">
+              {/* tela ao vivo do prédio escolhido */}
+              <aside className={`${aba === 'tela' ? 'block' : 'hidden'} lg:sticky lg:top-24 lg:block`}>
+                {telaG && sessao && (
+                  <div className={`rounded-2xl p-4 ${VIDRO}`}>
+                    <div className="mb-3 flex items-center gap-2">
+                      <MonitorPlay className="h-4 w-4 shrink-0 text-[#FF6B6B]" />
+                      {d.predios.length > 1 ? (
+                        <select value={telaG.id} onChange={(e) => setTelaId(e.target.value)}
+                          className="min-w-0 flex-1 truncate rounded-lg border border-white/15 bg-black/30 px-2.5 py-1.5 text-sm font-semibold text-white outline-none [color-scheme:dark]">
+                          {d.predios.map((g) => <option key={g.id} value={g.id}>{g.predio}</option>)}
+                        </select>
+                      ) : <div className="min-w-0 flex-1 truncate text-sm font-semibold">{telaG.predio}</div>}
+                    </div>
+                    <div className="mx-auto max-w-[300px] lg:max-w-none">
+                      <TelaAoVivo predioId={telaG.id} sessao={sessao} nome={telaG.predio} />
+                    </div>
+                    <p className="mt-3 text-[11px] leading-relaxed text-white/45">A mesma programação e os mesmos arquivos do elevador. Anúncios, avisos e trocas de vídeo aparecem aqui sozinhos; o vídeo não fica no mesmo segundo do elevador.</p>
+                    <button onClick={() => { setPredioSel(telaG.id); setAba('avisos'); }} className={`${BTN2} mt-3 w-full lg:hidden`}>
+                      <LayoutGrid className="h-4 w-4" /> {noArTela ? `Ver os ${noArTela} aviso${noArTela > 1 ? 's' : ''} deste prédio` : 'Avisos deste prédio'}
+                    </button>
                   </div>
-                  <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
-                    {[{ id: 'todos', predio: `Todos os prédios` }, ...d.predios].map((g) => {
-                      const n = 'avisos' in g ? (g as Grupo).avisos.filter((a) => a.status === 'no_ar').length : kpi.noAr;
-                      const ativo = predioSel === g.id;
-                      return (
-                        <button key={g.id} onClick={() => setPredioSel(g.id)}
-                          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${ativo ? 'bg-gradient-to-b from-[#D9262C] to-[#9C1E1E] text-white shadow-lg' : 'bg-white/[0.07] text-white/80 hover:bg-white/[0.12]'}`}>
-                          {g.predio} <span className={ativo ? 'text-white/70' : 'text-white/40'}>{n}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
-            )}
+                )}
+              </aside>
 
-            {/* avisos por prédio */}
-            {grupos.map((g) => {
-              const original = d.predios.find((x) => x.id === g.id)?.avisos || [];
-              const totalNoAr = original.filter((a) => a.status === 'no_ar').length;
-              const volta = original.filter((a) => a.status === 'no_ar').reduce((s, a) => s + (a.segundos || 15), 0);
-              return (
-                <section key={g.id} className={`mt-6 rounded-2xl ${VIDRO}`}>
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#E0282E]/15 text-[#FF6B6B]"><Building2 className="h-5 w-5" /></span>
-                      <div>
-                        <h2 className="text-base font-bold">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-white/40">· {g.codigo}</span>}</h2>
-                        <div className="text-xs text-white/55">{totalNoAr === 0 ? 'Nenhum aviso no ar' : totalNoAr === 1 ? '1 aviso no ar · fixo na tela' : `${totalNoAr} avisos no rodízio · ciclo completo de ${volta}s`}</div>
+              {/* avisos */}
+              <div className={`${aba === 'avisos' ? 'block' : 'hidden'} min-w-0 lg:block`}>
+                <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                  {[
+                    { t: umSo ? 'Prédio' : 'Prédios', v: umSo ? d.predios[0].predio : kpi.predios, s: !umSo && kpi.vazios ? `${kpi.vazios} sem aviso no ar` : d.predios[0]?.codigo ? `Código ${d.predios[0].codigo}` : '', i: Building2, f: null },
+                    { t: 'No ar agora', v: kpi.noAr, s: 'Passando nas telas', i: Eye, f: 'no_ar' as const },
+                    { t: 'Agendados', v: kpi.agendados, s: 'Entram sozinhos', i: CalendarClock, f: 'agendado' as const },
+                    { t: 'Saem em 7 dias', v: kpi.saindo, s: 'Confira se valem', i: Timer, f: 'saindo' as const },
+                  ].map((k) => (
+                    <button key={k.t} onClick={() => k.f && setFiltro(filtro === k.f ? 'todos' : k.f)} disabled={!k.f}
+                      className={`rounded-2xl border p-4 text-left backdrop-blur-xl transition ${k.f && filtro === k.f ? 'border-[#E0282E]/70 bg-[#E0282E]/15 ring-2 ring-[#E0282E]/25' : 'border-white/10 bg-white/[0.06] enabled:hover:bg-white/[0.09]'}`}>
+                      <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-white/55">{k.t}<k.i className="h-4 w-4 text-[#FF6B6B]" /></div>
+                      <div className={`mt-2 font-bold text-white ${typeof k.v === 'string' ? 'truncate text-lg' : 'text-3xl'}`}>{k.v}</div>
+                      {k.s && <div className="mt-0.5 truncate text-xs text-white/55">{k.s}</div>}
+                    </button>
+                  ))}
+                </section>
+
+                {!umSo && (
+                  <section className={`mt-4 rounded-2xl p-3 ${VIDRO}`}>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2 rounded-lg border border-white/15 px-3">
+                        <Search className="h-4 w-4 text-white/40" />
+                        <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio ou aviso" className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-white/40" />
+                      </div>
+                      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
+                        {[{ id: 'todos', predio: 'Todos' }, ...d.predios].map((g) => {
+                          const n = 'avisos' in g ? (g as Grupo).avisos.filter((a) => a.status === 'no_ar').length : kpi.noAr;
+                          const ativo = predioSel === g.id;
+                          return (
+                            <button key={g.id} onClick={() => { setPredioSel(g.id); if (g.id !== 'todos') setTelaId(g.id); }}
+                              className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${ativo ? 'bg-gradient-to-b from-[#D9262C] to-[#9C1E1E] text-white shadow-lg' : 'bg-white/[0.07] text-white/80 hover:bg-white/[0.12]'}`}>
+                              {g.predio} <span className={ativo ? 'text-white/70' : 'text-white/40'}>{n}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                    <a href={`/painel-web/tela.html?p=${g.id}`} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/[0.07] px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/[0.12]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]" /> Ver a tela ao vivo
-                    </a>
-                  </div>
-                  {g.avisos.length === 0 ? (
-                    <div className="px-5 py-8 text-center text-sm text-white/55">
-                      {filtro === 'todos' ? 'O quadro de avisos deste prédio está vazio.' : 'Nenhum aviso neste filtro.'}{' '}
-                      <a href={whats} target="_blank" rel="noreferrer" className="font-semibold text-[#FF6B6B] hover:underline">Criar um aviso com o Nando</a>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-6 p-5 sm:grid-cols-3 lg:grid-cols-5">
-                      {g.avisos.map((a) => (
-                        <button key={a.id} onClick={() => { setAberto({ a, g }); setEditar(null); }} className="group flex h-full flex-col items-stretch justify-start text-left align-top">
-                          <div className="transition group-hover:-translate-y-0.5 group-hover:drop-shadow-md"><TelaAviso a={a} /></div>
-                          <div className="mt-2.5">
-                            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
-                              <span className={`h-1.5 w-1.5 rounded-full ${a.status === 'no_ar' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]' : 'bg-amber-400'}`} />
-                              <span className={a.status === 'no_ar' ? 'text-emerald-300' : 'text-amber-300'}>{a.status === 'no_ar' ? 'No ar' : 'Agendado'}</span>
-                            </div>
-                            <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-white first-letter:uppercase">{a.titulo}</div>
-                            <div className="mt-0.5 text-xs text-white/55">
-                              {a.status === 'agendado' ? `Começa ${fmt(a.inicio)}` : totalNoAr > 1 ? `${a.segundos}s por ciclo` : 'Fixo na tela'} · {a.fim ? `até ${fmt(a.fim)}` : 'sem data de saída'}
-                            </div>
-                            <div className="mt-1.5 flex flex-wrap gap-1">
-                              {a.em_grupo && <Etiqueta>Vários prédios</Etiqueta>}
-                              {a.repete && <Etiqueta>Recorrente</Etiqueta>}
-                              {emDias(a.fim) <= 7 && <Etiqueta cor="amber">Sai em breve</Etiqueta>}
-                            </div>
+                  </section>
+                )}
+
+                {/* avisos por prédio */}
+                {grupos.map((g) => {
+                  const original = d.predios.find((x) => x.id === g.id)?.avisos || [];
+                  const totalNoAr = original.filter((a) => a.status === 'no_ar').length;
+                  const volta = original.filter((a) => a.status === 'no_ar').reduce((s, a) => s + (a.segundos || 15), 0);
+                  return (
+                    <section key={g.id} className={`mt-5 rounded-2xl ${VIDRO}`}>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#E0282E]/15 text-[#FF6B6B]"><Building2 className="h-5 w-5" /></span>
+                          <div>
+                            <h2 className="text-base font-bold">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-white/40">· {g.codigo}</span>}</h2>
+                            <div className="text-xs text-white/55">{totalNoAr === 0 ? 'Nenhum aviso no ar' : totalNoAr === 1 ? '1 aviso no ar · fixo na tela' : `${totalNoAr} avisos no rodízio · ciclo completo de ${volta}s`}</div>
                           </div>
+                        </div>
+                        <button onClick={() => { setTelaId(g.id); setAba('tela'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                          className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${telaId === g.id ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' : 'border-white/15 bg-white/[0.07] text-white hover:bg-white/[0.12]'}`}>
+                          <MonitorPlay className="h-3.5 w-3.5" /> {telaId === g.id ? 'Na tela ao lado' : 'Ver na tela'}
                         </button>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-            <p className="mt-8 text-center text-xs text-white/40">EXA Mídia · Publicidade inteligente em elevadores · Foz do Iguaçu/PR</p>
+                      </div>
+                      {g.avisos.length === 0 ? (
+                        <div className="px-5 py-8 text-center text-sm text-white/55">
+                          {filtro === 'todos' ? 'O quadro de avisos deste prédio está vazio.' : 'Nenhum aviso neste filtro.'}{' '}
+                          <a href={whats} target="_blank" rel="noreferrer" className="font-semibold text-[#FF6B6B] hover:underline">Criar um aviso com o Nando</a>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-6 p-5 sm:grid-cols-3 xl:grid-cols-4">
+                          {g.avisos.map((a) => (
+                            <button key={a.id} onClick={() => { setAberto({ a, g }); setEditar(null); }} className="group flex h-full flex-col items-stretch justify-start text-left align-top">
+                              <div className="transition group-hover:-translate-y-0.5 group-hover:drop-shadow-md"><TelaAviso a={a} /></div>
+                              <div className="mt-2.5">
+                                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+                                  <span className={`h-1.5 w-1.5 rounded-full ${a.status === 'no_ar' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]' : 'bg-amber-400'}`} />
+                                  <span className={a.status === 'no_ar' ? 'text-emerald-300' : 'text-amber-300'}>{a.status === 'no_ar' ? 'No ar' : 'Agendado'}</span>
+                                </div>
+                                <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-white first-letter:uppercase">{a.titulo}</div>
+                                <div className="mt-0.5 text-xs text-white/55">
+                                  {a.status === 'agendado' ? `Começa ${fmt(a.inicio)}` : totalNoAr > 1 ? `${a.segundos}s por ciclo` : 'Fixo na tela'} · {a.fim ? `até ${fmt(a.fim)}` : 'sem data de saída'}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {a.em_grupo && <Etiqueta>Vários prédios</Etiqueta>}
+                                  {a.repete && <Etiqueta>Recorrente</Etiqueta>}
+                                  {emDias(a.fim) <= 7 && <Etiqueta cor="amber">Sai em breve</Etiqueta>}
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            </div>
+            <p className="mt-10 text-center text-xs text-white/40">EXA Mídia · Publicidade inteligente em elevadores · Foz do Iguaçu/PR</p>
           </>
-        )}
+          );
+        })()}
       </main>
 
       {/* criar pelo WhatsApp (celular) */}

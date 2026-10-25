@@ -178,6 +178,29 @@ async function exaSistema(caminho: string): Promise<any> {
   if (!r.ok) throw new Error(`ExaSistema ${r.status}`);
   return await r.json();
 }
+// a mesma escolha que o NUC faz ao montar a PlaylistPronta: 1 video por pedido, dentro das datas;
+// o video agendado para este dia/hora substitui o video principal (master) do pedido
+const DIAS = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+function playlistAgora(lista: any[]): any[] {
+  const agora = new Date(Date.now() - 3 * 3600000); // relogio de Brasilia lido como UTC
+  const hhmm = agora.toISOString().slice(11, 16), dia = DIAS[agora.getUTCDay()];
+  const local = (t: unknown) => { const v = String(t || "").replace(" ", "T"); const d = new Date(v.replace(/(Z|[+-]\d{2}:?\d{2})$/, "") + "Z"); return isNaN(+d) ? null : d; };
+  const valido = (it: any) => {
+    if (!it?.video || it.status === "deleted") return false;
+    const ini = local(it.data_ini), fim = local(it.data_fim);
+    return !(ini && agora < ini) && !(fim && agora > fim);
+  };
+  const temProg = (it: any) => Object.values(it.programacao || {}).some((x: any) => Array.isArray(x) && x.length);
+  const naHora = (it: any) => ((it.programacao || {})[dia] || []).some((f: any) => String(f.inicio || "00:00") <= hhmm && hhmm <= String(f.fim || "23:59"));
+  const porPedido = new Map<string, any[]>();
+  for (const it of lista.filter(valido)) { const k = String(it.id_pedido || it.video); porPedido.set(k, [...(porPedido.get(k) || []), it]); }
+  const out: any[] = [];
+  for (const itens of porPedido.values()) {
+    const escolhido = itens.find((it) => temProg(it) && naHora(it)) || itens.find((it) => it.master === true || it.master === "true") || itens.find((it) => !temProg(it));
+    if (escolhido) out.push(escolhido);
+  }
+  return out;
+}
 const ehServico = (req: Request) => (req.headers.get("Authorization") || "").replace("Bearer ", "") === (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "-");
 async function replica(sb: ReturnType<typeof db>, b: any, servico: boolean) {
   let lista: Predio[];
@@ -194,12 +217,28 @@ async function replica(sb: ReturnType<typeof db>, b: any, servico: boolean) {
     if (b.diag && servico) return json(200, { ok: true, colunas: Object.keys(rows?.[0] || {}), exemplo: (rows || []).slice(0, 2) });
     return json(200, { ok: true, linhas: rows || [] });
   }
+  if (arq === "clima") {
+    // a tela pede o clima na API da EXA (http); o navegador so aceita https, entao passa por aqui
+    const r = await fetch(`http://18.228.252.149:8000/api/clima`, { signal: AbortSignal.timeout(12000) });
+    return new Response(await r.text(), { status: r.status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "max-age=300" } });
+  }
   const id = String(b.predio || "").toLowerCase();
   const p = lista.find((x) => x.id.startsWith(id) && id.length >= 4);
   if (!p) return json(403, { ok: false, erro: "Esse prédio não está no seu acesso." });
   const rows = await exaSistema(`updates_clientes?cliente_id=eq.${encodeURIComponent(p.cliente_id)}&select=json_data`);
   const j = rows?.[0]?.json_data;
   if (!j) return json(404, { ok: false, erro: "A tela desse prédio ainda não tem programação." });
+  if (arq === "arquivo") {
+    // imagens, PDFs e avisos do Nando do proprio predio (o S3 nao libera o navegador; o video vai direto)
+    const caminho = String(b.caminho || "");
+    if (!/^(CondominiumNotices|Propagandas|Banners|News|qrcodes)\/[^/]+$/.test(caminho) || caminho.includes("..")) return json(400, { ok: false });
+    const pasta = String(j.pasta_s3 || "").replace(/^\/+|\/+$/g, "");
+    const r = await fetch(`https://telas-clientes.s3.sa-east-1.amazonaws.com/${pasta}/${caminho.split("/").map(encodeURIComponent).join("/")}`, { signal: AbortSignal.timeout(20000) });
+    const ext = (caminho.split(".").pop() || "").toLowerCase();
+    const tipo = ({ png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", pdf: "application/pdf", json: "application/json", svg: "image/svg+xml" } as Record<string, string>)[ext] || "application/octet-stream";
+    return new Response(r.body, { status: r.status, headers: { ...cors, "Content-Type": tipo, "Cache-Control": "max-age=3600" } });
+  }
+  if (!Array.isArray(j.PlaylistPronta) || !j.PlaylistPronta.length) j.PlaylistPronta = playlistAgora(j.Propagandas || []);
   if (b.diag && servico) return json(200, { ok: true, chaves: Object.keys(j), pasta_s3: j.pasta_s3, ex_playlist: (j.PlaylistPronta || []).slice(0, 2), ex_aviso: (j.CondominiumNotices || []).slice(0, 2) });
   return json(200, { ok: true, predio: p.nome, updates: j });
 }
