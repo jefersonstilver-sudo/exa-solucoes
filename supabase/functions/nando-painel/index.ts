@@ -7,7 +7,7 @@
 // =====================================================================
 import {
   db, ehAdmin, prediosDoTelefone, todosPredios, telefoneCanonico, enviarTexto, lerTokenCarteira, lerTokenPredio,
-  primeiroNome, registrarOcorrencia, type Predio, EXASISTEMA_URL,
+  primeiroNome, registrarOcorrencia, type Predio, EXASISTEMA_URL, fotoPerfil,
 } from "../_shared/nando-core.ts";
 import { avisosDoPredio } from "../_shared/nando-site.ts";
 import { executar, type Contexto } from "../_shared/nando-agente.ts";
@@ -253,6 +253,14 @@ async function sair(sb: ReturnType<typeof db>, b: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  // foto do Nando para a entrada do painel (publica; e a mesma foto do perfil do WhatsApp)
+  if (req.method === "GET" && new URL(req.url).searchParams.get("foto") === "nando") {
+    const sb0 = db();
+    const u = await fotoPerfil(sb0, NANDO_WHATS);
+    const r = u ? await fetch(u, { signal: AbortSignal.timeout(12000) }).catch(() => null) : null;
+    if (!r || !r.ok) return new Response("sem foto", { status: 404, headers: { ...cors, "Cache-Control": "max-age=600" } });
+    return new Response(r.body, { headers: { ...cors, "Content-Type": r.headers.get("Content-Type") || "image/jpeg", "Cache-Control": "public, max-age=86400" } });
+  }
   if (req.method !== "POST") return json(405, { ok: false });
   const b = await req.json().catch(() => ({}));
   const sb = db();

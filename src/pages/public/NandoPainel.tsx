@@ -1,4 +1,4 @@
-// Painel do síndico (EXA Mídia): examidia.com.br/nando/painel e os links /nando/predio/<token> que o Nando manda.
+// Painel do síndico (EXA Mídia): examidia.com.br/paineldosindico (oficial) e os links /paineldosindico/<token> que o Nando manda.
 // Entrar: código de 6 dígitos no WhatsApp (12 h ou "lembrar este aparelho" 30 dias).
 // Alterar qualquer aviso pelo site: pede um código novo na hora, mesmo com o aparelho lembrado.
 // Visual: identidade do site da EXA (cabeçalho vermelho #9C1E1E→#180A0A, logo branco, Montserrat, fundo claro).
@@ -227,58 +227,100 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
     aoEntrar(r.sessao, r.expira_em);
   };
 
+  const passos = etapa === 'tel' ? 1 : 2;
   return (
-    <div className="flex min-h-screen flex-col text-white lg:flex-row" style={FUNDO}>
-      {/* marca */}
-      <div className="flex flex-col justify-between px-6 pb-2 pt-[calc(env(safe-area-inset-top,0px)+24px)] text-white lg:w-[44%] lg:bg-gradient-to-br lg:from-[#9C1E1E]/90 lg:to-[#180A0A]/90 lg:px-14 lg:py-12">
-        <img src={LOGO} alt="EXA Mídia" className="h-9 w-auto self-start lg:h-12" />
-        <div className="hidden lg:block">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Área do síndico</div>
-          <h1 className="mt-3 text-4xl font-bold leading-tight">Os avisos do seu condomínio,<br />sob seu controle.</h1>
-          <p className="mt-4 max-w-md text-white/75">Veja tudo o que está passando nas telas dos elevadores, a programação de cada aviso e quem cadastrou. Ajuste datas, textos e tire avisos do ar com segurança.</p>
-        </div>
-        <div className="hidden text-xs text-white/50 lg:block">EXA Mídia · Publicidade inteligente em elevadores · Foz do Iguaçu/PR</div>
-      </div>
+    <div className="relative flex min-h-[100svh] flex-col overflow-hidden text-white" style={FUNDO}>
+      {/* luzes de fundo */}
+      <div aria-hidden className="pointer-events-none absolute -left-32 -top-40 h-[520px] w-[520px] rounded-full bg-[#E0282E]/25 blur-[120px]" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-48 -right-40 h-[560px] w-[560px] rounded-full bg-[#7a1216]/35 blur-[140px]" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.9) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
 
-      {/* formulário */}
-      <div className="flex flex-1 items-start justify-center px-4 py-8 sm:items-center">
-        <div className="w-full max-w-md">
-          <div className={`rounded-2xl p-6 sm:p-8 ${VIDRO}`}>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#FF6B6B]"><Lock className="h-3.5 w-3.5" /> Acesso seguro</div>
-            <h2 className="mt-2 text-2xl font-bold text-white">Painel do Síndico</h2>
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] lg:px-10">
+        <img src={LOGO} alt="EXA Mídia" className="h-8 w-auto lg:h-10" />
+        <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/70 backdrop-blur-xl"><Lock className="h-3 w-3" /> Painel do Síndico</span>
+      </header>
+
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-8 px-5 py-8 lg:flex-row lg:items-center lg:justify-between lg:gap-16 lg:px-10">
+        {/* o Nando */}
+        <section className="flex w-full max-w-md flex-col items-center text-center lg:max-w-lg lg:items-start lg:text-left">
+          <FotoNando tamanho="h-24 w-24 lg:h-32 lg:w-32" />
+          <div className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-[#FF8A8A]">Nando · assistente da EXA</div>
+          <h1 className="mt-2 text-[28px] font-bold leading-[1.1] tracking-tight lg:text-5xl">Seu condomínio<br className="hidden lg:block" /> na palma da mão.</h1>
+          <div className="relative mt-5 w-full rounded-2xl rounded-tl-md border border-white/[0.12] bg-white/[0.07] p-4 text-left text-sm leading-relaxed text-white/85 shadow-[0_10px_40px_rgba(0,0,0,.35)] backdrop-blur-2xl lg:text-[15px]">
+            Oi! Eu sou o <b className="text-white">Nando</b> 👋 Comigo, no WhatsApp, você cria e ajusta os avisos dos elevadores. Aqui no painel você vê a <b className="text-white">tela ao vivo</b> do seu prédio e todos os avisos. Para entrar, eu te mando um código no WhatsApp.
+          </div>
+          <ul className="mt-5 hidden w-full gap-2 text-sm text-white/75 lg:grid">
+            {[[MonitorPlay, 'Tela ao vivo igual à do elevador'], [LayoutGrid, 'Avisos no ar, agendados e histórico'], [ShieldCheck, 'Toda alteração confirmada por código']].map(([I, t]) => {
+              const Ic = I as typeof MonitorPlay;
+              return <li key={t as string} className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06]"><Ic className="h-4 w-4 text-[#FF8A8A]" /></span>{t as string}</li>;
+            })}
+          </ul>
+        </section>
+
+        {/* entrada */}
+        <section className="w-full max-w-md">
+          <div className="rounded-3xl border border-white/[0.12] bg-white/[0.07] p-6 shadow-[0_30px_80px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)] backdrop-blur-2xl sm:p-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">{etapa === 'tel' ? 'Entrar no painel' : 'Digite o código'}</h2>
+              <span className="text-xs font-semibold text-white/45">Passo {passos} de 2</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-1.5"><i className="h-1 rounded-full bg-[#E0282E]" /><i className={`h-1 rounded-full ${passos === 2 ? 'bg-[#E0282E]' : 'bg-white/15'}`} /></div>
             {etapa === 'tel' ? (
               <>
-                <p className="mt-2 text-sm text-white/65">{carteira ? 'Vamos enviar um código de confirmação para o WhatsApp que recebeu este link.' : 'Informe o celular cadastrado no seu prédio. Enviaremos um código de confirmação pelo WhatsApp.'}</p>
+                <p className="mt-4 text-sm text-white/65">{carteira ? 'Vou mandar um código de confirmação para o WhatsApp que recebeu este link.' : 'Use o celular cadastrado no seu prédio. Eu mando um código de 6 dígitos no seu WhatsApp.'}</p>
                 {!carteira && (
-                  <label className="mt-6 block">
+                  <label className="mt-5 block">
                     <span className="mb-1.5 block text-sm font-medium text-white/80">Celular com DDD</span>
                     <input inputMode="tel" autoComplete="tel" placeholder="(45) 99999-9999" value={tel} onChange={(e) => setTel(mascaraTel(e.target.value))}
-                      onKeyDown={(e) => e.key === 'Enter' && pedir()} className={`${CAMPO} py-3 text-base`} />
+                      onKeyDown={(e) => e.key === 'Enter' && pedir()} className={`${CAMPO} rounded-xl py-3.5 text-lg tracking-wide`} />
                   </label>
                 )}
-                <button onClick={pedir} disabled={carregando || (!carteira && tel.replace(/\D/g, '').length < 10)} className={`${BTN} mt-5 w-full`}>
-                  {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />} Enviar código pelo WhatsApp
+                <button onClick={pedir} disabled={carregando || (!carteira && tel.replace(/\D/g, '').length < 10)} className={`${BTN} mt-5 w-full py-3.5 text-base`}>
+                  {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-5 w-5" />} Enviar código pelo WhatsApp
                 </button>
               </>
             ) : (
               <>
-                <p className="mt-2 text-sm text-white/65">Digite o código de 6 dígitos enviado para o WhatsApp <b className="text-white">{destino}</b>. Ele vale 10 minutos.</p>
-                <div className="mt-6"><CampoCodigo valor={cod} aoMudar={setCod} aoCompletar={verificar} desativado={carregando} /></div>
-                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 text-sm">
+                <p className="mt-4 text-sm text-white/65">Mandei o código para o WhatsApp <b className="text-white">{destino}</b>. Ele vale 10 minutos.</p>
+                <div className="mt-5"><CampoCodigo valor={cod} aoMudar={setCod} aoCompletar={verificar} desativado={carregando} /></div>
+                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-black/20 p-3 text-sm">
                   <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#E0282E]" />
-                  <span className="text-white/80"><b className="text-white">Lembrar este aparelho por 30 dias</b><br /><span className="text-xs text-white/55">Sem marcar, o acesso vale 12 horas. Alterações pelo site sempre pedem um novo código.</span></span>
+                  <span className="text-white/80"><b className="text-white">Lembrar este aparelho por 30 dias</b><br /><span className="text-xs text-white/55">Sem marcar, o acesso vale 12 horas. Alterações sempre pedem um novo código.</span></span>
                 </label>
-                <button onClick={() => verificar()} disabled={carregando || cod.length !== 6} className={`${BTN} mt-5 w-full`}>
-                  {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} Entrar
+                <button onClick={() => verificar()} disabled={carregando || cod.length !== 6} className={`${BTN} mt-5 w-full py-3.5 text-base`}>
+                  {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} Entrar
                 </button>
-                <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-sm text-white/55 hover:text-white/90">Não recebeu? Enviar novo código</button>
+                <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-sm text-white/55 hover:text-white/90">Não chegou? Enviar novo código</button>
               </>
             )}
-            {erro && <div className="mt-4 rounded-lg border border-red-400/30 bg-red-500/100/10 px-3 py-2.5 text-sm text-red-200">{erro}</div>}
+            {erro && <div className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">{erro}</div>}
           </div>
-          <p className="mt-4 text-center text-xs text-white/55">A EXA nunca pede este código por telefone, e-mail ou mensagem.</p>
-        </div>
+          <p className="mt-4 text-center text-xs text-white/50">A EXA nunca pede este código por telefone, e-mail ou mensagem.</p>
+          <a href="https://wa.me/554591132351?text=Ol%C3%A1%2C%20Nando!" target="_blank" rel="noreferrer" className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-white/75 hover:text-white">
+            <MessageCircle className="h-4 w-4 text-emerald-400" /> Falar com o Nando no WhatsApp
+          </a>
+        </section>
+      </main>
+      <footer className="relative z-10 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] text-center text-[11px] text-white/40">EXA Mídia · Publicidade inteligente em elevadores · Foz do Iguaçu/PR</footer>
+    </div>
+  );
+}
+
+// a foto do Nando (a mesma do perfil do WhatsApp); sem foto, mostra o "N" da marca
+function FotoNando({ tamanho = 'h-12 w-12' }: { tamanho?: string }) {
+  const [erro, setErro] = useState(false);
+  return (
+    <div className={`relative ${tamanho} shrink-0`}>
+      <div aria-hidden className="absolute -inset-3 rounded-full bg-[#E0282E]/35 blur-2xl" />
+      <div className="relative h-full w-full rounded-full bg-gradient-to-br from-[#ff6b6b] via-[#E0282E] to-[#6d0f12] p-[3px] shadow-[0_10px_40px_rgba(224,40,46,.45)]">
+        {!erro ? (
+          <img src="https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/nando-painel?foto=nando" alt="Nando" onError={() => setErro(true)}
+            className="h-full w-full rounded-full bg-[#1a1214] object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-[#1a1214] text-3xl font-bold text-white">N</div>
+        )}
       </div>
+      <span className="absolute bottom-[6%] right-[6%] h-[18%] w-[18%] rounded-full border-[3px] border-[#0d0b0c] bg-emerald-400" />
     </div>
   );
 }
@@ -333,7 +375,11 @@ function ConfirmarCodigo({ sessao, aoConfirmar, aoFechar }: { sessao: string; ao
 // ------------------------------------------------------------------------- painel
 export default function NandoPainel() {
   const partes = window.location.pathname.split('/').filter(Boolean);
-  const link = partes[1] === 'predio' ? (partes[2] || null) : null;
+  // endereço oficial: /paineldosindico (e /paineldosindico/<link> dos links do Nando); os antigos /nando/... continuam abrindo
+  const link = partes[1] === 'predio' ? (partes[2] || null) : (partes[0]?.toLowerCase() === 'paineldosindico' ? (partes[1] || null) : null);
+  useEffect(() => {
+    if (partes[0] === 'nando') window.history.replaceState(null, '', `/paineldosindico${link ? '/' + link : ''}${window.location.search}`);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [sessao, setSessao] = useState<string | null>(() => lerSessao());
   const [d, setD] = useState<Dados | null>(null);
   const [carregando, setCarregando] = useState(true);

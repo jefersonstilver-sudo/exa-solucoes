@@ -1058,14 +1058,14 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       if (e.todos) {
         const lista = c.admin ? await todosPredios(sb) : c.predios;
         if (!lista.length) return "Nenhum prédio ligado a este número.";
-        const link = `${SITE_URL}/nando/predio/${await tokenCarteira(telefoneCanonico(c.tel), 24 * 60)}`;
+        const link = `${SITE_URL}/paineldosindico/${await tokenCarteira(telefoneCanonico(c.tel), 24 * 60)}`;
         c.registros.push(`link da carteira (${lista.length} prédios) enviado`);
         return `Link do painel com os ${lista.length} prédios (sempre atualizado; ao abrir, a pessoa confirma com um código que eu mando aqui no WhatsApp e pode deixar o aparelho lembrado por 30 dias): ${link}`;
       }
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
-      const link = `${SITE_URL}/nando/predio/${await tokenPredio(p.id, 60)}`;
+      const link = `${SITE_URL}/paineldosindico/${await tokenPredio(p.id, 60)}`;
       c.registros.push(`link dos avisos do ${p.nome} enviado`);
-      return `Link do painel do ${p.nome} (ao abrir, a pessoa confirma com um código que eu mando aqui no WhatsApp; o link vale 1 hora, o acesso fica 12 h ou 30 dias no aparelho lembrado). Painel direto, sem link: ${SITE_URL}/nando/painel . Link: ${link}`;
+      return `Link do painel do ${p.nome} (ao abrir, a pessoa confirma com um código que eu mando aqui no WhatsApp; o link vale 1 hora, o acesso fica 12 h ou 30 dias no aparelho lembrado). Painel oficial (entra com o celular, a qualquer hora): ${SITE_URL}/paineldosindico . Link: ${link}`;
     }
     case "salvar_preferencia": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro.";
@@ -1193,7 +1193,13 @@ LINK DOS AVISOS DO PRÉDIO
 - AVISO QUE SE REPETE (coleta de lixo toda terça, dedetização todo dia 10, limpeza da caixa d'água...): crie o rascunho uma vez, mostre a prévia e publique com publicar_aviso + 'repetir' (frequência, dias, hora de aparecer e de sumir). Confirme a regra em uma frase antes ("Vai aparecer toda terça das 7h às 20h, pode ser?"). Para ver ou parar: listar_repeticoes / parar_repeticao. Quando a pessoa disser "todo/toda/sempre/todo mês", ofereça a repetição.
 - IMAGEM PARA GRUPOS DE WHATSAPP: depois de publicar, SEMPRE pergunte uma vez se a pessoa quer a versão em imagem para encaminhar nos grupos do condomínio. Nunca mande sem ela aceitar (para não lotar o WhatsApp). Aceitou → enviar_imagem_whatsapp. Ela também pode pedir a imagem de qualquer aviso no ar a qualquer momento.
 - Para corrigir o TEXTO de um aviso do Nando já publicado ("troca a data para sábado", "corrige o horário"), use editar_aviso (não crie outro). Datas de quando aparece/sai continuam em alterar_aviso.
-- PAINEL DO SÍNDICO no site (${SITE_URL}/nando/painel): mostra todos os avisos no ar e agendados de todos os prédios da pessoa, com miniatura, programação, histórico, e deixa mudar data, tempo, texto ou tirar do ar. Entrar exige um código de 6 dígitos que chega aqui no WhatsApp (o site manda sozinho); toda alteração pelo site pede um código novo. Se a pessoa receber um código sem ter pedido, diga para ignorar e não passar para ninguém. NUNCA diga nem repita códigos.
+- PAINEL DO SÍNDICO — endereço oficial: ${SITE_URL}/paineldosindico . O síndico tem DOIS canais: este WhatsApp (comigo) e o painel no site. Explique o painel sempre que for útil e tire QUALQUER dúvida sobre ele com calma, passo a passo, em frases curtas:
+  • Como entrar: abrir ${SITE_URL}/paineldosindico, digitar o celular cadastrado no prédio (com DDD) e tocar em "Enviar código pelo WhatsApp"; eu mando aqui um código de 6 dígitos que vale 10 minutos; digitar o código e entrar. Marcando "Lembrar este aparelho", fica entrando direto por 30 dias; sem marcar, o acesso vale 12 horas. Só entra quem tem o número cadastrado no prédio (síndico, administração, zelador cadastrado). Número não cadastrado: peça para o síndico ou a EXA cadastrar.
+  • TELA AO VIVO: mostra a mesma tela do elevador do prédio escolhido, com os mesmos anúncios, avisos, câmera, clima e hora; quando entra ou sai um aviso ou um vídeo, muda sozinha. O vídeo não fica no mesmo segundo do elevador (é a mesma programação, não uma câmera filmando o elevador). Quem tem vários prédios troca o prédio no seletor em cima da tela. No celular ficam duas abas: "Tela ao vivo" e "Avisos".
+  • AVISOS: lista tudo que está no ar e agendado em cada prédio, com a miniatura igual à tela, até quando fica, quantos segundos aparece no rodízio, quem cadastrou e o histórico. Tocando no aviso dá para mudar as datas, o tempo na tela, o texto (avisos feitos por mim) ou tirar do ar — e aplicar nos outros prédios quando o aviso está em vários.
+  • SEGURANÇA: toda alteração pelo site pede um código NOVO aqui no WhatsApp (vale 15 minutos de alterações), mesmo com o aparelho lembrado. Em "Sair de todos os aparelhos" (no nome, em cima) desconecta tudo. Se chegar um código sem a pessoa ter pedido, diga para ignorar e nunca passar para ninguém — a EXA nunca pede código. NUNCA diga nem repita códigos.
+  • Criar aviso novo continua sendo comigo, aqui no WhatsApp (o botão "Criar aviso com o Nando" do painel abre esta conversa).
+  • Problemas comuns: código não chegou → conferir se digitou o número cadastrado e pedir de novo (máximo 3 por hora); "acesso expirou" → entrar de novo; tela ao vivo não aparece → atualizar a página ou usar Chrome/Safari atualizados.
 - Para quem cuida de mais de um prédio, ofereça o link da CARTEIRA (link_dos_avisos com todos=true): uma página só, com todos os prédios e avisos, sempre atualizada, válida por 24 horas.
 - Máximo de ${LIMITE_AVISOS} avisos no ar por prédio. Acima de 6, avise que o rodízio fica longo e cada aviso aparece menos.
 - Para tirar um aviso, confirme qual é (pelo título) antes de usar remover_aviso. Avisos antigos (anteriores ao Nando) também aparecem na lista; só tire se pedirem.

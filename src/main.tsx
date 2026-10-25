@@ -61,7 +61,7 @@ try {
     <React.StrictMode>
       <ThemeProvider defaultTheme="light">
         <BootGuard>
-          {window.location.pathname.replace(/\/$/, '') === '/estilos' ? <HelmetProvider><VideoStylesPage /></HelmetProvider> : window.location.pathname.startsWith('/nando/previa/') ? <NandoPrevia /> : (window.location.pathname.startsWith('/nando/predio/') || window.location.pathname.replace(/\/$/, '') === '/nando/painel') ? <NandoPainel /> : <App />}
+          {window.location.pathname.replace(/\/$/, '') === '/estilos' ? <HelmetProvider><VideoStylesPage /></HelmetProvider> : window.location.pathname.startsWith('/nando/previa/') ? <NandoPrevia /> : (window.location.pathname.startsWith('/nando/predio/') || window.location.pathname.replace(/\/$/, '') === '/nando/painel' || window.location.pathname.replace(/\/$/, '').toLowerCase() === '/paineldosindico' || window.location.pathname.toLowerCase().startsWith('/paineldosindico/')) ? <NandoPainel /> : <App />}
         </BootGuard>
       </ThemeProvider>
     </React.StrictMode>,

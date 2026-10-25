@@ -18,7 +18,7 @@ export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-24.31";
+export const NANDO_VERSAO = "2026-10-25.32";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -118,6 +118,20 @@ export async function enviarTexto(sb: SupabaseClient, tel: string, texto: string
     body: JSON.stringify({ number: telefoneCanonico(tel), text: texto, linkPreview: false }),
   });
   if (!r.ok) throw new Error(`Evolution sendText ${r.status}: ${(await r.text()).slice(0, 200)}`);
+}
+// foto de perfil do WhatsApp (a do proprio Nando aparece na entrada do painel do sindico)
+export async function fotoPerfil(sb: SupabaseClient, numero: string): Promise<string | null> {
+  try {
+    const { url, key } = evo();
+    const inst = await instanciaNando(sb);
+    const r = await fetch(`${url}/chat/fetchProfilePictureUrl/${inst}`, {
+      method: "POST", headers: { "Content-Type": "application/json", apikey: key },
+      body: JSON.stringify({ number: telefoneCanonico(numero) }), signal: AbortSignal.timeout(12000),
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j?.profilePictureUrl || j?.profilePicUrl || j?.url || null;
+  } catch { return null; }
 }
 export async function enviarImagem(sb: SupabaseClient, tel: string, urlImagem: string, legenda = "") {
   const { url, key } = evo();

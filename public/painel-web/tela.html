@@ -50,7 +50,7 @@ footer{font-size:11px;color:var(--sub);text-align:center;padding:0 16px calc(env
   const sessao = (() => { try { const s = JSON.parse(localStorage.getItem("nando_sessao") || "null"); return s && new Date(s.expira) > new Date() ? s.token : null; } catch { return null; } })();
 
   const mensagem = (t, p, link, txt) => { area.innerHTML = `<div class="aviso"><h1>${t}</h1><p>${p}</p>${link ? `<a class="btn" href="${link}">${txt}</a>` : ""}</div>`; estado.textContent = "fora do ar"; };
-  const entrar = () => mensagem("Entre para ver a tela", "A tela ao vivo é só para o síndico e a administração do prédio. Entre com o código que o Nando manda no seu WhatsApp.", "/nando/painel?volta=" + encodeURIComponent(location.pathname + location.search), "Entrar no painel do síndico");
+  const entrar = () => mensagem("Entre para ver a tela", "A tela ao vivo é só para o síndico e a administração do prédio. Entre com o código que o Nando manda no seu WhatsApp.", "/paineldosindico?volta=" + encodeURIComponent(location.pathname + location.search), "Entrar no painel do síndico");
 
   function encaixar() {
     const m = document.getElementById("moldura"); if (!m) return;
