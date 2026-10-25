@@ -1,6 +1,6 @@
 # Imagem do aviso do Nando para o sindico encaminhar nos grupos de WhatsApp do condominio.
 # Roda no GitHub Actions (render-nando.yml), so quando o sindico aceita receber a imagem.
-# Formato: vertical de celular 1080x1920 — faixa com o nome do predio + o aviso montado com os MESMOS
+# Formato: arte vertical de celular 1080x1920, de ponta a ponta (sem faixa nem moldura), com o aviso montado com os MESMOS
 # arquivos do painel (aviso-nando.js/css do site). Guarda no Storage e pede ao nando-webhook para enviar.
 # Qualquer erro volta para o nando-webhook (fica registrado no banco), para nunca falhar calado.
 import json, os, sys, time, traceback, urllib.request
@@ -15,22 +15,16 @@ legenda = os.environ.get("LEGENDA", "")
 teste = (os.environ.get("TESTE") or "").lower() in ("1", "true", "sim")
 
 HTML = """<!doctype html><html><head><meta charset="utf-8">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=block" rel="stylesheet">
 <link rel="stylesheet" href="%(site)s/nando/aviso-nando.css?x=%(t)d">
 <style>
-html,body{margin:0;background:#0d0b0c}
-#folha{position:relative;width:540px;height:960px;overflow:hidden;background:#0d0b0c;
-  background-image:radial-gradient(600px 300px at 20%% -10%%,rgba(196,32,38,.45),transparent 60%%);font-family:Montserrat,system-ui,sans-serif;color:#fff}
-#topo{position:absolute;left:0;right:0;top:0;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;box-sizing:border-box}
-#topo .t1{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:600}
-#topo .t2{font-size:18px;font-weight:800;line-height:1.1;max-width:400px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#topo .exa{font-size:11px;font-weight:800;letter-spacing:.12em;color:rgba(255,255,255,.55)}
-#moldura{position:absolute;left:14px;right:14px;top:62px;bottom:14px;border-radius:22px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1)}
-#tela{position:absolute;inset:0;background:#140a1c}
-</style></head><body><div id="folha">
-<div id="topo"><div><div class="t1">Comunicado do condomínio</div><div class="t2">%(predio)s</div></div><div class="exa">EXA</div></div>
-<div id="moldura"><div id="tela"></div></div>
-</div><script src="%(site)s/nando/aviso-nando.js?x=%(t)d"></script></body></html>"""
+html,body{margin:0;background:#140a1c}
+/* arte de ponta a ponta: so o aviso, sem faixa, sem moldura */
+#tela{position:relative;width:540px;height:960px;overflow:hidden;background:#140a1c}
+#tela .na-raiz{font-family:Inter,system-ui,sans-serif !important}
+</style></head><body><div id="tela"></div>
+<script src="%(site)s/nando/aviso-nando.js?x=%(t)d"></script></body></html>"""
 
 def baixar_json(u):
     with urllib.request.urlopen(u, timeout=30) as r:
@@ -59,7 +53,7 @@ def main():
             dados = baixar_json(a["url"])
             predio = (a.get("predio") or "").replace("<", "").replace(">", "")
             # a pagina e montada no endereco do proprio site (mesma origem dos arquivos do aviso)
-            pg.route(f"{SITE}/__nando_imagem__", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=HTML % {"site": SITE, "t": agora, "predio": predio}))
+            pg.route(f"{SITE}/__nando_imagem__", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=HTML % {"site": SITE, "t": agora}))
             pg.goto(f"{SITE}/__nando_imagem__", wait_until="load", timeout=45000)
             for _ in range(80):  # espera o script do aviso carregar (sem wait_for_function)
                 if pg.evaluate("() => !!(window.NandoAviso && window.NandoAviso.montar)"):
@@ -68,11 +62,12 @@ def main():
             else:
                 raise RuntimeError("o script do aviso (aviso-nando.js) nao carregou")
             pg.unroute(f"{SITE}/__nando_imagem__")
+            pg.evaluate("() => document.fonts.ready")  # Inter carregada antes de montar (o texto se ajusta pela largura real)
             pg.evaluate("d => { window.__m = window.NandoAviso.montar(document.getElementById('tela'), d); }", dados)
             pg.wait_for_timeout(400)
             pg.evaluate("() => document.querySelectorAll('.na-raiz').forEach(r => r.classList.add('na-on'))")
             pg.wait_for_timeout(5500)  # animacoes de entrada terminam
-            png = pg.locator("#folha").screenshot(type="png")
+            png = pg.locator("#tela").screenshot(type="png")
             fotos.append(subir(f"fotos/{a['id']}_{agora}.png", png))
             print("foto ok", a["id"], len(png))
         nav.close()
