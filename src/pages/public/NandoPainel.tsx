@@ -261,8 +261,8 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
         <section className="w-full max-w-md">
           <div className="rounded-3xl border border-white/[0.12] bg-white/[0.07] p-6 shadow-[0_30px_80px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)] backdrop-blur-2xl sm:p-8">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">{etapa === 'tel' ? 'Entrar no painel' : 'Digite o código'}</h2>
-              <span className="text-xs font-semibold text-white/45">Passo {passos} de 2</span>
+              <h2 className="text-lg font-bold sm:text-xl">{etapa === 'tel' ? 'Entrar no painel' : 'Digite o código'}</h2>
+              <span className="shrink-0 whitespace-nowrap text-xs font-semibold text-white/45">Passo {passos} de 2</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-1.5"><i className="h-1 rounded-full bg-[#E0282E]" /><i className={`h-1 rounded-full ${passos === 2 ? 'bg-[#E0282E]' : 'bg-white/15'}`} /></div>
             {etapa === 'tel' ? (
