@@ -1,0 +1,44 @@
+name: nando-replica-diag
+# diagnostico da tela ao vivo: confere se a programacao do predio aponta para arquivos que existem no S3 e se o S3 libera o navegador
+on:
+  workflow_dispatch:
+    inputs:
+      nome: { description: parte do nome do predio, required: true, default: "Cheverny" }
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      URL: ${{ secrets.SUPABASE_URL }}
+      KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NOME: ${{ inputs.nome }}
+    steps:
+      - run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.parse
+          F = os.environ["URL"].rstrip("/") + "/functions/v1/nando-painel"
+          def post(b):
+              r = urllib.request.Request(F, data=json.dumps(b).encode(), headers={"Authorization": "Bearer " + os.environ["KEY"], "Content-Type": "application/json"})
+              return json.loads(urllib.request.urlopen(r, timeout=40).read())
+          ps = post({"acao": "replica", "arq": "predios"})["predios"]
+          p = next(x for x in ps if os.environ["NOME"].lower() in x["predio"].lower())
+          d = post({"acao": "replica", "arq": "updates", "predio": p["id"]})["updates"]
+          out = [f"predio={p['predio']} id={p['id']}", f"chaves={list(d.keys())}", f"pasta_s3={d.get('pasta_s3')}"]
+          pl = d.get("PlaylistPronta") or []
+          av = [a for a in (d.get("CondominiumNotices") or [])]
+          out.append(f"playlist={len(pl)} avisos={len(av)}")
+          if pl: out.append("ex_video=" + json.dumps({k: pl[0].get(k) for k in ("video", "isPlus")}))
+          if av: out.append("ex_aviso=" + json.dumps({k: av[0].get(k) for k in ("mensagem", "status", "data_ini", "data_fim")}))
+          S3 = "https://telas-clientes.s3.sa-east-1.amazonaws.com"
+          pasta = str(d.get("pasta_s3") or "").strip("/")
+          for nome, cam in (("video", pl[0]["video"] if pl else None), ("aviso", av[0]["mensagem"] if av else None)):
+              if not cam: continue
+              u = f"{S3}/{pasta}/" + "/".join(urllib.parse.quote(x) for x in cam.split("/"))
+              try:
+                  r = urllib.request.Request(u, method="HEAD", headers={"Origin": "https://examidia.com.br"})
+                  h = urllib.request.urlopen(r, timeout=30)
+                  out.append(f"{nome}: {h.status} cors={h.headers.get('Access-Control-Allow-Origin')} tipo={h.headers.get('Content-Type')} url={u}")
+              except Exception as e:
+                  out.append(f"{nome}: FALHA {e} url={u}")
+          for l in out: print("::notice title=replica::" + l.replace("\n", " ")[:900])
+          PY
