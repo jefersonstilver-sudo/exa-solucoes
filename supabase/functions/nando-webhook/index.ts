@@ -6,7 +6,7 @@
 // =====================================================================
 import {
   db, ehAdmin, prediosDoTelefone, telefoneCanonico, enviarTexto, enviarDigitando, baixarMidia, instanciaNando, transcreverAudio,
-  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO, enviarImagem,
+  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO, enviarImagem, chavesTelefone,
 } from "../_shared/nando-core.ts";
 import { Contexto, rodarAgente } from "../_shared/nando-agente.ts";
 
@@ -139,10 +139,17 @@ async function processar(tel: string, minhaMsg: number, pushName: string) {
   }
 }
 
+// modo teste: alem do Jeferson, so os numeros da lista "testadores" (nando_config) sao atendidos, como sindicos normais
+async function ehTestador(sb: ReturnType<typeof db>, tel: string): Promise<boolean> {
+  const { data } = await sb.from("nando_config").select("valor").eq("chave", "testadores").maybeSingle();
+  const lista = String(data?.valor || "").split(/[,;\s]+/).filter(Boolean);
+  return lista.some((n) => chavesTelefone(n).some((k) => chavesTelefone(tel).includes(k)));
+}
+
 async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: number, pushName: string) {
   const admin = ehAdmin(tel);
   const { predios, nome } = await prediosDoTelefone(sb, tel);
-  if (MODO_TESTE && !admin) { console.log("[NANDO] modo teste: ignorando", tel); return; }
+  if (MODO_TESTE && !admin && !(await ehTestador(sb, tel))) { console.log("[NANDO] modo teste: ignorando", tel); return; }
 
   // estado da conversa (predio escolhido)
   const { data: est } = await sb.from("nando_estado").select("*").eq("telefone", tel).maybeSingle();
