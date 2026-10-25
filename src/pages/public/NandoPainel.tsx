@@ -419,7 +419,16 @@ export default function NandoPainel() {
   const inicial = (d?.primeiro_nome || d?.pessoa || 'S').trim().charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen pb-24 text-white" style={FUNDO}>
+    <div className="nando-ui min-h-screen pb-[calc(env(safe-area-inset-bottom,0px)+96px)] text-white sm:pb-16" style={FUNDO}>
+      <style>{`
+        html{color-scheme:dark;scrollbar-color:rgba(255,255,255,.16) #0d0b0c}
+        .nando-ui *{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
+        .nando-ui ::-webkit-scrollbar{width:8px;height:8px}
+        .nando-ui ::-webkit-scrollbar-track{background:transparent}
+        .nando-ui ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:99px}
+        .nando-ui .sem-barra{scrollbar-width:none;-webkit-overflow-scrolling:touch}
+        .nando-ui .sem-barra::-webkit-scrollbar{display:none}
+      `}</style>
       {/* cabeçalho no padrão do site */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0b0c]/75 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
@@ -458,41 +467,43 @@ export default function NandoPainel() {
           const noArTela = telaG ? telaG.avisos.filter((a) => a.status === 'no_ar').length : 0;
           return (
           <>
-            <div className="mt-6 flex items-end justify-between gap-3">
+            <div className="mt-4 flex items-end justify-between gap-3 sm:mt-6">
               <div className="min-w-0">
-                <h1 className="text-2xl font-bold tracking-tight">Olá, {d.primeiro_nome || d.pessoa || 'síndico'}</h1>
+                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Olá, {d.primeiro_nome || d.pessoa || 'síndico'}</h1>
                 <p className="text-sm text-white/55">{umSo ? d.predios[0].predio : `${d.predios.length} prédios`} · tela e avisos ao vivo</p>
               </div>
               <a href={whats} target="_blank" rel="noreferrer" className={`${BTN} hidden shrink-0 sm:inline-flex`}><MessageCircle className="h-4 w-4" /> Criar aviso com o Nando</a>
             </div>
 
             {/* celular: alterna tela / avisos */}
-            <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/[0.05] p-1 lg:hidden">
+            <div className="sticky top-[calc(env(safe-area-inset-top,0px)+57px)] z-20 -mx-4 mt-4 bg-[#0d0b0c]/80 px-4 py-2 backdrop-blur-xl lg:hidden">
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/[0.06] p-1">
               {([['tela', 'Tela ao vivo', MonitorPlay], ['avisos', 'Avisos', LayoutGrid]] as const).map(([v, t, I]) => (
-                <button key={v} onClick={() => setAba(v)} className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition ${aba === v ? 'bg-white text-[#9C1E1E] shadow' : 'text-white/70'}`}>
+                <button key={v} onClick={() => { setAba(v); window.scrollTo({ top: 0 }); }} className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition ${aba === v ? 'bg-white text-[#9C1E1E] shadow' : 'text-white/70'}`}>
                   <I className="h-4 w-4" /> {t}
                 </button>
               ))}
             </div>
+            </div>
 
-            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(300px,360px)_1fr] lg:items-start">
+            <div className="mt-3 grid gap-6 lg:mt-5 lg:grid-cols-[minmax(300px,360px)_1fr] lg:items-start">
               {/* tela ao vivo do prédio escolhido */}
               <aside className={`${aba === 'tela' ? 'block' : 'hidden'} lg:sticky lg:top-24 lg:block`}>
                 {telaG && sessao && (
-                  <div className={`rounded-2xl p-4 ${VIDRO}`}>
+                  <div className={`rounded-2xl p-3 sm:p-4 ${VIDRO}`}>
                     <div className="mb-3 flex items-center gap-2">
                       <MonitorPlay className="h-4 w-4 shrink-0 text-[#FF6B6B]" />
                       {d.predios.length > 1 ? (
                         <select value={telaG.id} onChange={(e) => setTelaId(e.target.value)}
-                          className="min-w-0 flex-1 truncate rounded-lg border border-white/15 bg-black/30 px-2.5 py-1.5 text-sm font-semibold text-white outline-none [color-scheme:dark]">
+                          className="min-w-0 flex-1 truncate rounded-lg border border-white/15 bg-black/30 px-3 py-2.5 text-base font-semibold sm:py-1.5 sm:text-sm text-white outline-none [color-scheme:dark]">
                           {d.predios.map((g) => <option key={g.id} value={g.id}>{g.predio}</option>)}
                         </select>
                       ) : <div className="min-w-0 flex-1 truncate text-sm font-semibold">{telaG.predio}</div>}
                     </div>
-                    <div className="mx-auto max-w-[300px] lg:max-w-none">
+                    <div className="mx-auto w-full max-w-[340px] lg:max-w-none">
                       <TelaAoVivo predioId={telaG.id} sessao={sessao} nome={telaG.predio} />
                     </div>
-                    <p className="mt-3 text-[11px] leading-relaxed text-white/45">A mesma programação e os mesmos arquivos do elevador. Anúncios, avisos e trocas de vídeo aparecem aqui sozinhos; o vídeo não fica no mesmo segundo do elevador.</p>
+                    <p className="mt-3 hidden text-[11px] leading-relaxed text-white/45 lg:block">A mesma programação e os mesmos arquivos do elevador. Anúncios, avisos e trocas de vídeo aparecem aqui sozinhos; o vídeo não fica no mesmo segundo do elevador.</p>
                     <button onClick={() => { setPredioSel(telaG.id); setAba('avisos'); }} className={`${BTN2} mt-3 w-full lg:hidden`}>
                       <LayoutGrid className="h-4 w-4" /> {noArTela ? `Ver os ${noArTela} aviso${noArTela > 1 ? 's' : ''} deste prédio` : 'Avisos deste prédio'}
                     </button>
@@ -502,7 +513,7 @@ export default function NandoPainel() {
 
               {/* avisos */}
               <div className={`${aba === 'avisos' ? 'block' : 'hidden'} min-w-0 lg:block`}>
-                <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                <section className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
                   {[
                     { t: umSo ? 'Prédio' : 'Prédios', v: umSo ? d.predios[0].predio : kpi.predios, s: !umSo && kpi.vazios ? `${kpi.vazios} sem aviso no ar` : d.predios[0]?.codigo ? `Código ${d.predios[0].codigo}` : '', i: Building2, f: null },
                     { t: 'No ar agora', v: kpi.noAr, s: 'Passando nas telas', i: Eye, f: 'no_ar' as const },
@@ -510,28 +521,28 @@ export default function NandoPainel() {
                     { t: 'Saem em 7 dias', v: kpi.saindo, s: 'Confira se valem', i: Timer, f: 'saindo' as const },
                   ].map((k) => (
                     <button key={k.t} onClick={() => k.f && setFiltro(filtro === k.f ? 'todos' : k.f)} disabled={!k.f}
-                      className={`rounded-2xl border p-4 text-left backdrop-blur-xl transition ${k.f && filtro === k.f ? 'border-[#E0282E]/70 bg-[#E0282E]/15 ring-2 ring-[#E0282E]/25' : 'border-white/10 bg-white/[0.06] enabled:hover:bg-white/[0.09]'}`}>
+                      className={`rounded-2xl border p-3 text-left backdrop-blur-xl transition sm:p-4 ${k.f && filtro === k.f ? 'border-[#E0282E]/70 bg-[#E0282E]/15 ring-2 ring-[#E0282E]/25' : 'border-white/10 bg-white/[0.06] enabled:hover:bg-white/[0.09]'}`}>
                       <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-white/55">{k.t}<k.i className="h-4 w-4 text-[#FF6B6B]" /></div>
-                      <div className={`mt-2 font-bold text-white ${typeof k.v === 'string' ? 'truncate text-lg' : 'text-3xl'}`}>{k.v}</div>
-                      {k.s && <div className="mt-0.5 truncate text-xs text-white/55">{k.s}</div>}
+                      <div className={`mt-1 font-bold text-white sm:mt-2 ${typeof k.v === 'string' ? 'truncate text-base sm:text-lg' : 'text-2xl sm:text-3xl'}`}>{k.v}</div>
+                      {k.s && <div className="mt-0.5 hidden truncate text-xs text-white/55 sm:block">{k.s}</div>}
                     </button>
                   ))}
                 </section>
 
                 {!umSo && (
-                  <section className={`mt-4 rounded-2xl p-3 ${VIDRO}`}>
+                  <section className={`mt-3 rounded-2xl p-2.5 sm:mt-4 sm:p-3 ${VIDRO}`}>
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2 rounded-lg border border-white/15 px-3">
                         <Search className="h-4 w-4 text-white/40" />
-                        <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio ou aviso" className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-white/40" />
+                        <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio ou aviso" className="w-full bg-transparent py-2.5 text-base sm:py-2 sm:text-sm outline-none placeholder:text-white/40" />
                       </div>
-                      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
+                      <div className="sem-barra -mx-2.5 flex snap-x gap-1.5 overflow-x-auto scroll-px-2.5 px-2.5 sm:-mx-1 sm:px-1">
                         {[{ id: 'todos', predio: 'Todos' }, ...d.predios].map((g) => {
                           const n = 'avisos' in g ? (g as Grupo).avisos.filter((a) => a.status === 'no_ar').length : kpi.noAr;
                           const ativo = predioSel === g.id;
                           return (
                             <button key={g.id} onClick={() => { setPredioSel(g.id); if (g.id !== 'todos') setTelaId(g.id); }}
-                              className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${ativo ? 'bg-gradient-to-b from-[#D9262C] to-[#9C1E1E] text-white shadow-lg' : 'bg-white/[0.07] text-white/80 hover:bg-white/[0.12]'}`}>
+                              className={`shrink-0 snap-start whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition sm:py-1.5 ${ativo ? 'bg-gradient-to-b from-[#D9262C] to-[#9C1E1E] text-white shadow-lg' : 'bg-white/[0.07] text-white/80 hover:bg-white/[0.12]'}`}>
                               {g.predio} <span className={ativo ? 'text-white/70' : 'text-white/40'}>{n}</span>
                             </button>
                           );
@@ -547,18 +558,18 @@ export default function NandoPainel() {
                   const totalNoAr = original.filter((a) => a.status === 'no_ar').length;
                   const volta = original.filter((a) => a.status === 'no_ar').reduce((s, a) => s + (a.segundos || 15), 0);
                   return (
-                    <section key={g.id} className={`mt-5 rounded-2xl ${VIDRO}`}>
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#E0282E]/15 text-[#FF6B6B]"><Building2 className="h-5 w-5" /></span>
-                          <div>
-                            <h2 className="text-base font-bold">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-white/40">· {g.codigo}</span>}</h2>
+                    <section key={g.id} className={`mt-3 rounded-2xl sm:mt-5 ${VIDRO}`}>
+                      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E0282E]/15 text-[#FF6B6B] sm:flex"><Building2 className="h-5 w-5" /></span>
+                          <div className="min-w-0">
+                            <h2 className="truncate text-[15px] font-bold sm:text-base">{g.predio}{g.codigo && <span className="ml-1.5 text-sm font-medium text-white/40">· {g.codigo}</span>}</h2>
                             <div className="text-xs text-white/55">{totalNoAr === 0 ? 'Nenhum aviso no ar' : totalNoAr === 1 ? '1 aviso no ar · fixo na tela' : `${totalNoAr} avisos no rodízio · ciclo completo de ${volta}s`}</div>
                           </div>
                         </div>
                         <button onClick={() => { setTelaId(g.id); setAba('tela'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                          className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${telaId === g.id ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' : 'border-white/15 bg-white/[0.07] text-white hover:bg-white/[0.12]'}`}>
-                          <MonitorPlay className="h-3.5 w-3.5" /> {telaId === g.id ? 'Na tela ao lado' : 'Ver na tela'}
+                          className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${telaId === g.id ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' : 'border-white/15 bg-white/[0.07] text-white hover:bg-white/[0.12]'}`}>
+                          <MonitorPlay className="h-3.5 w-3.5" /> {telaId === g.id ? 'Exibindo na tela' : 'Ver na tela'}
                         </button>
                       </div>
                       {g.avisos.length === 0 ? (
@@ -567,7 +578,7 @@ export default function NandoPainel() {
                           <a href={whats} target="_blank" rel="noreferrer" className="font-semibold text-[#FF6B6B] hover:underline">Criar um aviso com o Nando</a>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-6 p-5 sm:grid-cols-3 xl:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-5 p-4 sm:grid-cols-3 sm:gap-x-4 sm:gap-y-6 sm:p-5 xl:grid-cols-4">
                           {g.avisos.map((a) => (
                             <button key={a.id} onClick={() => { setAberto({ a, g }); setEditar(null); }} className="group flex h-full flex-col items-stretch justify-start text-left align-top">
                               <div className="transition group-hover:-translate-y-0.5 group-hover:drop-shadow-md"><TelaAviso a={a} /></div>
@@ -602,7 +613,7 @@ export default function NandoPainel() {
       </main>
 
       {/* criar pelo WhatsApp (celular) */}
-      <a href={whats} target="_blank" rel="noreferrer" className={`${BTN} fixed bottom-5 left-4 right-4 z-40 shadow-xl sm:hidden`}>
+      <a href={whats} target="_blank" rel="noreferrer" className={`${BTN} fixed bottom-[calc(env(safe-area-inset-bottom,0px)+14px)] left-4 right-4 z-40 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,.6)] sm:hidden`}>
         <MessageCircle className="h-5 w-5" /> Criar aviso com o Nando
       </a>
 
