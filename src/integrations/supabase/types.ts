@@ -10461,6 +10461,81 @@ export type Database = {
           },
         ]
       }
+      nando_painel_acessos: {
+        Row: {
+          alterar_ate: string | null
+          aparelho: string | null
+          created_at: string
+          expira_em: string
+          id: string
+          lembrar: boolean
+          revogada: boolean
+          telefone: string
+          token_hash: string
+          ultimo_uso: string
+        }
+        Insert: {
+          alterar_ate?: string | null
+          aparelho?: string | null
+          created_at?: string
+          expira_em: string
+          id?: string
+          lembrar?: boolean
+          revogada?: boolean
+          telefone: string
+          token_hash: string
+          ultimo_uso?: string
+        }
+        Update: {
+          alterar_ate?: string | null
+          aparelho?: string | null
+          created_at?: string
+          expira_em?: string
+          id?: string
+          lembrar?: boolean
+          revogada?: boolean
+          telefone?: string
+          token_hash?: string
+          ultimo_uso?: string
+        }
+        Relationships: []
+      }
+      nando_painel_codigos: {
+        Row: {
+          codigo_hash: string
+          created_at: string
+          expira_em: string
+          finalidade: string
+          id: string
+          sessao_id: string | null
+          telefone: string
+          tentativas: number
+          usado: boolean
+        }
+        Insert: {
+          codigo_hash: string
+          created_at?: string
+          expira_em: string
+          finalidade?: string
+          id?: string
+          sessao_id?: string | null
+          telefone: string
+          tentativas?: number
+          usado?: boolean
+        }
+        Update: {
+          codigo_hash?: string
+          created_at?: string
+          expira_em?: string
+          finalidade?: string
+          id?: string
+          sessao_id?: string | null
+          telefone?: string
+          tentativas?: number
+          usado?: boolean
+        }
+        Relationships: []
+      }
       nando_predio_perfil: {
         Row: {
           building_id: string
