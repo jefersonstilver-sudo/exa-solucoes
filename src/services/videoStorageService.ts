@@ -86,7 +86,7 @@ export const validateVideoFile = (file: File, tipo: 'horizontal' | 'vertical' = 
       
       // Validação de orientação dinâmica baseada no tipo de produto
       if (orientation !== expectedOrientation) {
-        errors.push(`Vídeo deve estar em orientação ${expectedOrientation === 'vertical' ? 'vertical (9:16)' : 'horizontal (4:3)'}`);
+        errors.push(`Vídeo deve estar em orientação ${expectedOrientation === 'vertical' ? 'vertical (9:16)' : 'horizontal (1080×890)'}`);
       }
       
       if (file.size > 100 * 1024 * 1024) {

@@ -30,11 +30,11 @@ const VideoRequirements: React.FC = () => {
           <div>
             <h3 className="text-sm font-medium text-blue-800">Requisitos do vídeo:</h3>
             <ul className="mt-1 text-xs text-blue-700 space-y-1 list-disc list-inside">
-              <li>Formato horizontal obrigatório ({specs?.proporcao || '4:3'})</li>
+              <li>Formato horizontal obrigatório ({specs?.proporcao || '6:5'})</li>
               <li>Duração máxima: {specs?.duracaoSegundos || 10} segundos</li>
               <li>Tamanho máximo: 100MB</li>
               <li>Formatos aceitos: MP4, MOV, AVI</li>
-              <li>Resolução recomendada: {specs?.resolucao || '1440×1080'}</li>
+              <li>Resolução recomendada: {specs?.resolucao || '1080×890'}</li>
             </ul>
           </div>
         </div>

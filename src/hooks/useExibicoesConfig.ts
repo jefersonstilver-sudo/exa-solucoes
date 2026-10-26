@@ -3,7 +3,7 @@
  * FONTE ÚNICA DE VERDADE para todo o sistema
  * 
  * Baseado no Manual Técnico Oficial 2026:
- * - Horizontal: 1440×1080 (4:3), 10s, até 15 marcas — 502 exib/dia · 15.060/mês · 83 min presença/dia
+ * - Horizontal: 1080×890 (6:5), 10s, até 15 marcas — 502 exib/dia · 15.060/mês · 83 min presença/dia
  * - Vertical Premium: 1080×1920 (9:16), 15s, apenas 3 marcas — 167 exib/dia · 5.010/mês · 42 min tela cheia/dia
  * - 23h operação/dia, 30 dias/mês
  * - Ciclo: 165s (15×10s horizontal + 1×15s vertical)
@@ -65,8 +65,8 @@ export interface EspecificacoesTecnicas {
 
 // Valores padrão baseados no Manual v3.0 (fallback se banco não responder)
 const DEFAULT_HORIZONTAL = {
-  resolucao: '1440×1080',
-  proporcao: '4:3',
+  resolucao: '1080×890',
+  proporcao: '6:5',
   duracao: 10,
   maxClientes: 15,
   tipoExibicao: 'Convencional',

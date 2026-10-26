@@ -43,8 +43,8 @@ export const TechnicalSpecsGrid: React.FC<TechnicalSpecsGridProps> = ({
     marcasLabel: 'apenas',
   } : {
     duracao: specifications?.horizontal.duracaoSegundos ?? 10,
-    resolucao: specifications?.horizontal.resolucao ?? '1440×1080',
-    proporcao: specifications?.horizontal.proporcao ?? '4:3',
+    resolucao: specifications?.horizontal.resolucao ?? '1080×890',
+    proporcao: specifications?.horizontal.proporcao ?? '6:5',
     maxClientes: specifications?.horizontal.maxClientesPainel ?? 15,
     exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? 15060,
     exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? 502,

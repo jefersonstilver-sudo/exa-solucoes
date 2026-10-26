@@ -52,8 +52,8 @@ const ProdutosPage = () => {
         vendido_no_site: produtoHorizontal.vendido_no_site,
         contratacao_parcial: produtoHorizontal.contratacao_parcial,
         formato: produtoHorizontal.formato || 'horizontal',
-        resolucao: produtoHorizontal.resolucao || '1440×1080',
-        proporcao: (produtoHorizontal as any).proporcao || '4:3',
+        resolucao: produtoHorizontal.resolucao || '1080×890',
+        proporcao: (produtoHorizontal as any).proporcao || '6:5',
         tipo_exibicao: (produtoHorizontal as any).tipo_exibicao || 'Convencional',
         ativo: produtoHorizontal.ativo
       });
@@ -224,7 +224,7 @@ const ProdutosPage = () => {
                       value={editHorizontal.resolucao || ''}
                       onChange={(e) => setEditHorizontal(prev => ({ ...prev, resolucao: e.target.value }))}
                       className="h-8 text-sm"
-                      placeholder="1440×1080"
+                      placeholder="1080×890"
                     />
                   </div>
                 </div>
@@ -233,13 +233,14 @@ const ProdutosPage = () => {
                   <div className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground">Proporção</Label>
                     <Select 
-                      value={(editHorizontal as any).proporcao || '4:3'}
+                      value={(editHorizontal as any).proporcao || '6:5'}
                       onValueChange={(v) => setEditHorizontal(prev => ({ ...prev, proporcao: v }))}
                     >
                       <SelectTrigger className="h-8 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="6:5">6:5 (1080×890, layout atual)</SelectItem>
                         <SelectItem value="4:3">4:3</SelectItem>
                         <SelectItem value="16:9">16:9</SelectItem>
                         <SelectItem value="9:16">9:16</SelectItem>
@@ -410,6 +411,7 @@ const ProdutosPage = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="6:5">6:5 (1080×890, layout atual)</SelectItem>
                         <SelectItem value="4:3">4:3</SelectItem>
                         <SelectItem value="16:9">16:9</SelectItem>
                         <SelectItem value="9:16">9:16</SelectItem>

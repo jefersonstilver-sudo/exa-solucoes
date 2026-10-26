@@ -509,7 +509,7 @@ serve(async (req) => {
 
       // ✅ NOVA: Enviar WhatsApp ao cliente com confirmação e link de acesso
       // Buscar especificações dinâmicas do produto
-      let videoSpecs = '10 segundos, horizontal 4:3';
+      let videoSpecs = '10 segundos, horizontal 1080×890 (6:5)';
       try {
         const { data: produtoData } = await supabase
           .from('produtos_exa')
@@ -517,7 +517,7 @@ serve(async (req) => {
           .eq('codigo', 'horizontal')
           .single();
         if (produtoData) {
-          videoSpecs = `${produtoData.duracao_video_segundos} segundos, horizontal ${produtoData.proporcao || '4:3'}`;
+          videoSpecs = `${produtoData.duracao_video_segundos} segundos, horizontal ${produtoData.proporcao || '6:5'}`;
         }
       } catch (e) {
         console.warn('⚠️ Erro ao buscar specs do produto, usando default');

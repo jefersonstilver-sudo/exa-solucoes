@@ -3,7 +3,7 @@
 Fluxo: ficha da marca + arquivos do cliente (logo, fotos, videos, banco Coverr autorizado)
  -> Opus escreve a cena (canvas, funcao pura do tempo) -> render de quadros parados
  -> Opus olha os quadros e corrige (ate LUCAS_ROUNDS rodadas) -> export quadro a quadro, MUDO,
-    10 s horizontal 1920x1080 ou 15 s vertical 1080x1920 -> storage + pasta da marca -> avisa a Sofia.
+    10 s horizontal 1080x890 (layout atual da tela, quase quadrado) ou 15 s vertical 1080x1920 -> storage + pasta da marca -> avisa a Sofia.
 
 Uso no GitHub Actions: python tools/lucas/lucas.py  (le JOB_ID e segredos do ambiente)
 Teste local sem banco/IA: python tools/lucas/lucas.py --local spec.json cena.js saida.mp4
@@ -431,7 +431,7 @@ def rodar_job():
     b = dict(job.get("briefing") or {})
     sb.req("PATCH", f"/rest/v1/sofia_video_jobs?id=eq.{JOB}", {"status": "rendering"})
     vertical = "vertical" in (job.get("formato") or "")
-    W, H, DUR = (1080, 1920, 15) if vertical else (1920, 1080, 10)
+    W, H, DUR = (1080, 1920, 15) if vertical else (1080, 890, 10)
     marca, arqs = {}, []
     if b.get("marca_id"):
         rows = sb.req("GET", f"/rest/v1/marcas_clientes?id=eq.{b['marca_id']}&select=*")
@@ -556,7 +556,7 @@ def rodar_job():
     spec = {"W": W, "H": H, "DUR": DUR, "FPS": FPS, "assets": assets, "marca": {"cores": ficha["cores"], "fontes": ficha["fontes_da_marca"], "empresa": ficha["empresa"]}}
 
     intro = [{"type": "text", "text": (
-        f"FORMATO: {'VERTICAL 1080x1920, 15 s' if vertical else 'HORIZONTAL 1920x1080, 10 s'}, sem som.\n"
+        f"FORMATO: {'VERTICAL 1080x1920, 15 s' if vertical else 'HORIZONTAL 1080x890 (quase quadrado, area do anuncio na tela atual), 10 s'}, sem som.\n"
         f"FICHA DA MARCA: {json.dumps(ficha, ensure_ascii=False)}\n"
         f"ESTE VIDEO: {json.dumps(pedido, ensure_ascii=False)}\n"
         f"FONTES DISPONIVEIS: {', '.join(fontes_ok)}\n"
@@ -629,7 +629,7 @@ def rodar_job():
 def dirigir(work, spec, fontes_css, intro, vertical):
     """gera a cena, renderiza quadros, o diretor revisa e corrige; devolve a melhor versao"""
     W, H, DUR = spec["W"], spec["H"], spec["DUR"]
-    fmt = "vertical empilhado 1080x1920" if vertical else "horizontal 1920x1080"
+    fmt = "vertical empilhado 1080x1920" if vertical else "horizontal quase quadrado 1080x890"
     dr = Diretor()
     codigo, conceito = extrair_codigo(dr.perguntar(intro))
     historico, candidatos = [], []
@@ -697,7 +697,7 @@ def local(spec_path, cena_path, saida):
     """renderiza uma cena escrita a mao com assets locais (sem banco e sem IA)"""
     cfg = json.loads(Path(spec_path).read_text())
     vertical = cfg.get("vertical", False)
-    W, H, DUR = (1080, 1920, 15) if vertical else (1920, 1080, 10)
+    W, H, DUR = (1080, 1920, 15) if vertical else (1080, 890, 10)
     work = Path(cfg.get("work") or "/tmp/lucas_local")
     shutil.rmtree(work, ignore_errors=True)
     A = work / "assets"

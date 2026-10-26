@@ -14,7 +14,7 @@ Sua missão: criar roteiros assertivos para painéis digitais em elevadores resi
 
 PLATAFORMA EXA:
 - Vertical: 1080×1920px, 15 segundos, 3 empresas por ciclo de exibição
-- Horizontal: 1440×1080px, 10 segundos, 15 empresas por ciclo
+- Horizontal: 1080×890px (quase quadrado), 10 segundos, 15 empresas por ciclo
 - Taxa de atenção: 95% (passageiro cativo) | 40-60 exibições/semana por morador
 - Blueprint vertical 15s: 0-2s CAPTURA | 2-5s PROBLEMA/DESEJO | 5-10s SOLUÇÃO+PROVA | 10-13s OFERTA+URGÊNCIA | 13-15s ANCORAGEM (logo+contato estático)
 - Blueprint horizontal 10s: 0-2s CAPTURA | 2-6s MENSAGEM ÚNICA | 6-8s CREDENCIAL | 8-10s ANCORAGEM

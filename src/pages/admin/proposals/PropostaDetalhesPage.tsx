@@ -625,7 +625,7 @@ const PropostaDetalhesPage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Triangle className="h-4 w-4 text-gray-400" />
-                    <span>Proporção <strong>4:3</strong></span>
+                    <span>Proporção <strong>6:5</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
                     <BarChart3 className="h-4 w-4 text-gray-400" />

@@ -286,7 +286,7 @@ const PendingVideosSection: React.FC<PendingVideosSectionProps> = ({ loading, on
                           <div className="text-center text-white">
                             <Play className="h-12 w-12 mx-auto mb-2" />
                             <p className="text-sm">Vídeo do Cliente</p>
-                            <p className="text-xs text-gray-300">10 segundos • Horizontal 4:3</p>
+                            <p className="text-xs text-gray-300">10 segundos • Horizontal 1080×890 (6:5)</p>
                           </div>
                         </div>
                       </div>

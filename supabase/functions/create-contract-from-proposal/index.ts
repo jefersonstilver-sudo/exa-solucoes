@@ -764,8 +764,8 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   // Buscar produto específico ou usar defaults do Manual v3.0
   const produtoHorizontal = produtosExa?.find((p: any) => p.tipo === 'horizontal') || {
     duracao_segundos: 10,
-    resolucao: '1440x1080',
-    proporcao: '4:3',
+    resolucao: '1080x890',
+    proporcao: '6:5',
     max_clientes_painel: 15
   };
   
@@ -795,8 +795,8 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
     descricao: 'Vertical Premium - Exibição em tela cheia',
     tipoExibicao: 'Tela Cheia (Full Screen)'
   } : {
-    formato: `Vídeo horizontal (${produtoHorizontal.resolucao || '1440x1080'} pixels)`,
-    proporcao: produtoHorizontal.proporcao || '4:3',
+    formato: `Vídeo horizontal (${produtoHorizontal.resolucao || '1080x890'} pixels)`,
+    proporcao: produtoHorizontal.proporcao || '6:5',
     duracao: `${produtoHorizontal.duracao_segundos || 10} segundos`,
     exibicoesDia: ciclosPorDia,
     exibicoesMes: exibicoesPorMes,

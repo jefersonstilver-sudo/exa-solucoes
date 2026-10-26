@@ -98,8 +98,8 @@ export function useVideoSpecifications() {
       return {
         horizontal: {
           duracaoSegundos: duracaoHorizontal,
-          resolucao: horizontal?.resolucao ?? '1440×1080',
-          proporcao: (horizontal as any)?.proporcao ?? '4:3',
+          resolucao: horizontal?.resolucao ?? '1080×890',
+          proporcao: (horizontal as any)?.proporcao ?? '6:5',
           formato: horizontal?.formato ?? 'horizontal',
           maxClientesPainel: maxHorizontal,
           maxVideosPorPedido: (horizontal as any)?.max_videos_por_pedido ?? 10,
@@ -150,8 +150,8 @@ export function useVideoSpecifications() {
     if (!data) {
       return {
         duracao: 10,
-        resolucao: tipo === 'horizontal' ? '1440×1080' : '1080×1920',
-        proporcao: tipo === 'horizontal' ? '4:3' : '9:16',
+        resolucao: tipo === 'horizontal' ? '1080×890' : '1080×1920',
+        proporcao: tipo === 'horizontal' ? '6:5' : '9:16',
         ultimaAlteracao: null
       };
     }

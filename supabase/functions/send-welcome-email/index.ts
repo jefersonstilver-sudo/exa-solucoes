@@ -123,7 +123,7 @@ serve(async (req) => {
                           </td>
                           <td style="padding-left: 12px;">
                             <p style="margin: 0; font-size: 14px; color: #1a1a1a; font-weight: 500;">Envie seu vídeo</p>
-                            <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Formato horizontal (4:3), até 10 segundos</p>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">Formato horizontal 1080×890 (quase quadrado), até 10 segundos</p>
                           </td>
                         </tr>
                       </table>

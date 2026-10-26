@@ -274,8 +274,8 @@ export class ProposalPDFExporter {
         const isVertical = tipo === 'vertical_premium';
         return {
           duracao: isVertical ? 15 : 10,
-          resolucao: isVertical ? '1080x1920' : '1440x1080',
-          proporcao: isVertical ? '9:16' : '4:3',
+          resolucao: isVertical ? '1080x1920' : '1080x890',
+          proporcao: isVertical ? '9:16' : '6:5',
           formato: isVertical ? 'Vertical Premium' : 'Horizontal',
           maxClientes: isVertical ? 3 : 15,
           exibicoesMes: isVertical ? 5010 : 15060,
@@ -296,8 +296,8 @@ export class ProposalPDFExporter {
 
       return {
         duracao: produto.duracao_video_segundos ?? (isVerticalProd ? 15 : 10),
-        resolucao: produto.resolucao ?? (isVerticalProd ? '1080x1920' : '1440x1080'),
-        proporcao: (produto as any).proporcao ?? (isVerticalProd ? '9:16' : '4:3'),
+        resolucao: produto.resolucao ?? (isVerticalProd ? '1080x1920' : '1080x890'),
+        proporcao: (produto as any).proporcao ?? (isVerticalProd ? '9:16' : '6:5'),
         formato: isVerticalProd ? 'Vertical Premium' : 'Horizontal',
         maxClientes: produto.max_clientes_por_painel ?? (isVerticalProd ? 3 : 15),
         exibicoesMes: exibicoesPorMes,
@@ -308,8 +308,8 @@ export class ProposalPDFExporter {
       const isVertical = tipo === 'vertical_premium';
       return {
         duracao: isVertical ? 15 : 10,
-        resolucao: isVertical ? '1080x1920' : '1440x1080',
-        proporcao: isVertical ? '9:16' : '4:3',
+        resolucao: isVertical ? '1080x1920' : '1080x890',
+        proporcao: isVertical ? '9:16' : '6:5',
         formato: isVertical ? 'Vertical Premium' : 'Horizontal',
         maxClientes: isVertical ? 3 : 15,
         exibicoesMes: isVertical ? 5010 : 15060,

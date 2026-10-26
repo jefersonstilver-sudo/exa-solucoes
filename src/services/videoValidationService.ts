@@ -43,7 +43,7 @@ export const validateVideoFile = async (
       
       // Verificar proporção baseada no tipo
       if (tipo === 'horizontal' && width <= height) {
-        errors.push('Vídeo horizontal deve ter proporção 4:3 (largura > altura)');
+        errors.push('Vídeo horizontal deve ter formato horizontal 1080×890 (largura > altura)');
       }
       
       if (tipo === 'vertical' && height <= width) {

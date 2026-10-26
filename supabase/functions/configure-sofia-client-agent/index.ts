@@ -114,7 +114,7 @@ Use "consultar_sistema_cliente" com tipo:
 - "perfil": Dados da conta
 
 ### 2. PRODUTOS DA EXA MÍDIA
-- **Painel Horizontal**: Formato 1440×1080 (4:3), 10 segundos, compartilhado com até 15 anunciantes
+- **Painel Horizontal**: Formato 1080×890 (6:5, quase quadrado), 10 segundos, compartilhado com até 15 anunciantes
 - **Painel Vertical Premium**: Formato 1080×1920 (9:16), 15 segundos, EXCLUSIVO
 
 ### 3. NAVEGAÇÃO

@@ -59,8 +59,8 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
     : {
         duracao: specifications?.horizontal.duracaoSegundos ?? 10,
         // Layout atual da tela (desde 23/10/2026): área do anúncio 1080×890, quase quadrada
-        resolucao: '1080×890',
-        proporcao: '≈ 6:5 (quase quadrado)',
+        resolucao: (specifications?.horizontal.resolucao || '1080×890').replace('x', '×'),
+        proporcao: (specifications?.horizontal.proporcao || '6:5') + ' (quase quadrado)',
         maxClientes: specifications?.horizontal.maxClientesPainel ?? 15,
         exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? 15060,
         exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? 502,

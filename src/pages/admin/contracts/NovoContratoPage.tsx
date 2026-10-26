@@ -1236,7 +1236,7 @@ const NovoContratoPage = () => {
                       <Monitor className="h-6 w-6 text-primary" />
                       <div className="text-left">
                         <p className="font-semibold">Horizontal (Padrão)</p>
-                        <p className="text-xs text-muted-foreground">Vídeo 10s • 1440×1080 (4:3) • Loop contínuo</p>
+                        <p className="text-xs text-muted-foreground">Vídeo 10s • 1080×890 (6:5) • Loop contínuo</p>
                       </div>
                     </button>
 

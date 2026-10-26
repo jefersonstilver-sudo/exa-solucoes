@@ -321,7 +321,7 @@ function handleExplicarProduto(tipo: string) {
     return {
       text: `📺 **Painel Horizontal**
 
-• Formato: 1440×1080 pixels (proporção 4:3)
+• Formato: 1080×890 pixels (proporção 6:5, quase quadrado)
 • Duração: 10 segundos por exibição
 • Compartilhado: Até 15 anunciantes por painel
 • Ideal para: Mensagens rápidas e objetivas
