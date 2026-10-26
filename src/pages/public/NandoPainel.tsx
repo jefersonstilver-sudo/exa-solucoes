@@ -229,98 +229,68 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
 
   const passos = etapa === 'tel' ? 1 : 2;
   return (
-    <div className="relative flex min-h-[100svh] flex-col overflow-hidden text-white" style={FUNDO}>
-      {/* luzes de fundo */}
-      <div aria-hidden className="pointer-events-none absolute -left-32 -top-40 h-[520px] w-[520px] rounded-full bg-[#E0282E]/25 blur-[120px]" />
-      <div aria-hidden className="pointer-events-none absolute -bottom-48 -right-40 h-[560px] w-[560px] rounded-full bg-[#7a1216]/35 blur-[140px]" />
-      <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.9) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
-
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] lg:px-10">
-        <img src={LOGO} alt="EXA Mídia" className="h-8 w-auto lg:h-10" />
-        <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/70 backdrop-blur-xl"><Lock className="h-3 w-3" /> Painel do Síndico</span>
+    <div className="relative flex min-h-[100svh] flex-col text-white" style={{ ...FONTE, backgroundColor: '#0c0a0b', backgroundImage: 'radial-gradient(900px 420px at 50% -10%, rgba(156,30,30,.22), transparent 70%)' }}>
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:px-8">
+        <img src={LOGO} alt="EXA Mídia" className="h-7 w-auto sm:h-8" />
+        <span className="text-xs font-medium text-white/45">Área restrita</span>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-8 px-5 py-8 lg:flex-row lg:items-center lg:justify-between lg:gap-16 lg:px-10">
-        {/* o Nando */}
-        <section className="flex w-full max-w-md flex-col items-center text-center lg:max-w-lg lg:items-start lg:text-left">
-          <FotoNando tamanho="h-24 w-24 lg:h-32 lg:w-32" />
-          <div className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-[#FF8A8A]">Nando · assistente da EXA</div>
-          <h1 className="mt-2 text-[28px] font-bold leading-[1.1] tracking-tight lg:text-5xl">Seu condomínio<br className="hidden lg:block" /> na palma da mão.</h1>
-          <div className="relative mt-5 w-full rounded-2xl rounded-tl-md border border-white/[0.12] bg-white/[0.07] p-4 text-left text-sm leading-relaxed text-white/85 shadow-[0_10px_40px_rgba(0,0,0,.35)] backdrop-blur-2xl lg:text-[15px]">
-            Oi! Eu sou o <b className="text-white">Nando</b> 👋 Comigo, no WhatsApp, você cria e ajusta os avisos dos elevadores. Aqui no painel você vê a <b className="text-white">tela ao vivo</b> do seu prédio e todos os avisos. Para entrar, eu te mando um código no WhatsApp.
+      <main className="flex flex-1 items-start justify-center px-5 pb-10 pt-12 sm:items-center sm:pt-0">
+        <div className="w-full max-w-[400px]">
+          <div className="mb-8">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#E0282E]">Painel do Síndico</div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-[28px]">{etapa === 'tel' ? 'Acesse sua conta' : 'Confirme o acesso'}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-white/55">
+              {etapa === 'tel'
+                ? (carteira ? 'Enviaremos um código de verificação para o WhatsApp que recebeu este link.' : 'Informe o celular cadastrado no seu condomínio. Enviaremos um código de verificação pelo WhatsApp.')
+                : <>Digite o código de 6 dígitos enviado para <span className="text-white">{destino}</span>. Válido por 10 minutos.</>}
+            </p>
           </div>
-          <ul className="mt-5 hidden w-full gap-2 text-sm text-white/75 lg:grid">
-            {[[MonitorPlay, 'Tela ao vivo igual à do elevador'], [LayoutGrid, 'Avisos no ar, agendados e histórico'], [ShieldCheck, 'Toda alteração confirmada por código']].map(([I, t]) => {
-              const Ic = I as typeof MonitorPlay;
-              return <li key={t as string} className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06]"><Ic className="h-4 w-4 text-[#FF8A8A]" /></span>{t as string}</li>;
-            })}
-          </ul>
-        </section>
 
-        {/* entrada */}
-        <section className="w-full max-w-md">
-          <div className="rounded-3xl border border-white/[0.12] bg-white/[0.07] p-6 shadow-[0_30px_80px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)] backdrop-blur-2xl sm:p-8">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold sm:text-xl">{etapa === 'tel' ? 'Entrar no painel' : 'Digite o código'}</h2>
-              <span className="shrink-0 whitespace-nowrap text-xs font-semibold text-white/45">Passo {passos} de 2</span>
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 shadow-[0_20px_60px_rgba(0,0,0,.45)] backdrop-blur-xl sm:p-7">
+            <div className="mb-5 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-white/40">
+              <span className={passos === 1 ? 'text-white' : ''}>1. Celular</span><span className="h-px w-6 bg-white/15" /><span className={passos === 2 ? 'text-white' : ''}>2. Código</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-1.5"><i className="h-1 rounded-full bg-[#E0282E]" /><i className={`h-1 rounded-full ${passos === 2 ? 'bg-[#E0282E]' : 'bg-white/15'}`} /></div>
             {etapa === 'tel' ? (
               <>
-                <p className="mt-4 text-sm text-white/65">{carteira ? 'Vou mandar um código de confirmação para o WhatsApp que recebeu este link.' : 'Use o celular cadastrado no seu prédio. Eu mando um código de 6 dígitos no seu WhatsApp.'}</p>
                 {!carteira && (
-                  <label className="mt-5 block">
-                    <span className="mb-1.5 block text-sm font-medium text-white/80">Celular com DDD</span>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-medium text-white/60">Celular com DDD</span>
                     <input inputMode="tel" autoComplete="tel" placeholder="(45) 99999-9999" value={tel} onChange={(e) => setTel(mascaraTel(e.target.value))}
-                      onKeyDown={(e) => e.key === 'Enter' && pedir()} className={`${CAMPO} rounded-xl py-3.5 text-lg tracking-wide`} />
+                      onKeyDown={(e) => e.key === 'Enter' && pedir()}
+                      className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-3 text-base text-white outline-none transition placeholder:text-white/30 focus:border-white/30 focus:ring-2 focus:ring-white/10" />
                   </label>
                 )}
-                <button onClick={pedir} disabled={carregando || (!carteira && tel.replace(/\D/g, '').length < 10)} className={`${BTN} mt-5 w-full py-3.5 text-base`}>
-                  {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-5 w-5" />} Enviar código pelo WhatsApp
+                <button onClick={pedir} disabled={carregando || (!carteira && tel.replace(/\D/g, '').length < 10)}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#C7141A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#d61b21] disabled:cursor-not-allowed disabled:opacity-40">
+                  {carregando && <Loader2 className="h-4 w-4 animate-spin" />} Receber código pelo WhatsApp
                 </button>
               </>
             ) : (
               <>
-                <p className="mt-4 text-sm text-white/65">Mandei o código para o WhatsApp <b className="text-white">{destino}</b>. Ele vale 10 minutos.</p>
-                <div className="mt-5"><CampoCodigo valor={cod} aoMudar={setCod} aoCompletar={verificar} desativado={carregando} /></div>
-                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-black/20 p-3 text-sm">
-                  <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#E0282E]" />
-                  <span className="text-white/80"><b className="text-white">Lembrar este aparelho por 30 dias</b><br /><span className="text-xs text-white/55">Sem marcar, o acesso vale 12 horas. Alterações sempre pedem um novo código.</span></span>
+                <CampoCodigo valor={cod} aoMudar={setCod} aoCompletar={verificar} desativado={carregando} />
+                <label className="mt-5 flex cursor-pointer items-center gap-2.5 text-sm text-white/70">
+                  <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} className="h-4 w-4 accent-[#C7141A]" />
+                  Manter conectado neste aparelho por 30 dias
                 </label>
-                <button onClick={() => verificar()} disabled={carregando || cod.length !== 6} className={`${BTN} mt-5 w-full py-3.5 text-base`}>
-                  {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} Entrar
+                <button onClick={() => verificar()} disabled={carregando || cod.length !== 6}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#C7141A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#d61b21] disabled:cursor-not-allowed disabled:opacity-40">
+                  {carregando && <Loader2 className="h-4 w-4 animate-spin" />} Entrar
                 </button>
-                <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-sm text-white/55 hover:text-white/90">Não chegou? Enviar novo código</button>
+                <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-xs text-white/45 hover:text-white/80">Reenviar código ou trocar número</button>
               </>
             )}
-            {erro && <div className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">{erro}</div>}
+            {erro && <div className="mt-4 rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">{erro}</div>}
           </div>
-          <p className="mt-4 text-center text-xs text-white/50">A EXA nunca pede este código por telefone, e-mail ou mensagem.</p>
-          <a href="https://wa.me/554591132351?text=Ol%C3%A1%2C%20Nando!" target="_blank" rel="noreferrer" className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-white/75 hover:text-white">
-            <MessageCircle className="h-4 w-4 text-emerald-400" /> Falar com o Nando no WhatsApp
-          </a>
-        </section>
-      </main>
-      <footer className="relative z-10 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] text-center text-[11px] text-white/40">EXA Mídia · Publicidade inteligente em elevadores · Foz do Iguaçu/PR</footer>
-    </div>
-  );
-}
 
-// a foto do Nando (a mesma do perfil do WhatsApp); sem foto, mostra o "N" da marca
-function FotoNando({ tamanho = 'h-12 w-12' }: { tamanho?: string }) {
-  const [erro, setErro] = useState(false);
-  return (
-    <div className={`relative ${tamanho} shrink-0`}>
-      <div aria-hidden className="absolute -inset-3 rounded-full bg-[#E0282E]/35 blur-2xl" />
-      <div className="relative h-full w-full rounded-full bg-gradient-to-br from-[#ff6b6b] via-[#E0282E] to-[#6d0f12] p-[3px] shadow-[0_10px_40px_rgba(224,40,46,.45)]">
-        {!erro ? (
-          <img src="https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/nando-painel?foto=nando" alt="Nando" onError={() => setErro(true)}
-            className="h-full w-full rounded-full bg-[#1a1214] object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-[#1a1214] text-3xl font-bold text-white">N</div>
-        )}
-      </div>
-      <span className="absolute bottom-[6%] right-[6%] h-[18%] w-[18%] rounded-full border-[3px] border-[#0d0b0c] bg-emerald-400" />
+          <div className="mt-6 flex items-center gap-2 text-xs text-white/40"><ShieldCheck className="h-3.5 w-3.5" /> Acesso protegido por código. A EXA nunca solicita este código.</div>
+        </div>
+      </main>
+
+      <footer className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-2 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+18px)] text-[11px] text-white/35 sm:flex-row sm:px-8">
+        <span>© EXA Mídia · Foz do Iguaçu/PR</span>
+        <a href="https://wa.me/554591132351" target="_blank" rel="noreferrer" className="hover:text-white/70">Suporte pelo WhatsApp</a>
+      </footer>
     </div>
   );
 }
