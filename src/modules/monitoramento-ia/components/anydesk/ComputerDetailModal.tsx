@@ -8,6 +8,7 @@ import { AssignBuildingDialog } from "./AssignBuildingDialog";
 import { SelectElevatorCompanyDialog } from "./SelectElevatorCompanyDialog";
 import { OfflineIncidentCard } from "./OfflineIncidentCard";
 import { IncidentHistoryTab } from "./IncidentHistoryTab";
+import { AuditoriaCard } from "./AuditoriaCard";
 import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -667,6 +668,9 @@ export const ComputerDetailModal = ({
               </div>
             </CardContent>
           </Card>
+
+          {/* AUDITORIA DE HARDWARE & REDE (super código v6/v6.1) */}
+          <AuditoriaCard metadata={computer.metadata} />
 
           {/* TABS */}
           <Tabs defaultValue="info" className="w-full">
