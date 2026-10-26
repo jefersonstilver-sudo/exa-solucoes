@@ -129,10 +129,13 @@ async updateVideoScheduleRules(
         email: session.user.email
       });
 
+      // EXA 2.0: este editor só gerencia regras SEMANAIS. Programações por data ('data')
+      // e overrides são criadas pela Agenda nova / Sofia e NÃO podem ser apagadas aqui.
       const { error: deleteError, count } = await supabase
         .from('campaign_schedule_rules')
         .delete({ count: 'exact' })
-        .eq('campaign_video_schedule_id', campaignVideoScheduleId);
+        .eq('campaign_video_schedule_id', campaignVideoScheduleId)
+        .eq('rule_type', 'recorrente');
 
       console.log('📊 [SCHEDULE_MGMT] Resultado do DELETE:', {
         deletedCount: count,

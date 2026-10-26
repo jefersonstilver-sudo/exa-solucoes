@@ -2078,6 +2078,11 @@ export type Database = {
       }
       campaign_schedule_rules: {
         Row: {
+          end_date: string | null
+          is_override: boolean
+          label: string | null
+          rule_type: string
+          start_date: string | null
           campaign_video_schedule_id: string
           created_at: string
           days_of_week: number[]
@@ -2089,6 +2094,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          end_date?: string | null
+          is_override?: boolean
+          label?: string | null
+          rule_type?: string
+          start_date?: string | null
           campaign_video_schedule_id: string
           created_at?: string
           days_of_week: number[]
@@ -2100,6 +2110,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          end_date?: string | null
+          is_override?: boolean
+          label?: string | null
+          rule_type?: string
+          start_date?: string | null
           campaign_video_schedule_id?: string
           created_at?: string
           days_of_week?: number[]
@@ -9899,8 +9914,59 @@ export type Database = {
           },
         ]
       }
+      marca_ficha_campos: {
+        Row: {
+          atualizado_por: string | null
+          categoria: string | null
+          campo: string
+          created_at: string
+          id: string
+          marca_id: string
+          obrigatorio: boolean
+          ordem: number
+          origem: string
+          updated_at: string
+          valor: string | null
+        }
+        Insert: {
+          atualizado_por?: string | null
+          categoria?: string | null
+          campo: string
+          created_at?: string
+          id?: string
+          marca_id: string
+          obrigatorio?: boolean
+          ordem?: number
+          origem?: string
+          updated_at?: string
+          valor?: string | null
+        }
+        Update: {
+          atualizado_por?: string | null
+          categoria?: string | null
+          campo?: string
+          created_at?: string
+          id?: string
+          marca_id?: string
+          obrigatorio?: boolean
+          ordem?: number
+          origem?: string
+          updated_at?: string
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marca_ficha_campos_marca_id_fkey"
+            columns: ["marca_id"]
+            isOneToOne: false
+            referencedRelation: "marcas_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marcas_clientes: {
         Row: {
+          pedido_id: string | null
           banco_autorizado: boolean
           banco_termos: string[]
           client_id: string | null
@@ -9924,6 +9990,7 @@ export type Database = {
           whatsapp_qr: string | null
         }
         Insert: {
+          pedido_id?: string | null
           banco_autorizado?: boolean
           banco_termos?: string[]
           client_id?: string | null
@@ -9947,6 +10014,7 @@ export type Database = {
           whatsapp_qr?: string | null
         }
         Update: {
+          pedido_id?: string | null
           banco_autorizado?: boolean
           banco_termos?: string[]
           client_id?: string | null
@@ -12002,6 +12070,56 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedido_videos_historico: {
+        Row: {
+          arquivo_excluido: boolean
+          created_at: string
+          dados: Json
+          excluido_em: string | null
+          id: string
+          pedido_id: string | null
+          periodo: string | null
+          resumo_uso: string | null
+          thumbnail_url: string | null
+          video_id: string | null
+          video_nome: string | null
+        }
+        Insert: {
+          arquivo_excluido?: boolean
+          created_at?: string
+          dados?: Json
+          excluido_em?: string | null
+          id?: string
+          pedido_id?: string | null
+          periodo?: string | null
+          resumo_uso?: string | null
+          thumbnail_url?: string | null
+          video_id?: string | null
+          video_nome?: string | null
+        }
+        Update: {
+          arquivo_excluido?: boolean
+          created_at?: string
+          dados?: Json
+          excluido_em?: string | null
+          id?: string
+          pedido_id?: string | null
+          periodo?: string | null
+          resumo_uso?: string | null
+          thumbnail_url?: string | null
+          video_id?: string | null
+          video_nome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_videos_historico_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
         ]

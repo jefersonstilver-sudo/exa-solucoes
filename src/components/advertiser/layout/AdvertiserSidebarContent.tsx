@@ -51,7 +51,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
 
   const sidebarItems = [
     {
-      title: 'Área do Anunciante',
+      title: 'Meus Pedidos',
       href: '/anunciante/pedidos',
       icon: ShoppingBag,
       section: 'main'
@@ -62,18 +62,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       icon: Receipt,
       section: 'main'
     },
-    {
-      title: 'Relatório',
-      href: '/anunciante/videos',
-      icon: Video,
-      section: 'content'
-    },
-    {
-      title: 'QR Codes Rastreáveis',
-      href: '/anunciante/qr-codes',
-      icon: QrCode,
-      section: 'content'
-    },
+    // EXA 2.0: "Relatório" e "QR Codes Rastreáveis" saíram do menu (rotas continuam ativas).
     {
       title: 'Meu Perfil',
       href: '/anunciante/configuracoes',
@@ -95,6 +84,9 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
   }, {} as Record<string, typeof sidebarItems>);
 
   const isActive = (href: string) => {
+    if (href === '/anunciante/pedidos') {
+      return location.pathname.startsWith('/anunciante/pedidos') || location.pathname.startsWith('/anunciante/pedido/');
+    }
     return location.pathname.startsWith(href);
   };
 
