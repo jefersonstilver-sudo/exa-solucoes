@@ -305,6 +305,12 @@ export function ModernAdminSidebar() {
           badgeTooltip: 'Painéis offline'
         },
         {
+          title: 'Entrega nas telas',
+          href: buildPath('entrega-telas'),
+          icon: Tv,
+          moduleKey: MODULE_KEYS.paineis
+        },
+        {
           title: 'Agenda Técnica',
           href: buildPath('sync-notion'),
           icon: Calendar,

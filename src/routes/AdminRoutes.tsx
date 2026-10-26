@@ -121,6 +121,7 @@ const CategoriasFinanceirasPage = lazy(() => import('@/pages/admin/financeiro/Ca
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
 const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').then(m => ({ default: m.Agentes })));
 const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
+const EntregaTelasPage = lazy(() => import('@/pages/admin/EntregaTelasPage'));
 const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis').then(m => ({ default: m.PaineisPage })));
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 const CRMClients = lazy(() => import('@/pages/admin/CRMClients'));
@@ -397,6 +398,13 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.paineis}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>
             <PaineisPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="entrega-telas" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.paineis}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando entrega nas telas..." />}>
+            <EntregaTelasPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />

@@ -33,6 +33,7 @@ import { usePedidoEmpresas } from '@/hooks/exa2/usePedidoEmpresas';
 import { winnerAt } from '@/lib/agenda/agendaEngine';
 import { OnAirCard } from '@/components/pedido-v2/OnAirCard';
 import { AgendaTab } from '@/components/pedido-v2/AgendaTab';
+import { EntregaResumo } from '@/components/pedido-v2/EntregaResumo';
 import { PrediosTab } from '@/components/pedido-v2/PrediosTab';
 import { EmpresaTab } from '@/components/pedido-v2/EmpresaTab';
 
@@ -276,6 +277,7 @@ const OrderDetailsV2 = () => {
               {!bloqueado && (
                 <OnAirCard slots={agenda.slots} rules={agenda.rules} totalPredios={buildingIds.length} serverActiveSlotId={serverActive} onAgendar={() => setAba('agenda')} />
               )}
+              {!bloqueado && <EntregaResumo buildingIds={buildingIds} />}
               {gestaoTravada ? (
                 <AvisoTravado />
               ) : (
