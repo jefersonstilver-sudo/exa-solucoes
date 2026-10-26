@@ -104,6 +104,7 @@ const CaseSucessoAcademia = lazy(() => import('./pages/blog/CaseSucessoAcademia'
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const ValidateOrder = lazy(() => import('./pages/public/ValidateOrder'));
+const PreviewPedido = lazy(() => import('./pages/public/PreviewPedido'));
 
 // Lazy load das páginas da área do anunciante
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
@@ -288,7 +289,14 @@ const AppContent = () => {
           } />
           
           {/* ROTAS PÚBLICAS DE EXIBIÇÃO - Novo padrão com nome+código */}
-          
+
+          {/* Prévia (layout novo do pedido) - sem autenticação, dados fictícios */}
+          <Route path="/preview/pedido" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando prévia..." />}>
+              <PreviewPedido />
+            </Suspense>
+          } />
+
           {/* Relatório Público VAR - Sem autenticação */}
           <Route path="/r/:reportId" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando relatório..." />}>
