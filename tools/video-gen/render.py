@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """EXA Motion v8 - renderizador.
 Uso: render.py job.json out.mp4 [--frames t1 t2 ... | --validate]
-Dois formatos nativos: horizontal_10s = 1920x1080 / 10 s; vertical_premium_15s = 1080x1920 / 15 s.
+Dois formatos nativos: horizontal_10s = 1080x890 / 10 s (area do anuncio na tela atual do elevador, quase quadrada ~1,21:1);
+vertical_premium_15s = 1080x1920 / 15 s. Ambos a 30 fps.
 A cena (briefing.scene_js) usa a biblioteca K (lib.js). Sem scene_js, roda K.auto() (cena automatica de reserva).
 O video/foto do cliente entra DENTRO da composicao (K.media): os quadros do video sao extraidos aqui e trocados
 a cada quadro, entao a cena controla moldura, posicao e camadas (nada de video de fundo com texto ilegivel)."""
@@ -18,7 +19,7 @@ fmt = job.get('formato') or 'horizontal_10s'
 if 'vertical' in fmt: fmt = 'vertical_premium_15s'
 else: fmt = 'horizontal_10s'
 vert = fmt == 'vertical_premium_15s'; FPS = 30; DUR = 15 if vert else 10
-W, H = (1080, 1920) if vert else (1920, 1080)
+W, H = (1080, 1920) if vert else (1080, 890)  # horizontal: layout novo da tela (1080x890), nao mais 1920x1080
 tmp = pathlib.Path(tempfile.mkdtemp(prefix='exa_motion8_'))
 for f in ('gsap.min.js', 'lib.js'): shutil.copy(here / f, tmp / f)
 shutil.copytree(here / 'fonts', tmp / 'fonts')

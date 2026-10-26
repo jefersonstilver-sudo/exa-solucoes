@@ -3,12 +3,21 @@
    (celular com conversa, cartao de oferta, mapa, agenda, contadores, lista, selo), sobre um sistema visual unico:
    fundo escuro com brilho da cor da marca e granulado, cartoes com sombra, chips, tipografia Inter Display Black,
    entradas com back/expo, cenas que se sobrepoem ~0.35s e sempre algo em movimento. Dois formatos nativos:
-   horizontal 1920x1080 / 10s e vertical 1080x1920 / 15s. Todo texto passa por auto-ajuste (nunca corta). */
+   horizontal 1080x890 / 10s (area do anuncio na tela atual do elevador: QUASE QUADRADA, ~1,21:1; nunca componha
+   como 16:9 largo) e vertical 1080x1920 / 15s. Todo texto passa por auto-ajuste (nunca corta).
+   Horizontal 1080x890 (area segura x 54..1026, y 62..828):
+     zone('head')  = faixa do chip no topo          {x:54,  y:62,  w:972, h:70}
+     zone('hero')  = demonstracao/midia no meio     {x:54,  y:150, w:972, h:416}  (alias: 'top', 'media')
+     zone('text')  = frase grande embaixo           {x:54,  y:578, w:972, h:250}  (alias: 'bottom')
+     zone('full')  = tudo abaixo do chip            {x:54,  y:150, w:972, h:678}
+     zone('left')  = coluna de texto (dividido)     {x:54,  y:150, w:466, h:678}
+     zone('right') = coluna de demonstracao         {x:544, y:150, w:482, h:678}  (celular, foto/video em pe, oferta)
+   Composicao preferida: EMPILHADA (head -> hero -> text). Use left/right so para celular, midia em pe ou oferta. */
 (function () {
   'use strict';
   const P0 = { empresa: 'Sua Marca', segmento: 'comercio', mensagem: 'Sua marca no elevador', subtitulo: '', cta: 'Chame no WhatsApp', instagram: '', whats: '', formato: 'horizontal_10s', cor: '#e63027', cor2: '#ff5446', frases: [], numeros: [], assets: {} };
   const P = Object.assign({}, P0, window.P || {}); P.frases = (P.frases || []).filter(Boolean); P.assets = P.assets || {}; window.P = P;
-  const vert = P.formato === 'vertical_premium_15s', W = vert ? 1080 : 1920, H = vert ? 1920 : 1080, DUR = vert ? 15 : 10, U = 1;
+  const vert = P.formato === 'vertical_premium_15s', W = 1080, H = vert ? 1920 : 890, DUR = vert ? 15 : 10, U = 1;
   const u = n => n + 'px';
 
   // ---------- cores (tokens) ----------
@@ -50,15 +59,29 @@
   let seed = 11; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
   // ---------- layout: area segura e zonas por formato ----------
-  const SAFE = vert ? { x: 64, y: 150, w: 952, h: 1640 } : { x: 110, y: 96, w: 1700, h: 888 };
+  // horizontal 1080x890: ~5% nas laterais (54 px) e ~7% em cima/embaixo (62 px)
+  const SAFE = vert ? { x: 64, y: 150, w: 952, h: 1640 } : { x: 54, y: 62, w: 972, h: 766 };
   const ZONES = vert ? {
     head: { x: 64, y: 150, w: 952, h: 100 }, hero: { x: 64, y: 290, w: 952, h: 1000 }, text: { x: 64, y: 1320, w: 952, h: 440 },
     top: { x: 64, y: 290, w: 952, h: 640 }, bottom: { x: 64, y: 960, w: 952, h: 800 }, full: { x: 64, y: 290, w: 952, h: 1470 }
   } : {
-    head: { x: 110, y: 70, w: 1700, h: 90 }, left: { x: 110, y: 190, w: 860, h: 800 }, right: { x: 1010, y: 160, w: 800, h: 840 },
-    full: { x: 110, y: 190, w: 1700, h: 800 }, text: { x: 110, y: 190, w: 860, h: 800 }, hero: { x: 1010, y: 160, w: 800, h: 840 }
+    // quadro quase quadrado: empilhado (head / hero / text) ou dividido (left / right)
+    head: { x: 54, y: 62, w: 972, h: 70 }, hero: { x: 54, y: 150, w: 972, h: 416 }, text: { x: 54, y: 578, w: 972, h: 250 },
+    top: { x: 54, y: 150, w: 972, h: 416 }, media: { x: 54, y: 150, w: 972, h: 416 }, bottom: { x: 54, y: 578, w: 972, h: 250 },
+    full: { x: 54, y: 150, w: 972, h: 678 }, left: { x: 54, y: 150, w: 466, h: 678 }, right: { x: 544, y: 150, w: 482, h: 678 }
   };
   const zone = n => Object.assign({}, ZONES[n] || ZONES.full);
+  // horizontal: retangulo do palco que caiu fora do quadro 1080x890 (ex.: coordenadas antigas de 1920x1080)
+  // volta para a zona padrao; se so passa um pouco da area segura, e recortado para dentro dela. Vertical nao muda.
+  function inSafe(r, fb) {
+    if (!r) return zone(fb); if (vert) return r;
+    const x1 = r.x + r.w, y1 = r.y + r.h;
+    if (r.x >= W - 60 || r.y >= H - 60 || x1 <= 60 || y1 <= 60) return zone(fb);
+    const nx = Math.max(r.x, SAFE.x), ny = Math.max(r.y, SAFE.y), nw = Math.min(x1, SAFE.x + SAFE.w) - nx, nh = Math.min(y1, SAFE.y + SAFE.h) - ny;
+    if (nw < 140 || nh < 100) return zone(fb);
+    return { x: nx, y: ny, w: nw, h: nh };
+  }
+  const isStageLayer = p => !p || p === st || (p.dataset && p.dataset.scene != null) || (p.dataset && p.dataset.endcard != null);
 
   // ---------- texto com auto-ajuste (nunca corta) ----------
   const meas = document.createElement('canvas').getContext('2d');
@@ -76,6 +99,7 @@
   // texto em linhas; cada palavra em mascara (para revelar). o: {font,size,color,align,lh,maxLines,accentLast,accentColor,valign,upper,shadow}
   function text(parent, s, rect, o) {
     o = o || {}; const font = o.font || 'black', lh = o.lh || 1.04; s = o.upper ? String(s).toUpperCase() : String(s);
+    if (!vert && isStageLayer(parent)) rect = inSafe(rect, 'text');
     const { size, lines } = fitSize(s, font, o.size || 120, rect, lh, o.maxLines);
     const box = el(R(rect) + `display:flex;flex-direction:column;justify-content:${o.valign === 'top' ? 'flex-start' : o.valign === 'bottom' ? 'flex-end' : 'center'};align-items:${o.align === 'left' ? 'flex-start' : o.align === 'right' ? 'flex-end' : 'center'};text-align:${o.align || 'center'};font-family:${fam(font)};font-size:${size}px;line-height:${lh};letter-spacing:${font === 'black' || font === 'xb' ? '-0.02em' : '0'};color:${o.color || '#fff'};${o.shadow === false ? '' : 'text-shadow:0 4px 24px rgba(0,0,0,.35);'}`, '', parent);
     box.dataset.ktext = '1'; const spans = [];
@@ -149,28 +173,28 @@
   function place(n, x, y, anchor) { const w = n.offsetWidth, h = n.offsetHeight; let L = x, T = y; if (anchor === 'c') { L -= w / 2; T -= h / 2; } else if (anchor === 'ct') L -= w / 2; else if (anchor === 'rt') L -= w; n.style.left = L + 'px'; n.style.top = T + 'px'; return n; }
   function pop(tl, n, at, o) { o = o || {}; tl.from(n, { scale: o.from == null ? .4 : o.from, opacity: 0, rotation: o.rot || 0, duration: o.d || .55, ease: o.ease || 'back.out(1.8)', transformOrigin: o.origin || '50% 50%' }, at); return n; }
   function rise(tl, n, at, o) { o = o || {}; tl.from(n, { y: o.y == null ? 60 : o.y, x: o.x || 0, opacity: 0, duration: o.d || .55, ease: o.ease || 'power3.out' }, at); return n; }
-  function header(tl, at, s, parent) { const z = zone('head'); const c = chip(parent || st, s, { fill: 'rgba(255,255,255,.09)', font: 'semi', size: vert ? 32 : 30 }); if (vert) place(c, W / 2, z.y + (z.h - c.offsetHeight) / 2, 'ct'); else place(c, z.x, z.y + (z.h - c.offsetHeight) / 2, 'lt'); rise(tl, c, at, { y: -24 }); return c; }
+  function header(tl, at, s, parent) { const z = zone('head'); const c = chip(parent || st, s, { fill: 'rgba(255,255,255,.09)', font: 'semi', size: vert ? 32 : 34 }); if (vert) place(c, W / 2, z.y + (z.h - c.offsetHeight) / 2, 'ct'); else place(c, z.x, z.y + (z.h - c.offsetHeight) / 2, 'lt'); rise(tl, c, at, { y: -24 }); return c; }
 
   // ---------- fundo (cor da marca + granulado) ----------
   function bg(tl, o) {
     o = o || {}; const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
     g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
     const glow = (x, y, r, a) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, C.glow(a)); gr.addColorStop(.5, C.glow(a * .55)); gr.addColorStop(1, C.glow(0)); g.fillStyle = gr; g.fillRect(0, 0, W, H); };
-    if (vert) { glow(540, 260, 1000, .55); glow(900, 1950, 760, .25); } else { glow(1500, 160, 1100, .5); glow(200, 1080, 800, .22); }
+    if (vert) { glow(540, 260, 1000, .55); glow(900, 1950, 760, .25); } else { glow(820, 110, 900, .5); glow(120, 900, 700, .22); }
     const id = g.getImageData(0, 0, W, H), d = id.data; let s2 = 7; const r2 = () => (s2 = (s2 * 1664525 + 1013904223) >>> 0) / 4294967296;
     for (let i = 0; i < d.length; i += 4) { const n = (r2() - .5) * 16; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
     g.putImageData(id, 0, 0);
     const b = el('left:0;top:0;width:100%;height:100%;z-index:0', ''); cv.style.cssText = 'width:100%;height:100%;display:block'; b.appendChild(cv);
-    const orb = el(`left:${vert ? 140 : 900}px;top:${vert ? -200 : -300}px;width:${vert ? 800 : 1000}px;height:${vert ? 800 : 1000}px;border-radius:50%;background:radial-gradient(circle,${C.glow(.35)},transparent 65%);z-index:0`, '');
-    tl.to(orb, { x: vert ? 120 : -380, y: vert ? 420 : 180, duration: DUR, ease: 'sine.inOut' }, 0);
+    const orb = el(`left:${vert ? 140 : 380}px;top:${vert ? -200 : -320}px;width:${vert ? 800 : 820}px;height:${vert ? 800 : 820}px;border-radius:50%;background:radial-gradient(circle,${C.glow(.35)},transparent 65%);z-index:0`, '');
+    tl.to(orb, { x: vert ? 120 : -260, y: vert ? 420 : 220, duration: DUR, ease: 'sine.inOut' }, 0);
     return b;
   }
   function brandBar(tl) {
     const name = String(P.empresa || '').toUpperCase().split('').join(' ').replace(/ {3}/g, '   ');
-    const t = el(`left:0;top:${vert ? 70 : 34}px;width:100%;text-align:center;font-family:${fam('semi')};font-size:${vert ? 25 : 22}px;letter-spacing:.1em;color:rgba(205,208,220,.78);white-space:nowrap;z-index:40`, esc(name));
-    t.dataset.ktext = '1'; if (t.scrollWidth > W - 120) t.style.fontSize = Math.max(14, (vert ? 25 : 22) * (W - 120) / t.scrollWidth) + 'px';
+    const t = el(`left:0;top:${vert ? 70 : 24}px;width:100%;text-align:center;font-family:${fam('semi')};font-size:${vert ? 25 : 20}px;letter-spacing:.1em;color:rgba(205,208,220,.78);white-space:nowrap;z-index:40`, esc(name));
+    t.dataset.ktext = '1'; if (t.scrollWidth > W - 120) t.style.fontSize = Math.max(14, (vert ? 25 : 20) * (W - 120) / t.scrollWidth) + 'px';
     tl.from(t, { opacity: 0, duration: .6 }, .2);
-    const ex = P.assets.exa ? el(`right:${vert ? 40 : 46}px;bottom:${vert ? 40 : 34}px;height:${vert ? 40 : 36}px;opacity:.75;z-index:60`, `<img src="${P.assets.exa}" style="height:100%;display:block">`) : null;
+    const ex = P.assets.exa ? el(`right:${vert ? 40 : 30}px;bottom:${vert ? 40 : 18}px;height:${vert ? 40 : 30}px;opacity:.75;z-index:60`, `<img src="${P.assets.exa}" style="height:100%;display:block">`) : null;
     return t;
   }
 
@@ -188,15 +212,16 @@
   // ---------- componentes de demonstracao ----------
   // celular com conversa de WhatsApp. msgs: [[segundos_apos_at, 'r'|'l', 'texto']]
   function phone(tl, at, o) {
-    o = o || {}; const p = o.parent || st, r = o.rect || (vert ? { x: 150, y: 300, w: 780, h: 1000 } : { x: 1100, y: 150, w: 620, h: 840 });
+    o = o || {}; const p = o.parent || st, r = vert ? (o.rect || { x: 150, y: 300, w: 780, h: 1000 }) : inSafe(o.rect || { x: 572, y: 150, w: 440, h: 678 }, 'right');
     const ph = card(p, r, { r: 56, fill: C.ink, outline: 'rgb(70,75,95)' });
     const hb = el(`left:0;top:0;width:100%;height:${Math.round(r.w * .19)}px;background:${C.card2};border-bottom:2px solid ${C.line}`, '', ph);
     const av = el(`left:${r.w * .045}px;top:${r.w * .04}px;width:${r.w * .11}px;height:${r.w * .11}px;border-radius:50%;background:${C.accent};overflow:hidden;display:flex;align-items:center;justify-content:center`, P.assets.logo ? `<img src="${P.assets.logo}" style="width:84%;height:84%;object-fit:contain">` : `<span style="font-family:${fam('black')};font-size:${r.w * .055}px">${esc(String(P.empresa).trim()[0] || 'E')}</span>`, hb);
-    const nm = el(`left:${r.w * .18}px;top:${r.w * .04}px;font-family:${fam('bold')};font-size:${r.w * .05}px;white-space:nowrap`, esc(o.title || P.empresa), hb); nm.dataset.ktext = '1';
-    if (nm.offsetWidth > r.w * .78) nm.style.fontSize = (r.w * .05 * r.w * .78 / nm.offsetWidth) + 'px';
-    el(`left:${r.w * .18}px;top:${r.w * .108}px;font-family:${fam('med')};font-size:${r.w * .034}px;color:${C.muted};white-space:nowrap`, `<span style="display:inline-block;width:${r.w * .02}px;height:${r.w * .02}px;border-radius:50%;background:${C.ok};margin-right:${r.w * .012}px"></span>` + esc(o.sub || 'online agora'), hb);
+    const nf = r.w * (vert ? .05 : .062), sf = r.w * (vert ? .034 : .042); // no horizontal o celular e estreito: letras um pouco maiores
+    const nm = el(`left:${r.w * .18}px;top:${r.w * (vert ? .04 : .03)}px;font-family:${fam('bold')};font-size:${nf}px;white-space:nowrap`, esc(o.title || P.empresa), hb); nm.dataset.ktext = '1';
+    if (nm.offsetWidth > r.w * .78) nm.style.fontSize = (nf * r.w * .78 / nm.offsetWidth) + 'px';
+    el(`left:${r.w * .18}px;top:${r.w * (vert ? .108 : .112)}px;font-family:${fam('med')};font-size:${sf}px;color:${C.muted};white-space:nowrap`, `<span style="display:inline-block;width:${r.w * .02}px;height:${r.w * .02}px;border-radius:50%;background:${C.ok};margin-right:${r.w * .012}px"></span>` + esc(o.sub || 'online agora'), hb);
     const area = el(`left:0;top:${r.w * .19 + 20}px;width:100%;height:${r.h - r.w * .19 - 40}px;overflow:hidden`, '', ph);
-    const fs = Math.round(r.w * (vert ? .05 : .056)); let y = 0; const maxw = r.w * .78;
+    const fs = vert ? Math.round(r.w * .05) : Math.max(28, Math.round(r.w * .072)); let y = 0; const maxw = r.w * (vert ? .78 : .86);
     (o.msgs || []).forEach(([dt, side, s]) => {
       const t0 = at + dt;
       if (s && typeof s === 'object') { // cartao dentro da conversa (oferta, produto, link)
@@ -219,21 +244,25 @@
   }
   // cartao de oferta em leque (frente com gradiente da marca)
   function offer(tl, at, o) {
-    o = o || {}; const p = o.parent || st; const cw = o.w || (vert ? 640 : 560), chh = Math.round(cw * 1.28); const cx = o.cx || (vert ? W / 2 : 1410), cy = o.cy || (vert ? 760 : 560);
+    o = o || {}; const p = o.parent || st; const zr = zone('right'); let cw = o.w || (vert ? 640 : 360), cx = o.cx || (vert ? W / 2 : zr.x + zr.w / 2), cy = o.cy || (vert ? 760 : zr.y + zr.h / 2 - 20);
+    // horizontal: cartao maior que a coluna ou centro fora do quadro 1080x890 (coordenadas antigas) volta para a zona right
+    if (!vert) { cw = Math.min(cw, 420); if (cx + cw / 2 > SAFE.x + SAFE.w + 30 || cx - cw / 2 < SAFE.x - 30 || cy + cw * .64 > H - 30 || cy - cw * .64 < 30) { cx = zr.x + zr.w / 2; cy = zr.y + zr.h / 2 - 20; } }
+    const chh = Math.round(cw * 1.28);
+    const fanR = vert ? 11 : 8, fanX = vert ? .26 : .15; // no horizontal o leque abre menos (nao sai pela borda direita)
     const back = i => { const b = card(p, { x: cx - cw / 2, y: cy - chh / 2, w: cw, h: chh }, { fill: C.card2, r: 40, css: 'filter:blur(3px);opacity:.8' }); el(`left:6%;top:5%;width:88%;height:32%;border-radius:24px;background:${i ? C.accentDeep : C.card}`, '', b); return b; };
     const b1 = back(0), b2 = back(1);
     const f = card(p, { x: cx - cw / 2, y: cy - chh / 2, w: cw, h: chh }, { fill: C.card, r: 44 });
     el(`left:0;top:0;width:100%;height:39%;background:linear-gradient(180deg,${C.accentHi},${C.accentDeep})`, '', f);
     const big = text(f, o.big || '%', { x: cw * .06, y: chh * .02, w: cw * .88, h: chh * .36 }, { font: 'black', size: cw * .36 });
-    const t1 = text(f, o.title || 'Oferta', { x: cw * .075, y: chh * .43, w: cw * .85, h: chh * .2 }, { font: 'black', size: cw * .1, align: 'left', accentLast: true, lh: 1.08, valign: 'top' });
-    if (o.sub) text(f, o.sub, { x: cw * .075, y: chh * .64, w: cw * .85, h: chh * .15 }, { font: 'med', size: cw * .052, align: 'left', color: C.muted, valign: 'top', lh: 1.3 });
+    const t1 = text(f, o.title || 'Oferta', { x: cw * .075, y: chh * .43, w: cw * .85, h: chh * .2 }, { font: 'black', size: cw * (vert ? .1 : .12), align: 'left', accentLast: true, lh: 1.08, valign: 'top' });
+    if (o.sub) text(f, o.sub, { x: cw * .075, y: chh * .64, w: cw * .85, h: chh * .15 }, { font: 'med', size: cw * (vert ? .052 : .075), align: 'left', color: C.muted, valign: 'top', lh: 1.3 });
     if (o.button) { const bt = el(`left:${cw * .075}px;top:${chh * .84}px;width:${cw * .85}px;height:${chh * .1}px;border-radius:${chh * .05}px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-family:${fam('bold')};font-size:${cw * .05}px`, esc(o.button), f); bt.dataset.ktext = '1'; }
     tl.from(f, { scale: .8, y: 60, opacity: 0, duration: .7, ease: 'back.out(1.4)' }, at)
-      .from(b1, { rotation: 0, x: 0, opacity: 0, duration: .7, ease: 'back.out(1.2)' }, at).to(b1, { rotation: -11, x: -cw * .26, duration: .7, ease: 'back.out(1.2)' }, at)
-      .from(b2, { opacity: 0, duration: .7 }, at).to(b2, { rotation: 10, x: cw * .26, duration: .7, ease: 'back.out(1.2)' }, at);
+      .from(b1, { rotation: 0, x: 0, opacity: 0, duration: .7, ease: 'back.out(1.2)' }, at).to(b1, { rotation: -fanR, x: -cw * fanX, duration: .7, ease: 'back.out(1.2)' }, at)
+      .from(b2, { opacity: 0, duration: .7 }, at).to(b2, { rotation: fanR - 1, x: cw * fanX, duration: .7, ease: 'back.out(1.2)' }, at);
     reveal(tl, big, at + .25, { d: .5 }); reveal(tl, t1, at + .4);
-    if (o.tag) { const tg = chip(p, o.tag, { fill: '#fff', fg: C.accentDeep, size: vert ? 32 : 28 }); place(tg, cx + cw * .2, cy + chh / 2 - 10, 'c'); tl.set(tg, { rotation: -5 }, 0); pop(tl, tg, at + .9, { from: .3, rot: -20 }); }
-    sparkles(tl, at + .3, { parent: p, cx, cy, r: cw * .8, n: 14 });
+    if (o.tag) { const tg = chip(p, o.tag, { fill: '#fff', fg: C.accentDeep, size: vert ? 32 : 30 }); place(tg, cx + cw * .2, cy + chh / 2 - 10, 'c'); tl.set(tg, { rotation: -5 }, 0); pop(tl, tg, at + .9, { from: .3, rot: -20 }); }
+    sparkles(tl, at + .3, { parent: p, cx, cy, r: cw * (vert ? .8 : .7), n: vert ? 14 : 10 });
     return f;
   }
   function sparkles(tl, at, o) {
@@ -242,18 +271,18 @@
   }
   // agenda semanal com dias destacados (ex.: fim de semana)
   function week(tl, at, o) {
-    o = o || {}; const p = o.parent || st, r = o.rect || (vert ? { x: 50, y: 320, w: 980, h: 540 } : { x: 1010, y: 220, w: 800, h: 520 });
+    o = o || {}; const p = o.parent || st, r = vert ? (o.rect || { x: 50, y: 320, w: 980, h: 540 }) : inSafe(o.rect || { x: 54, y: 150, w: 972, h: 380 }, 'hero');
     const DAYS = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'], SL = o.rows || ['Manhã', 'Tarde', 'Noite'], hi = o.days || [5, 6];
     const c = card(p, r, { r: 40 }); const gx = r.w * .2, cw = (r.w - gx - r.w * .04) / 7, top = r.h * .2, chh = (r.h * .68) / SL.length;
     DAYS.forEach((d, i) => { const n = el(`left:${gx + i * cw}px;top:${r.h * .07}px;width:${cw - 10}px;text-align:center;font-family:${fam('bold')};font-size:${r.w * .028}px;color:${hi.includes(i) ? C.accentHi : C.muted}`, d, c); n.dataset.ktext = '1'; });
     SL.forEach((s, j) => { const n = el(`left:${r.w * .04}px;top:${top + j * chh + chh * .3}px;font-family:${fam('semi')};font-size:${r.w * .029}px;color:${C.muted};white-space:nowrap`, esc(s), c); n.dataset.ktext = '1';
       DAYS.forEach((_, i) => { const on = hi.includes(i); const cell = el(`left:${gx + i * cw}px;top:${top + j * chh}px;width:${cw - 12}px;height:${chh - 12}px;border-radius:16px;background:rgb(44,49,66)`, '', c); if (on) tl.to(cell, { backgroundColor: C.accent, duration: .25 }, at + .8 + (i - hi[0]) * .12 + j * .08); }); });
-    if (o.label) { const lb = chip(p, o.label, { fill: C.ok, fg: C.okInk, icon: 'check', iconA: C.okInk, iconB: C.ok, size: vert ? 36 : 32 }); place(lb, r.x + r.w / 2, r.y + r.h + 40, 'ct'); pop(tl, lb, at + 1.6); }
+    if (o.label) { const lb = chip(p, o.label, { fill: C.ok, fg: C.okInk, icon: 'check', iconA: C.okInk, iconB: C.ok, size: vert ? 36 : 32 }); place(lb, r.x + r.w / 2, r.y + r.h + (vert ? 40 : 18), 'ct'); pop(tl, lb, at + 1.6); }
     rise(tl, c, at); return c;
   }
   // mapa estilizado com pino da loja
   function map(tl, at, o) {
-    o = o || {}; const p = o.parent || st, r = o.rect || (vert ? { x: 80, y: 300, w: 920, h: 900 } : { x: 1010, y: 170, w: 800, h: 760 });
+    o = o || {}; const p = o.parent || st, r = vert ? (o.rect || { x: 80, y: 300, w: 920, h: 900 }) : inSafe(o.rect || zone('hero'), 'hero');
     const cv = document.createElement('canvas'); cv.width = r.w; cv.height = r.h; const g = cv.getContext('2d'); g.fillStyle = 'rgb(17,20,29)'; g.fillRect(0, 0, r.w, r.h); g.strokeStyle = 'rgb(32,36,50)';
     for (let i = -2; i < 14; i++) { const x = i * r.w / 10 + (rnd() * 20 - 10); g.lineWidth = rnd() < .67 ? 3 : 6; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 140, r.h); g.stroke(); }
     for (let j = -2; j < 16; j++) { const y = j * r.h / 12; g.lineWidth = rnd() < .67 ? 3 : 7; g.beginPath(); g.moveTo(0, y + 60); g.lineTo(r.w, y - 40); g.stroke(); }
@@ -270,45 +299,49 @@
   }
   // numeros que contam. items: [{v, prefixo, sufixo, rotulo}]
   function stats(tl, at, o) {
-    o = o || {}; const p = o.parent || st, items = (o.items || []).slice(0, 3), r = o.rect || zone(vert ? 'bottom' : 'right'); if (!items.length) return null;
+    o = o || {}; const p = o.parent || st, items = (o.items || []).slice(0, 3), r = vert ? (o.rect || zone('bottom')) : inSafe(o.rect, 'right'); if (!items.length) return null;
     const gap = 24, cw = vert ? r.w : r.w, chh = (r.h - gap * (items.length - 1)) / items.length;
     items.forEach((it, i) => { const c = card(p, { x: r.x, y: r.y + i * (chh + gap), w: cw, h: chh }, { r: 34 }); const v = Number(it.v ?? it.valor ?? 0);
       const obj = { n: 0 }; const pre = it.prefixo || '', suf = it.sufixo || it.s || ''; const fmt = x => pre + Math.round(x).toLocaleString('pt-BR') + suf;
-      let ns = Math.min(chh * .62, 170); while (ns > 30 && tw(fmt(v), 'black', ns) > cw * .46) ns -= 4; const nw = tw(fmt(v), 'black', ns);
-      const num = el(`left:${cw * .06}px;top:0;height:100%;display:flex;align-items:center;font-family:${fam('black')};font-size:${ns}px;color:${C.accentHi};white-space:nowrap`, '', c); num.dataset.ktext = '1';
-      const lx = cw * .06 + nw + cw * .05; const lab = text(c, it.rotulo || it.label || '', { x: lx, y: chh * .12, w: cw - lx - cw * .05, h: chh * .76 }, { font: 'bold', size: Math.min(chh * .26, 46), align: 'left', lh: 1.15 });
+      // coluna estreita (horizontal 1080x890, zona right): numero em cima e rotulo embaixo, para o numero ficar grande
+      const stack = !vert && cw < 700; let ns = Math.min(chh * (stack ? .46 : .62), stack ? 140 : 170); while (ns > 30 && tw(fmt(v), 'black', ns) > cw * (stack ? .88 : .46)) ns -= 4; const nw = tw(fmt(v), 'black', ns);
+      const num = el(stack ? `left:${cw * .06}px;top:${chh * .08}px;height:${chh * .5}px;display:flex;align-items:center;font-family:${fam('black')};font-size:${ns}px;color:${C.accentHi};white-space:nowrap` : `left:${cw * .06}px;top:0;height:100%;display:flex;align-items:center;font-family:${fam('black')};font-size:${ns}px;color:${C.accentHi};white-space:nowrap`, '', c); num.dataset.ktext = '1';
+      const lx = cw * .06 + nw + cw * .05; const lab = stack ? text(c, it.rotulo || it.label || '', { x: cw * .06, y: chh * .58, w: cw * .88, h: chh * .36 }, { font: 'bold', size: Math.min(chh * .2, 42), align: 'left', lh: 1.12, valign: 'top' })
+        : text(c, it.rotulo || it.label || '', { x: lx, y: chh * .12, w: cw - lx - cw * .05, h: chh * .76 }, { font: 'bold', size: Math.min(chh * .26, 46), align: 'left', lh: 1.15 });
       num.textContent = fmt(v);
       tl.fromTo(obj, { n: 0 }, { n: v, duration: 1.1, ease: 'power2.out', onUpdate: () => { num.textContent = fmt(obj.n); }, immediateRender: false }, at + .2 + i * .15);
       tl.set(num, { textContent: fmt(0) }, 0); rise(tl, c, at + i * .15); reveal(tl, lab, at + .3 + i * .15, { fade: true, y: 40 }); });
   }
   // lista de beneficios com check
   function checks(tl, at, o) {
-    o = o || {}; const p = o.parent || st, items = (o.items || []).slice(0, 4), r = o.rect || zone(vert ? 'bottom' : 'left'); if (!items.length) return null;
-    const gap = 22, rh = Math.min(vert ? 170 : 150, (r.h - gap * (items.length - 1)) / items.length);
+    o = o || {}; const p = o.parent || st, items = (o.items || []).slice(0, 4), r = vert ? (o.rect || zone('bottom')) : inSafe(o.rect, 'left'); if (!items.length) return null;
+    const gap = 22, rh = Math.min(vert ? 170 : 160, (r.h - gap * (items.length - 1)) / items.length);
     items.forEach((s, i) => { const y = r.y + i * (rh + gap); const c = card(p, { x: r.x, y, w: r.w, h: rh }, { r: rh / 2.4, fill: C.card });
       el(`left:${rh * .2}px;top:${rh * .2}px;width:${rh * .6}px;height:${rh * .6}px`, iconSvg('check', rh * .6, C.ok, C.okInk), c);
-      const t = text(c, s, { x: rh * .98, y: rh * .1, w: r.w - rh * 1.2, h: rh * .8 }, { font: 'bold', size: rh * .3, align: 'left', lh: 1.12 });
+      const t = text(c, s, { x: rh * .98, y: rh * .1, w: r.w - rh * 1.2, h: rh * .8 }, { font: 'bold', size: vert ? rh * .3 : Math.max(36, rh * .3), align: 'left', lh: 1.12 });
       tl.from(c, { x: -80, opacity: 0, duration: .45, ease: 'power3.out' }, at + i * .32); });
   }
   // anel de icones ao redor do logo (resumo)
   function orbit(tl, at, o) {
-    o = o || {}; const p = o.parent || st, items = (o.items || []).slice(0, 6); const cx = o.cx || W / 2, cy = o.cy || (vert ? 820 : 560), RR = o.R || (vert ? 360 : 330);
+    o = o || {}; const p = o.parent || st, items = (o.items || []).slice(0, 6); const zr = zone('right'), cx = o.cx || (vert ? W / 2 : zr.x + zr.w / 2), cy = o.cy || (vert ? 820 : zr.y + zr.h / 2), RR = o.R || (vert ? 360 : 190), k = vert ? 1 : Math.min(1, RR / 300);
     const ring = el(`left:${cx - RR}px;top:${cy - RR}px;width:${RR * 2}px;height:${RR * 2}px;border-radius:50%;border:3px solid rgba(255,255,255,.18)`, '', p); pop(tl, ring, at, { from: .6 });
-    const mid = el(`left:${cx - 140}px;top:${cy - 140}px;width:280px;height:280px;border-radius:50%;background:${C.accent};box-shadow:0 0 120px ${C.glow(.6)};display:flex;align-items:center;justify-content:center;overflow:hidden`, P.assets.logo ? `<img src="${P.assets.logo}" style="width:70%;height:70%;object-fit:contain">` : `<span style="font-family:${fam('black')};font-size:110px">${esc(String(P.empresa).trim()[0] || 'E')}</span>`, p); pop(tl, mid, at + .1);
+    const md = 280 * k; const mid = el(`left:${cx - md / 2}px;top:${cy - md / 2}px;width:${md}px;height:${md}px;border-radius:50%;background:${C.accent};box-shadow:0 0 120px ${C.glow(.6)};display:flex;align-items:center;justify-content:center;overflow:hidden`, P.assets.logo ? `<img src="${P.assets.logo}" style="width:70%;height:70%;object-fit:contain">` : `<span style="font-family:${fam('black')};font-size:${110 * k}px">${esc(String(P.empresa).trim()[0] || 'E')}</span>`, p); pop(tl, mid, at + .1);
     const holder = el(`left:${cx}px;top:${cy}px;width:0;height:0`, '', p); tl.to(holder, { rotation: 28, duration: DUR, ease: 'none' }, at);
     items.forEach((it, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / items.length, x = Math.cos(a) * RR, y = Math.sin(a) * RR;
-      const t = el(`left:${x - 75}px;top:${y - 75}px;width:150px;height:150px;border-radius:50%;background:${C.card2};box-shadow:inset 0 0 0 2px rgba(255,255,255,.24);display:flex;align-items:center;justify-content:center`, iconSvg(it.icon || 'star', 84, '#fff', C.accent), holder);
+      const ts = 150 * k; const t = el(`left:${x - ts / 2}px;top:${y - ts / 2}px;width:${ts}px;height:${ts}px;border-radius:50%;background:${C.card2};box-shadow:inset 0 0 0 2px rgba(255,255,255,.24);display:flex;align-items:center;justify-content:center`, iconSvg(it.icon || 'star', 84 * k, '#fff', C.accent), holder);
       tl.to(t, { rotation: -28, duration: DUR, ease: 'none' }, at);
-      const lb = el(`left:${x - 160}px;top:${y + 84}px;width:320px;text-align:center;font-family:${fam('bold')};font-size:30px;white-space:nowrap`, esc(it.label || ''), holder); lb.dataset.ktext = '1'; tl.to(lb, { rotation: -28, duration: DUR, ease: 'none' }, at);
+      const lb = el(`left:${x - 160}px;top:${y + ts / 2 + 9}px;width:320px;text-align:center;font-family:${fam('bold')};font-size:30px;white-space:nowrap`, esc(it.label || ''), holder); lb.dataset.ktext = '1'; tl.to(lb, { rotation: -28, duration: DUR, ease: 'none' }, at);
       pop(tl, t, at + .3 + i * .18); tl.from(lb, { opacity: 0, duration: .3 }, at + .45 + i * .18); });
   }
-  function stamp(tl, at, s, o) { o = o || {}; const p = o.parent || st; const c = chip(p, s, { fill: 'rgba(9,10,15,.92)', fg: o.color || C.ok, size: o.size || (vert ? 64 : 58), icon: 'check', iconA: o.color || C.ok, iconB: '#0b0c12', css: `box-shadow:inset 0 0 0 7px ${o.color || C.ok},0 20px 60px rgba(0,0,0,.6)` }); place(c, o.x || W / 2, o.y || H / 2, 'c'); tl.set(c, { rotation: 7 }, 0).from(c, { scale: 1.9, opacity: 0, duration: .35, ease: 'power3.in' }, at); return c; }
+  function stamp(tl, at, s, o) { o = o || {}; const p = o.parent || st; const c = chip(p, s, { fill: 'rgba(9,10,15,.92)', fg: o.color || C.ok, size: o.size || (vert ? 64 : 50), icon: 'check', iconA: o.color || C.ok, iconB: '#0b0c12', css: `box-shadow:inset 0 0 0 7px ${o.color || C.ok},0 20px 60px rgba(0,0,0,.6)` }); place(c, o.x || W / 2, o.y || H / 2, 'c'); tl.set(c, { rotation: 7 }, 0).from(c, { scale: 1.9, opacity: 0, duration: .35, ease: 'power3.in' }, at); return c; }
 
   // ---------- midia do cliente (video/foto) dentro da composicao ----------
   // render.py extrai os quadros do video; aqui o <img> recebe o quadro certo a cada instante (window.__mediaTick)
   function media(tl, at, o) {
     if (!P.media || !P.mediaSrc) return null; o = o || {}; const p = o.parent || st;
-    const ar = P.mediaAR || 1; const box = o.rect || (vert ? { x: 64, y: 290, w: 952, h: 1000 } : { x: 1010, y: 150, w: 800, h: 840 });
+    const ar = P.mediaAR || 1;
+    // horizontal: foto/video deitado vai no meio (hero, empilhado); em pe vai na coluna da direita (dividido)
+    const box = vert ? (o.rect || { x: 64, y: 290, w: 952, h: 1000 }) : inSafe(o.rect, ar < .9 ? 'right' : 'hero');
     // a moldura segue a proporcao do video (sem cortar o cliente); so encaixa dentro da caixa pedida
     const ar2 = Math.max(.56, Math.min(1.78, ar)); let r;
     if (o.exact) r = box; else if (box.w / box.h > ar2) { const h = box.h, w = h * ar2; r = { x: box.x + (box.w - w) / 2, y: box.y, w, h }; } else { const w = box.w, h = w / ar2; r = { x: box.x, y: box.y + (box.h - h) / 2, w, h }; }
@@ -340,16 +373,20 @@
       if (qr) { const q = qrNode(260, row, 'position:relative'); pop(tl, q, at + 1.2); }
       if (P.instagram) { const ig = el(`position:relative;font-family:${fam('bold')};font-size:46px;color:#fff;white-space:nowrap`, '@' + esc(P.instagram), row); ig.dataset.ktext = '1'; rise(tl, ig, at + 1.3, { y: 30 }); }
     } else {
-      const lc = card(p, { x: 110, y: 150, w: 760, h: 780 }, { r: 48, fill: `radial-gradient(circle at 50% 35%,${C.accentDeep},${C.card})` });
-      if (hasLogo) el('left:12%;top:14%;width:76%;height:72%', `<img src="${P.assets.logo}" style="width:100%;height:100%;object-fit:contain">`, lc); else text(lc, P.empresa, { x: 50, y: 60, w: 660, h: 660 }, { font: 'black', size: 150 });
+      // horizontal 1080x890 (quase quadrado): em cima marca + chamada lado a lado; embaixo CTA, numero e @ a esquerda, QR a direita
+      const S = SAFE, top = S.y, rowH = 320, colX = S.x + 400 + 28, qs = qr ? 280 : 0, bx = S.x, bw = S.w - (qr ? qs + 32 : 0);
+      const lc = card(p, { x: S.x, y: top, w: 400, h: rowH }, { r: 44, fill: `radial-gradient(circle at 50% 35%,${C.accentDeep},${C.card})` });
+      if (hasLogo) el('left:10%;top:12%;width:80%;height:76%', `<img src="${P.assets.logo}" style="width:100%;height:100%;object-fit:contain">`, lc); else text(lc, P.empresa, { x: 30, y: 30, w: 340, h: rowH - 60 }, { font: 'black', size: 110 });
       rise(tl, lc, at + .1, { x: -60, y: 0 }); tl.to(lc, { scale: 1.04, duration: DUR - at, ease: 'sine.inOut' }, at + .7);
-      const m = text(p, o.frase || P.mensagem, { x: 960, y: 150, w: 860, h: 300 }, { font: 'black', size: 96, align: 'left', accentLast: true }); reveal(tl, m, at + .35);
-      const cta = chip(p, o.cta || P.cta || 'Chame no WhatsApp', { fill: P.whats ? C.ok : C.accent, fg: P.whats ? C.okInk : '#fff', size: 38, icon: P.whats ? 'whats' : null, iconA: C.okInk, iconB: C.ok }); place(cta, 960, 480, 'lt'); pop(tl, cta, at + .75, { origin: '0% 50%' }); tl.to(cta, { scale: 1.05, transformOrigin: '0% 50%', duration: .5, yoyo: true, repeat: Math.max(1, Math.floor((DUR - at - 1.3) / .5)), ease: 'sine.inOut' }, at + 1.3);
-      if (cta.offsetWidth > 860) cta.style.fontSize = (38 * 850 / cta.offsetWidth) + 'px';
-      if (P.whats) { const n = text(p, P.whats, { x: 960, y: 590, w: 860, h: 130 }, { font: 'black', size: 104, align: 'left' }); reveal(tl, n, at + .95, { d: .5 }); }
-      const row = el(`left:960px;top:${P.whats ? 750 : 610}px;display:flex;align-items:center;gap:40px`, '', p);
-      if (qr) { const q = qrNode(P.whats ? 220 : 280, row, 'position:relative'); pop(tl, q, at + 1.15); }
-      if (P.instagram) { const ig = el(`position:relative;font-family:${fam('bold')};font-size:44px;white-space:nowrap`, '@' + esc(P.instagram), row); ig.dataset.ktext = '1'; rise(tl, ig, at + 1.3, { y: 30 }); }
+      const m = text(p, o.frase || P.mensagem, { x: colX, y: top, w: S.x + S.w - colX, h: rowH }, { font: 'black', size: 88, align: 'left', accentLast: true }); reveal(tl, m, at + .35);
+      let y = top + rowH + 36;
+      const cta = chip(p, o.cta || P.cta || 'Chame no WhatsApp', { fill: P.whats ? C.ok : C.accent, fg: P.whats ? C.okInk : '#fff', size: 40, icon: P.whats ? 'whats' : null, iconA: C.okInk, iconB: C.ok });
+      if (cta.offsetWidth > bw) cta.style.fontSize = (40 * (bw - 10) / cta.offsetWidth) + 'px';
+      place(cta, bx, y, 'lt'); pop(tl, cta, at + .75, { origin: '0% 50%' }); tl.to(cta, { scale: 1.05, transformOrigin: '0% 50%', duration: .5, yoyo: true, repeat: Math.max(1, Math.floor((DUR - at - 1.3) / .5)), ease: 'sine.inOut' }, at + 1.3);
+      y += cta.offsetHeight + 24;
+      if (P.whats) { const n = text(p, P.whats, { x: bx, y, w: bw, h: 120 }, { font: 'black', size: 100, align: 'left' }); reveal(tl, n, at + .95, { d: .5 }); y += 132; }
+      if (P.instagram) { const ig = el(`left:${bx}px;top:${y}px;font-family:${fam('bold')};font-size:44px;white-space:nowrap`, '@' + esc(P.instagram), p); ig.dataset.ktext = '1'; if (ig.offsetWidth > bw) ig.style.fontSize = (44 * bw / ig.offsetWidth) + 'px'; rise(tl, ig, at + 1.3, { y: 30 }); }
+      if (qr) { const q = qrNode(qs, p, `left:${S.x + S.w - qs}px;top:${S.y + S.h - qs}px`); pop(tl, q, at + 1.15); }
     }
     return p;
   }
@@ -357,13 +394,13 @@
 
   // ---------- elementos tematicos flutuantes ----------
   function sprites(tl, from, to, o) {
-    o = o || {}; const list = iconList(), n = o.n || (vert ? 8 : 10), layer = el('left:0;top:0;width:100%;height:100%;z-index:' + (o.z == null ? 2 : o.z) + ';pointer-events:none', '', o.parent), out = [];
-    for (let i = 0; i < n; i++) { const name = list[i % list.length], size = (o.size || (vert ? 130 : 110)) * (.65 + rnd() * .7), x = rnd() * (W - size), dur = 3.4 + rnd() * 2.4, t0 = from + (to - from - dur * .6) * (i / n) + rnd() * .4;
+    o = o || {}; const list = iconList(), n = o.n || 8, layer = el('left:0;top:0;width:100%;height:100%;z-index:' + (o.z == null ? 2 : o.z) + ';pointer-events:none', '', o.parent), out = [];
+    for (let i = 0; i < n; i++) { const name = list[i % list.length], size = (o.size || (vert ? 130 : 92)) * (.65 + rnd() * .7), x = rnd() * (W - size), dur = 3.4 + rnd() * 2.4, t0 = from + (to - from - dur * .6) * (i / n) + rnd() * .4;
       const nd = el(`left:${x}px;top:${H + 40}px;opacity:0`, iconSvg(name, size, i % 3 ? C.accent : C.accent2, '#fff'), layer);
       tl.set(nd, { opacity: .85, rotation: (rnd() - .5) * 50 }, t0).to(nd, { y: -(H + size + 120), x: (rnd() - .5) * 140, rotation: '+=' + ((rnd() - .5) * 90), duration: dur, ease: 'sine.inOut' }, t0).set(nd, { opacity: 0 }, t0 + dur); out.push(nd); }
     return out;
   }
-  function mascot(tl, at, o) { o = o || {}; const list = iconList(), name = o.name || list[0], size = o.size || (vert ? 380 : 320), side = o.side || 'right'; const nd = el(`${side}:60px;bottom:${-size}px;z-index:${o.z == null ? 30 : o.z}`, iconSvg(name, size, C.accent, '#fff'), o.parent); tl.to(nd, { bottom: 40, duration: .7, ease: 'back.out(1.8)' }, at).to(nd, { rotation: side === 'right' ? -8 : 8, duration: .45, yoyo: true, repeat: 3, ease: 'sine.inOut', transformOrigin: '50% 100%' }, at + .7).to(nd, { bottom: -size, duration: .5, ease: 'power2.in' }, at + 2.6); return nd; }
+  function mascot(tl, at, o) { o = o || {}; const list = iconList(), name = o.name || list[0], size = o.size || (vert ? 380 : 240), side = o.side || 'right'; const nd = el(`${side}:${vert ? 60 : 54}px;bottom:${-size}px;z-index:${o.z == null ? 30 : o.z}`, iconSvg(name, size, C.accent, '#fff'), o.parent); tl.to(nd, { bottom: vert ? 40 : 30, duration: .7, ease: 'back.out(1.8)' }, at).to(nd, { rotation: side === 'right' ? -8 : 8, duration: .45, yoyo: true, repeat: 3, ease: 'sine.inOut', transformOrigin: '50% 100%' }, at + .7).to(nd, { bottom: -size, duration: .5, ease: 'power2.in' }, at + 2.6); return nd; }
   function echo(tl, node, from, at, dur, ease, n) { const par = node.parentNode; for (let i = n || 3; i >= 1; i--) { const c = node.cloneNode(true); c.style.pointerEvents = 'none'; par.insertBefore(c, node); tl.from(c, Object.assign({}, from, { duration: dur, ease }), at + i * .05); tl.to(c, { opacity: 0, duration: .3 }, at + dur); } return node; }
   function camera(tl, o) { o = o || {}; tl.fromTo(st, { scale: 1 }, { scale: o.zoom || 1.03, transformOrigin: '50% 50%', duration: DUR, ease: 'none' }, 0); }
 
@@ -397,7 +434,7 @@
   // Conta so o que a cena desenha (camadas de cena e cartao final); ignora fundo, brilho, nome no topo e logo EXA.
   // Usa uma grade grossa para somar a area sem contar duas vezes o que se sobrepoe.
   window.__coverage = function () {
-    const sr = st.getBoundingClientRect(), k = sr.width / W, GX = vert ? 27 : 48, GY = vert ? 48 : 27, cw = W / GX, ch = H / GY;
+    const sr = st.getBoundingClientRect(), k = sr.width / W, GX = vert ? 27 : 36, GY = vert ? 48 : 30, cw = W / GX, ch = H / GY;
     const grid = new Uint8Array(GX * GY);
     const alpha = n => { let a = 1; for (let p = n; p && p !== st; p = p.parentElement) { const cs = getComputedStyle(p); if (cs.display === 'none' || cs.visibility === 'hidden') return 0; a *= parseFloat(cs.opacity); if (a < .3) return a; } return a; };
     const roots = [...st.querySelectorAll('[data-scene], [data-endcard]')];
@@ -438,19 +475,24 @@
         if (nums.length) checks(tl, t + .9, { parent: L, items: fr.slice(0, 3), rect: { x: 64, y: 1000, w: 952, h: 620 } }); });
       end(tl, 12.2);
     } else {
-      scene(tl, 0, 2.7, (L, t) => { if (P.media) media(tl, t + .1, { parent: L }); else { const h = card(L, zone('right'), { r: 48, fill: `radial-gradient(circle at 50% 40%,${C.accentDeep},${C.card})` }); const ic = icon(h, icons[0], 200, 220, 400, '#fff', C.accent); rise(tl, h, t + .1, { x: 80, y: 0 }); tl.to(ic, { y: -26, rotation: -4, duration: 1, yoyo: true, repeat: 2, ease: 'sine.inOut' }, t + .6); }
-        const m = text(L, P.mensagem, zone('left'), { font: 'black', size: 130, align: 'left', accentLast: true }); reveal(tl, m, t + .3); });
-      scene(tl, 2.5, 5.1, (L, t) => { phone(tl, t + .1, { parent: L, rect: { x: 1150, y: 130, w: 600, h: 860 }, msgs: [[.3, 'r', 'Oi! Vi o anuncio no elevador'], [1.1, 'l', { title: fr[0], sub: P.empresa, cta: 'QUERO' }], [2.0, 'r', 'Fechado!']] });
-        header(tl, t + .1, 'Fale direto com a gente', L).style.left = '110px';
-        const tt = text(L, fr[0], { x: 110, y: 230, w: 940, h: 700 }, { font: 'black', size: 110, align: 'left', accentLast: true }); reveal(tl, tt, t + .3); });
-      scene(tl, 4.9, 7.6, (L, t) => { if (promo) offer(tl, t + .1, { parent: L, big: (txtAll.match(/\d+\s?%/) || ['%'])[0].replace(/\s/g, ''), title: fr[1] || P.mensagem, sub: fr[2] || '', tag: 'APROVEITE', cx: 1420, cy: 560, w: 520 });
-        else if (nums.length) stats(tl, t + .1, { parent: L, items: nums, rect: { x: 1010, y: 200, w: 800, h: 700 } }); else orbit(tl, t + .1, { parent: L, cx: 1420, cy: 520, R: 300, items: icons.slice(0, 5).map(ic => ({ icon: ic, label: '' })) });
-        checks(tl, t + .3, { parent: L, items: fr.slice(1, 4).length ? fr.slice(1, 4) : fr.slice(0, 3), rect: { x: 110, y: 220, w: 840, h: 700 } }); });
+      // horizontal 1080x890 (quase quadrado): gancho empilhado (chip / demonstracao / frase), celular e oferta no dividido
+      const portrait = P.media && (P.mediaAR || 1) < .9;
+      scene(tl, 0, 2.7, (L, t) => { header(tl, t + .15, P.segmento ? String(P.segmento).slice(0, 30) : 'Novidade', L);
+        if (portrait) { media(tl, t + .1, { parent: L, rect: zone('right') }); const m = text(L, P.mensagem, zone('left'), { font: 'black', size: 96, align: 'left', accentLast: true }); reveal(tl, m, t + .3); return; }
+        if (P.media) media(tl, t + .1, { parent: L, rect: zone('hero') }); else { const hz = zone('hero'); const h = card(L, hz, { r: 44, fill: `radial-gradient(circle at 50% 40%,${C.accentDeep},${C.card})` }); const ic = icon(h, icons[0], (hz.w - 300) / 2, (hz.h - 300) / 2, 300, '#fff', C.accent); rise(tl, h, t + .1, { y: 60 }); tl.to(ic, { y: -22, rotation: -4, duration: 1, yoyo: true, repeat: 2, ease: 'sine.inOut' }, t + .6); sprites(tl, t + .3, 2.6, { parent: L, n: 5, z: 0 }); } // z 0: icones passam atras da frase
+        const m = text(L, P.mensagem, zone('text'), { font: 'black', size: 104, accentLast: true }); reveal(tl, m, t + .3); });
+      scene(tl, 2.5, 5.1, (L, t) => { header(tl, t + .1, 'Fale direto com a gente', L);
+        phone(tl, t + .1, { parent: L, rect: zone('right'), msgs: [[.3, 'r', 'Oi! Vi o anuncio no elevador'], [1.1, 'l', { title: fr[0], sub: P.empresa, cta: 'QUERO' }], [2.0, 'r', 'Fechado!']] });
+        const tt = text(L, fr[0], zone('left'), { font: 'black', size: 96, align: 'left', accentLast: true }); reveal(tl, tt, t + .3); });
+      scene(tl, 4.9, 7.6, (L, t) => { header(tl, t + .1, promo ? 'Oferta especial' : 'Por que escolher', L);
+        if (promo) offer(tl, t + .1, { parent: L, big: (txtAll.match(/\d+\s?%/) || ['%'])[0].replace(/\s/g, ''), title: fr[1] || P.mensagem, sub: fr[2] || '', tag: 'APROVEITE' });
+        else if (nums.length) stats(tl, t + .1, { parent: L, items: nums, rect: zone('right') }); else orbit(tl, t + .1, { parent: L, items: icons.slice(0, 5).map(ic => ({ icon: ic, label: '' })) });
+        checks(tl, t + .3, { parent: L, items: fr.slice(1, 4).length ? fr.slice(1, 4) : fr.slice(0, 3), rect: zone('left') }); });
       end(tl, 7.4);
     }
     finish(tl); return tl;
   }
 
-  window.K = { P, W, H, DUR, U, vert, C, st, u, el, center, R, esc, rnd, SAFE, zone, tw, fitSize, text, reveal, words, chip, place, pop, rise, header, card, bg, brandBar, scene,
+  window.K = { P, W, H, DUR, U, vert, C, st, u, el, center, R, esc, rnd, SAFE, ZONES, zone, inSafe, tw, fitSize, text, reveal, words, chip, place, pop, rise, header, card, bg, brandBar, scene,
     phone, offer, sparkles, week, map, stats, checks, orbit, stamp, media, end, endCard, logoNode, qrNode, sprites, mascot, echo, camera, icon, iconSvg, ICONS, iconList, init, finish, auto, fam };
 })();

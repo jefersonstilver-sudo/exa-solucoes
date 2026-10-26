@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:transparent}canvas{display:block}</style></head><body><canvas id="c"></canvas>
 <script>
 const P = window.P; const vert = P.formato === 'vertical_premium_15s';
-const W = vert ? 1080 : 1920, H = vert ? 1920 : 1080, DUR = vert ? 15 : 10;
+const W = 1080, H = vert ? 1920 : 890, DUR = vert ? 15 : 10; // horizontal = 1080x890 (tela atual do elevador)
 const cv = document.getElementById('c'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
 window.W = W; window.H = H; window.DUR = DUR; window.ERRS = [];
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, x) => a + (b - a) * x;
