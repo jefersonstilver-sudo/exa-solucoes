@@ -2078,50 +2078,50 @@ export type Database = {
       }
       campaign_schedule_rules: {
         Row: {
-          end_date: string | null
-          is_override: boolean
-          label: string | null
-          rule_type: string
-          start_date: string | null
           campaign_video_schedule_id: string
           created_at: string
           days_of_week: number[]
+          end_date: string | null
           end_time: string
           id: string
           is_active: boolean
           is_all_day: boolean
+          is_override: boolean
+          label: string | null
+          rule_type: string
+          start_date: string | null
           start_time: string
           updated_at: string
         }
         Insert: {
-          end_date?: string | null
-          is_override?: boolean
-          label?: string | null
-          rule_type?: string
-          start_date?: string | null
           campaign_video_schedule_id: string
           created_at?: string
           days_of_week: number[]
+          end_date?: string | null
           end_time: string
           id?: string
           is_active?: boolean
           is_all_day?: boolean
-          start_time: string
-          updated_at?: string
-        }
-        Update: {
-          end_date?: string | null
           is_override?: boolean
           label?: string | null
           rule_type?: string
           start_date?: string | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
           campaign_video_schedule_id?: string
           created_at?: string
           days_of_week?: number[]
+          end_date?: string | null
           end_time?: string
           id?: string
           is_active?: boolean
           is_all_day?: boolean
+          is_override?: boolean
+          label?: string | null
+          rule_type?: string
+          start_date?: string | null
           start_time?: string
           updated_at?: string
         }
@@ -4203,6 +4203,8 @@ export type Database = {
         Row: {
           assinado_em: string | null
           cancelado_em: string | null
+          cancelamento_ate_virada_mes: boolean
+          cancelamento_aviso_dias: number
           clausulas_especiais: string | null
           clicksign_document_key: string | null
           clicksign_download_url: string | null
@@ -4293,6 +4295,8 @@ export type Database = {
         Insert: {
           assinado_em?: string | null
           cancelado_em?: string | null
+          cancelamento_ate_virada_mes?: boolean
+          cancelamento_aviso_dias?: number
           clausulas_especiais?: string | null
           clicksign_document_key?: string | null
           clicksign_download_url?: string | null
@@ -4383,6 +4387,8 @@ export type Database = {
         Update: {
           assinado_em?: string | null
           cancelado_em?: string | null
+          cancelamento_ate_virada_mes?: boolean
+          cancelamento_aviso_dias?: number
           clausulas_especiais?: string | null
           clicksign_document_key?: string | null
           clicksign_download_url?: string | null
@@ -7288,6 +7294,122 @@ export type Database = {
           },
         ]
       }
+      exa2_agenda_sync_estado: {
+        Row: {
+          origem: string | null
+          payload: Json
+          payload_hash: string | null
+          pedido_id: string
+          sincronizado_em: string | null
+          status: string
+          titulo: string | null
+          ultimo_resultado: Json
+          video_id: string
+        }
+        Insert: {
+          origem?: string | null
+          payload?: Json
+          payload_hash?: string | null
+          pedido_id: string
+          sincronizado_em?: string | null
+          status?: string
+          titulo?: string | null
+          ultimo_resultado?: Json
+          video_id: string
+        }
+        Update: {
+          origem?: string | null
+          payload?: Json
+          payload_hash?: string | null
+          pedido_id?: string
+          sincronizado_em?: string | null
+          status?: string
+          titulo?: string | null
+          ultimo_resultado?: Json
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa2_agenda_sync_estado_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exa2_config: {
+        Row: {
+          chave: string
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          chave: string
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          chave?: string
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
+      exa2_flags: {
+        Row: {
+          ativo_todos: boolean
+          atualizado_em: string
+          chave: string
+          usuarios: string[]
+        }
+        Insert: {
+          ativo_todos?: boolean
+          atualizado_em?: string
+          chave: string
+          usuarios?: string[]
+        }
+        Update: {
+          ativo_todos?: boolean
+          atualizado_em?: string
+          chave?: string
+          usuarios?: string[]
+        }
+        Relationships: []
+      }
+      exa2_ofertas_politica: {
+        Row: {
+          ativa: boolean
+          atualizado_em: string
+          cancelamento_ate_virada_mes: boolean
+          cancelamento_aviso_dias: number
+          descricao: string | null
+          multa_rescisao_ativa: boolean
+          multa_rescisao_percentual: number
+          oferta: string
+        }
+        Insert: {
+          ativa?: boolean
+          atualizado_em?: string
+          cancelamento_ate_virada_mes?: boolean
+          cancelamento_aviso_dias?: number
+          descricao?: string | null
+          multa_rescisao_ativa?: boolean
+          multa_rescisao_percentual?: number
+          oferta: string
+        }
+        Update: {
+          ativa?: boolean
+          atualizado_em?: string
+          cancelamento_ate_virada_mes?: boolean
+          cancelamento_aviso_dias?: number
+          descricao?: string | null
+          multa_rescisao_ativa?: boolean
+          multa_rescisao_percentual?: number
+          oferta?: string
+        }
+        Relationships: []
+      }
       exclusividades_segmento: {
         Row: {
           ativo: boolean | null
@@ -9917,8 +10039,8 @@ export type Database = {
       marca_ficha_campos: {
         Row: {
           atualizado_por: string | null
-          categoria: string | null
           campo: string
+          categoria: string | null
           created_at: string
           id: string
           marca_id: string
@@ -9930,8 +10052,8 @@ export type Database = {
         }
         Insert: {
           atualizado_por?: string | null
-          categoria?: string | null
           campo: string
+          categoria?: string | null
           created_at?: string
           id?: string
           marca_id: string
@@ -9943,8 +10065,8 @@ export type Database = {
         }
         Update: {
           atualizado_por?: string | null
-          categoria?: string | null
           campo?: string
+          categoria?: string | null
           created_at?: string
           id?: string
           marca_id?: string
@@ -9966,7 +10088,6 @@ export type Database = {
       }
       marcas_clientes: {
         Row: {
-          pedido_id: string | null
           banco_autorizado: boolean
           banco_termos: string[]
           client_id: string | null
@@ -9981,6 +10102,7 @@ export type Database = {
           instagram: string | null
           logo: Json | null
           notas: string | null
+          pedido_id: string | null
           proibido: string | null
           segmento: string | null
           site: string | null
@@ -9990,7 +10112,6 @@ export type Database = {
           whatsapp_qr: string | null
         }
         Insert: {
-          pedido_id?: string | null
           banco_autorizado?: boolean
           banco_termos?: string[]
           client_id?: string | null
@@ -10005,6 +10126,7 @@ export type Database = {
           instagram?: string | null
           logo?: Json | null
           notas?: string | null
+          pedido_id?: string | null
           proibido?: string | null
           segmento?: string | null
           site?: string | null
@@ -10014,7 +10136,6 @@ export type Database = {
           whatsapp_qr?: string | null
         }
         Update: {
-          pedido_id?: string | null
           banco_autorizado?: boolean
           banco_termos?: string[]
           client_id?: string | null
@@ -10029,6 +10150,7 @@ export type Database = {
           instagram?: string | null
           logo?: Json | null
           notas?: string | null
+          pedido_id?: string | null
           proibido?: string | null
           segmento?: string | null
           site?: string | null
@@ -10057,6 +10179,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marcas_clientes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
         ]
@@ -10252,6 +10381,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      nando_atendimento: {
+        Row: {
+          assumido_por: string | null
+          assumido_por_nome: string | null
+          atualizado_em: string
+          humano_ate: string | null
+          modo: string
+          telefone: string
+        }
+        Insert: {
+          assumido_por?: string | null
+          assumido_por_nome?: string | null
+          atualizado_em?: string
+          humano_ate?: string | null
+          modo?: string
+          telefone: string
+        }
+        Update: {
+          assumido_por?: string | null
+          assumido_por_nome?: string | null
+          atualizado_em?: string
+          humano_ate?: string | null
+          modo?: string
+          telefone?: string
+        }
+        Relationships: []
       }
       nando_avisos: {
         Row: {
@@ -13321,6 +13477,8 @@ export type Database = {
       proposals: {
         Row: {
           access_token: string
+          cancelamento_ate_virada_mes: boolean
+          cancelamento_aviso_dias: number
           cash_total_value: number
           cash_value_manual: boolean
           cc_emails: string[] | null
@@ -13418,6 +13576,8 @@ export type Database = {
         }
         Insert: {
           access_token?: string
+          cancelamento_ate_virada_mes?: boolean
+          cancelamento_aviso_dias?: number
           cash_total_value: number
           cash_value_manual?: boolean
           cc_emails?: string[] | null
@@ -13515,6 +13675,8 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          cancelamento_ate_virada_mes?: boolean
+          cancelamento_aviso_dias?: number
           cash_total_value?: number
           cash_value_manual?: boolean
           cc_emails?: string[] | null
@@ -18000,6 +18162,7 @@ export type Database = {
       }
       diagnose_user_system: { Args: never; Returns: Json }
       emergency_financial_audit_and_fix: { Args: never; Returns: Json }
+      ensure_ficha_padrao: { Args: { p_marca_id: string }; Returns: undefined }
       ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
       extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
       generate_contract_number: { Args: never; Returns: string }
