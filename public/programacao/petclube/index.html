@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="Programação dos vídeos · Pet Clube Foz">
+<meta property="og:description" content="Veja os 4 vídeos nas telas da EXA e o dia de cada um. Aprove pelo WhatsApp.">
+<meta property="og:image" content="https://www.examidia.com.br/programacao/petclube/og.jpg">
+<meta property="og:type" content="website">
+<title>Pet Clube Foz na EXA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap">
+<style>
+/* Layout: faixa azul da marca no topo, semana como uma régua de 7 dias, depois os 4 vídeos em grade 2×2 */
+:root {
+  --azul: #048CDA; --amarelo: #FDE47D; --noite: #0B2E5E; --prof: #0058B0;
+  --bg: #F6F4EE; --card: #FFFFFF; --fg: #0B2E5E; --muted: #4E6584; --line: #DCE3EC;
+  --c1: #048CDA; --c2: #0058B0; --c3: #E8A400; --c4: #1A9B5B;
+  --f: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0A1626; --card: #11233A; --fg: #EAF2FB; --muted: #9DB2CC; --line: #223A57;
+  --c1: #3DB0F0; --c2: #6FA8F0; --c3: #FDE47D; --c4: #4CCB8A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0A1626; --card: #11233A; --fg: #EAF2FB; --muted: #9DB2CC; --line: #223A57;
+  --c1: #3DB0F0; --c2: #6FA8F0; --c3: #FDE47D; --c4: #4CCB8A; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--f); font-size: 16px; line-height: 1.5 }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+header { background: var(--azul); color: #fff }
+header .wrap { padding-block: 40px 44px; display: grid; gap: 22px }
+header img { width: 150px; height: auto }
+.eyebrow { font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amarelo) }
+h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.1; font-weight: 900; margin: 6px 0 0; text-wrap: balance }
+header p { margin: 0; max-width: 62ch; font-size: 17px; color: #E6F4FD }
+.facts { display: flex; flex-wrap: wrap; gap: 10px }
+.facts span { background: rgba(255,255,255,.14); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 14px }
+section { padding-block: 44px 8px }
+h2 { font-size: 26px; font-weight: 900; margin: 0 0 6px; text-wrap: balance }
+.lead { margin: 0 0 22px; color: var(--muted); max-width: 64ch }
+/* semana */
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px }
+.day { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px 14px; display: grid; gap: 8px; cursor: pointer; text-align: left; font: inherit; color: inherit }
+.day:focus-visible, .vcard:focus-within { outline: 3px solid var(--amarelo); outline-offset: 2px }
+.day .dn { font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-weight: 900; font-size: 15px }
+.tag i { width: 10px; height: 10px; border-radius: 50%; background: var(--k); flex: none }
+.day .why { font-size: 13px; color: var(--muted); line-height: 1.35 }
+.day.on { border-color: var(--k); box-shadow: inset 0 0 0 2px var(--k) }
+.base { margin-top: 16px; display: flex; gap: 12px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; max-width: 760px }
+.base b { white-space: nowrap }
+/* vídeos */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px }
+.vcard { background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; min-width: 0 }
+.vcard video { width: 100%; max-width: 100%; aspect-ratio: 1310 / 1080; display: block; background: #000 }
+.vbody { padding: 16px 18px 20px; display: grid; gap: 8px; align-content: start }
+.vhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap }
+.vhead h3 { margin: 0; font-size: 20px; font-weight: 900 }
+.days { font-size: 13px; font-weight: 800; color: var(--k) }
+.vbody p { margin: 0; color: var(--muted) }
+.role { font-weight: 800; color: var(--fg) !important }
+/* calendário */
+.cal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+.cal div { border-top: 4px solid var(--amarelo); background: var(--card); border-radius: 0 0 14px 14px; padding: 14px 16px }
+.cal b { display: block; margin-bottom: 4px }
+.cal p { margin: 0; color: var(--muted); font-size: 15px }
+.next { margin-block: 8px 0; background: var(--noite); color: #fff; border-radius: 18px; padding: 24px 24px 26px; display: grid; gap: 8px }
+.next h2 { color: var(--amarelo) }
+.next p { margin: 0; color: #DCE8F5; max-width: 66ch }
+footer { padding-block: 34px 48px; color: var(--muted); font-size: 14px }
+@media (max-width: 860px) {
+  .week { grid-template-columns: 1fr; }
+  .day { grid-template-columns: 92px 1fr; align-items: center; }
+  .day .why { grid-column: 2 }
+  .grid, .cal { grid-template-columns: 1fr }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important } }
+
+.approve { margin-block: 36px 8px; background: var(--noite); color: #fff; border-radius: 18px; padding: 24px; display: grid; gap: 14px }
+.approve h2 { color: var(--amarelo); margin: 0 }
+.approve p { margin: 0; color: #DCE8F5; max-width: 62ch }
+.btns { display: flex; flex-wrap: wrap; gap: 12px }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 24px; border-radius: 999px; font-weight: 900; font-size: 17px; text-decoration: none }
+.btn.ok { background: #25D366; color: #06331A }
+.btn.adj { background: transparent; color: #fff; box-shadow: inset 0 0 0 2px rgba(255,255,255,.55) }
+.btn:focus-visible { outline: 3px solid var(--amarelo); outline-offset: 3px }
+html, body { margin: 0 } body { -webkit-font-smoothing: antialiased }
+</style>
+</head>
+<body>
+
+
+<header>
+  <div class="wrap">
+    <img src="logo.svg" alt="Pet Clube Foz">
+    <div>
+      <div class="eyebrow">Proposta de programação · EXA Mídia</div>
+      <h1>Um vídeo diferente da Pet Clube a cada dia da semana</h1>
+    </div>
+    <p>São 4 vídeos de 10 segundos nas telas dos elevadores, onde os moradores passam todos os dias. Cada vídeo fala com um momento da semana, para a marca sempre parecer nova e chegar na hora certa.</p>
+    <div class="facts"><span>4 vídeos</span><span>10 s cada, sem som</span><span>Tela horizontal 1310×1080</span><span>1 vídeo por dia</span></div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-bottom:24px">
+  <section>
+    <h2>A semana da Pet Clube</h2>
+    <p class="lead">Toque em um dia para ver o vídeo que entra nele. A creche, que é o serviço do dia a dia, fica com mais dias; a hospedagem entra no meio da semana, quando as viagens são planejadas.</p>
+    <div class="week" id="week"></div>
+  </section>
+
+  <section>
+    <h2>Os 4 vídeos</h2>
+    <p class="lead">Cada um tem um papel diferente no caminho do morador até agendar a avaliação.</p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+
+  <section class="approve" id="aprovar">
+    <h2>Tudo certo com a programação?</h2>
+    <p>Ao aprovar, os vídeos entram nas telas dos elevadores nos dias mostrados acima. Se quiser trocar algum dia ou vídeo, é só pedir o ajuste.</p>
+    <div class="btns">
+      <a class="btn ok" href="https://wa.me/5545991415920?text=Ol%C3%A1%21%20Aprovo%20a%20programa%C3%A7%C3%A3o%20dos%20v%C3%ADdeos%20da%20Pet%20Clube%20Foz." target="_blank" rel="noopener">Aprovar pelo WhatsApp</a>
+      <a class="btn adj" href="https://wa.me/5545991415920?text=Ol%C3%A1%21%20Quero%20ajustar%20a%20programa%C3%A7%C3%A3o%20dos%20v%C3%ADdeos%20da%20Pet%20Clube%20Foz%3A%20" target="_blank" rel="noopener">Pedir ajuste</a>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">Proposta preparada pela EXA Mídia para a Pet Clube Foz · R. Bartolomeu de Gusmão, 1393 · Centro · Foz do Iguaçu · (45) 99127-4104</div></footer>
+
+<script>
+const V = {
+  1: { n: 'V1', t: 'Vem pro Clube', k: 'var(--c1)', msg: 'Apresenta a marca, a entrada real do Clube e o endereço no Centro de Foz.', role: 'Apresentar: o Clube existe e fica aqui perto.' },
+  2: { n: 'V2', t: 'POV: você é um cachorro', k: 'var(--c2)', msg: 'Mostra o espaço pelo olhar do cachorro: câmeras, climatização e atividades.', role: 'Dar segurança: responde “é bom? é seguro?”.' },
+  3: { n: 'V3', t: 'Você sai às 8h. E ele?', k: 'var(--c3)', msg: 'Fala com quem trabalha fora e deixa o pet sozinho o dia todo.', role: 'Despertar a creche: o motivo para matricular.' },
+  4: { n: 'V4', t: 'Vai viajar? Hospedagem', k: 'var(--c4)', msg: 'Um cartão de embarque vira a reserva do pet: ele fica hospedado no Clube.', role: 'Vender a hospedagem para quem vai viajar.' }
+};
+const WEEK = [
+  ['Domingo', 3, 'Noite de pensar na semana: “amanhã você sai às 8h”.'],
+  ['Segunda', 3, 'Volta da rotina: o pet fica sozinho de novo.'],
+  ['Terça', 2, 'Quem se interessou quer saber se é seguro.'],
+  ['Quarta', 4, 'Dá tempo de agendar a avaliação antes da viagem.'],
+  ['Quinta', 4, 'Dia em que se fecha a viagem do fim de semana.'],
+  ['Sexta', 2, 'Clima leve: o vídeo mais divertido da semana.'],
+  ['Sábado', 1, 'Dia livre para passar no endereço e conhecer.']
+];
+const daysOf = id => WEEK.filter(d => d[1] === id).map(d => d[0].slice(0, 3)).join(', ');
+const week = document.getElementById('week'), grid = document.getElementById('grid');
+WEEK.forEach(([d, id, why], i) => {
+  const b = document.createElement('button'); b.className = 'day'; b.id = 'dia-' + i; b.type = 'button'; b.style.setProperty('--k', V[id].k);
+  b.innerHTML = `<span class="dn">${d}</span><span class="tag"><i></i>${V[id].n} · ${V[id].t}</span><span class="why">${why}</span>`;
+  b.addEventListener('click', () => pick(id, i)); week.appendChild(b);
+});
+Object.entries(V).forEach(([id, v]) => {
+  const c = document.createElement('article'); c.className = 'vcard'; c.id = 'video-' + id; c.style.setProperty('--k', v.k);
+  c.innerHTML = `<video src="v${id}.mp4" poster="p${id}.jpg" muted autoplay loop playsinline controls preload="metadata"></video>
+    <div class="vbody"><div class="vhead"><h3>${v.n} · ${v.t}</h3><span class="days">${daysOf(+id)}</span></div>
+    <p>${v.msg}</p><p class="role">${v.role}</p></div>`;
+  grid.appendChild(c);
+});
+function pick(id, i) {
+  document.querySelectorAll('.day').forEach((el, j) => el.classList.toggle('on', j === i));
+  const card = document.getElementById('video-' + id), vid = card.querySelector('video');
+  try { vid.currentTime = 0; vid.play().catch(() => {}); } catch (e) {}
+  card.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+}
+const today = new Date().getDay(); document.getElementById('dia-' + today).classList.add('on');
+</script>
+
+</body>
+</html>

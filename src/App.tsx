@@ -614,6 +614,8 @@ const AppContent = () => {
           <Route path="/midiakit-sindicos/*" element={<StaticRedirect to="/midiakit-sindicos/index.html" />} />
           <Route path="/proposta-jorbel" element={<StaticRedirect to="/proposta-jorbel/index.html" />} />
           <Route path="/proposta-jorbel/*" element={<StaticRedirect to="/proposta-jorbel/index.html" />} />
+          <Route path="/programacao/petclube" element={<StaticRedirect to="/programacao/petclube/index.html" />} />
+          <Route path="/programacao/petclube/*" element={<StaticRedirect to="/programacao/petclube/index.html" />} />
 
           {/* Rota catch-all para páginas não encontradas */}
           <Route path="*" element={<Suspense fallback={<GlobalLoadingPage />}><NaoEncontrado /></Suspense>} />
