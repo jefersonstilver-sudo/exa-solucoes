@@ -94,7 +94,7 @@ html, body { margin: 0 } body { -webkit-font-smoothing: antialiased }
 
 <header>
   <div class="wrap">
-    <img src="logo.svg" alt="Pet Clube Foz">
+    <img src="/programacao/petclube/logo.svg" alt="Pet Clube Foz">
     <div>
       <div class="eyebrow">Proposta de programação · EXA Mídia</div>
       <h1>Um vídeo diferente da Pet Clube a cada dia da semana</h1>
@@ -155,7 +155,7 @@ WEEK.forEach(([d, id, why], i) => {
 });
 Object.entries(V).forEach(([id, v]) => {
   const c = document.createElement('article'); c.className = 'vcard'; c.id = 'video-' + id; c.style.setProperty('--k', v.k);
-  c.innerHTML = `<video src="v${id}.mp4" poster="p${id}.jpg" muted autoplay loop playsinline controls preload="metadata"></video>
+  c.innerHTML = `<video src="/programacao/petclube/v${id}.mp4" poster="/programacao/petclube/p${id}.jpg" muted autoplay loop playsinline controls preload="metadata"></video>
     <div class="vbody"><div class="vhead"><h3>${v.n} · ${v.t}</h3><span class="days">${daysOf(+id)}</span></div>
     <p>${v.msg}</p><p class="role">${v.role}</p></div>`;
   grid.appendChild(c);
