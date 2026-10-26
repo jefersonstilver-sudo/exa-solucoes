@@ -110,7 +110,7 @@ const PreviewPedido = lazy(() => import('./pages/public/PreviewPedido'));
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
 const AdvertiserOrders = lazy(() => import('./pages/advertiser/AdvertiserOrders'));
 const OrderDetails = lazy(() => import('./pages/advertiser/OrderDetails'));
-const OrderDetailsV2 = lazy(() => import('./pages/advertiser/OrderDetailsV2'));
+const PedidoRouteSwitch = lazy(() => import('./pages/advertiser/PedidoRouteSwitch'));
 const MyCampaigns = lazy(() => import('./pages/advertiser/MyCampaigns'));
 const MyVideos = lazy(() => import('./pages/advertiser/MyVideos'));
 const QrCodesRastreaveis = lazy(() => import('./pages/advertiser/QrCodesRastreaveis'));
@@ -535,7 +535,7 @@ const AppContent = () => {
             } />
             <Route path="pedido/:id" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando detalhes do pedido..." />}>
-                <OrderDetailsV2 />
+                <PedidoRouteSwitch />
               </Suspense>
             } />
             {/* EXA 2.0: página antiga mantida para rollback rápido */}
