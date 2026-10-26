@@ -27,6 +27,12 @@ const DefinirSenhaPage = () => {
   useEffect(() => {
     const validateSession = async () => {
       try {
+        // Link novo (Sofia v71): o token so e usado quando a pessoa salva a senha.
+        // Assim, antivirus/preview de e-mail que "abrem" o link antes nao queimam o acesso.
+        if (searchParams.get('th')) {
+          setIsValidating(false);
+          return;
+        }
         // Check URL hash for tokens or errors
         const hash = window.location.hash;
         const params = new URLSearchParams(hash.substring(1));
@@ -138,6 +144,17 @@ const DefinirSenhaPage = () => {
     setIsLoading(true);
 
     try {
+      // Link com token_hash: valida o token agora (um único uso), na hora de salvar a senha
+      const th = searchParams.get('th');
+      if (th) {
+        const { error: otpErr } = await supabase.auth.verifyOtp({ token_hash: th, type: (searchParams.get('t') as any) || 'recovery' });
+        if (otpErr) {
+          console.error('🔐 [DEFINIR SENHA] token_hash inválido/expirado:', otpErr.message);
+          const { data: { session: s0 } } = await supabase.auth.getSession();
+          if (!s0) { setTokenError('expired'); setIsLoading(false); return; }
+        }
+      }
+
       // Verify session before updating
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -148,7 +165,8 @@ const DefinirSenhaPage = () => {
       }
 
       const { error } = await supabase.auth.updateUser({
-        password: password
+        password: password,
+        data: { has_password: true },
       });
 
       if (error) {
@@ -197,7 +215,7 @@ const DefinirSenhaPage = () => {
     const errorConfig = {
       expired: {
         title: 'Link Expirado',
-        message: 'Este link de definição de senha expirou. Links são válidos por 24 horas. Solicite um novo link ou tente fazer login.',
+        message: 'Este link de definição de senha expirou ou já foi usado. Peça um novo link aqui embaixo ou para a Sofia no WhatsApp.',
         icon: <AlertCircle className="h-8 w-8 text-amber-600" />,
         bgIcon: 'bg-amber-100'
       },
