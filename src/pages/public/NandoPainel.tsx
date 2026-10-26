@@ -232,7 +232,6 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
     <div className="relative flex min-h-[100svh] flex-col text-white" style={{ ...FONTE, backgroundColor: '#0c0a0b', backgroundImage: 'radial-gradient(900px 420px at 50% -10%, rgba(156,30,30,.22), transparent 70%)' }}>
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:px-8">
         <img src={LOGO} alt="EXA Mídia" className="h-7 w-auto sm:h-8" />
-        <span className="text-xs font-medium text-white/45">Área restrita</span>
       </header>
 
       <main className="flex flex-1 items-start justify-center px-5 pb-10 pt-12 sm:items-center sm:pt-0">
@@ -283,13 +282,11 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
             {erro && <div className="mt-4 rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">{erro}</div>}
           </div>
 
-          <div className="mt-6 flex items-center gap-2 text-xs text-white/40"><ShieldCheck className="h-3.5 w-3.5" /> Acesso protegido por código. A EXA nunca solicita este código.</div>
         </div>
       </main>
 
-      <footer className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-2 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+18px)] text-[11px] text-white/35 sm:flex-row sm:px-8">
+      <footer className="mx-auto flex w-full max-w-5xl justify-center px-5 pb-[calc(env(safe-area-inset-bottom,0px)+18px)] text-[11px] text-white/35 sm:flex-row sm:px-8">
         <span>© EXA Mídia · Foz do Iguaçu/PR</span>
-        <a href="https://wa.me/554591132351" target="_blank" rel="noreferrer" className="hover:text-white/70">Suporte pelo WhatsApp</a>
       </footer>
     </div>
   );
