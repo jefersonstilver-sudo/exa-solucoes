@@ -132,6 +132,15 @@ const getDocumentLabel = (country?: 'BR' | 'AR' | 'PY' | null): string => {
   }
 };
 
+// CPF (11 dígitos) x CNPJ (14) no Brasil; formata para leitura
+const docBR = (raw: string | null | undefined, country?: 'BR' | 'AR' | 'PY' | null) => {
+  const d = String(raw || '').replace(/\D/g, '');
+  if (country && country !== 'BR') return { label: getDocumentLabel(country), valor: String(raw || '') };
+  if (d.length === 11) return { label: 'CPF', valor: d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') };
+  if (d.length === 14) return { label: 'CNPJ', valor: d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') };
+  return { label: 'CPF/CNPJ', valor: String(raw || '') };
+};
+
 const PropostaPublicaPage = () => {
   const { id } = useParams<{ id: string }>();
   
@@ -999,10 +1008,10 @@ const PropostaPublicaPage = () => {
           selected_buildings: enrichedBuildings.length > 0 ? enrichedBuildings : proposal.selected_buildings,
           tipo_produto: proposal.tipo_produto || 'horizontal'
         },
-        sellerName,
+        (proposal.metadata as any)?.origem === 'sofia' ? 'Sofia · Consultora EXA Mídia' : sellerName,
         isCortesia,
         baseTotalValue,
-        sellerPhone
+        (proposal.metadata as any)?.origem === 'sofia' ? '(45) 99141-5920' : sellerPhone
       );
       toast.success('PDF baixado com sucesso!');
     } catch (err) {
@@ -1645,7 +1654,7 @@ const PropostaPublicaPage = () => {
                     <strong>{proposal.client_name}</strong>
                   </div>
                   {proposal.client_cnpj && (
-                    <div className="text-white/80">{getDocumentLabel(proposal.client_country)}: <strong>{proposal.client_cnpj}</strong></div>
+                    <div className="text-white/80">{docBR(proposal.client_cnpj, proposal.client_country).label}: <strong>{docBR(proposal.client_cnpj, proposal.client_country).valor}</strong></div>
                   )}
                 </div>
                 
@@ -1836,24 +1845,6 @@ const PropostaPublicaPage = () => {
             <Button 
               variant="outline" 
               className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view?usp=drive_link', '_blank')}
-            >
-              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Assistir Vídeo Institucional
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://drive.google.com/file/d/13LxuugUAscR99bMrylvK-S1Ry-oSe1aM/view?usp=drivesdk', '_blank')}
-            >
-              <FileText className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Ver Mídia Kit
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
               onClick={() => window.open('https://www.examidia.com.br', '_blank')}
             >
               <Globe className="h-4 w-4 mr-2 text-[#9C1E1E]" />
@@ -1867,15 +1858,6 @@ const PropostaPublicaPage = () => {
             >
               <Users className="h-4 w-4 mr-2 text-[#9C1E1E]" />
               Quem Somos
-              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
-              onClick={() => window.open('https://drive.google.com/drive/folders/1GgZwyYLZdlqvCqElaaWJQ9BEbYPNMkmR?usp=sharing', '_blank')}
-            >
-              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
-              Mais Vídeos da EXA
               <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
             </Button>
           </div>
@@ -2007,14 +1989,6 @@ const PropostaPublicaPage = () => {
         <ProductShowcaseCard tipo={proposal.tipo_produto || 'horizontal'} totalPanels={totalPanels} />
 
 
-        {/* Infográfico EXA - Espaço é Posição */}
-        <div className="w-full">
-          <img 
-            src="/vertical-premium-showcase.png" 
-            alt="Na EXA, Espaço é Posição - Infográfico" 
-            className="w-full h-auto"
-          />
-        </div>
 
         {/* Card Especial para Cortesia - Mobile Optimized */}
         {isCortesia && (
@@ -2326,7 +2300,7 @@ const PropostaPublicaPage = () => {
         )}
 
         {/* Resumo de Valores por Local - Só aparece para propostas monetárias */}
-        {!isCortesia && !isManualCashProposal && proposal.modalidade_proposta !== 'permuta' && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
+        {!isSofia && !isCortesia && !isManualCashProposal && proposal.modalidade_proposta !== 'permuta' && proposal.payment_type !== 'custom' && !proposal.is_custom_days && buildings.length > 0 && (
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {/* Fidelidade */}
             <Card className="p-2 sm:p-3 bg-white border-slate-200 space-y-1">
@@ -2627,6 +2601,15 @@ const PropostaPublicaPage = () => {
         {/* Contato Comercial - Dados do Vendedor */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm">
           <h3 className="font-semibold mb-2">Contato Comercial</h3>
+          {isSofia ? (
+            <div className="text-sm space-y-2">
+              <div className="font-medium">Sofia · Consultora EXA Mídia</div>
+              <div className="text-muted-foreground">Quem está te atendendo no WhatsApp.</div>
+              <a href="https://wa.me/5545991415920" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-sm font-semibold text-white">
+                <Phone className="h-3.5 w-3.5" /> (45) 99141-5920 · Falar com a Sofia
+              </a>
+            </div>
+          ) : (
           <div className="text-sm space-y-1">
             <div className="font-medium">{sellerName}</div>
             <div className="flex items-center gap-1 text-muted-foreground">
@@ -2638,6 +2621,7 @@ const PropostaPublicaPage = () => {
               {sellerPhone}
             </div>
           </div>
+          )}
         </Card>
 
 

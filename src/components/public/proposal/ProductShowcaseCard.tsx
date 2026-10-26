@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import ReplicaPainel from '@/components/pedido-v2/ReplicaPainel';
 import { Clock, Users, Triangle, Monitor, BarChart3, TrendingUp, Smartphone, RectangleHorizontal, Play } from 'lucide-react';
 import FullscreenVideoPlayer from '@/components/paineis-landing/FullscreenVideoPlayer';
 import { Card } from '@/components/ui/card';
 import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
 
 // Import mockup images
-import mockupHorizontal from '@/assets/mockup-horizontal-new.png';
 import mockupVertical from '@/assets/mockups/mockup-vertical.png';
 
 interface ProductShowcaseCardProps {
@@ -35,6 +35,8 @@ const SAMPLE_VIDEO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/ob
 export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, totalPanels = 1 }) => {
   const { specifications, isLoading } = useVideoSpecifications();
   const [showSampleVideo, setShowSampleVideo] = useState(false);
+  const [agora, setAgora] = useState(() => new Date());
+  useEffect(() => { const i = setInterval(() => setAgora(new Date()), 1000); return () => clearInterval(i); }, []);
   
   const isVertical = tipo === 'vertical_premium';
   
@@ -68,7 +70,7 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
       };
 
   const productTitle = isVertical ? 'VERTICAL PREMIUM' : 'HORIZONTAL';
-  const mockupImage = isVertical ? mockupVertical : mockupHorizontal;
+  const mockupImage = mockupVertical;
   const ProductIcon = isVertical ? Smartphone : RectangleHorizontal;
 
   return (
@@ -77,12 +79,21 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-center lg:items-start">
         
         {/* Left: Mockup Image */}
-        <div className={`relative shrink-0 ${isVertical ? 'w-full max-w-[200px]' : 'w-full max-w-[280px]'}`}>
-          <img 
-            src={mockupImage} 
-            alt={`Painel ${productTitle}`}
-            className="w-full h-auto rounded-lg shadow-lg"
-          />
+        <div className={`relative shrink-0 ${isVertical ? 'w-full max-w-[200px]' : 'w-full max-w-[220px]'}`}>
+          {isVertical ? (
+            <img 
+              src={mockupImage} 
+              alt={`Painel ${productTitle}`}
+              className="w-full h-auto rounded-lg shadow-lg"
+            />
+          ) : (
+            // Tela real do elevador (layout atual 1080×1920): o anúncio horizontal toca no player do topo
+            <ReplicaPainel
+              predioNome="Seu prédio"
+              now={agora}
+              slot={{ id: 'amostra', url: SAMPLE_VIDEO_URL, nome: 'Seu anúncio aqui' } as any}
+            />
+          )}
           <button
             onClick={() => setShowSampleVideo(true)}
             className="mt-3 group relative flex items-center gap-2 mx-auto px-5 py-2.5 bg-[#9C1E1E] text-white rounded-full text-xs font-semibold shadow-lg shadow-[#9C1E1E]/30 hover:bg-[#B40D1A] hover:shadow-xl hover:shadow-[#9C1E1E]/40 transition-all duration-300 hover:scale-105"
