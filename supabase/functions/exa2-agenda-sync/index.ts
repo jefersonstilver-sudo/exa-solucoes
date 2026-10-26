@@ -51,9 +51,9 @@ Deno.serve(async (req) => {
       const { data: u } = await admin.auth.getUser(jwt);
       if (!u?.user) return json({ success: false, error: 'unauthorized' }, 401);
       if (!pedidoIds?.length) return json({ success: false, error: 'pedido_id obrigatório' }, 400);
-      const { data: isAdm } = await admin.rpc('has_role', { _user_id: u.user.id, _role: 'admin' }).then((r) => r, () => ({ data: false }));
-      const { data: isSup } = await admin.rpc('has_role', { _user_id: u.user.id, _role: 'super_admin' }).then((r) => r, () => ({ data: false }));
-      if (!isAdm && !isSup) {
+      const { data: papeis } = await admin.from('user_roles').select('role').eq('user_id', u.user.id);
+      const ehAdmin = (papeis || []).some((r: any) => ['admin', 'super_admin'].includes(String(r.role)));
+      if (!ehAdmin) {
         const { data: own } = await admin.from('pedidos').select('id').in('id', pedidoIds).eq('client_id', u.user.id);
         if ((own || []).length !== pedidoIds.length) return json({ success: false, error: 'forbidden' }, 403);
       }

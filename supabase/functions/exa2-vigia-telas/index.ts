@@ -38,11 +38,8 @@ Deno.serve(async (req) => {
       const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
       const { data: u } = await main.auth.getUser(jwt);
       if (!u?.user) return json({ success: false, error: 'unauthorized' }, 401);
-      const [{ data: a }, { data: s }] = await Promise.all([
-        main.rpc('has_role', { _user_id: u.user.id, _role: 'admin' }),
-        main.rpc('has_role', { _user_id: u.user.id, _role: 'super_admin' }),
-      ]);
-      if (!a && !s) return json({ success: false, error: 'forbidden' }, 403);
+      const { data: papeis } = await main.from('user_roles').select('role').eq('user_id', u.user.id);
+      if (!(papeis || []).some((r: any) => ['admin', 'super_admin'].includes(String(r.role)))) return json({ success: false, error: 'forbidden' }, 403);
     }
 
     const exaKey = Deno.env.get('EXASISTEMA_SERVICE_KEY');

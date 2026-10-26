@@ -25,11 +25,9 @@ Deno.serve(async (req) => {
     const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
     const { data: u } = await sb.auth.getUser(jwt);
     if (!u?.user) return json(401, { error: "não autenticado" });
-    const [{ data: a }, { data: s }] = await Promise.all([
-      sb.rpc("has_role", { _user_id: u.user.id, _role: "admin" }),
-      sb.rpc("has_role", { _user_id: u.user.id, _role: "super_admin" }),
-    ]);
-    if (!a && !s) return json(403, { error: "sem permissão" });
+    // has_role tem duas versões (text e app_role) e a chamada RPC fica ambígua: lê user_roles direto
+    const { data: papeis } = await sb.from("user_roles").select("role").eq("user_id", u.user.id);
+    if (!(papeis || []).some((r: any) => ["admin", "super_admin"].includes(String(r.role)))) return json(403, { error: "sem permissão" });
     const { data: perfil } = await sb.from("users").select("nome, email").eq("id", u.user.id).maybeSingle().then((r) => r, () => ({ data: null }));
     const autor = (perfil as any)?.nome || (perfil as any)?.email || u.user.email || "Equipe EXA";
 
