@@ -762,14 +762,14 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   const segundosDia = horasOperacao * 3600; // 75.600 segundos
 
   // Buscar produto específico ou usar defaults do Manual v3.0
-  const produtoHorizontal = produtosExa?.find((p: any) => p.tipo === 'horizontal') || {
+  const produtoHorizontal = produtosExa?.find((p: any) => (p.tipo || p.codigo) === 'horizontal') || {
     duracao_segundos: 10,
     resolucao: '1080x890',
     proporcao: '6:5',
     max_clientes_painel: 15
   };
   
-  const produtoVertical = produtosExa?.find((p: any) => p.tipo === 'vertical_premium') || {
+  const produtoVertical = produtosExa?.find((p: any) => (p.tipo || p.codigo) === 'vertical_premium') || {
     duracao_segundos: 15,
     resolucao: '1080x1920',
     proporcao: '9:16',
