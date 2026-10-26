@@ -627,3 +627,6 @@ verify_jwt = false
 
 [functions.exa2-agenda-sync]
 verify_jwt = false
+
+[functions.exa2-vigia-telas]
+verify_jwt = false
