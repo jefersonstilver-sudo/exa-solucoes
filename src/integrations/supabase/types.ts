@@ -7338,6 +7338,39 @@ export type Database = {
           },
         ]
       }
+      exa2_alertas_entrega: {
+        Row: {
+          building_id: string | null
+          cliente_id: string
+          criado_em: string
+          id: number
+          mensagem: string
+          notificado_em: string | null
+          resolvido_em: string | null
+          tipo: string
+        }
+        Insert: {
+          building_id?: string | null
+          cliente_id: string
+          criado_em?: string
+          id?: number
+          mensagem: string
+          notificado_em?: string | null
+          resolvido_em?: string | null
+          tipo: string
+        }
+        Update: {
+          building_id?: string | null
+          cliente_id?: string
+          criado_em?: string
+          id?: number
+          mensagem?: string
+          notificado_em?: string | null
+          resolvido_em?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       exa2_config: {
         Row: {
           chave: string
@@ -7409,6 +7442,71 @@ export type Database = {
           oferta?: string
         }
         Relationships: []
+      }
+      exa2_telas_saude: {
+        Row: {
+          app_versao: string | null
+          arquivos_faltando: number | null
+          atualizado_em: string
+          building_id: string | null
+          cliente_id: string
+          device_status: string | null
+          device_visto_em: string | null
+          drift_seg: number | null
+          erro: string | null
+          nome: string | null
+          pendente_desde: string | null
+          playlist: Json
+          sinal_em: string | null
+          status: string
+          versao_aplicada: number | null
+          versao_desejada: number | null
+        }
+        Insert: {
+          app_versao?: string | null
+          arquivos_faltando?: number | null
+          atualizado_em?: string
+          building_id?: string | null
+          cliente_id: string
+          device_status?: string | null
+          device_visto_em?: string | null
+          drift_seg?: number | null
+          erro?: string | null
+          nome?: string | null
+          pendente_desde?: string | null
+          playlist?: Json
+          sinal_em?: string | null
+          status: string
+          versao_aplicada?: number | null
+          versao_desejada?: number | null
+        }
+        Update: {
+          app_versao?: string | null
+          arquivos_faltando?: number | null
+          atualizado_em?: string
+          building_id?: string | null
+          cliente_id?: string
+          device_status?: string | null
+          device_visto_em?: string | null
+          drift_seg?: number | null
+          erro?: string | null
+          nome?: string | null
+          pendente_desde?: string | null
+          playlist?: Json
+          sinal_em?: string | null
+          status?: string
+          versao_aplicada?: number | null
+          versao_desejada?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa2_telas_saude_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exclusividades_segmento: {
         Row: {
