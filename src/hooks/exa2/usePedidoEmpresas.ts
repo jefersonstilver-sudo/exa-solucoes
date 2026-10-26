@@ -5,6 +5,13 @@ import type { Database } from '@/integrations/supabase/types';
 export type Marca = Database['public']['Tables']['marcas_clientes']['Row'];
 export type FichaCampo = Database['public']['Tables']['marca_ficha_campos']['Row'];
 export type MarcaArquivo = Database['public']['Tables']['marca_arquivos']['Row'];
+/** Campos da empresa que o cliente pode editar pelo portal (RLS: só as marcas dele). */
+export type MarcaPatch = Partial<
+  Pick<
+    Database['public']['Tables']['marcas_clientes']['Update'],
+    'empresa' | 'segmento' | 'slogan' | 'instagram' | 'site' | 'whatsapp_qr' | 'endereco' | 'notas' | 'tom_de_voz' | 'proibido' | 'cores' | 'fontes' | 'logo'
+  >
+>;
 
 /** Tipos aceitos pela tabela marca_arquivos (mesmos que a Sofia/Lucas usam). */
 export type TipoArquivo = 'logo' | 'pdf' | 'video' | 'foto' | 'referencia';
@@ -94,12 +101,12 @@ export function usePedidoEmpresas(pedidoId: string, clientId: string | undefined
   );
 
   const atualizarEmpresa = useCallback(
-    async (marcaId: string, patch: Partial<Pick<Marca, 'empresa' | 'instagram' | 'site' | 'whatsapp_qr' | 'endereco' | 'notas'>>) => {
+    async (marcaId: string, patch: MarcaPatch) => {
       setBusy(true);
       try {
         const { error } = await supabase.from('marcas_clientes').update(patch).eq('id', marcaId);
         if (error) throw error;
-        setMarcas((prev) => prev.map((m) => (m.id === marcaId ? { ...m, ...patch } : m)));
+        setMarcas((prev) => prev.map((m) => (m.id === marcaId ? ({ ...m, ...patch } as Marca) : m)));
       } finally {
         setBusy(false);
       }
@@ -138,7 +145,7 @@ export function usePedidoEmpresas(pedidoId: string, clientId: string | undefined
   );
 
   const enviarArquivo = useCallback(
-    async (marcaId: string, tipo: TipoArquivo, file: File, legenda?: string) => {
+    async (marcaId: string, tipo: TipoArquivo, file: File, legenda?: string): Promise<{ url: string; path: string }> => {
       setBusy(true);
       try {
         const path = `${marcaId}/${PASTA[tipo]}/${crypto.randomUUID()}-${safeName(file.name)}`;
@@ -162,6 +169,7 @@ export function usePedidoEmpresas(pedidoId: string, clientId: string | undefined
           throw error;
         }
         await load();
+        return { url: pub.publicUrl, path };
       } finally {
         setBusy(false);
       }

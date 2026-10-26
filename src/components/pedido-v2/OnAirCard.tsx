@@ -1,14 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, Radio, Sparkles } from 'lucide-react';
-import {
-  AgendaRule,
-  AgendaSlot,
-  fmtCountdown,
-  nextChange,
-  winnerAt,
-} from '@/lib/agenda/agendaEngine';
+import React, { useMemo } from 'react';
+import { Radio, Sparkles } from 'lucide-react';
+import { AgendaRule, AgendaSlot, daySegments, fmtCountdown } from '@/lib/agenda/agendaEngine';
+import { useNoArAgora } from '@/hooks/exa2/useNoArAgora';
+import { HoverVideoPreview, LoopVideo, TipoBadge, tipoDaJanela, VideoPoster } from './VideoPreview';
+import { CARD } from './ui';
 
-const fmtQuando = (d: Date) => {
+export const fmtQuando = (d: Date) => {
   const now = new Date();
   const amanha = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const hh = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -30,6 +27,8 @@ export const descreverRegra = (r: AgendaRule | null) => {
   return `${r.label ? r.label + ' · ' : ''}toda ${d} · ${faixa}`;
 };
 
+const nomeDe = (s: AgendaSlot) => (s.nome || `Vídeo ${s.slot_position}`).replace(/_/g, ' ');
+
 interface Props {
   slots: AgendaSlot[];
   rules: AgendaRule[];
@@ -40,94 +39,121 @@ interface Props {
 }
 
 export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar }) => {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId);
 
-  // Recalcula o "próximo" só quando muda o minuto (o countdown em si roda a cada segundo).
+  // Progresso da janela atual (do início do trecho de hoje até a próxima troca).
   const minuteKey = Math.floor(now.getTime() / 60000);
-  const computed = useMemo(() => winnerAt(slots, rules, now), [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const proximo = useMemo(() => nextChange(slots, rules, now, 14), [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Painéis são a verdade: se o servidor diz outro vídeo, mostramos o do servidor.
-  const serverSlot = serverActiveSlotId ? slots.find((s) => s.id === serverActiveSlotId) : null;
-  const atual = serverSlot && serverSlot.id !== computed?.slot.id ? { slot: serverSlot, rule: null } : computed;
+  const inicioJanela = useMemo(() => {
+    const segs = daySegments(slots, rules, now);
+    const min = now.getHours() * 60 + now.getMinutes();
+    const seg = segs.find((s) => min >= s.startMin && min < s.endMin);
+    return seg ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() + seg.startMin * 60000 : now.getTime();
+  }, [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!atual) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-center">
-        <Radio className="mx-auto mb-2 h-8 w-8 text-gray-400" />
-        <p className="font-semibold text-gray-800">Nenhum vídeo no ar ainda</p>
-        <p className="text-sm text-gray-500">Envie seu primeiro vídeo abaixo ou peça para a Sofia criar um para você.</p>
+      <div className={`${CARD} p-6 text-center`}>
+        <Radio className="mx-auto mb-2 h-8 w-8 text-[#8b8285]" />
+        <p className="font-extrabold text-[#1b1719]">Nenhum vídeo no ar ainda</p>
+        <p className="text-sm text-[#8b8285]">Envie seu primeiro vídeo abaixo ou peça para a Sofia criar um para você.</p>
       </div>
     );
   }
 
   const falta = proximo ? proximo.at.getTime() - now.getTime() : 0;
+  const pct = proximo ? Math.min(100, Math.max(2, ((now.getTime() - inicioJanela) / (proximo.at.getTime() - inicioJanela)) * 100)) : 100;
+  const tipoAtual = tipoDaJanela(atual.rule);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm md:grid md:grid-cols-[300px_1fr]">
-      <div className="relative aspect-video bg-black md:aspect-auto md:min-h-[200px]">
-        {atual.slot.url && (
-          <video
-            key={atual.slot.url}
-            src={atual.slot.url}
-            className="absolute inset-0 h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
-        )}
-        <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-          NO AR
-        </span>
-      </div>
+    <div className={`${CARD} overflow-hidden`}>
+      <div className="md:grid md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        {/* Vídeo atual tocando (mudo, em loop) */}
+        <div className="relative aspect-video bg-black">
+          <LoopVideo url={atual.slot.url} nome={nomeDe(atual.slot)} />
+          <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-white backdrop-blur">
+            <span className="relative h-2 w-2 rounded-full bg-[#2fe17a]">
+              <span className="absolute -inset-1 animate-ping rounded-full border-2 border-[#2fe17a]" />
+            </span>
+            NO AR
+          </span>
+        </div>
 
-      <div className="flex min-w-0 flex-col justify-center gap-1.5 p-5">
-        <span className="text-xs font-extrabold uppercase tracking-wide text-emerald-600">● No ar agora</span>
-        <h3 className="truncate text-lg font-extrabold text-gray-900">{atual.slot.nome || `Vídeo ${atual.slot.slot_position}`}</h3>
-        <p className="text-sm text-gray-600">
-          {descreverRegra(atual.rule)}
-          {totalPredios > 0 && <> · nos {totalPredios} prédios</>}
-        </p>
-
-        <div className="mt-2 flex items-center gap-3 border-t border-gray-100 pt-3">
-          <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#9C1E1E]/10 text-[#9C1E1E]">
-            <CalendarClock className="h-5 w-5" />
+        <div className="flex min-w-0 flex-col justify-center gap-2 p-5">
+          <span className="inline-flex items-center gap-2 text-xs font-extrabold tracking-wide text-[#13a24a]">
+            <span className="relative h-2 w-2 rounded-full bg-[#13a24a]">
+              <span className="absolute -inset-1 animate-ping rounded-full border-2 border-[#13a24a]" />
+            </span>
+            NO AR AGORA
+          </span>
+          <h3 className="truncate text-xl font-extrabold tracking-tight text-[#1b1719] sm:text-2xl">{nomeDe(atual.slot)}</h3>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <TipoBadge tipo={tipoAtual} />
+            <span className="text-[12.5px] text-[#8b8285]">
+              {descreverRegra(atual.rule)}
+              {totalPredios > 0 && <> · nos {totalPredios} prédios</>}
+            </span>
           </div>
-          {proximo ? (
-            <>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">A seguir</div>
-                <div className="truncate text-sm font-bold text-gray-900">
-                  {proximo.winner.slot.nome || `Vídeo ${proximo.winner.slot.slot_position}`}
-                </div>
-                <div className="text-xs text-gray-500">{fmtQuando(proximo.at)}</div>
-              </div>
-              <div className="rounded-xl bg-[#9C1E1E]/10 px-3 py-2 text-center">
-                <div className="font-mono text-lg font-extrabold leading-none text-[#9C1E1E] tabular-nums">{fmtCountdown(falta)}</div>
-                <div className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-[#9C1E1E]/70">faltam</div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">A seguir</div>
-                <div className="text-sm font-semibold text-gray-700">Nada programado — o principal segue no ar</div>
-              </div>
-              <button
-                onClick={onAgendar}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-3.5 py-2 text-sm font-bold text-white hover:opacity-90"
-              >
-                <Sparkles className="h-4 w-4" /> Programar
-              </button>
-            </>
+          {proximo && (
+            <div className="mt-1 h-[5px] overflow-hidden rounded-full bg-[#ebe6e7]" title="Quanto já passou desta janela">
+              <i className="block h-full rounded-full bg-gradient-to-r from-[#9e1b34] to-[#c0304b] transition-[width] duration-1000" style={{ width: `${pct}%` }} />
+            </div>
           )}
         </div>
+      </div>
+
+      {/* A seguir — passar o mouse (ou tocar) mostra o próximo vídeo tocando */}
+      <div className="border-t border-[#f1edee] px-4 py-3 sm:px-5">
+        {proximo ? (
+          <HoverVideoPreview
+            info={{
+              url: proximo.winner.slot.url,
+              nome: nomeDe(proximo.winner.slot),
+              tipo: tipoDaJanela(proximo.winner.rule),
+              faixa: `entra ${fmtQuando(proximo.at)}`,
+              extra: descreverRegra(proximo.winner.rule),
+            }}
+          >
+            <div className="-mx-2 flex items-center gap-3 rounded-2xl px-2 py-1 transition hover:bg-[#fdf6f7]">
+              <div className="relative h-11 w-11 flex-none overflow-hidden rounded-[11px] bg-black">
+                {proximo.winner.slot.url ? (
+                  <video src={`${proximo.winner.slot.url}#t=1`} className="h-full w-full object-cover" preload="metadata" muted playsInline />
+                ) : (
+                  <VideoPoster small className="absolute inset-0" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10.5px] font-bold uppercase tracking-[0.09em] text-[#8b8285]">A seguir</div>
+                <div className="truncate text-sm font-bold text-[#1b1719]">{nomeDe(proximo.winner.slot)}</div>
+                <div className="truncate text-xs text-[#8b8285]">{fmtQuando(proximo.at)} · <span className="hidden sm:inline">passe o mouse para ver</span><span className="sm:hidden">toque para ver</span></div>
+              </div>
+              <div className="rounded-[10px] bg-[#f8e9ec] px-2.5 py-1.5 text-center">
+                <div className="whitespace-nowrap font-mono text-base font-extrabold leading-none tabular-nums text-[#9C1E1E] sm:text-lg">{fmtCountdown(falta)}</div>
+                <div className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-[#9C1E1E]/70">faltam</div>
+              </div>
+            </div>
+          </HoverVideoPreview>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10.5px] font-bold uppercase tracking-[0.09em] text-[#8b8285]">A seguir</div>
+              <div className="text-sm font-semibold text-[#554e50]">Nada programado — o principal segue no ar</div>
+            </div>
+            <button onClick={onAgendar} className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-3.5 py-2 text-sm font-bold text-white hover:bg-[#7c1428]">
+              <Sparkles className="h-4 w-4" /> Programar
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-[#f1edee] px-5 py-2.5 text-[11.5px] text-[#8b8285]">
+        {[
+          ['#13a24a', 'No ar'],
+          ['#9e1b34', 'Principal'],
+          ['#2563eb', 'Agendado'],
+          ['#c2740a', 'Em aprovação'],
+        ].map(([c, t]) => (
+          <span key={t} className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded" style={{ background: c }} />{t}</span>
+        ))}
       </div>
     </div>
   );

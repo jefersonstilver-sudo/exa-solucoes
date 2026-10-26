@@ -7,7 +7,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, Building2, CalendarDays, Check, Crown, Film, Loader2, Pencil, Receipt, Tag, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Building2, CalendarDays, Check, ChevronRight, Crown, Film, Loader2, Pencil, Receipt, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
@@ -30,12 +30,12 @@ import { CollapsiblePurchaseInfo } from '@/components/order/CollapsiblePurchaseI
 import { OrderInstallmentsSection } from '@/components/order/OrderInstallmentsSection';
 import { usePedidoAgenda } from '@/hooks/exa2/usePedidoAgenda';
 import { usePedidoEmpresas } from '@/hooks/exa2/usePedidoEmpresas';
-import { winnerAt } from '@/lib/agenda/agendaEngine';
 import { OnAirCard } from '@/components/pedido-v2/OnAirCard';
 import { AgendaTab } from '@/components/pedido-v2/AgendaTab';
 import { EntregaResumo } from '@/components/pedido-v2/EntregaResumo';
 import { PrediosTab } from '@/components/pedido-v2/PrediosTab';
 import { EmpresaTab } from '@/components/pedido-v2/EmpresaTab';
+import { CARD, EYEBROW } from '@/components/pedido-v2/ui';
 
 type Aba = 'videos' | 'agenda' | 'predios' | 'empresa' | 'contrato';
 const ABAS: { id: Aba; label: string; icon: React.ElementType }[] = [
@@ -47,9 +47,9 @@ const ABAS: { id: Aba; label: string; icon: React.ElementType }[] = [
 ];
 
 const STATUS: Record<string, { t: string; c: string }> = {
-  video_aprovado: { t: '● Em exibição', c: 'bg-emerald-50 text-emerald-700' },
-  ativo: { t: '● Em exibição', c: 'bg-emerald-50 text-emerald-700' },
-  pago: { t: 'Pago', c: 'bg-emerald-50 text-emerald-700' },
+  video_aprovado: { t: '● Em exibição', c: 'bg-[#e6f6ec] text-[#13a24a]' },
+  ativo: { t: '● Em exibição', c: 'bg-[#e6f6ec] text-[#13a24a]' },
+  pago: { t: 'Pago', c: 'bg-[#e6f6ec] text-[#13a24a]' },
   pago_pendente_video: { t: 'Aguardando vídeo', c: 'bg-amber-50 text-amber-700' },
   video_enviado: { t: 'Vídeo em aprovação', c: 'bg-blue-50 text-blue-700' },
   aguardando_contrato: { t: 'Aguardando contrato', c: 'bg-amber-50 text-amber-700' },
@@ -84,8 +84,12 @@ const OrderDetailsV2 = () => {
 
   const contractStatus = useContractStatus(order || { id, data_inicio: undefined, data_fim: undefined, status: 'pendente', plano_meses: 1 });
   const { enhancedData, loading: enhancedLoading } = useEnhancedOrderData(id || '', userProfile?.id || '');
-  const buildingIds = order?.lista_predios || [];
-  const { buildings } = useSelectedBuildingsDetails(buildingIds);
+  const buildingIds: string[] = order?.lista_predios || [];
+  const { buildings: todosBuildings } = useSelectedBuildingsDetails(buildingIds);
+  // Para o cliente só contam prédios ATIVOS: inativos, internos e ids que não existem mais ficam de fora
+  // (lista_predios no banco continua intacta — é só a exibição).
+  const buildings = useMemo(() => todosBuildings.filter((b) => (b as any).status === 'ativo'), [todosBuildings]);
+  const predioIdsAtivos = useMemo(() => buildings.map((b) => b.id), [buildings]);
 
   const {
     videoSlots, uploading, uploadProgress, activateVideo, removeVideo, uploadVideo, refreshSlots,
@@ -172,10 +176,6 @@ const OrderDetailsV2 = () => {
   };
 
   const serverActive = videoSlots.find((s) => s.is_active && s.selected_for_display)?.id || null;
-  const noAr = useMemo(() => {
-    const byServer = agenda.slots.find((s) => s.id === serverActive);
-    return byServer || winnerAt(agenda.slots, agenda.rules, new Date())?.slot || null;
-  }, [agenda.slots, agenda.rules, serverActive]);
 
   // ---- estados de carregamento / erro ----
   if (authLoading || !isAuthenticated) {
@@ -222,106 +222,149 @@ const OrderDetailsV2 = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-6 sm:py-6">
-          <button onClick={() => navigate('/anunciante/pedidos')} className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-bold text-gray-700 hover:border-[#9C1E1E] hover:text-[#9C1E1E]">
-            <ArrowLeft className="h-4 w-4" /> Voltar para Meus Pedidos
+      <div className="min-h-screen bg-[#f3f1f2] text-[#1b1719] antialiased">
+        <div className="mx-auto max-w-6xl space-y-5 px-4 py-4 sm:px-6 sm:py-6">
+          <button onClick={() => navigate('/anunciante/pedidos')} className="inline-flex items-center gap-1 text-sm font-bold text-[#9C1E1E] hover:underline">
+            <ArrowLeft className="h-4 w-4" /> Meus pedidos
           </button>
 
           {/* Cabeçalho do pedido */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="min-w-0 flex-1">
-                {editNome ? (
-                  <div className="flex gap-2">
-                    <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && salvarNome()} maxLength={80} className="min-w-0 flex-1 rounded-xl border border-[#9C1E1E] px-3 py-2 text-lg font-extrabold outline-none" />
-                    <button onClick={salvarNome} className="rounded-xl bg-[#9C1E1E] px-3 text-white"><Check className="h-5 w-5" /></button>
-                    <button onClick={() => { setEditNome(false); setNome(order.nome_pedido || ''); }} className="rounded-xl border border-gray-200 px-3 text-gray-500"><X className="h-5 w-5" /></button>
-                  </div>
-                ) : (
-                  <h1 className="truncate text-xl font-extrabold leading-tight text-gray-900 sm:text-2xl">{order.nome_pedido?.trim() || `Pedido #${order.id.slice(0, 8)}`}</h1>
-                )}
-                <div className="mt-0.5 text-xs font-bold text-gray-400">#{order.id.slice(0, 8)}</div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${st.c}`}>{st.t}</span>
-                  {order.is_master && <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 px-2.5 py-1 text-[11px] font-bold text-amber-950"><Crown className="h-3 w-3" /> Master</span>}
-                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">{orient}</span>
-                  {order.data_inicio && order.data_fim && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">{fmtData(order.data_inicio)} → {fmtData(order.data_fim)}</span>}
-                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">{buildingIds.length} prédios</span>
-                  {comVideo > 0 && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">{aprovados}/{comVideo} vídeos aprovados</span>}
+          <header className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <div className={EYEBROW}>Seu pedido</div>
+              {editNome ? (
+                <div className="mt-1 flex gap-2">
+                  <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && salvarNome()} maxLength={80} className="min-w-0 flex-1 rounded-xl border border-[#9C1E1E] bg-white px-3 py-2 text-lg font-extrabold outline-none" />
+                  <button onClick={salvarNome} className="rounded-xl bg-[#9C1E1E] px-3 text-white"><Check className="h-5 w-5" /></button>
+                  <button onClick={() => { setEditNome(false); setNome(order.nome_pedido || ''); }} className="rounded-xl border border-[#ebe6e7] bg-white px-3 text-[#8b8285]"><X className="h-5 w-5" /></button>
                 </div>
-              </div>
-              {!editNome && (
-                <button onClick={() => setEditNome(true)} title="Renomear pedido" className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-[#9C1E1E] hover:text-[#9C1E1E]">
-                  <Pencil className="h-4 w-4" />
+              ) : (
+                <button onClick={() => setEditNome(true)} title="Renomear pedido" className="group flex max-w-full items-center gap-2 text-left">
+                  <h1 className="truncate text-[26px] font-extrabold leading-tight tracking-tight text-[#1b1719] sm:text-3xl">{order.nome_pedido?.trim() || `Pedido #${order.id.slice(0, 8)}`}</h1>
+                  <Pencil className="h-4 w-4 flex-none text-[#c9c1c3] group-hover:text-[#9C1E1E]" />
                 </button>
               )}
+              <p className="mt-1 text-[13.5px] text-[#8b8285]">
+                #{order.id.slice(0, 8)}
+                {order.data_inicio && order.data_fim && <> · {fmtData(order.data_inicio)} → {fmtData(order.data_fim)}</>}
+                {' · '}{buildings.length} {buildings.length === 1 ? 'prédio' : 'prédios'}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <span className={`rounded-full px-3 py-1.5 text-[12px] font-bold ${st.c}`}>{st.t}</span>
+                {order.is_master && <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 px-3 py-1.5 text-[12px] font-bold text-amber-950"><Crown className="h-3 w-3" /> Master</span>}
+                <span className={`${CARD} rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#554e50]`}>{orient}</span>
+                {comVideo > 0 && <span className={`${CARD} rounded-full px-3 py-1.5 text-[12px] font-semibold text-[#554e50]`}>{aprovados}/{comVideo} vídeos aprovados</span>}
+              </div>
             </div>
-          </div>
+          </header>
 
           {order.blocked_reason && <BlockedOrderAlert reason={order.blocked_reason} blockedAt={order.blocked_at} />}
 
-          {/* Abas */}
-          <div className="sticky top-0 z-20 -mx-3 bg-gray-50/90 px-3 py-1 backdrop-blur sm:mx-0 sm:px-0">
-            <div className="flex gap-1 overflow-x-auto rounded-2xl border border-gray-200 bg-white p-1">
+          {/* Abas — a ativa sempre em vermelho com texto branco */}
+          <nav className="sticky top-0 z-20 -mx-4 bg-[#f3f1f2]/85 px-4 py-2 backdrop-blur-md sm:mx-0 sm:px-0">
+            <div className={`${CARD} flex gap-1 overflow-x-auto p-1`}>
               {ABAS.map(({ id: a, label, icon: I }) => (
-                <button key={a} onClick={() => setAba(a)} className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-bold transition ${aba === a ? 'bg-[#9C1E1E] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>
+                <button
+                  key={a}
+                  onClick={() => setAba(a)}
+                  aria-current={aba === a ? 'page' : undefined}
+                  className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[14px] px-3.5 py-2.5 text-sm font-bold transition ${aba === a ? 'bg-[#9C1E1E] text-white shadow-[0_6px_16px_-8px_rgba(156,30,30,.8)]' : 'text-[#8b8285] hover:bg-[#f7f5f6] hover:text-[#1b1719]'}`}
+                >
                   <I className="h-4 w-4" /> {label}
                 </button>
               ))}
             </div>
-          </div>
+          </nav>
 
           {aba === 'videos' && (
-            <div className="space-y-5">
-              {!bloqueado && (
-                <OnAirCard slots={agenda.slots} rules={agenda.rules} totalPredios={buildingIds.length} serverActiveSlotId={serverActive} onAgendar={() => setAba('agenda')} />
-              )}
-              {!bloqueado && <EntregaResumo buildingIds={buildingIds} />}
-              {gestaoTravada ? (
-                <AvisoTravado />
-              ) : (
-                <VideoManagementCard
-                  orderStatus={order.status}
-                  videoSlots={videoSlots}
-                  uploading={uploading}
-                  uploadProgress={uploadProgress}
-                  onUpload={handleVideoUpload}
-                  onActivate={(slotId) => guard(() => activateVideo(slotId))}
-                  onRemove={(slotId) => guard(() => removeVideo(slotId))}
-                  onDownload={(url) => window.open(url, '_blank')}
-                  onSetBaseVideo={(slotId) => guard(() => handleSetBase(slotId))}
-                  onRefreshSlots={refreshSlots}
-                  orderId={id || ''}
-                  tipoProduto={tipoProduto}
-                />
-              )}
-              <section>
-                <div className="mb-2 flex items-end justify-between">
-                  <h3 className="text-base font-extrabold text-gray-900">Histórico</h3>
-                  <span className="text-xs font-semibold text-gray-400">vídeos removidos ficam 30 dias aqui</span>
-                </div>
-                {agenda.historico.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">Nenhum vídeo removido ainda.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {agenda.historico.map((h) => (
-                      <div key={h.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-2.5">
-                        {h.thumbnail_url ? <img src={h.thumbnail_url} alt="" className="h-10 w-14 rounded-lg object-cover" /> : <div className="flex h-10 w-14 items-center justify-center rounded-lg bg-gray-100"><Film className="h-4 w-4 text-gray-400" /></div>}
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-bold text-gray-900">{h.video_nome || 'Vídeo'}</div>
-                          <div className="truncate text-xs text-gray-500">{h.resumo_uso || h.periodo || ''}</div>
-                        </div>
-                        <div className="text-right text-[11px] text-gray-400">
-                          removido {fmtData(h.created_at.slice(0, 10))}
-                          <br />
-                          {h.arquivo_excluido ? 'arquivo apagado' : 'arquivo guardado'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="min-w-0 space-y-5">
+                {!bloqueado && (
+                  <section>
+                    <div className="mb-2.5 flex items-baseline justify-between gap-2 px-0.5">
+                      <h2 className="text-lg font-extrabold tracking-tight text-[#1b1719]">No ar agora</h2>
+                      <span className="text-xs text-[#8b8285]">nos {buildings.length} prédios</span>
+                    </div>
+                    <OnAirCard slots={agenda.slots} rules={agenda.rules} totalPredios={buildings.length} serverActiveSlotId={serverActive} onAgendar={() => setAba('agenda')} />
+                  </section>
                 )}
-              </section>
+                {gestaoTravada ? (
+                  <AvisoTravado />
+                ) : (
+                  <section className={`${CARD} overflow-hidden`}>
+                    <div className="flex items-center gap-3 border-b border-[#f1edee] px-4 py-3.5 sm:px-5">
+                      <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#f8e9ec] text-[#9e1b34]"><Film className="h-4 w-4" /></span>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-base font-extrabold tracking-tight text-[#1b1719]">Seus vídeos</h2>
+                        <p className="text-xs text-[#8b8285]">Envie, aprove e defina o principal. {comVideo > 0 && `${comVideo} enviado(s) · ${aprovados} aprovado(s)`}</p>
+                      </div>
+                    </div>
+                    {/* Gestão de vídeos (componente legado: upload, aprovação, principal) */}
+                    <div className="exa2-gestao-videos [&>div]:border-0 [&>div]:shadow-none">
+                      <VideoManagementCard
+                        orderStatus={order.status}
+                        videoSlots={videoSlots}
+                        uploading={uploading}
+                        uploadProgress={uploadProgress}
+                        onUpload={handleVideoUpload}
+                        onActivate={(slotId) => guard(() => activateVideo(slotId))}
+                        onRemove={(slotId) => guard(() => removeVideo(slotId))}
+                        onDownload={(url) => window.open(url, '_blank')}
+                        onSetBaseVideo={(slotId) => guard(() => handleSetBase(slotId))}
+                        onRefreshSlots={refreshSlots}
+                        orderId={id || ''}
+                        tipoProduto={tipoProduto}
+                      />
+                    </div>
+                  </section>
+                )}
+              </div>
+
+              <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
+                {!bloqueado && <EntregaResumo buildingIds={predioIdsAtivos} />}
+                <div className="space-y-2.5">
+                  {[
+                    { a: 'agenda' as Aba, i: CalendarDays, t: 'Agenda de exibição', d: 'Veja e organize quando cada vídeo aparece' },
+                    { a: 'predios' as Aba, i: Building2, t: 'Meus prédios', d: `${buildings.length} prédios · veja a tela ao vivo de cada um` },
+                    { a: 'empresa' as Aba, i: Tag, t: 'Empresa', d: 'Logo, cores, público e vídeos crus para a Sofia' },
+                  ].map(({ a, i: I, t, d }) => (
+                    <button key={a} onClick={() => setAba(a)} className={`${CARD} flex w-full items-center gap-3.5 p-3.5 text-left transition active:scale-[.99]`}>
+                      <span className="flex h-11 w-11 flex-none items-center justify-center rounded-[13px] bg-[#f8e9ec] text-[#9e1b34]"><I className="h-5 w-5" /></span>
+                      <span className="min-w-0 flex-1">
+                        <b className="block text-[15px] font-extrabold text-[#1b1719]">{t}</b>
+                        <span className="block truncate text-xs text-[#8b8285]">{d}</span>
+                      </span>
+                      <ChevronRight className="h-5 w-5 text-[#c9c1c3]" />
+                    </button>
+                  ))}
+                </div>
+                <section className={`${CARD} p-4`}>
+                  <div className="mb-2 flex items-end justify-between gap-2">
+                    <h3 className="text-base font-extrabold text-[#1b1719]">Histórico</h3>
+                    <span className="text-[11px] font-semibold text-[#8b8285]">guardado por 30 dias</span>
+                  </div>
+                  {agenda.historico.length === 0 ? (
+                    <p className="rounded-xl bg-[#f7f5f6] p-3 text-center text-xs text-[#8b8285]">Nenhum vídeo removido ainda.</p>
+                  ) : (
+                    <div className="divide-y divide-[#f1edee]">
+                      {agenda.historico.map((h) => (
+                        <div key={h.id} className="flex items-center gap-3 py-2">
+                          {h.thumbnail_url ? <img src={h.thumbnail_url} alt="" className="h-10 w-14 rounded-lg object-cover" /> : <div className="flex h-10 w-14 items-center justify-center rounded-lg bg-[#f7f5f6]"><Film className="h-4 w-4 text-[#b3aaad]" /></div>}
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-bold text-[#1b1719]">{h.video_nome || 'Vídeo'}</div>
+                            <div className="truncate text-xs text-[#8b8285]">{h.resumo_uso || h.periodo || ''}</div>
+                          </div>
+                          <div className="text-right text-[10.5px] text-[#8b8285]">
+                            {fmtData(h.created_at.slice(0, 10))}
+                            <br />
+                            {h.arquivo_excluido ? 'arquivo apagado' : 'arquivo guardado'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </aside>
             </div>
           )}
 
@@ -345,7 +388,9 @@ const OrderDetailsV2 = () => {
             </>
           )}
 
-          {aba === 'predios' && <PrediosTab predios={buildings as any} noAr={bloqueado ? null : noAr} />}
+          {aba === 'predios' && (
+            <PrediosTab predios={buildings as any} slots={agenda.slots} rules={agenda.rules} serverActiveSlotId={serverActive} bloqueado={bloqueado} />
+          )}
 
           {aba === 'empresa' && (
             <EmpresaTab
@@ -356,7 +401,7 @@ const OrderDetailsV2 = () => {
               busy={empresas.busy}
               disabled={bloqueado}
               criarEmpresa={empresas.criarEmpresa}
-              atualizarEmpresa={empresas.atualizarEmpresa as any}
+              atualizarEmpresa={empresas.atualizarEmpresa}
               salvarCampo={empresas.salvarCampo}
               adicionarCampo={empresas.adicionarCampo}
               enviarArquivo={empresas.enviarArquivo}

@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AgendaRule, AgendaSlot, daySegments } from '@/lib/agenda/agendaEngine';
 import type { EntregaAgenda, NovaProgramacao } from '@/hooks/exa2/usePedidoAgenda';
 import { descreverRegra } from './OnAirCard';
+import { HoverPlayVideo, HoverVideoPreview, tipoDaJanela } from './VideoPreview';
+import { CARD } from './ui';
 
 const CORES = ['#9e1b34', '#2563eb', '#0f8a5f', '#c2740a', '#7c3aed', '#0e7490', '#db2777', '#4d7c0f', '#b45309', '#475569'];
 export const corDoSlot = (s?: AgendaSlot) => (s ? (s.is_base_video ? CORES[0] : CORES[(s.slot_position % (CORES.length - 1)) + 1]) : '#cbd5e1');
@@ -12,7 +14,7 @@ export const corDoSlot = (s?: AgendaSlot) => (s ? (s.is_base_video ? CORES[0] : 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
-const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const hhmm = (m: number) => (m >= 1440 ? '24:00' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
 
 interface Props {
   slots: AgendaSlot[];
@@ -57,9 +59,9 @@ export const AgendaTab: React.FC<Props> = (p) => {
           { icon: Repeat, t: 'Toda semana', d: 'Ex.: happy hour toda quarta e sexta, das 18h às 21h.' },
           { icon: CalendarDays, t: 'Em datas', d: 'Ex.: promoção de 20 a 22/11, o dia todo. Pode programar meses à frente.' },
         ].map(({ icon: I, t, d }) => (
-          <div key={t} className="rounded-2xl border border-gray-200 bg-white p-4">
+          <div key={t} className={`${CARD} p-4`}>
             <div className="flex items-center gap-2 font-bold text-gray-900">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#9C1E1E]/10 text-[#9C1E1E]"><I className="h-4 w-4" /></span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f8e9ec] text-[#9e1b34]"><I className="h-4 w-4" /></span>
               {t}
             </div>
             <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{d}</p>
@@ -68,7 +70,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
       </div>
       {p.entrega && <EntregaBanner e={p.entrega} onReenviar={p.onReenviar} />}
 
-      <p className="rounded-xl border border-[#9C1E1E]/15 bg-[#9C1E1E]/5 px-4 py-2.5 text-xs text-gray-700">
+      <p className="rounded-xl border border-[#f8e9ec] bg-[#fdf6f7] px-4 py-2.5 text-xs text-[#554e50]">
         Regra de ouro: <b>nunca passam dois vídeos ao mesmo tempo</b>. O mesmo vídeo toca em <b>todos os prédios</b> deste pedido.
       </p>
 
@@ -76,13 +78,13 @@ export const AgendaTab: React.FC<Props> = (p) => {
       <section>
         <div className="mb-2 flex items-end justify-between">
           <h3 className="text-base font-extrabold text-gray-900">Seus vídeos</h3>
-          <span className="text-xs font-semibold text-gray-400">a cor de cada um aparece na agenda</span>
+          <span className="text-xs font-semibold text-gray-400">passe o mouse para assistir · a cor de cada um aparece na agenda</span>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {slots.map((s) => (
-            <div key={s.id} className="w-40 flex-none overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div key={s.id} className={`${CARD} w-40 flex-none overflow-hidden sm:w-44`}>
               <div className="relative aspect-video bg-black">
-                {s.url && <video src={s.url} className="h-full w-full object-cover" autoPlay muted loop playsInline />}
+                <HoverPlayVideo url={s.url} nome={s.nome} />
                 <span className="absolute left-1.5 top-1.5 h-3 w-3 rounded-full ring-2 ring-white" style={{ background: corDoSlot(s) }} />
                 {!s.approved && <span className="absolute inset-x-0 bottom-0 bg-amber-500/90 py-0.5 text-center text-[10px] font-bold text-white">em aprovação</span>}
               </div>
@@ -97,12 +99,12 @@ export const AgendaTab: React.FC<Props> = (p) => {
 
       {/* Visão */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1">
+        <div className="inline-flex rounded-xl bg-[#f7f5f6] p-1">
           {(['semana', 'mes'] as const).map((v) => (
             <button
               key={v}
               onClick={() => { setView(v); setOffset(0); }}
-              className={`rounded-lg px-4 py-1.5 text-sm font-bold ${view === v ? 'bg-[#9C1E1E] text-white' : 'text-gray-500'}`}
+              className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${view === v ? 'bg-[#9C1E1E] text-white shadow-sm' : 'text-[#8b8285] hover:text-[#1b1719]'}`}
             >
               {v === 'semana' ? 'Semana' : 'Mês'}
             </button>
@@ -127,7 +129,11 @@ export const AgendaTab: React.FC<Props> = (p) => {
       </div>
 
       {view === 'semana' ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4">
+        <div className={`${CARD} p-4`}>
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <h3 className="text-base font-extrabold text-gray-900">{offset === 0 ? 'Próximos 7 dias' : 'Semana'}</h3>
+            <span className="text-[11px] font-semibold text-gray-400"><span className="hidden sm:inline">passe o mouse</span><span className="sm:hidden">toque</span> num bloco para ver o vídeo</span>
+          </div>
           <div className="mb-2 ml-[78px] flex justify-between text-[10px] font-bold text-gray-400">
             {['0h', '6h', '12h', '18h', '24h'].map((h) => <span key={h}>{h}</span>)}
           </div>
@@ -142,23 +148,37 @@ export const AgendaTab: React.FC<Props> = (p) => {
                     {ehHoje ? 'Hoje' : DIAS[dia.getDay()]}
                     <span className="block text-[10.5px] font-medium text-gray-400">{dia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
                   </div>
-                  <div className="relative h-12 overflow-hidden rounded-xl bg-gray-100">
+                  <div className="relative h-12 overflow-hidden rounded-xl bg-[#f7f5f6]">
                     {segs.map((sg, i) => {
                       const s = sg.winner?.slot;
                       const w = ((sg.endMin - sg.startMin) / 1440) * 100;
-                      return (
+                      const bloco = (
                         <div
-                          key={i}
-                          title={`${hhmm(sg.startMin)}–${hhmm(sg.endMin)} · ${s?.nome || 'sem vídeo'}`}
-                          className="absolute inset-y-1 flex items-center gap-1.5 overflow-hidden rounded-lg text-[10.5px] font-bold text-white"
-                          style={{ left: `${(sg.startMin / 1440) * 100}%`, width: `calc(${w}% - 2px)`, background: corDoSlot(s) }}
+                          className="absolute inset-y-1 flex items-center gap-1.5 overflow-hidden rounded-lg text-[10.5px] font-bold text-white transition hover:brightness-110 hover:ring-2 hover:ring-white/70"
+                          style={{ left: `${(sg.startMin / 1440) * 100}%`, width: `calc(${w}% - 2px)`, minWidth: 6, background: corDoSlot(s) }}
                         >
-                          {s?.url && w > 6 && <video src={`${s.url}#t=1`} className="h-full w-9 flex-none object-cover" preload="metadata" muted playsInline />}
+                          {s?.url && w > 6 && <video src={`${s.url}#t=1`} className="pointer-events-none h-full w-9 flex-none object-cover" preload="metadata" muted playsInline />}
                           {w > 12 && <span className="truncate pr-1.5">{s?.nome?.replace(/_/g, ' ') || '—'}{sg.winner?.rule ? '' : ' · principal'}</span>}
                         </div>
                       );
+                      if (!s) return <React.Fragment key={i}>{bloco}</React.Fragment>;
+                      return (
+                        <HoverVideoPreview
+                          key={i}
+                          info={{
+                            url: s.url,
+                            nome: s.nome,
+                            cor: corDoSlot(s),
+                            tipo: tipoDaJanela(sg.winner?.rule),
+                            faixa: `${ehHoje ? 'Hoje' : DIAS[dia.getDay()]} ${dia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} · ${hhmm(sg.startMin)}–${hhmm(sg.endMin)}`,
+                            extra: descreverRegra(sg.winner?.rule || null),
+                          }}
+                        >
+                          {bloco}
+                        </HoverVideoPreview>
+                      );
                     })}
-                    {ehHoje && <div className="absolute inset-y-0 w-0.5 bg-gray-900" style={{ left: `${agoraPct}%` }} title="agora" />}
+                    {ehHoje && <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-[#1b1719]" style={{ left: `${agoraPct}%` }} title="agora" />}
                   </div>
                 </div>
               );
@@ -174,7 +194,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
         <h3 className="mb-2 text-base font-extrabold text-gray-900">Programações ativas</h3>
         <div className="space-y-2">
           {principal && (
-            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3">
+            <div className={`${CARD} flex items-center gap-3 p-3`}>
               <span className="h-3 w-3 flex-none rounded-full" style={{ background: corDoSlot(principal) }} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-bold text-gray-900">★ {principal.nome}</div>
@@ -187,7 +207,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
           {programacoes.map((r) => {
             const s = slotById.get(r.slotId)!;
             return (
-              <div key={r.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3">
+              <div key={r.id} className={`${CARD} flex items-center gap-3 p-3`}>
                 <span className="h-3 w-3 flex-none rounded-full" style={{ background: corDoSlot(s) }} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-bold text-gray-900">{s.nome}</div>
@@ -234,7 +254,7 @@ const MesView: React.FC<{ slots: AgendaSlot[]; rules: AgendaRule[]; offset: numb
   const diasNoMes = new Date(ini.getFullYear(), ini.getMonth() + 1, 0).getDate();
   const cells: (Date | null)[] = [...Array(ini.getDay()).fill(null), ...Array.from({ length: diasNoMes }, (_, i) => new Date(ini.getFullYear(), ini.getMonth(), i + 1))];
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4">
+    <div className={`${CARD} p-4`}>
       <div className="mb-1.5 grid grid-cols-7 gap-1.5 text-center text-[10.5px] font-extrabold text-gray-400">
         {DIAS.map((d) => <span key={d}>{d}</span>)}
       </div>
