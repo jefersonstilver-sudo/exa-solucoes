@@ -104,6 +104,7 @@ export const SofiaChatPanel: React.FC = () => {
   const nomeAlvo = (searchParams.get('nome') || '').trim();
   const [extraConv, setExtraConv] = useState<Conv | null>(null);
   const [semConversa, setSemConversa] = useState<string | null>(null);
+  const [soSindicos, setSoSindicos] = useState(false);
   const alvoResolvido = useRef(false);
 
   const openDelete = async (c: Conv) => {
@@ -236,7 +237,9 @@ export const SofiaChatPanel: React.FC = () => {
   };
 
   // conversa antiga achada pelo telefone entra no topo da lista (a lista so traz as 60 mais recentes)
-  const lista = extraConv && !convs.some((c) => c.id === extraConv.id) ? [extraConv, ...convs] : convs;
+  const listaTodas = extraConv && !convs.some((c) => c.id === extraConv.id) ? [extraConv, ...convs] : convs;
+  const totalSindicos = listaTodas.filter((c) => c.role === 'sindico').length;
+  const lista = soSindicos ? listaTodas.filter((c) => c.role === 'sindico') : listaTodas;
   const sel = lista.find((c) => c.id === selId) || null;
 
   const setMode = async (mode: 'auto' | 'humano') => {
@@ -285,6 +288,12 @@ export const SofiaChatPanel: React.FC = () => {
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
+        {totalSindicos > 0 && (
+          <div className="px-3 py-2 border-b flex items-center gap-1.5">
+            <button type="button" onClick={() => setSoSindicos(false)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${!soSindicos ? 'border-red-700 bg-red-700 text-white' : 'border-gray-200 text-gray-600'}`}>Todas</button>
+            <button type="button" onClick={() => setSoSindicos(true)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${soSindicos ? 'border-red-700 bg-red-700 text-white' : 'border-gray-200 text-gray-600'}`}>Síndicos {totalSindicos}</button>
+          </div>
+        )}
         {semConversa && (
           <div className="m-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
             Não consegui abrir a conversa ({semConversa}).
@@ -367,6 +376,11 @@ export const SofiaChatPanel: React.FC = () => {
               </div>
             </div>
 
+            {sel.role === 'sindico' && (
+              <div className="px-4 py-2 border-b bg-amber-50 text-xs text-amber-900">
+                <b>Síndico:</b> assuntos do prédio (avisos, telas, problemas) são do <b>Nando</b> (WhatsApp 45 9113-2351). A Sofia só deve encaminhar.
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#faf8f5]">
               {msgs.map((m) => {
                 const mine = m.direction !== 'in';

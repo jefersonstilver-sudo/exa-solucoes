@@ -165,6 +165,14 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
   const semCadastroLiberado = CADASTRO_ABERTO && !predios.length;
   if (MODO_TESTE && !admin && !semCadastroLiberado && !(await ehTestador(sb, tel))) { console.log("[NANDO] modo teste: ignorando", tel); return; }
 
+  // atendimento assumido por alguem da EXA pelo CRM: o Nando so registra, nao responde
+  const { data: atend } = await sb.from("nando_atendimento").select("modo, humano_ate").eq("telefone", tel).maybeSingle()
+    .then((r) => r, () => ({ data: null }));
+  if (atend?.modo === "humano" && (!atend.humano_ate || new Date(atend.humano_ate).getTime() > Date.now())) {
+    console.log("[NANDO] atendimento humano: sem resposta automatica", tel);
+    return;
+  }
+
   // estado da conversa (predio escolhido)
   const { data: est } = await sb.from("nando_estado").select("*").eq("telefone", tel).maybeSingle();
   let predioAtual = null;
@@ -193,12 +201,13 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
   const linhas = (hist || []).reverse();
   // as mensagens novas (ainda nao respondidas): as do sindico depois da ultima que o Nando respondeu
   let ate = 0;
-  for (const l of linhas) if (l.papel === "nando" && Number(l.conteudo?.ate) > ate) ate = Number(l.conteudo.ate);
+  // resposta do Nando OU de um humano da EXA (CRM) encerra as mensagens anteriores do sindico
+  for (const l of linhas) if ((l.papel === "nando" || l.papel === "humano") && Number(l.conteudo?.ate) > ate) ate = Number(l.conteudo.ate);
   let novas: any[];
   if (ate) novas = linhas.filter((l: any) => l.papel === "sindico" && l.id > ate);
   else {
     let iUlt = -1;
-    linhas.forEach((l: any, i: number) => { if (l.papel === "nando") iUlt = i; });
+    linhas.forEach((l: any, i: number) => { if (l.papel === "nando" || l.papel === "humano") iUlt = i; });
     novas = linhas.slice(iUlt + 1).filter((l: any) => l.papel === "sindico");
   }
 
@@ -214,6 +223,7 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
   for (const l of linhas) {
     const c = l.conteudo || {};
     if (l.papel === "nando") push("assistant", String(c.texto || "").slice(0, 2000) || "(ok)");
+    else if (l.papel === "humano") push("assistant", `(resposta enviada por ${c.autor || "uma pessoa da equipe EXA"}, não por mim): ${String(c.texto || "").slice(0, 2000)}`);
     else if (l.papel === "sistema") push("assistant", `(registro interno do que consultei/fiz: ${String(c.texto || "").slice(0, 2500)})`);
     else if (!novas.includes(l)) {
       const anexo = c.midia && c.midia !== "audio" ? `[${c.midia} enviada${c.midia_id ? `, midia_id=${c.midia_id} (use ver_arquivo para ler de novo)` : ""}]` : "";

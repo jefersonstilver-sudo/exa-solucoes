@@ -625,6 +625,9 @@ verify_jwt = true
 [functions.nando-painel]
 verify_jwt = false
 
+[functions.nando-crm]
+verify_jwt = false
+
 [functions.exa2-agenda-sync]
 verify_jwt = false
 

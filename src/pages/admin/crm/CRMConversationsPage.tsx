@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ChatPanel } from './components/ChatPanel';
 import { SofiaChatPanel } from './components/SofiaChatPanel';
+import { NandoChatPanel } from './components/NandoChatPanel';
 import type { CollaboratorRow } from './components/CollaboratorCard';
 
 const CRMConversationsPage: React.FC = () => {
@@ -109,6 +110,8 @@ const CRMConversationsPage: React.FC = () => {
           ) : (
             /sofia/i.test(`${collaborator.collaborator_name} ${(collaborator as any).instance_name ?? ''}`) ? (
 <SofiaChatPanel />
+) : /nando/i.test(`${collaborator.collaborator_name} ${(collaborator as any).instance_name ?? ''}`) ? (
+<NandoChatPanel />
 ) : (
 <ChatPanel collaborator={collaborator} />
 )
