@@ -178,17 +178,17 @@ const OrderDetailsV2 = () => {
 
   // ---- estados de carregamento / erro ----
   if (authLoading || !isAuthenticated) {
-    return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-exa-red" /></div>;
+    return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-[#9C1E1E]" /></div>;
   }
   if (loading || enhancedLoading) {
-    return <div className="flex min-h-[60vh] items-center justify-center gap-2 text-gray-600"><Loader2 className="h-8 w-8 animate-spin text-exa-red" /> Carregando seu pedido…</div>;
+    return <div className="flex min-h-[60vh] items-center justify-center gap-2 text-gray-600"><Loader2 className="h-8 w-8 animate-spin text-[#9C1E1E]" /> Carregando seu pedido…</div>;
   }
   if (!order) {
     return (
       <div className="py-16 text-center">
         <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-500" />
         <h3 className="mb-1 text-lg font-bold">Pedido não encontrado</h3>
-        <button onClick={() => navigate('/anunciante/pedidos')} className="mt-3 rounded-xl bg-exa-red px-4 py-2 text-sm font-bold text-white">Voltar para Meus Pedidos</button>
+        <button onClick={() => navigate('/anunciante/pedidos')} className="mt-3 rounded-xl bg-[#9C1E1E] px-4 py-2 text-sm font-bold text-white">Voltar para Meus Pedidos</button>
       </div>
     );
   }
@@ -223,7 +223,7 @@ const OrderDetailsV2 = () => {
     <>
       <div className="min-h-screen bg-gray-50">
         <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-6 sm:py-6">
-          <button onClick={() => navigate('/anunciante/pedidos')} className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-bold text-gray-700 hover:border-exa-red hover:text-exa-red">
+          <button onClick={() => navigate('/anunciante/pedidos')} className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-bold text-gray-700 hover:border-[#9C1E1E] hover:text-[#9C1E1E]">
             <ArrowLeft className="h-4 w-4" /> Voltar para Meus Pedidos
           </button>
 
@@ -233,8 +233,8 @@ const OrderDetailsV2 = () => {
               <div className="min-w-0 flex-1">
                 {editNome ? (
                   <div className="flex gap-2">
-                    <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && salvarNome()} maxLength={80} className="min-w-0 flex-1 rounded-xl border border-exa-red px-3 py-2 text-lg font-extrabold outline-none" />
-                    <button onClick={salvarNome} className="rounded-xl bg-exa-red px-3 text-white"><Check className="h-5 w-5" /></button>
+                    <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && salvarNome()} maxLength={80} className="min-w-0 flex-1 rounded-xl border border-[#9C1E1E] px-3 py-2 text-lg font-extrabold outline-none" />
+                    <button onClick={salvarNome} className="rounded-xl bg-[#9C1E1E] px-3 text-white"><Check className="h-5 w-5" /></button>
                     <button onClick={() => { setEditNome(false); setNome(order.nome_pedido || ''); }} className="rounded-xl border border-gray-200 px-3 text-gray-500"><X className="h-5 w-5" /></button>
                   </div>
                 ) : (
@@ -251,7 +251,7 @@ const OrderDetailsV2 = () => {
                 </div>
               </div>
               {!editNome && (
-                <button onClick={() => setEditNome(true)} title="Renomear pedido" className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-exa-red hover:text-exa-red">
+                <button onClick={() => setEditNome(true)} title="Renomear pedido" className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-[#9C1E1E] hover:text-[#9C1E1E]">
                   <Pencil className="h-4 w-4" />
                 </button>
               )}
@@ -264,7 +264,7 @@ const OrderDetailsV2 = () => {
           <div className="sticky top-0 z-20 -mx-3 bg-gray-50/90 px-3 py-1 backdrop-blur sm:mx-0 sm:px-0">
             <div className="flex gap-1 overflow-x-auto rounded-2xl border border-gray-200 bg-white p-1">
               {ABAS.map(({ id: a, label, icon: I }) => (
-                <button key={a} onClick={() => setAba(a)} className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-bold transition ${aba === a ? 'bg-exa-red text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>
+                <button key={a} onClick={() => setAba(a)} className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-bold transition ${aba === a ? 'bg-[#9C1E1E] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>
                   <I className="h-4 w-4" /> {label}
                 </button>
               ))}

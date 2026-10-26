@@ -96,7 +96,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
         </p>
 
         <div className="mt-2 flex items-center gap-3 border-t border-gray-100 pt-3">
-          <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-exa-red/10 text-exa-red">
+          <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#9C1E1E]/10 text-[#9C1E1E]">
             <CalendarClock className="h-5 w-5" />
           </div>
           {proximo ? (
@@ -108,9 +108,9 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
                 </div>
                 <div className="text-xs text-gray-500">{fmtQuando(proximo.at)}</div>
               </div>
-              <div className="rounded-xl bg-exa-red/10 px-3 py-2 text-center">
-                <div className="font-mono text-lg font-extrabold leading-none text-exa-red tabular-nums">{fmtCountdown(falta)}</div>
-                <div className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-exa-red/70">faltam</div>
+              <div className="rounded-xl bg-[#9C1E1E]/10 px-3 py-2 text-center">
+                <div className="font-mono text-lg font-extrabold leading-none text-[#9C1E1E] tabular-nums">{fmtCountdown(falta)}</div>
+                <div className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-[#9C1E1E]/70">faltam</div>
               </div>
             </>
           ) : (
@@ -121,7 +121,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
               </div>
               <button
                 onClick={onAgendar}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-exa-red px-3.5 py-2 text-sm font-bold text-white hover:opacity-90"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-3.5 py-2 text-sm font-bold text-white hover:opacity-90"
               >
                 <Sparkles className="h-4 w-4" /> Programar
               </button>

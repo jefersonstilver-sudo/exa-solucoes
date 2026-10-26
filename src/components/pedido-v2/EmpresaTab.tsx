@@ -45,19 +45,19 @@ export const EmpresaTab: React.FC<Props> = (p) => {
     }
   };
 
-  if (p.loading) return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-exa-red" /></div>;
+  if (p.loading) return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[#9C1E1E]" /></div>;
 
   if (!marca) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center sm:p-10">
-        <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-exa-red text-lg font-extrabold text-white">S</span>
+        <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#9C1E1E] text-lg font-extrabold text-white">S</span>
         <h3 className="text-lg font-extrabold text-gray-900">Cadastre a empresa deste pedido</h3>
         <p className="mx-auto mt-1 max-w-md text-sm text-gray-500">
           A Sofia usa tudo o que sabe sobre a sua empresa para criar vídeos melhores. Comece pelo nome — ela completa o resto conversando com você.
         </p>
         <div className="mx-auto mt-5 flex max-w-sm gap-2">
-          <input value={novaEmpresa} onChange={(e) => setNovaEmpresa(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && criar()} placeholder="Nome da empresa" className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-exa-red focus:outline-none" disabled={p.disabled} />
-          <button onClick={criar} disabled={p.busy || p.disabled || !novaEmpresa.trim()} className="rounded-xl bg-exa-red px-4 text-sm font-bold text-white disabled:opacity-40">
+          <input value={novaEmpresa} onChange={(e) => setNovaEmpresa(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && criar()} placeholder="Nome da empresa" className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#9C1E1E] focus:outline-none" disabled={p.disabled} />
+          <button onClick={criar} disabled={p.busy || p.disabled || !novaEmpresa.trim()} className="rounded-xl bg-[#9C1E1E] px-4 text-sm font-bold text-white disabled:opacity-40">
             {p.busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cadastrar'}
           </button>
         </div>
@@ -73,18 +73,18 @@ export const EmpresaTab: React.FC<Props> = (p) => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
         {p.marcas.map((m) => (
-          <button key={m.id} onClick={() => setSelId(m.id)} className={`rounded-full border px-4 py-2 text-sm font-bold ${m.id === marca.id ? 'border-exa-red bg-exa-red text-white' : 'border-gray-200 bg-white text-gray-700'}`}>
+          <button key={m.id} onClick={() => setSelId(m.id)} className={`rounded-full border px-4 py-2 text-sm font-bold ${m.id === marca.id ? 'border-[#9C1E1E] bg-[#9C1E1E] text-white' : 'border-gray-200 bg-white text-gray-700'}`}>
             {m.empresa}
           </button>
         ))}
         {addOpen ? (
-          <span className="flex items-center gap-1 rounded-full border border-exa-red bg-white py-1 pl-3 pr-1">
+          <span className="flex items-center gap-1 rounded-full border border-[#9C1E1E] bg-white py-1 pl-3 pr-1">
             <input autoFocus value={novaEmpresa} onChange={(e) => setNovaEmpresa(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && criar()} placeholder="Nome da empresa" className="w-40 bg-transparent text-sm outline-none" />
-            <button onClick={criar} disabled={p.busy} className="rounded-full bg-exa-red p-1.5 text-white"><Check className="h-3.5 w-3.5" /></button>
+            <button onClick={criar} disabled={p.busy} className="rounded-full bg-[#9C1E1E] p-1.5 text-white"><Check className="h-3.5 w-3.5" /></button>
             <button onClick={() => setAddOpen(false)} className="rounded-full p-1.5 text-gray-400"><X className="h-3.5 w-3.5" /></button>
           </span>
         ) : (
-          <button disabled={p.disabled} onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-exa-red px-4 py-2 text-sm font-bold text-exa-red disabled:opacity-40">
+          <button disabled={p.disabled} onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#9C1E1E] px-4 py-2 text-sm font-bold text-[#9C1E1E] disabled:opacity-40">
             <Plus className="h-3.5 w-3.5" /> Adicionar empresa
           </button>
         )}
@@ -143,7 +143,7 @@ const FichaCard: React.FC<Props & { marca: Marca; campos: FichaCampo[] }> = ({ m
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-exa-red font-extrabold text-white">S</span>
+        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[#9C1E1E] font-extrabold text-white">S</span>
         <div className="min-w-0 flex-1">
           <div className="font-extrabold text-gray-900">Ficha da empresa · o que a Sofia sabe</div>
           <div className="text-xs text-gray-500">A Sofia preenche conversando com você e continua aprendendo. Toque em qualquer campo para corrigir.</div>
@@ -151,7 +151,7 @@ const FichaCard: React.FC<Props & { marca: Marca; campos: FichaCampo[] }> = ({ m
         <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${pctObrig >= 80 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{pctObrig}%</span>
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-100">
-        <div className="h-full rounded-full bg-gradient-to-r from-exa-red to-rose-500 transition-all" style={{ width: `${pctObrig}%` }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-[#9C1E1E] to-rose-500 transition-all" style={{ width: `${pctObrig}%` }} />
       </div>
       <div className="mt-1 text-[11px] text-gray-400">{preenchidos} de {campos.length} campos preenchidos · essenciais {obrig.filter((c) => c.valor).length}/{obrig.length}</div>
 
@@ -165,9 +165,9 @@ const FichaCard: React.FC<Props & { marca: Marca; campos: FichaCampo[] }> = ({ m
                   {editId === c.id ? (
                     <div className="space-y-2">
                       <div className="text-xs font-bold text-gray-500">{c.campo}</div>
-                      <textarea autoFocus value={valor} onChange={(e) => setValor(e.target.value)} rows={2} className="w-full rounded-xl border border-exa-red px-3 py-2 text-sm outline-none" />
+                      <textarea autoFocus value={valor} onChange={(e) => setValor(e.target.value)} rows={2} className="w-full rounded-xl border border-[#9C1E1E] px-3 py-2 text-sm outline-none" />
                       <div className="flex gap-2">
-                        <button disabled={saving} onClick={() => salvar(c)} className="rounded-lg bg-exa-red px-3 py-1.5 text-xs font-bold text-white">{saving ? 'Salvando…' : 'Salvar'}</button>
+                        <button disabled={saving} onClick={() => salvar(c)} className="rounded-lg bg-[#9C1E1E] px-3 py-1.5 text-xs font-bold text-white">{saving ? 'Salvando…' : 'Salvar'}</button>
                         <button onClick={() => setEditId(null)} className="rounded-lg px-3 py-1.5 text-xs font-bold text-gray-500">Cancelar</button>
                       </div>
                     </div>
@@ -175,13 +175,13 @@ const FichaCard: React.FC<Props & { marca: Marca; campos: FichaCampo[] }> = ({ m
                     <button disabled={disabled} onClick={() => { setEditId(c.id); setValor(c.valor || ''); }} className="group flex w-full items-start gap-3 text-left">
                       <span className="w-36 flex-none pt-0.5 text-xs font-bold text-gray-500 sm:w-48">
                         {c.campo}
-                        {c.obrigatorio && !c.valor && <span className="text-exa-red"> *</span>}
+                        {c.obrigatorio && !c.valor && <span className="text-[#9C1E1E]"> *</span>}
                       </span>
                       <span className="min-w-0 flex-1 text-sm">
                         {c.valor ? (
                           <>
                             <span className="font-semibold text-gray-900">{c.valor}</span>
-                            <span className={`ml-2 inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 align-middle text-[10px] font-bold ${c.origem === 'cliente' ? 'bg-blue-50 text-blue-700' : c.origem === 'exa' ? 'bg-gray-100 text-gray-600' : 'bg-exa-red/10 text-exa-red'}`}>
+                            <span className={`ml-2 inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 align-middle text-[10px] font-bold ${c.origem === 'cliente' ? 'bg-blue-50 text-blue-700' : c.origem === 'exa' ? 'bg-gray-100 text-gray-600' : 'bg-[#9C1E1E]/10 text-[#9C1E1E]'}`}>
                               {c.origem === 'cliente' ? '✎ você' : c.origem === 'exa' ? 'EXA' : <><Sparkles className="h-2.5 w-2.5" /> preenchido pela Sofia</>}
                               {c.updated_at && <span className="font-medium opacity-70">· {quando(c.updated_at)}</span>}
                             </span>
@@ -190,7 +190,7 @@ const FichaCard: React.FC<Props & { marca: Marca; campos: FichaCampo[] }> = ({ m
                           <span className="text-gray-400">a preencher — <b className="font-semibold">a Sofia vai perguntar</b></span>
                         )}
                       </span>
-                      <Pencil className="mt-0.5 h-3.5 w-3.5 flex-none text-gray-300 group-hover:text-exa-red" />
+                      <Pencil className="mt-0.5 h-3.5 w-3.5 flex-none text-gray-300 group-hover:text-[#9C1E1E]" />
                     </button>
                   )}
                 </div>
@@ -210,13 +210,13 @@ const FichaCard: React.FC<Props & { marca: Marca; campos: FichaCampo[] }> = ({ m
                 if (!novo.campo.trim()) return;
                 try { await adicionarCampo(marca.id, novo.campo, novo.valor); setNovo(null); toast.success('Informação adicionada'); } catch (e: any) { toast.error(e.message?.includes('duplicate') ? 'Essa informação já existe na ficha' : e.message); }
               }}
-              className="rounded-lg bg-exa-red px-3 py-1.5 text-xs font-bold text-white"
+              className="rounded-lg bg-[#9C1E1E] px-3 py-1.5 text-xs font-bold text-white"
             >Adicionar</button>
             <button onClick={() => setNovo(null)} className="rounded-lg px-3 py-1.5 text-xs font-bold text-gray-500">Cancelar</button>
           </div>
         </div>
       ) : (
-        <button disabled={disabled} onClick={() => setNovo({ campo: '', valor: '' })} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-exa-red"><Plus className="h-3.5 w-3.5" /> Adicionar outra informação</button>
+        <button disabled={disabled} onClick={() => setNovo({ campo: '', valor: '' })} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-[#9C1E1E]"><Plus className="h-3.5 w-3.5" /> Adicionar outra informação</button>
       )}
     </div>
   );
@@ -239,23 +239,23 @@ const ContatosCard: React.FC<{ marca: Marca; disabled?: boolean; atualizar: Prop
           const val = (marca as any)[k] as string | null;
           return (
             <div key={k} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3">
-              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-exa-red/10 text-exa-red"><I className="h-4 w-4" /></span>
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-[#9C1E1E]/10 text-[#9C1E1E]"><I className="h-4 w-4" /></span>
               {edit === k ? (
                 <div className="flex min-w-0 flex-1 gap-1.5">
-                  <input autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder={ph} className="min-w-0 flex-1 rounded-lg border border-exa-red px-2 py-1.5 text-sm outline-none" />
-                  <button onClick={async () => { try { await atualizar(marca.id, { [k]: v.trim() || null } as any); setEdit(null); } catch (e: any) { toast.error(e.message); } }} className="rounded-lg bg-exa-red px-2.5 text-white"><Check className="h-4 w-4" /></button>
+                  <input autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder={ph} className="min-w-0 flex-1 rounded-lg border border-[#9C1E1E] px-2 py-1.5 text-sm outline-none" />
+                  <button onClick={async () => { try { await atualizar(marca.id, { [k]: v.trim() || null } as any); setEdit(null); } catch (e: any) { toast.error(e.message); } }} className="rounded-lg bg-[#9C1E1E] px-2.5 text-white"><Check className="h-4 w-4" /></button>
                 </div>
               ) : (
                 <>
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] font-bold text-gray-400">{l}</div>
                     {val ? (
-                      <a href={link(val)} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-bold text-gray-900 hover:text-exa-red">{val}</a>
+                      <a href={link(val)} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-bold text-gray-900 hover:text-[#9C1E1E]">{val}</a>
                     ) : (
                       <span className="text-sm text-gray-400">adicionar</span>
                     )}
                   </div>
-                  <button disabled={disabled} onClick={() => { setEdit(k); setV(val || ''); }} className="p-1.5 text-gray-300 hover:text-exa-red"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button disabled={disabled} onClick={() => { setEdit(k); setV(val || ''); }} className="p-1.5 text-gray-300 hover:text-[#9C1E1E]"><Pencil className="h-3.5 w-3.5" /></button>
                 </>
               )}
             </div>
@@ -285,7 +285,7 @@ const UploadBox: React.FC<Props & {
   };
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-3">
-      <button disabled={disabled || busy} onClick={() => ref.current?.click()} className="w-full rounded-xl border-2 border-dashed border-exa-red/30 bg-exa-red/5 p-4 text-center text-exa-red hover:border-exa-red disabled:opacity-50">
+      <button disabled={disabled || busy} onClick={() => ref.current?.click()} className="w-full rounded-xl border-2 border-dashed border-[#9C1E1E]/30 bg-[#9C1E1E]/5 p-4 text-center text-[#9C1E1E] hover:border-[#9C1E1E] disabled:opacity-50">
         {enviando > 0 ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : <I className="mx-auto h-6 w-6" />}
         <div className="mt-1 text-sm font-extrabold">{titulo}</div>
         <div className="text-[11px] font-medium text-gray-500">{enviando > 0 ? `Enviando ${enviando}…` : sub}</div>
@@ -299,7 +299,7 @@ const UploadBox: React.FC<Props & {
               {tipo === 'logo' ? <img src={a.url} alt="" className="h-8 w-8 rounded bg-[conic-gradient(#eee_25%,#fff_0_50%,#eee_0_75%,#fff_0)] bg-[length:8px_8px] object-contain" />
                 : tipo === 'video' ? <video src={`${a.url}#t=1`} preload="metadata" muted className="h-8 w-12 rounded object-cover" />
                 : <FileText className="h-6 w-6 text-gray-400" />}
-              <a href={a.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate text-xs font-semibold text-gray-700 hover:text-exa-red">{a.legenda || 'arquivo'}</a>
+              <a href={a.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate text-xs font-semibold text-gray-700 hover:text-[#9C1E1E]">{a.legenda || 'arquivo'}</a>
               <span className="text-[10px] text-gray-400">{a.origem === 'portal' ? 'você' : 'Sofia'}</span>
               {a.origem === 'portal' && (
                 <button onClick={async () => { if (window.confirm('Remover este arquivo?')) { try { await removerArquivo(a); } catch (e: any) { toast.error(e.message); } } }} className="p-1 text-gray-300 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>

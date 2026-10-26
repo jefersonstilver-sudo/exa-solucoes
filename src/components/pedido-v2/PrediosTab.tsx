@@ -50,7 +50,7 @@ export const PrediosTab: React.FC<Props> = ({ predios, noAr }) => {
           { i: Users, n: publico ? publico.toLocaleString('pt-BR') : '—', l: 'pessoas/mês' },
         ].map(({ i: I, n, l }) => (
           <div key={l} className="rounded-2xl border border-gray-200 bg-white p-3 text-center">
-            <I className="mx-auto mb-1 h-4 w-4 text-exa-red" />
+            <I className="mx-auto mb-1 h-4 w-4 text-[#9C1E1E]" />
             <div className="text-lg font-extrabold leading-none text-gray-900">{n}</div>
             <div className="text-[11px] font-semibold text-gray-500">{l}</div>
           </div>
@@ -85,7 +85,7 @@ export const PrediosTab: React.FC<Props> = ({ predios, noAr }) => {
                   <MapPin className="h-3 w-3" /> {b.bairro || 'Foz do Iguaçu'}
                   {(b.quantidade_telas || b.numero_elevadores) ? <> · {b.quantidade_telas || b.numero_elevadores} tela(s)</> : null}
                 </div>
-                <div className="mt-2 text-xs font-bold text-exa-red">Ver como aparece na tela →</div>
+                <div className="mt-2 text-xs font-bold text-[#9C1E1E]">Ver como aparece na tela →</div>
               </div>
             </button>
           );
@@ -147,7 +147,7 @@ const ReplicaTela: React.FC<{ predio: PredioInfo; noAr: AgendaSlot | null }> = (
           </div>
         </div>
       </div>
-      <p className="mt-3 rounded-xl border border-exa-red/15 bg-exa-red/5 px-3 py-2.5 text-xs text-gray-700">
+      <p className="mt-3 rounded-xl border border-[#9C1E1E]/15 bg-[#9C1E1E]/5 px-3 py-2.5 text-xs text-gray-700">
         É assim que o seu anúncio aparece nas telas do <b>{predio.nome}</b>. A área de avisos do condomínio fica oculta aqui porque é privada dos moradores.
       </p>
     </div>

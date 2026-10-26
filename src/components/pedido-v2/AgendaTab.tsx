@@ -59,7 +59,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
         ].map(({ icon: I, t, d }) => (
           <div key={t} className="rounded-2xl border border-gray-200 bg-white p-4">
             <div className="flex items-center gap-2 font-bold text-gray-900">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-exa-red/10 text-exa-red"><I className="h-4 w-4" /></span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#9C1E1E]/10 text-[#9C1E1E]"><I className="h-4 w-4" /></span>
               {t}
             </div>
             <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{d}</p>
@@ -68,7 +68,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
       </div>
       {p.entrega && <EntregaBanner e={p.entrega} onReenviar={p.onReenviar} />}
 
-      <p className="rounded-xl border border-exa-red/15 bg-exa-red/5 px-4 py-2.5 text-xs text-gray-700">
+      <p className="rounded-xl border border-[#9C1E1E]/15 bg-[#9C1E1E]/5 px-4 py-2.5 text-xs text-gray-700">
         Regra de ouro: <b>nunca passam dois vídeos ao mesmo tempo</b>. O mesmo vídeo toca em <b>todos os prédios</b> deste pedido.
       </p>
 
@@ -102,7 +102,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
             <button
               key={v}
               onClick={() => { setView(v); setOffset(0); }}
-              className={`rounded-lg px-4 py-1.5 text-sm font-bold ${view === v ? 'bg-exa-red text-white' : 'text-gray-500'}`}
+              className={`rounded-lg px-4 py-1.5 text-sm font-bold ${view === v ? 'bg-[#9C1E1E] text-white' : 'text-gray-500'}`}
             >
               {v === 'semana' ? 'Semana' : 'Mês'}
             </button>
@@ -120,7 +120,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
         <button
           disabled={p.disabled || !aprovados.length}
           onClick={() => setNovaOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-exa-red px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
         >
           <Plus className="h-4 w-4" /> Nova programação
         </button>
@@ -138,7 +138,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
               const agoraPct = ((hoje.getHours() * 60 + hoje.getMinutes()) / 1440) * 100;
               return (
                 <div key={ymd(dia)} className="grid grid-cols-[70px_1fr] items-center gap-2">
-                  <div className={`text-xs font-bold ${ehHoje ? 'text-exa-red' : 'text-gray-800'}`}>
+                  <div className={`text-xs font-bold ${ehHoje ? 'text-[#9C1E1E]' : 'text-gray-800'}`}>
                     {ehHoje ? 'Hoje' : DIAS[dia.getDay()]}
                     <span className="block text-[10.5px] font-medium text-gray-400">{dia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
                   </div>
@@ -180,7 +180,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
                 <div className="truncate text-sm font-bold text-gray-900">★ {principal.nome}</div>
                 <div className="text-xs text-gray-500">Principal — toca quando nada estiver programado</div>
               </div>
-              <button onClick={p.onIrParaVideos} className="text-xs font-bold text-exa-red hover:underline">Trocar principal</button>
+              <button onClick={p.onIrParaVideos} className="text-xs font-bold text-[#9C1E1E] hover:underline">Trocar principal</button>
             </div>
           )}
           {programacoes.length === 0 && <p className="rounded-xl border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">Nenhuma programação ainda — o principal está no ar o tempo todo.</p>}
@@ -246,7 +246,7 @@ const MesView: React.FC<{ slots: AgendaSlot[]; rules: AgendaRule[]; offset: numb
           segs.forEach((s) => s.winner && vistos.set(s.winner.slot.id, s.winner.slot));
           const ehHoje = d.toDateString() === hoje.toDateString();
           return (
-            <div key={i} className={`min-h-[64px] rounded-lg border p-1.5 ${ehHoje ? 'border-exa-red ring-1 ring-exa-red' : 'border-gray-200'}`}>
+            <div key={i} className={`min-h-[64px] rounded-lg border p-1.5 ${ehHoje ? 'border-[#9C1E1E] ring-1 ring-[#9C1E1E]' : 'border-gray-200'}`}>
               <div className="text-xs font-bold text-gray-700">{d.getDate()}</div>
               <div className="mt-0.5 space-y-0.5">
                 {[...vistos.values()].slice(0, 3).map((s) => (
@@ -331,7 +331,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
     }
   };
 
-  const input = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-exa-red focus:outline-none';
+  const input = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#9C1E1E] focus:outline-none';
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
@@ -351,7 +351,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
                 ))}
               </ul>
             </div>
-            <button disabled={saving} onClick={() => confirmar(true)} className="w-full rounded-xl bg-exa-red px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
+            <button disabled={saving} onClick={() => confirmar(true)} className="w-full rounded-xl bg-[#9C1E1E] px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
               {saving ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Sobrepor só nessa janela'}
             </button>
             <p className="-mt-2 text-center text-[11px] text-gray-500">Fora dessa janela, a programação atual continua igual.</p>
@@ -365,7 +365,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
                 {slots.map((s) => {
                   const sel = (slotId || slots.find((x) => !x.is_base_video)?.id || slots[0]?.id) === s.id;
                   return (
-                    <button key={s.id} onClick={() => setSlotId(s.id)} className={`overflow-hidden rounded-xl border-2 text-left ${sel ? 'border-exa-red' : 'border-gray-200'}`}>
+                    <button key={s.id} onClick={() => setSlotId(s.id)} className={`overflow-hidden rounded-xl border-2 text-left ${sel ? 'border-[#9C1E1E]' : 'border-gray-200'}`}>
                       <div className="aspect-video bg-black">{s.url && <video src={s.url} className="h-full w-full object-cover" muted autoPlay loop playsInline />}</div>
                       <div className="truncate px-2 py-1 text-[11px] font-bold">{s.is_base_video && '★ '}{s.nome}</div>
                     </button>
@@ -378,7 +378,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
               <label className="mb-1 block text-xs font-bold text-gray-500">Quando?</label>
               <div className="grid grid-cols-2 gap-2">
                 {([['data', 'Em datas', CalendarDays], ['recorrente', 'Toda semana', Repeat]] as const).map(([v, t, I]) => (
-                  <button key={v} onClick={() => setTipo(v)} className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-bold ${tipo === v ? 'border-exa-red bg-exa-red/5 text-exa-red' : 'border-gray-200 text-gray-600'}`}>
+                  <button key={v} onClick={() => setTipo(v)} className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-bold ${tipo === v ? 'border-[#9C1E1E] bg-[#9C1E1E]/5 text-[#9C1E1E]' : 'border-gray-200 text-gray-600'}`}>
                     <I className="h-4 w-4" /> {t}
                   </button>
                 ))}
@@ -395,7 +395,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
                 <label className="mb-1 block text-xs font-bold text-gray-500">Dias da semana</label>
                 <div className="flex flex-wrap gap-1.5">
                   {DIAS.map((d, i) => (
-                    <button key={d} onClick={() => setDias((x) => (x.includes(i) ? x.filter((y) => y !== i) : [...x, i]))} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${dias.includes(i) ? 'bg-exa-red text-white' : 'bg-gray-100 text-gray-600'}`}>{d}</button>
+                    <button key={d} onClick={() => setDias((x) => (x.includes(i) ? x.filter((y) => y !== i) : [...x, i]))} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${dias.includes(i) ? 'bg-[#9C1E1E] text-white' : 'bg-gray-100 text-gray-600'}`}>{d}</button>
                   ))}
                 </div>
               </div>
@@ -403,7 +403,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
 
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                <input type="checkbox" checked={diaTodo} onChange={(e) => setDiaTodo(e.target.checked)} className="h-4 w-4 accent-[hsl(var(--exa-red))]" />
+                <input type="checkbox" checked={diaTodo} onChange={(e) => setDiaTodo(e.target.checked)} className="h-4 w-4 accent-[#9C1E1E]" />
                 O dia todo
               </label>
               {!diaTodo && (
@@ -419,7 +419,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
               <input className={input} placeholder="Ex.: Promo Black Friday" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} />
             </div>
 
-            <button disabled={saving} onClick={() => confirmar(false)} className="w-full rounded-xl bg-exa-red px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
+            <button disabled={saving} onClick={() => confirmar(false)} className="w-full rounded-xl bg-[#9C1E1E] px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
               {saving ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Salvar programação'}
             </button>
             {maxData && <p className="-mt-2 text-center text-[11px] text-gray-500">Seu pedido vai até {maxData.split('-').reverse().join('/')}.</p>}
