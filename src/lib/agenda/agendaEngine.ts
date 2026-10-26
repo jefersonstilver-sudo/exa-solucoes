@@ -78,10 +78,15 @@ export const ruleActiveAt = (rule: AgendaRule, at: Date): boolean => {
   if (rule.is_active === false) return false;
   const type = ruleTypeOf(rule);
   if (type === 'principal') return false; // principal não é regra de janela: é o fallback
-  const day = at.getDay();
   const minutes = at.getHours() * 60 + at.getMinutes();
+  // Janela que vira a meia-noite (ex.: sáb 22h→02h): a parte da madrugada pertence ao DIA ANTERIOR.
+  const s = toMinutes(rule.start_time);
+  const e = endMinutes(rule.end_time, s);
+  const madrugadaDoDiaAnterior = !rule.is_all_day && s > e && minutes < e;
+  const ref = madrugadaDoDiaAnterior ? new Date(at.getFullYear(), at.getMonth(), at.getDate() - 1) : at;
+  const day = ref.getDay();
   if (type === 'data') {
-    const today = ymd(at);
+    const today = ymd(ref);
     if (rule.start_date && today < rule.start_date) return false;
     const end = rule.end_date || rule.start_date;
     if (end && today > end) return false;

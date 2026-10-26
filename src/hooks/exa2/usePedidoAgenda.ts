@@ -32,6 +32,15 @@ export interface HistoricoItem {
   created_at: string;
 }
 
+/** Resultado do envio da agenda aos painéis (API das telas). */
+export interface EntregaAgenda {
+  estado: 'enviando' | 'enviado' | 'parcial' | 'erro';
+  telas?: number;
+  falhas?: number;
+  em: string;
+  mensagem?: string;
+}
+
 const today = () => new Date().toISOString().slice(0, 10);
 
 /**
@@ -43,6 +52,7 @@ export function usePedidoAgenda(pedidoId: string, clientId: string | undefined, 
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [entrega, setEntrega] = useState<EntregaAgenda | null>(null);
 
   const slots: AgendaSlot[] = useMemo(
     () =>
@@ -177,6 +187,25 @@ export function usePedidoAgenda(pedidoId: string, clientId: string | undefined, 
     [rules, slots],
   );
 
+  /**
+   * Envia a agenda calculada aos painéis (exa2-agenda-sync). Nunca desfaz o que foi salvo:
+   * se falhar, o sincronizador automático tenta de novo e o vigia acusa a tela atrasada.
+   */
+  const sincronizarPaineis = useCallback(async () => {
+    setEntrega({ estado: 'enviando', em: new Date().toISOString() });
+    try {
+      const { data, error } = await supabase.functions.invoke('exa2-agenda-sync', { body: { pedido_id: pedidoId } });
+      if (error || !data?.success) throw error || new Error(data?.error || 'falha no envio');
+      const itens: any[] = data.itens || [];
+      const telas = itens.reduce((n, i) => n + (i.telas || 0), 0);
+      const falhas = itens.reduce((n, i) => n + (i.falhas || 0), 0);
+      setEntrega({ estado: falhas ? 'parcial' : 'enviado', telas, falhas, em: new Date().toISOString() });
+    } catch (e: any) {
+      console.error('[EXA2][agenda] envio aos painéis falhou', e);
+      setEntrega({ estado: 'erro', em: new Date().toISOString(), mensagem: e?.message });
+    }
+  }, [pedidoId]);
+
   /** Salva a programação. Só chamar com override=true se o CLIENTE escolheu sobrepor. */
   const salvarProgramacao = useCallback(
     async (nova: NovaProgramacao) => {
@@ -204,8 +233,9 @@ export function usePedidoAgenda(pedidoId: string, clientId: string | undefined, 
       } finally {
         setSaving(false);
       }
+      void sincronizarPaineis();
     },
-    [slots, ensureVideoSchedule, load],
+    [slots, ensureVideoSchedule, load, sincronizarPaineis],
   );
 
   const removerProgramacao = useCallback(
@@ -218,9 +248,10 @@ export function usePedidoAgenda(pedidoId: string, clientId: string | undefined, 
       } finally {
         setSaving(false);
       }
+      void sincronizarPaineis();
     },
-    [load],
+    [load, sincronizarPaineis],
   );
 
-  return { slots, rules, historico, loading, saving, reload: load, checarConflitos, salvarProgramacao, removerProgramacao };
+  return { slots, rules, historico, loading, saving, entrega, sincronizarPaineis, reload: load, checarConflitos, salvarProgramacao, removerProgramacao };
 }

@@ -3,7 +3,7 @@ import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, Plus, Repeat, S
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AgendaRule, AgendaSlot, daySegments } from '@/lib/agenda/agendaEngine';
-import type { NovaProgramacao } from '@/hooks/exa2/usePedidoAgenda';
+import type { EntregaAgenda, NovaProgramacao } from '@/hooks/exa2/usePedidoAgenda';
 import { descreverRegra } from './OnAirCard';
 
 const CORES = ['#9e1b34', '#2563eb', '#0f8a5f', '#c2740a', '#7c3aed', '#0e7490', '#db2777', '#4d7c0f', '#b45309', '#475569'];
@@ -18,6 +18,8 @@ interface Props {
   slots: AgendaSlot[];
   rules: AgendaRule[];
   saving: boolean;
+  entrega?: EntregaAgenda | null;
+  onReenviar?: () => void;
   dataInicio?: string | null;
   dataFim?: string | null;
   disabled?: boolean;
@@ -64,6 +66,8 @@ export const AgendaTab: React.FC<Props> = (p) => {
           </div>
         ))}
       </div>
+      {p.entrega && <EntregaBanner e={p.entrega} onReenviar={p.onReenviar} />}
+
       <p className="rounded-xl border border-exa-red/15 bg-exa-red/5 px-4 py-2.5 text-xs text-gray-700">
         Regra de ouro: <b>nunca passam dois vídeos ao mesmo tempo</b>. O mesmo vídeo toca em <b>todos os prédios</b> deste pedido.
       </p>
@@ -423,5 +427,24 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
         )}
       </DialogContent>
     </Dialog>
+  );
+};
+
+/** Situação do envio da agenda aos painéis — "enviado" não é "no ar": a confirmação vem do elevador. */
+const EntregaBanner: React.FC<{ e: EntregaAgenda; onReenviar?: () => void }> = ({ e, onReenviar }) => {
+  const hora = new Date(e.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const cfg = {
+    enviando: { cls: 'border-blue-200 bg-blue-50 text-blue-800', txt: 'Enviando a programação para os painéis…' },
+    enviado: { cls: 'border-emerald-200 bg-emerald-50 text-emerald-800', txt: `Programação enviada aos painéis às ${hora}${e.telas ? ` (${e.telas} envio${e.telas > 1 ? 's' : ''})` : ''}. Os elevadores aplicam em até 5 minutos.` },
+    parcial: { cls: 'border-amber-200 bg-amber-50 text-amber-800', txt: `Enviada, mas ${e.falhas} painel(is) não respondeu(ram). Vamos reenviar automaticamente.` },
+    erro: { cls: 'border-amber-200 bg-amber-50 text-amber-800', txt: 'Sua programação foi salva, mas o envio aos painéis não completou agora. Vamos reenviar automaticamente.' },
+  }[e.estado];
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-xs font-semibold ${cfg.cls}`}>
+      <span className="flex items-center gap-2">{e.estado === 'enviando' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{cfg.txt}</span>
+      {(e.estado === 'erro' || e.estado === 'parcial') && onReenviar && (
+        <button onClick={onReenviar} className="shrink-0 rounded-lg bg-white/70 px-2.5 py-1 font-bold underline-offset-2 hover:underline">Reenviar agora</button>
+      )}
+    </div>
   );
 };

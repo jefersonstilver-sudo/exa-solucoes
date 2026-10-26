@@ -1,5 +1,5 @@
 -- ============================================================
--- EXA 2.0 · FASE 3 — Entrega da agenda aos painéis (NÃO APLICADA AINDA)
+-- EXA 2.0 · FASE 3 — Entrega da agenda aos painéis
 -- Depende da auditoria da API da AWS / player dos NUCs antes de ativar o cron.
 -- ============================================================
 
@@ -11,7 +11,7 @@ create table if not exists public.exa2_config (
 );
 alter table public.exa2_config enable row level security;
 insert into public.exa2_config (chave, valor)
-values ('cron_token', encode(gen_random_bytes(32), 'hex'))
+values ('cron_token', replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''))
 on conflict (chave) do nothing;
 
 -- Último estado enviado por (pedido, vídeo) — permite reenviar só o que mudou

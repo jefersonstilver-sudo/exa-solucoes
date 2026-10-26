@@ -330,6 +330,8 @@ const OrderDetailsV2 = () => {
                 slots={agenda.slots}
                 rules={agenda.rules}
                 saving={agenda.saving}
+                entrega={agenda.entrega}
+                onReenviar={agenda.sincronizarPaineis}
                 dataInicio={order.data_inicio}
                 dataFim={order.data_fim}
                 disabled={gestaoTravada}
