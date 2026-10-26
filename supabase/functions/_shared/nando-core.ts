@@ -16,9 +16,12 @@ export const ADMIN_NUMEROS = (Deno.env.get("NANDO_ADMINS") || "5545998090000")
 export const ALERTA_NUMERO = (Deno.env.get("NANDO_ALERTA_NUMERO") || "5545998090000").replace(/\D/g, "");
 // Enquanto true, o Nando so conversa com os administradores (fase de teste).
 export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCase() !== "false";
+// Durante o modo teste, "true" deixa o Nando atender tambem numeros SEM cadastro (sindicos interessados em ter a EXA
+// no predio, ex: botao "Falar com o Nando" do site). Sindicos ja cadastrados continuam so na lista de testadores.
+export const CADASTRO_ABERTO = (Deno.env.get("NANDO_CADASTRO_ABERTO") || "false").toLowerCase() === "true";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-25.32";
+export const NANDO_VERSAO = "2026-10-26.33";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
