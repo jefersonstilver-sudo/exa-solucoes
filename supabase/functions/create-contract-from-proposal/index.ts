@@ -63,6 +63,37 @@ serve(async (req) => {
 
     console.log("✅ Proposta encontrada:", proposal.number);
 
+    // EXA 2.0 — política de cancelamento por oferta (ex.: PROMO-OUT-2026 da Sofia:
+    // sem multa, cancelamento livre com aviso até 5 dias antes da virada do mês).
+    // Fonte: tabela exa2_ofertas_politica + oferta registrada no aceite da Sofia.
+    try {
+      const { data: aceite } = await supabase
+        .from("sofia_aceites")
+        .select("dados")
+        .eq("proposal_id", String(proposalId))
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const oferta = (aceite as any)?.dados?.oferta;
+      if (oferta) {
+        const { data: pol } = await supabase
+          .from("exa2_ofertas_politica")
+          .select("*")
+          .eq("oferta", oferta)
+          .eq("ativa", true)
+          .maybeSingle();
+        if (pol) {
+          proposal.multa_rescisao_ativa = pol.multa_rescisao_ativa;
+          proposal.multa_rescisao_percentual = pol.multa_rescisao_percentual;
+          proposal.cancelamento_aviso_dias = pol.cancelamento_aviso_dias;
+          proposal.cancelamento_ate_virada_mes = pol.cancelamento_ate_virada_mes;
+          console.log("📜 Política da oferta aplicada:", oferta);
+        }
+      }
+    } catch (e) {
+      console.warn("⚠️ Política de oferta não aplicada:", (e as any)?.message);
+    }
+
     // =========================================================
     // VERIFICAR SE JÁ EXISTE CONTRATO PARA ESTA PROPOSTA (IDEMPOTENTE)
     // IMPORTANTE: Verificar ANTES de validar clientData
@@ -336,6 +367,8 @@ serve(async (req) => {
         // MULTA RESCISÓRIA (EXA)
         multa_rescisao_exa_ativa: proposal.multa_rescisao_exa_ativa !== false, // default true
         multa_rescisao_exa_percentual: proposal.multa_rescisao_exa_percentual || 20,
+        cancelamento_aviso_dias: proposal.cancelamento_aviso_dias ?? 30,
+        cancelamento_ate_virada_mes: proposal.cancelamento_ate_virada_mes === true,
         
         created_at: new Date().toISOString()
       };
@@ -468,7 +501,9 @@ serve(async (req) => {
       
       // MULTA RESCISÓRIA (EXA)
       multa_rescisao_exa_ativa: proposal.multa_rescisao_exa_ativa !== false, // default true
-      multa_rescisao_exa_percentual: proposal.multa_rescisao_exa_percentual || 20
+      multa_rescisao_exa_percentual: proposal.multa_rescisao_exa_percentual || 20,
+      cancelamento_aviso_dias: proposal.cancelamento_aviso_dias ?? 30,
+      cancelamento_ate_virada_mes: proposal.cancelamento_ate_virada_mes === true
     };
 
     const { data: contrato, error: contratoError } = await supabase
@@ -638,6 +673,11 @@ serve(async (req) => {
 });
 
 // Generate FULL professional contract HTML for preview and printing - Manual Técnico v3.0
+function numeroExtensoSimples(n: number): string {
+  const m: Record<number, string> = { 1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco', 7: 'sete', 10: 'dez', 15: 'quinze', 30: 'trinta', 60: 'sessenta', 90: 'noventa' };
+  return m[n] || String(n);
+}
+
 function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produtosExa: any[] = [], configExibicao: any = null): string {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
@@ -834,6 +874,12 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
   // Multa da EXA (CONTRATADA)
   const multaRescisaoExaAtiva = contrato.multa_rescisao_exa_ativa !== false; // default true
   const multaRescisaoExaPercentual = contrato.multa_rescisao_exa_percentual || 20;
+
+  // Aviso prévio de cancelamento (padrão 30 dias; ofertas podem usar "até X dias antes da virada do mês")
+  const avisoDias = Number(contrato.cancelamento_aviso_dias ?? 30) || 30;
+  const avisoTexto = contrato.cancelamento_ate_virada_mes === true
+    ? `o cancelamento é livre, bastando comunicar a CONTRATADA com antecedência mínima de <strong>${avisoDias} (${numeroExtensoSimples(avisoDias)}) dias antes do início do mês seguinte</strong>; a cobrança do mês seguinte não será gerada e a veiculação se encerra ao fim do mês em curso`
+    : `devendo apenas ser respeitado o aviso prévio de ${avisoDias} (${numeroExtensoSimples(avisoDias)}) dias`;
   
   // Função auxiliar para número por extenso (1-50)
   const numeroExtenso = (n: number): string => {
@@ -1864,7 +1910,7 @@ function generateContractHtml(contrato: any, exaSignatarios: any[] = [], produto
             ${multaRescisaoAtiva ? `
               <p><span class="clause-title">${11 + clauseOffset}.2.</span> Em caso de rescisão antecipada por iniciativa do CONTRATANTE, sem justa causa, será devida multa rescisória correspondente a <strong>${multaRescisaoPercentual}% (${numeroExtenso(multaRescisaoPercentual)} por cento)</strong> do valor restante do contrato.</p>
             ` : `
-              <p><span class="clause-title">${11 + clauseOffset}.2.</span> Este contrato <strong>não prevê aplicação de multa rescisória para o CONTRATANTE</strong> em caso de rescisão antecipada, devendo apenas ser respeitado o aviso prévio de 30 (trinta) dias.</p>
+              <p><span class="clause-title">${11 + clauseOffset}.2.</span> Este contrato <strong>não prevê aplicação de multa rescisória para o CONTRATANTE</strong> em caso de rescisão antecipada; ${avisoTexto}.</p>
             `}
             
             ${multaRescisaoExaAtiva ? `
