@@ -58,5 +58,5 @@
 - [ ] sofia_aceites sem regra de leitura no navegador — aceite por código não é lido diretamente; usar contrato assinado/cobranças da Sofia até liberar leitura (mudança de banco não autorizada).
 
 # Publicação do site (26/10)
-- [ ] Publicar o examidia.com.br com o commit 5f75c23 (página do pedido: vídeo no hover, réplica do prédio ao vivo, aba Empresa completa, layout moderno) — aguardando a sincronização do projeto com a main; sem alterar arquivos ou funções.
+- [ ] Publicar o examidia.com.br com o commit 5f75c23 (página do pedido: vídeo no hover, réplica do prédio ao vivo, aba Empresa completa, layout moderno) — bloqueado: o projeto ainda não recebeu esse commit (arquivos novos ausentes); precisa de um novo push na main para acionar a sincronização. Sem alterar arquivos ou funções.
 - [ ] Não publicar sofia-agent, asaas-*, clicksign-* (regra permanente); manter os alertas críticos antigos abertos conforme autorização.
