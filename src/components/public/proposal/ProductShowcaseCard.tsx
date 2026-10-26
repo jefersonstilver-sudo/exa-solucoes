@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReplicaPainel from '@/components/pedido-v2/ReplicaPainel';
-import { Clock, Users, Triangle, Monitor, BarChart3, TrendingUp, Smartphone, RectangleHorizontal, Play } from 'lucide-react';
-import FullscreenVideoPlayer from '@/components/paineis-landing/FullscreenVideoPlayer';
+import { Clock, Users, Triangle, Monitor, BarChart3, TrendingUp, Smartphone, RectangleHorizontal } from 'lucide-react';
+import { useWeatherData } from '@/hooks/useWeatherData';
 import { Card } from '@/components/ui/card';
 import { useVideoSpecifications } from '@/hooks/useVideoSpecifications';
 
@@ -30,11 +30,12 @@ const FeatureItem = ({ icon: Icon, text, boldText }: FeatureItemProps) => (
   </div>
 );
 
-const SAMPLE_VIDEO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/VIDEOS%20CURSOS/video%20exemplo.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WSURFT1MgQ1VSU09TL3ZpZGVvIGV4ZW1wbG8ubXA0IiwiaWF0IjoxNzcxODc1Mzg1LCJleHAiOjE4MDM0MTEzODV9.Kflly1XpjaybsNUubz7pFxP5KIvYsxeLTaUq9ymgjhE';
+// Amostra: anúncio real de um cliente da rede, tocando no player do layout atual (1080×890)
+const SAMPLE_VIDEO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/videos/de96cfa9-9dbe-4ead-be94-3647e345d2de/1793020345896_DELFUEGO_V1-fermentacao_10s_horizontal.mp4';
 
 export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, totalPanels = 1 }) => {
   const { specifications, isLoading } = useVideoSpecifications();
-  const [showSampleVideo, setShowSampleVideo] = useState(false);
+  const { weatherData } = useWeatherData();
   const [agora, setAgora] = useState(() => new Date());
   useEffect(() => { const i = setInterval(() => setAgora(new Date()), 1000); return () => clearInterval(i); }, []);
   
@@ -57,8 +58,9 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
       }
     : {
         duracao: specifications?.horizontal.duracaoSegundos ?? 10,
-        resolucao: specifications?.horizontal.resolucao ?? '1440×1080',
-        proporcao: specifications?.horizontal.proporcao ?? '4:3',
+        // Layout atual da tela (desde 23/10/2026): área do anúncio 1080×890, quase quadrada
+        resolucao: '1080×890',
+        proporcao: '≈ 6:5 (quase quadrado)',
         maxClientes: specifications?.horizontal.maxClientesPainel ?? 15,
         exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? 15060,
         exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? 502,
@@ -91,19 +93,11 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
             <ReplicaPainel
               predioNome="Seu prédio"
               now={agora}
-              slot={{ id: 'amostra', url: SAMPLE_VIDEO_URL, nome: 'Seu anúncio aqui' } as any}
+              slot={{ id: 'amostra', url: SAMPLE_VIDEO_URL } as any}
+              clima={weatherData}
+              preencher
             />
           )}
-          <button
-            onClick={() => setShowSampleVideo(true)}
-            className="mt-3 group relative flex items-center gap-2 mx-auto px-5 py-2.5 bg-[#9C1E1E] text-white rounded-full text-xs font-semibold shadow-lg shadow-[#9C1E1E]/30 hover:bg-[#B40D1A] hover:shadow-xl hover:shadow-[#9C1E1E]/40 transition-all duration-300 hover:scale-105"
-          >
-            <span className="absolute inset-0 rounded-full bg-white/20 motion-safe:animate-ping opacity-30" />
-            <span className="relative flex items-center gap-2">
-              <Play className="w-3.5 h-3.5 fill-current" />
-              Ver amostra
-            </span>
-          </button>
         </div>
 
         {/* Right: Features List */}
@@ -173,11 +167,6 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
       </div>
     </Card>
 
-    <FullscreenVideoPlayer
-      isOpen={showSampleVideo}
-      onClose={() => setShowSampleVideo(false)}
-      videoSrc={SAMPLE_VIDEO_URL}
-    />
     </>
   );
 };

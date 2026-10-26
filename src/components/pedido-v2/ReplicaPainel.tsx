@@ -20,7 +20,7 @@ const IconeClima: React.FC<{ icon?: string; size: number }> = ({ icon, size }) =
 };
 
 /** Player: vídeo mudo em loop, mostrado inteiro (sem cortar/esticar) sobre o fundo do player. */
-const PlayerVideo: React.FC<{ slot: AgendaSlot | null }> = ({ slot }) => {
+const PlayerVideo: React.FC<{ slot: AgendaSlot | null; preencher?: boolean }> = ({ slot, preencher }) => {
   const [erro, setErro] = useState(false);
   useEffect(() => setErro(false), [slot?.url]);
   return (
@@ -35,7 +35,7 @@ const PlayerVideo: React.FC<{ slot: AgendaSlot | null }> = ({ slot }) => {
           loop
           playsInline
           onError={() => setErro(true)}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: preencher ? 'cover' : 'contain' }}
         />
       ) : (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.6)', fontSize: 40, fontWeight: 700 }}>
@@ -70,9 +70,11 @@ interface Props {
   slot: AgendaSlot | null;
   now: Date;
   clima?: WeatherData | null;
+  /** amostra: o vídeo preenche o player inteiro (formato 1080×890) */
+  preencher?: boolean;
 }
 
-export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima }) => {
+export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, preencher }) => {
   const wrap = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0.3);
   useLayoutEffect(() => {
@@ -111,7 +113,7 @@ export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima })
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
           {/* PLAYER 1080×890 */}
           <div style={{ flex: '0 0 890px', height: 890, position: 'relative', overflow: 'hidden', background: '#000', borderBottom: '4px solid #fff' }}>
-            <PlayerVideo slot={slot} />
+            <PlayerVideo slot={slot} preencher={preencher} />
           </div>
 
           {/* GRADE 1080×1030 */}
