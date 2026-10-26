@@ -1461,6 +1461,9 @@ const PropostaPublicaPage = () => {
   // ============ VARIÁVEIS PARA VENDA FUTURA ============
   // Quando é venda futura, usar predios_contratados e telas estimadas
   const isVendaFutura = proposal.venda_futura && (proposal.predios_contratados ?? 0) > 0;
+  // EXA 2.0: proposta enviada pela Sofia = só RESUMO. O aceite é pelo código do e-mail (no WhatsApp),
+  // o pagamento é o Pix Automático que a Sofia envia e o contrato vai para assinatura digital. Sem botões aqui.
+  const isSofia = (proposal.metadata as any)?.origem === 'sofia';
   
   // Número de prédios para exibição (contratados se venda futura, senão os selecionados)
   const displayBuildingsCount = isVendaFutura 
@@ -2147,7 +2150,43 @@ const PropostaPublicaPage = () => {
         )}
 
         {/* Planos - NÃO APARECEM para cortesia NEM para permuta - Mobile Optimized */}
-        {!isCortesia && proposal.modalidade_proposta !== 'permuta' && (
+        {isSofia && !isCortesia && (() => {
+          const meses = Number(proposal.duration_months || 0);
+          const mensal = Number(proposal.fidel_monthly_value || 0);
+          const total = Number(proposal.cash_total_value || mensal * meses);
+          const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          return (
+            <div className="space-y-2.5 sm:space-y-3">
+              <h2 className="font-semibold text-sm sm:text-base flex items-center gap-2">
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9C1E1E]" />
+                Condição combinada
+              </h2>
+              <Card className="p-4 border-2 border-[#9C1E1E]/30 bg-white">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Mensalidade</div>
+                    <div className="text-2xl font-extrabold text-[#9C1E1E]">{brl(mensal)}<span className="text-sm font-medium text-muted-foreground">/mês</span></div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">{meses} {meses === 1 ? 'mês' : 'meses'}</div>
+                    <div className="text-sm font-semibold">Total {brl(total)}</div>
+                  </div>
+                </div>
+                <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">Pagamento mensal por Pix Automático.</div>
+              </Card>
+              <Card className="p-4 bg-gray-50">
+                <h3 className="font-semibold text-sm mb-2">Como confirmar</h3>
+                <ol className="space-y-1.5 text-sm text-gray-700 list-decimal pl-4">
+                  <li>Enviamos um código de 6 dígitos para o seu e-mail.</li>
+                  <li>Responda com esse código na conversa com a Sofia no WhatsApp para confirmar a proposta.</li>
+                  <li>Na sequência você recebe o pagamento e o contrato para assinatura digital.</li>
+                </ol>
+              </Card>
+            </div>
+          );
+        })()}
+
+        {!isSofia && !isCortesia && proposal.modalidade_proposta !== 'permuta' && (
           <div className="space-y-2.5 sm:space-y-3">
             <h2 className="font-semibold text-sm sm:text-base flex items-center gap-2">
               <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9C1E1E]" />
@@ -2331,7 +2370,7 @@ const PropostaPublicaPage = () => {
         )}
 
         {/* Botões de Ação - Mobile Optimized */}
-        {!['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
+        {!isSofia && !['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
           <div className="space-y-2.5 sm:space-y-3 pt-3 sm:pt-4">
             {isCortesia ? (
               <>
