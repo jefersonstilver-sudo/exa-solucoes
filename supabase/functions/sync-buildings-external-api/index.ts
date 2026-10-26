@@ -1,5 +1,6 @@
 import { authorizeOrderSync } from '../_shared/order-sync-auth.ts'
 import { orderSyncOutcome } from '../_shared/order-sync-policy.ts'
+import { agendaDoPedido } from '../_shared/exa2-agenda.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,6 +88,7 @@ Deno.serve(async (req) => {
       // Download video files from Supabase Storage and build metadata
       const formData = new FormData()
       const metadados: Record<string, any> = {}
+      let agendaCache: Awaited<ReturnType<typeof agendaDoPedido>> | null = null
 
       for (const pv of videos) {
         const video = (pv as any).videos
@@ -153,32 +155,13 @@ Deno.serve(async (req) => {
             console.log(`🔳 [SYNC-BUILDINGS] QR Code incluído para ${fileNameClean}:`, qrFields);
           }
 
-          // Build programacao from campaign_video_schedules (same logic as update-video-schedule-aws)
-          const programacao = emptyProgramacao();
+          // EXA 2.0: programação EFETIVA do pedido (fonte única: _shared/exa2-agenda.ts)
+          let programacao: any = emptyProgramacao();
           try {
-            const { data: schedules, error: scheduleError } = await supabase
-              .from('campaign_video_schedules')
-              .select('id, campaign_schedule_rules ( days_of_week, start_time, end_time, is_active, is_all_day )')
-              .eq('video_id', pv.video_id)
-              .eq('slot_position', (pv as any).slot_position);
-
-            if (scheduleError) throw scheduleError;
-            const rules: any[] = [];
-            (schedules || []).forEach((s: any) => {
-              (s.campaign_schedule_rules || []).filter((r: any) => r.is_active).forEach((r: any) => rules.push(r));
-            });
-            rules.forEach((rule) => {
-              const slot = {
-                inicio: rule.is_all_day ? '00:00' : trimSeconds(rule.start_time),
-                fim: rule.is_all_day ? '23:59' : trimSeconds(rule.end_time),
-              };
-              (rule.days_of_week || []).forEach((d: number) => {
-                const day = DAY_NAMES_MAP[d];
-                if (day) (programacao as any)[day].push(slot);
-              });
-            });
+            if (!agendaCache) agendaCache = await agendaDoPedido(supabase, pedido_id);
+            programacao = agendaCache.porVideo.get(pv.video_id) || emptyProgramacao();
             const total = Object.values(programacao).reduce((acc: number, arr: any) => acc + arr.length, 0);
-            console.log(`📅 [SYNC-BUILDINGS] ${fileNameClean}: ${total} slot(s) de programação`);
+            console.log(`📅 [SYNC-BUILDINGS] ${fileNameClean}: ${total} slot(s) de programação efetiva`);
           } catch (schedErr: any) {
             throw new Error(`Programação indisponível para ${fileNameClean}: ${schedErr.message}`);
           }

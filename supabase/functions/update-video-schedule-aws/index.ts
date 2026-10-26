@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { agendaDoPedido } from "../_shared/exa2-agenda.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,29 +89,12 @@ serve(async (req) => {
     }
 
     // 2. Programação
-    let programacao = emptyProgramacao();
+    // EXA 2.0: programação EFETIVA (mesmas regras do app: 1 vídeo por vez, sobreposição, datas → janela de 7 dias).
+    // Antes eram regras cruas; uma regra "em datas" ou uma sobreposição chegava errada ao player.
+    let programacao: any = emptyProgramacao();
     if (!clear) {
-      const { data: schedules } = await supabase
-        .from('campaign_video_schedules')
-        .select('id, campaign_schedule_rules ( days_of_week, start_time, end_time, is_active, is_all_day )')
-        .eq('video_id', video_id)
-        .eq('slot_position', (pedidoVideo as any).slot_position);
-
-      const rules: any[] = [];
-      (schedules || []).forEach((s: any) => {
-        (s.campaign_schedule_rules || []).filter((r: any) => r.is_active).forEach((r: any) => rules.push(r));
-      });
-
-      rules.forEach((rule) => {
-        const slot = {
-          inicio: rule.is_all_day ? '00:00' : trimSeconds(rule.start_time),
-          fim: rule.is_all_day ? '23:59' : trimSeconds(rule.end_time),
-        };
-        (rule.days_of_week || []).forEach((d: number) => {
-          const day = DAY_NAMES_MAP[d];
-          if (day) (programacao as any)[day].push(slot);
-        });
-      });
+      const { porVideo } = await agendaDoPedido(supabase, pedido_id);
+      programacao = porVideo.get(video_id) || emptyProgramacao();
     }
 
     // 3. Payload final — rota /programacao aceita apenas id_pedido + programacao
