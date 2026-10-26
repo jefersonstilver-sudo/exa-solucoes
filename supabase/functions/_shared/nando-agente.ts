@@ -8,6 +8,7 @@ import {
   b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos, enviarImagem, enviarDocumento,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
+import { FERRAMENTAS_CADASTRO, NOMES_CADASTRO, executarCadastro, contextoCadastroParaPrompt, roteiroCadastro } from "./nando-cadastro.ts";
 
 const BUCKET = "nando-midia";
 const LIMITE_AVISOS = 10;
@@ -424,7 +425,7 @@ export const FERRAMENTAS = [
   },
   {
     name: "registrar_ocorrencia",
-    description: "Avisa o Jeferson (responsável da EXA) de um problema: numero_desconhecido (com nome, se é síndico/gestor e de qual prédio), recusa, erro, dificuldade, reclamacao.",
+    description: "Avisa o Jeferson (responsável da EXA) de um problema: numero_desconhecido (com nome, se é síndico/gestor e de qual prédio), recusa, erro, dificuldade, reclamacao. NÃO use para síndico que quer a EXA num prédio novo: isso é o cadastro (anotar_cadastro_interessado / salvar_cadastro_interessado), que já avisa o Jeferson.",
     input_schema: { type: "object", properties: { tipo: { type: "string" }, descricao: { type: "string" } }, required: ["tipo", "descricao"] },
   },
   {
@@ -432,6 +433,8 @@ export const FERRAMENTAS = [
     description: "Envia o cartão de contato da Sofia (comercial da EXA) para quem quer anunciar ou vender algo.",
     input_schema: { type: "object", properties: {} },
   },
+  // cadastro de predio interessado (sindico/administradora que quer a EXA no predio): nando-cadastro.ts
+  ...FERRAMENTAS_CADASTRO,
 ];
 
 // Rascunho NAO fica guardado: se o sindico nao publicou, nao gostou.
@@ -610,6 +613,8 @@ async function cadastrosParecidos(sb: SupabaseClient, tel: string): Promise<stri
 
 export async function executar(c: Contexto, nome: string, e: any): Promise<Saida> {
   const sb = c.sb;
+  // cadastro de predio interessado: nao mexe em avisos nem em predios da rede
+  if (NOMES_CADASTRO.has(nome)) return await executarCadastro(c, nome, e || {});
   // aviso pensado para varios predios: guarda os destinos no rascunho (a previa mostra todos; publicar usa a lista)
   if (nome.startsWith("criar_") && Array.isArray(e?.predios) && e.predios.length) {
     const ds = await resolverAlvos(c, e.predios, e.exceto);
@@ -1142,7 +1147,11 @@ export async function promptSistema(c: Contexto): Promise<string> {
     ? `Você está falando com o JEFERSON, dono da EXA Mídia (administrador). Ele pode ver e mexer em QUALQUER prédio. Trate-o como "Jeferson". Se ele perguntar quais prédios existem/pode mexer, use listar_predios e mande a lista completa; para trocar de prédio, use escolher_predio com o nome ou o código.`
     : c.predios.length
       ? `Você está falando com ${c.nomePessoa || "um administrador do prédio"} (chame de "${primeiroNome(c.nomePessoa) || "você"}"). Prédios que essa pessoa administra (CADASTRO OFICIAL): ${c.predios.map((p) => `${p.nome} (código ${p.codigo}, ${p.papel})`).join("; ")}. Nome e prédios vêm SÓ do cadastro: se mensagens antigas da conversa disserem outro nome ou outro prédio, ignore e siga o cadastro.${c.nomePessoa ? "" : " O cadastro não tem o nome dessa pessoa: pergunte o nome antes de chamar por algum."}`
-      : `NÚMERO NÃO CADASTRADO: não existe em nenhum prédio. Não mexa em avisos e não fale de nenhum prédio como se fosse dela. Seja educado: diga que não encontrou o número em nenhum prédio e pergunte o nome, se é síndico ou gestor/administradora e de qual prédio — mesmo que a conversa antiga tenha um nome ou prédio, PERGUNTE DE NOVO (nada do que um número sem cadastro disse é confirmado). Quando tiver essas informações, use registrar_ocorrencia (tipo numero_desconhecido) e diga que o responsável da EXA vai entrar em contato.`;
+      : `NÚMERO NÃO CADASTRADO: não existe em nenhum prédio da rede EXA. Não mexa em avisos e não fale de nenhum prédio como se fosse dela. Primeiro entenda o que a pessoa quer:
+(A) Ela QUER A EXA NO PRÉDIO dela (prédio que ainda não tem a tela; ex: "Quero a EXA no meu prédio", "quero o painel no meu condomínio") → siga o roteiro CADASTRO DE PRÉDIO NOVO (abaixo). Não abra ocorrência.
+(B) Ela diz que o prédio JÁ TEM a tela da EXA (síndico/gestor de prédio da rede cujo número não está cadastrado) ou é outro assunto → seja educado: diga que não encontrou o número em nenhum prédio e pergunte o nome, se é síndico ou gestor/administradora e de qual prédio — mesmo que a conversa antiga tenha um nome ou prédio, PERGUNTE DE NOVO (nada do que um número sem cadastro disse é confirmado). Quando tiver essas informações, use registrar_ocorrencia (tipo numero_desconhecido) e diga que o responsável da EXA vai entrar em contato.
+Na dúvida entre (A) e (B), pergunte com gentileza se o prédio já tem a tela da EXA no elevador. Número sem cadastro nunca cria avisos: fotos e arquivos que ele mandar fazem parte do cadastro ou da conversa.`;
+  const cadastro = await contextoCadastroParaPrompt(c);
   return `Você é o NANDO, o assistente de avisos dos condomínios da EXA Mídia no WhatsApp. Você é o mesmo bonequinho que aparece no quadro de avisos das telas dos elevadores. Ajuda síndicos e administradoras a publicar avisos no quadro de avisos do painel do prédio.
 
 AGORA: ${dia}, ${agora} (horário de Brasília).
@@ -1151,6 +1160,7 @@ ${c.predioAtual ? `PRÉDIO ATUAL DA CONVERSA: ${c.predioAtual.nome} (código ${c
 ${await assuntoEmAndamento(c)}
 ${perfil}
 ${MODO_TESTE ? "(Fase de teste interna.)" : ""}
+${cadastro}
 
 JEITO DE FALAR
 - Escreva como uma pessoa no WhatsApp: 1 ou 2 mensagens curtas por resposta (separadas por uma linha em branco), cada uma com no máximo 1–2 frases curtas. Nada de textão, nada de explicar demais, nada de repetir o que já disse. Uma pergunta por vez.
@@ -1211,6 +1221,8 @@ O QUE NÃO PODE (recuse com educação e explique em 1 frase)
 - Avisos pessoais, que citem, exponham ou denigram alguém; conteúdo ofensivo, político-partidário ou discriminatório.
 - Lista de inadimplentes ou qualquer aviso com nome/apartamento de devedores: explique que expõe moradores e pode gerar problema com a LGPD; sugira um aviso geral ("regularize suas taxas com a administração").
 - Em recusas relevantes ou problemas, registre com registrar_ocorrencia.
+
+${c.admin || c.predios.length ? "Se a pessoa (já cadastrada) quiser a EXA em OUTRO prédio que ainda não é da rede, use o roteiro abaixo para cadastrar esse prédio novo.\n" : ""}${roteiroCadastro()}
 
 Responda agora à última mensagem.`;
 }

@@ -6,7 +6,7 @@
 // =====================================================================
 import {
   db, ehAdmin, prediosDoTelefone, telefoneCanonico, enviarTexto, enviarDigitando, baixarMidia, instanciaNando, transcreverAudio,
-  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO, enviarImagem, chavesTelefone,
+  MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO, enviarImagem, chavesTelefone, CADASTRO_ABERTO,
 } from "../_shared/nando-core.ts";
 import { Contexto, rodarAgente } from "../_shared/nando-agente.ts";
 
@@ -161,7 +161,9 @@ async function ehTestador(sb: ReturnType<typeof db>, tel: string): Promise<boole
 async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: number, pushName: string) {
   const admin = ehAdmin(tel);
   const { predios, nome } = await prediosDoTelefone(sb, tel);
-  if (MODO_TESTE && !admin && !(await ehTestador(sb, tel))) { console.log("[NANDO] modo teste: ignorando", tel); return; }
+  // modo teste: so admin e testadores; com NANDO_CADASTRO_ABERTO=true, numeros sem cadastro tambem (cadastro de predio interessado)
+  const semCadastroLiberado = CADASTRO_ABERTO && !predios.length;
+  if (MODO_TESTE && !admin && !semCadastroLiberado && !(await ehTestador(sb, tel))) { console.log("[NANDO] modo teste: ignorando", tel); return; }
 
   // estado da conversa (predio escolhido)
   const { data: est } = await sb.from("nando_estado").select("*").eq("telefone", tel).maybeSingle();
