@@ -53,11 +53,11 @@ const ResponsiveAdvertiserSidebar = ({
               className="fixed left-0 top-0 z-[110] h-full w-72 max-w-[85vw]"
               style={{ pointerEvents: 'auto' }}
             >
-              <div className="relative h-full bg-white shadow-2xl">
+              <div className="relative h-full shadow-2xl">
                 <AdvertiserSidebarContent onItemClick={onClose} />
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-3 p-2 text-[#8b8285] hover:bg-[#f5f1f2] rounded-lg z-10 transition-colors"
+                  className="absolute top-5 right-3 p-2 text-white/80 hover:bg-white/10 rounded-lg z-10 transition-colors"
                   aria-label="Fechar menu"
                 >
                   <X className="h-5 w-5" />

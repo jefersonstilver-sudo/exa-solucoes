@@ -270,7 +270,7 @@ const AdvertiserOrders = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
       {/* Section 1: Company Header */}
       <AdvertiserDashboardHeader
         logoUrl={finalLogoUrl}
@@ -295,19 +295,21 @@ const AdvertiserOrders = () => {
             placeholder="Buscar por ID ou valor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 min-h-[44px] sm:min-h-[36px]" />
+            className="h-11 rounded-2xl border-0 bg-white pl-10 text-[14px] shadow-[0_1px_2px_rgba(27,23,25,0.05)] ring-1 ring-[#1b1719]/[0.06] focus-visible:ring-2 focus-visible:ring-[#9C1E1E]/30" />
           
         </div>
         {!isMobile &&
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger className="h-11 w-full rounded-2xl border-0 bg-white text-[14px] shadow-[0_1px_2px_rgba(27,23,25,0.05)] ring-1 ring-[#1b1719]/[0.06] sm:w-[210px]">
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os Status</SelectItem>
               <SelectItem value="tentativa">Tentativas</SelectItem>
-              <SelectItem value="pago">Aguardando Vídeo</SelectItem>
-              <SelectItem value="video_aprovado">Em Exibição</SelectItem>
+              <SelectItem value="aguardando_contrato">Aguardando contrato</SelectItem>
+              <SelectItem value="pago_pendente_video">Aguardando vídeo</SelectItem>
+              <SelectItem value="ativo">No ar</SelectItem>
+              <SelectItem value="video_aprovado">Vídeo aprovado</SelectItem>
               <SelectItem value="cancelado">Cancelado</SelectItem>
             </SelectContent>
           </Select>
@@ -316,7 +318,7 @@ const AdvertiserOrders = () => {
           variant={showGrouped ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setShowGrouped(!showGrouped)}
-          className="min-h-[44px] sm:min-h-[36px] gap-1.5"
+          className="h-11 gap-1.5 rounded-2xl border-0 bg-white px-4 shadow-[0_1px_2px_rgba(27,23,25,0.05)] ring-1 ring-[#1b1719]/[0.06] hover:bg-white"
         >
           <FolderOpen className="h-4 w-4" />
           {!isMobile && 'Agrupar'}
@@ -326,7 +328,7 @@ const AdvertiserOrders = () => {
             variant="outline"
             size="sm"
             onClick={() => setCreateGroupDialogOpen(true)}
-            className="min-h-[44px] sm:min-h-[36px] gap-1.5"
+            className="h-11 gap-1.5 rounded-2xl border-0 bg-white px-4 shadow-[0_1px_2px_rgba(27,23,25,0.05)] ring-1 ring-[#1b1719]/[0.06] hover:bg-white"
           >
             <Plus className="h-4 w-4" />
             {!isMobile && 'Novo grupo'}
@@ -338,7 +340,7 @@ const AdvertiserOrders = () => {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCardReorder}>
       <SortableContext items={filteredItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
       {filteredItems.length === 0 ?
-      <div className="bg-card border border-border/40 rounded-xl p-8 sm:p-12 text-center shadow-sm">
+      <div className="rounded-[22px] bg-white p-8 text-center shadow-[0_1px_2px_rgba(27,23,25,0.04)] ring-1 ring-[#1b1719]/[0.05] sm:p-12">
           <div className="mx-auto bg-muted rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
             <ShoppingBag className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -457,7 +459,7 @@ const AdvertiserOrders = () => {
         </div>
       ) : (
         /* Flat view */
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filteredItems.slice(0, visibleCount).map((item) =>
         <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
         <AdvertiserOrderCard

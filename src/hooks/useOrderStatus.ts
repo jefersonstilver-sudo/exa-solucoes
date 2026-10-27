@@ -144,6 +144,7 @@ export const useOrderStatus = (
 
       case 'pago':
       case 'pago_pendente_video':
+      case 'aguardando_video':
         if (!hasVideos) {
           return {
             label: 'Aguardando Vídeo',
@@ -170,6 +171,15 @@ export const useOrderStatus = (
           color: 'text-white',
           bgColor: 'bg-green-600 border-green-700',
           icon: Monitor
+        };
+
+      case 'aguardando_contrato':
+        return {
+          label: 'Aguardando contrato',
+          description: 'Pagamento confirmado. Assine o contrato enviado por e-mail para liberar os vídeos.',
+          color: 'text-white',
+          bgColor: 'bg-amber-500 border-amber-600',
+          icon: Clock
         };
 
       case 'video_aprovado':
