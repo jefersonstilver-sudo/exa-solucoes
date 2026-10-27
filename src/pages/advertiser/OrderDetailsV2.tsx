@@ -51,6 +51,7 @@ const STATUS: Record<string, { t: string; c: string }> = {
   ativo: { t: '● Em exibição', c: 'bg-[#e6f6ec] text-[#13a24a]' },
   pago: { t: 'Pago', c: 'bg-[#e6f6ec] text-[#13a24a]' },
   pago_pendente_video: { t: 'Aguardando vídeo', c: 'bg-amber-50 text-amber-700' },
+  aguardando_video: { t: 'Aguardando vídeo', c: 'bg-amber-50 text-amber-700' },
   video_enviado: { t: 'Vídeo em aprovação', c: 'bg-blue-50 text-blue-700' },
   aguardando_contrato: { t: 'Aguardando contrato', c: 'bg-amber-50 text-amber-700' },
   pendente: { t: 'Pendente', c: 'bg-amber-50 text-amber-700' },
@@ -195,7 +196,8 @@ const OrderDetailsV2 = () => {
   }
 
   const bloqueado = order.status === 'bloqueado';
-  const aguardandoContrato = order.status === 'aguardando_contrato' || ['enviado', 'pendente', 'pendente_envio'].includes(order.contrato_status);
+  // Contrato pendente so trava quando o pedido ainda nao saiu da etapa de contrato (assinou -> status avanca e libera)
+  const aguardandoContrato = order.status === 'aguardando_contrato' || (['pendente', 'aguardando_contrato'].includes(order.status) && ['enviado', 'pendente', 'pendente_envio'].includes(order.contrato_status));
   const gestaoTravada = contractStatus.isExpired || aguardandoContrato || bloqueado;
   const st = STATUS[order.status] || { t: order.status, c: 'bg-gray-100 text-gray-600' };
   const displayPanels = enhancedData?.recoveredPanels || order.lista_paineis || [];
