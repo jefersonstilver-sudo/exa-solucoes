@@ -72,7 +72,7 @@ const FILTRO: Record<Modo, string> = {
   original: '',
   branco: 'brightness(0) invert(1)',
   // escuro -> cinza claro (#a7a7a7) e claro -> branco: monocromático sem perder os detalhes
-  tonal: 'grayscale(1) contrast(0.42) brightness(1.55)',
+  tonal: 'grayscale(1) contrast(0.85) brightness(1.15)',
   placa: '',
 };
 
@@ -119,7 +119,7 @@ export const LogoSelo: React.FC<Props> = ({ src, fallback = 'E', className, pad 
             src={src!}
             alt="Logo"
             className={cn('h-full w-full object-contain transition-opacity duration-300', pad, modo ? 'opacity-100' : 'opacity-0')}
-            style={{ filter: [FILTRO[modo || 'tonal'], 'drop-shadow(0 1px 1.5px rgba(0,0,0,0.25))'].filter(Boolean).join(' ') }}
+            style={{ filter: [FILTRO[modo || 'tonal'], 'drop-shadow(0 1px 2px rgba(0,0,0,0.35))'].filter(Boolean).join(' ') }}
             onError={() => setErro(true)}
           />
         )

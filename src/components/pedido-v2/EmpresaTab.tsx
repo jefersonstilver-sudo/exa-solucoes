@@ -17,6 +17,8 @@ import {
 import { toast } from 'sonner';
 import type { FichaCampo, Marca, MarcaArquivo, MarcaPatch, TipoArquivo } from '@/hooks/exa2/usePedidoEmpresas';
 import { HoverPlayVideo } from './VideoPreview';
+import LogoSelo from '@/components/exa2/LogoSelo';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { BTN, BTN_SOFT, CARD, EYEBROW, INPUT } from './ui';
 
 interface Props {
@@ -536,21 +538,74 @@ const LogoBox: React.FC<{
       if (ref.current) ref.current.value = '';
     }
   };
+  const [ver, setVer] = useState(false);
+  const xadrez = 'bg-[conic-gradient(#ece7e8_25%,#fff_0_50%,#ece7e8_0_75%,#fff_0)] bg-[length:14px_14px]';
   return (
     <div className="flex-none">
-      <button
-        disabled={disabled || enviando}
-        onClick={() => ref.current?.click()}
-        title={logo ? 'Trocar logo' : 'Enviar logo sem fundo'}
-        className="group relative flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[18px] border border-[#ebe6e7] bg-[conic-gradient(#f1edee_25%,#fff_0_50%,#f1edee_0_75%,#fff_0)] bg-[length:12px_12px] sm:h-20 sm:w-20"
-      >
-        {logo ? <img src={logo} alt="Logo" className="h-full w-full object-contain p-1.5" /> : <span className="text-2xl font-extrabold text-[#9e1b34]">{iniciais(marca.empresa)}</span>}
-        <span className={`absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-black/45 text-[10px] font-bold text-white transition ${enviando || !logo ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${!logo && !enviando ? 'bg-[#9C1E1E]/75' : ''}`}>
-          {enviando ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Upload className="h-4 w-4" />{logo ? 'Trocar' : 'Logo'}</>}
-        </span>
-      </button>
-      {logoInfo?.transparente === false && <div className="mt-1 text-center text-[9.5px] font-bold text-[#c2740a]">com fundo</div>}
+      <div className="flex items-center gap-2">
+        {/* Vitrine: a logo grande sobre o vermelho EXA (como aparece no site) + o recorte sem fundo */}
+        <button
+          type="button"
+          onClick={() => (logo ? setVer(true) : ref.current?.click())}
+          disabled={!logo && (disabled || enviando)}
+          aria-label={logo ? 'Ver a logo em tamanho grande' : 'Enviar logo sem fundo'}
+          className="group relative block rounded-[24px] transition active:scale-[.98]"
+        >
+          {logo ? (
+            <LogoSelo src={logo} fallback={iniciais(marca.empresa)} className="h-24 w-24 sm:h-28 sm:w-28" rounded="rounded-[24px]" pad="p-2.5" />
+          ) : (
+            <span className="flex h-24 w-24 items-center justify-center rounded-[24px] bg-[#9C1E1E]/90 text-white sm:h-28 sm:w-28">
+              {enviando ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="flex flex-col items-center gap-1 text-xs font-bold"><Upload className="h-5 w-5" />Enviar logo</span>}
+            </span>
+          )}
+          {logo && <span className="absolute inset-x-0 bottom-0 rounded-b-[24px] bg-black/45 py-1 text-center text-[10px] font-bold text-white opacity-0 transition group-hover:opacity-100">ampliar</span>}
+        </button>
+        {logo && (
+          <button type="button" onClick={() => setVer(true)} aria-label="Ver o recorte da logo sem fundo" className={`hidden h-24 w-24 flex-none overflow-hidden rounded-[24px] border border-[#ebe6e7] sm:block sm:h-28 sm:w-28 ${xadrez}`}>
+            <img src={logo} alt="" className="h-full w-full object-contain p-2.5" />
+          </button>
+        )}
+      </div>
+      {logo && (
+        <button type="button" disabled={disabled || enviando} onClick={() => ref.current?.click()} className="mt-2 inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11.5px] font-bold text-[#9C1E1E] hover:bg-[#fbe9eb] disabled:opacity-50">
+          {enviando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Trocar logo
+        </button>
+      )}
+      {logoInfo?.transparente === false && <div className="mt-1 text-[10px] font-bold text-[#c2740a]">logo com fundo</div>}
       <input ref={ref} type="file" accept="image/png,image/svg+xml,image/webp" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+
+      {logo && (
+        <Dialog open={ver} onOpenChange={setVer}>
+          <DialogContent className="max-h-[92dvh] max-w-3xl overflow-y-auto rounded-[22px] border-0 bg-[#f3f1f2] p-5 sm:p-6">
+            <DialogTitle className="text-xl font-extrabold tracking-tight text-[#1b1719]">Sua logo · {marca.empresa}</DialogTitle>
+            <p className="-mt-1 text-sm text-[#6f6669]">Confira se o recorte ficou limpo e como ela aparece em cada fundo. A versão no vermelho é a que usamos no site da EXA.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {[
+                { t: 'Sem fundo (recorte)', c: xadrez, d: 'O quadriculado mostra onde está transparente.' },
+                { t: 'Sobre branco', c: 'bg-white', d: 'Como fica em documentos e no vídeo claro.' },
+                { t: 'Sobre escuro', c: 'bg-[#141014]', d: 'Confere se há bordas ou sobras do fundo antigo.' },
+              ].map((v) => (
+                <figure key={v.t} className="m-0 rounded-2xl bg-white p-3 shadow-sm">
+                  <div className={`flex aspect-[4/3] items-center justify-center rounded-xl border border-[#ebe6e7] ${v.c}`}>
+                    <img src={logo} alt={`Logo ${v.t}`} className="max-h-[85%] max-w-[85%] object-contain" />
+                  </div>
+                  <figcaption className="mt-2 text-sm font-bold text-[#1b1719]">{v.t}<span className="block text-xs font-normal text-[#8b8285]">{v.d}</span></figcaption>
+                </figure>
+              ))}
+              <figure className="m-0 rounded-2xl bg-white p-3 shadow-sm">
+                <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-[#f7f4f5]">
+                  <LogoSelo src={logo} fallback={iniciais(marca.empresa)} className="h-[78%] w-auto aspect-square" rounded="rounded-[28px]" pad="p-4" />
+                </div>
+                <figcaption className="mt-2 text-sm font-bold text-[#1b1719]">No vermelho EXA<span className="block text-xs font-normal text-[#8b8285]">Versão clara automática, usada no site e no seu pedido.</span></figcaption>
+              </figure>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={disabled || enviando} onClick={() => ref.current?.click()} className={`${BTN} px-4 py-2 text-sm`}>Trocar logo</button>
+              <a href={logo} target="_blank" rel="noreferrer" className={`${BTN_SOFT} px-4 py-2 text-sm`}>Baixar PNG</a>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
@@ -661,17 +716,17 @@ const CoresEditor: React.FC<{ cores: Cor[]; origem: Origem; em?: string | null; 
       ) : (
         <div className="space-y-2">
           {lista.map((c, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#f7f5f6] p-2 sm:flex-nowrap">
+            <div key={i} className="grid grid-cols-[40px_minmax(0,1fr)_36px] items-center gap-2 rounded-xl bg-[#f7f5f6] p-2 sm:grid-cols-[40px_104px_minmax(0,1fr)_140px_36px]">
               <label className="relative h-10 w-10 flex-none cursor-pointer overflow-hidden rounded-lg border border-black/10" style={{ background: valido(c.hex) ? c.hex : '#fff' }} title="Escolher cor">
                 <input type="color" value={valido(c.hex) ? c.hex : '#000000'} onChange={(e) => setLista((l) => l.map((x, j) => (j === i ? { ...x, hex: e.target.value } : x)))} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
               </label>
-              <input value={c.hex} onChange={(e) => { const h = e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`; setLista((l) => l.map((x, j) => (j === i ? { ...x, hex: h.slice(0, 7) } : x))); }} className={`${INPUT} w-24 flex-none bg-white py-2 font-mono text-xs uppercase ${valido(c.hex) ? '' : 'border-[#c2740a]'}`} />
-              <input value={c.nome || ''} onChange={(e) => setLista((l) => l.map((x, j) => (j === i ? { ...x, nome: e.target.value } : x)))} placeholder="Nome (ex.: Vinho)" className={`${INPUT} min-w-[120px] flex-1 bg-white py-2`} />
-              <select value={c.uso || ''} onChange={(e) => setLista((l) => l.map((x, j) => (j === i ? { ...x, uso: e.target.value || undefined } : x)))} className={`${INPUT} w-32 flex-none bg-white py-2`}>
+              <input value={c.hex} onChange={(e) => { const h = e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`; setLista((l) => l.map((x, j) => (j === i ? { ...x, hex: h.slice(0, 7) } : x))); }} className={`${INPUT} !w-full min-w-0 bg-white py-2 font-mono text-xs uppercase ${valido(c.hex) ? '' : 'border-[#c2740a]'}`} aria-label="Código da cor" />
+              <input value={c.nome || ''} onChange={(e) => setLista((l) => l.map((x, j) => (j === i ? { ...x, nome: e.target.value } : x)))} placeholder="Nome (ex.: Vinho)" aria-label="Nome da cor" className={`${INPUT} col-span-full !w-full min-w-0 bg-white py-2 sm:col-span-1`} />
+              <select value={c.uso || ''} onChange={(e) => setLista((l) => l.map((x, j) => (j === i ? { ...x, uso: e.target.value || undefined } : x)))} aria-label="Uso da cor" className={`${INPUT} col-span-2 !w-full min-w-0 bg-white py-2 sm:col-span-1`}>
                 <option value="">Uso…</option>
                 {USOS.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
-              <button onClick={() => setLista((l) => l.filter((_, j) => j !== i))} className="rounded-lg p-2 text-[#b3aaad] hover:text-red-600" title="Remover cor"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={() => setLista((l) => l.filter((_, j) => j !== i))} className="row-start-1 justify-self-end rounded-lg p-2 text-[#b3aaad] hover:text-red-600 sm:row-start-auto" title="Remover cor" aria-label="Remover cor"><Trash2 className="h-4 w-4" /></button>
             </div>
           ))}
           <div className="flex flex-wrap gap-2">
