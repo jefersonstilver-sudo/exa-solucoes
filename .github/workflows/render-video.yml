@@ -13,8 +13,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - uses: FedericoCarboni/setup-ffmpeg@v3
+      # ffmpeg: o download da action as vezes falha ("fetch failed") e o video ficava parado na fila.
+      # Tenta 2x pela action e, se ainda falhar, instala pelo apt (com tempo limite).
+      - id: ff1
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        continue-on-error: true
         with: { ffmpeg-version: release }
+      - id: ff2
+        if: steps.ff1.outcome == 'failure'
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        continue-on-error: true
+        with: { ffmpeg-version: release }
+      - if: steps.ff1.outcome == 'failure' && steps.ff2.outcome == 'failure'
+        run: |
+          which ffmpeg && which ffprobe && exit 0
+          sudo timeout 420 apt-get update -o Acquire::Retries=3 && sudo timeout 420 apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -version | head -1
       - run: |
           # sem apt-get: o espelho do Ubuntu pode travar e estourar o tempo do job
           pip install playwright segno pillow anthropic pymupdf
