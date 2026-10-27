@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -181,7 +182,7 @@ serve(async (req) => {
         from: 'Hexa Mídia <noreply@indexamidia.com.br>',
         to: clientEmail,
         subject: '📝 Seu Contrato Está Pronto para Assinatura',
-        html: emailHtml,
+        html: aplicarTemaEmail(emailHtml),
       }),
     });
 

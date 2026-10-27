@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +55,7 @@ serve(async (req) => {
       from: 'EXA Mídia <noreply@examidia.com.br>',
       to: [email],
       subject: '🛡️ Nova função ativada: Admin Master de Vídeo',
-      html,
+      html: aplicarTemaEmail(html),
     });
     if (error) throw error;
 

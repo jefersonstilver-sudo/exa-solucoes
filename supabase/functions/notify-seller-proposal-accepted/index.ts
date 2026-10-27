@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "npm:resend@2.0.0";
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -171,7 +172,7 @@ serve(async (req) => {
           from: 'EXA Mídia <comercial@examidia.com.br>',
           to: [sellerEmail],
           subject: `🎉 Proposta ${proposal.number} ACEITA - ${proposal.client_name}`,
-          html: emailHtml,
+          html: aplicarTemaEmail(emailHtml),
         });
 
         if (emailError) {

@@ -178,19 +178,12 @@ serve(async (req: Request) => {
       console.log('🔑 [RECOVERY] token_hash presente:', !!email_data.token_hash);
       console.log('🔑 [RECOVERY] confirmation_url presente:', !!email_data?.confirmation_url);
 
-      // STRATEGY 1: Use confirmation_url from webhook payload if available (most reliable)
-      let recoveryUrl: string;
-      if (email_data?.confirmation_url) {
-        console.log('✅ [RECOVERY] Usando confirmation_url oficial do webhook');
-        const url = new URL(email_data.confirmation_url);
-        url.searchParams.set('redirect_to', `${baseUrl}/reset-password`);
-        recoveryUrl = url.toString();
-      } else {
-        // STRATEGY 2: Construct from token_hash (fallback)
-        console.log('🔄 [RECOVERY] Construindo URL a partir do token_hash');
-        recoveryUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=recovery&redirect_to=${encodeURIComponent(`${baseUrl}/reset-password`)}`;
-      }
-      
+      // O link NÃO pode consumir o token ao ser aberto: leitores de e-mail (iPhone, Gmail, Outlook) abrem o link
+      // sozinhos para gerar a pré-visualização, e o link /auth/v1/verify era "gasto" antes da pessoa clicar
+      // ("link expirado"). Agora o link vai para a nossa página, que só valida o token quando a pessoa
+      // digita a nova senha e clica em salvar (verifyOtp com token_hash).
+      const siteSenha = (Deno.env.get('SITE_URL') || 'https://examidia.com.br').replace(/\/$/, '');
+      const recoveryUrl = `${siteSenha}/definir-senha?th=${encodeURIComponent(email_data.token_hash)}&t=recovery&e=${encodeURIComponent(userEmail)}`;
       console.log('🔗 [RECOVERY] URL final:', recoveryUrl.substring(0, 120) + '...');
       const userName = user?.user_metadata?.name || userEmail.split('@')[0];
       

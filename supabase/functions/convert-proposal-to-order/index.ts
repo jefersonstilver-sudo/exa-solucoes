@@ -211,8 +211,11 @@ serve(async (req) => {
           }
         });
 
-        if (linkData?.properties?.action_link) {
-          passwordResetLink = linkData.properties.action_link;
+        if (linkData?.properties?.hashed_token || linkData?.properties?.action_link) {
+          // link que NÃO se gasta na pré-visualização do e-mail: o token só é validado quando a pessoa salva a senha
+          passwordResetLink = linkData.properties.hashed_token
+            ? `https://examidia.com.br/definir-senha?th=${encodeURIComponent(linkData.properties.hashed_token)}&t=recovery&e=${encodeURIComponent(clientEmail)}`
+            : linkData.properties.action_link;
           console.log('✅ Link de senha gerado com sucesso');
           
           // Atualizar metadata do usuário para indicar que link foi enviado

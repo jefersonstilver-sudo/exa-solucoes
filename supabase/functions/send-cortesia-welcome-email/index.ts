@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -188,7 +189,7 @@ serve(async (req) => {
       from: 'EXA Mídia <contato@examidia.com.br>',
       to: clientEmail,
       subject: '🎁 Você recebeu uma cortesia de anúncio - EXA Mídia',
-      html: htmlContent
+      html: aplicarTemaEmail(htmlContent)
     });
 
     if (emailError) {

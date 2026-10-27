@@ -1,5 +1,6 @@
 import { Resend } from "npm:resend@4.0.0";
 import * as EmailTemplates from "../_shared/email-templates/index.ts";
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 export class EmailService {
   private resend: Resend;
@@ -58,7 +59,7 @@ export class EmailService {
         from: 'EXA <noreply@examidia.com.br>',
         to: [userEmail],
         subject: '🎯 Confirme seu email na EXA - Bem-vindo!',
-        html,
+        html: aplicarTemaEmail(html),
       });
 
       await this.logEmail({
@@ -100,7 +101,7 @@ export class EmailService {
         from: 'EXA <noreply@examidia.com.br>',
         to: [userEmail],
         subject: '🎯 Confirme seu email - EXA',
-        html,
+        html: aplicarTemaEmail(html),
       });
 
       await this.logEmail({
@@ -137,7 +138,7 @@ export class EmailService {
       from: 'EXA <noreply@examidia.com.br>',
       to: [userEmail],
       subject: '🔒 Recuperação de senha - EXA',
-      html,
+      html: aplicarTemaEmail(html),
     });
   }
 
@@ -155,7 +156,7 @@ export class EmailService {
         from: 'EXA <noreply@examidia.com.br>',
         to: [userEmail],
         subject: '🎬 Vídeo Recebido - Em Análise | EXA',
-        html,
+        html: aplicarTemaEmail(html),
       });
 
       await this.logEmail({
@@ -215,7 +216,7 @@ export class EmailService {
         from: 'EXA <noreply@examidia.com.br>',
         to: [userEmail],
         subject: '🎉 Parabéns! Seu Vídeo Foi Aprovado | EXA',
-        html,
+        html: aplicarTemaEmail(html),
       });
 
       await this.logEmail({
@@ -271,7 +272,7 @@ export class EmailService {
         from: 'EXA <noreply@examidia.com.br>',
         to: [userEmail],
         subject: '⚠️ Vídeo Precisa de Ajustes | EXA',
-        html,
+        html: aplicarTemaEmail(html),
       });
 
       await this.logEmail({

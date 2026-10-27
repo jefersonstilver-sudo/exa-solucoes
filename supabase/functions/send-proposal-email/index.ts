@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "npm:resend@2.0.0";
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -193,7 +194,7 @@ serve(async (req) => {
       to: [proposal.client_email],
       cc: ccEmails.length > 0 ? ccEmails : undefined,
       subject: `Proposta ${proposal.number} - EXA Mídia Digital`,
-      html: htmlContent,
+      html: aplicarTemaEmail(htmlContent),
     });
     
     console.log('E-mail enviado com sucesso:', emailResponse);

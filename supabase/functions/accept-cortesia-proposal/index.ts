@@ -120,8 +120,11 @@ serve(async (req) => {
         }
       });
 
-      if (!resetError && resetData?.properties?.action_link) {
-        passwordResetLink = resetData.properties.action_link;
+      if (!resetError && (resetData?.properties?.hashed_token || resetData?.properties?.action_link)) {
+        // link que NÃO se gasta na pré-visualização do e-mail: o token só é validado quando a pessoa salva a senha
+        passwordResetLink = resetData.properties.hashed_token
+          ? `${SITE_URL}/definir-senha?th=${encodeURIComponent(resetData.properties.hashed_token)}&t=recovery&e=${encodeURIComponent(clientEmail)}`
+          : resetData.properties.action_link;
       }
 
       console.log('[accept-cortesia-proposal] Novo usuário criado:', userId);

@@ -9,6 +9,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { SINDICO_CONFIRMACAO_HTML } from '../_shared/email-templates-html/sindico-confirmacao.ts';
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
       to: [recipient],
       reply_to: REPLY_TO,
       subject,
-      html,
+      html: aplicarTemaEmail(html),
       text: textPlain,
       headers: {
         'List-Unsubscribe': '<mailto:contato@examidia.com.br?subject=Unsubscribe>',

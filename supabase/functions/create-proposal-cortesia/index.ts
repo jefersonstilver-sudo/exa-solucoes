@@ -98,8 +98,11 @@ serve(async (req) => {
         }
       });
 
-      if (!resetError && resetData?.properties?.action_link) {
-        passwordResetLink = resetData.properties.action_link;
+      if (!resetError && (resetData?.properties?.hashed_token || resetData?.properties?.action_link)) {
+        // link que NÃO se gasta na pré-visualização do e-mail (antes ia para um domínio lovable.app e /auth/v1/verify)
+        passwordResetLink = resetData.properties.hashed_token
+          ? `https://examidia.com.br/definir-senha?th=${encodeURIComponent(resetData.properties.hashed_token)}&t=recovery&e=${encodeURIComponent(client_email.toLowerCase())}`
+          : resetData.properties.action_link;
         console.log('[create-proposal-cortesia] Link de recuperação gerado');
       }
     }

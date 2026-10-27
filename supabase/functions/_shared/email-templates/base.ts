@@ -6,6 +6,8 @@
 
 // Logo oficial da EXA - URL pública do bucket email-assets
 // Este bucket é público e dedicado apenas para assets de email
+import { CSS_TEMA_ESCURO } from '../email-tema.ts';
+
 export const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-logo.png';
 
 // Cores oficiais da EXA - Brand Identity
@@ -389,11 +391,13 @@ export function createEmailTemplate(params: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>${params.title || 'EXA Mídia'}</title>
   <style>
     ${BASE_STYLES}
   </style>
+  <style data-exa-tema>${CSS_TEMA_ESCURO}</style>
 </head>
 <body>
   <div class="email-wrapper">

@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import * as EmailTemplates from '../_shared/email-templates/index.ts';
 import { Resend } from "npm:resend@4.0.0";
+import { aplicarTemaEmail } from '../_shared/email-tema.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -84,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: "EXA Mídia <noreply@examidia.com.br>",
         to: [provider_email],
         subject: "🎉 Parabéns! Você ajudou a ativar mais um ponto EXA!",
-        html,
+        html: aplicarTemaEmail(html),
       });
 
       console.log("✅ [BENEFIT-INVITATION] Email enviado com sucesso:", result);
@@ -114,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: "EXA Mídia <noreply@examidia.com.br>",
         to: [provider_email],
         subject: "🎁 Aqui está seu presente da EXA!",
-        html,
+        html: aplicarTemaEmail(html),
       });
 
       console.log("✅ [BENEFIT-GIFT-CODE] Email enviado com sucesso:", result);
