@@ -28,12 +28,12 @@ export const AdvertiserDashboardHeader: React.FC<AdvertiserDashboardHeaderProps>
 
   return (
     <div className={cn('flex items-center gap-4 sm:gap-5', className)}>
-      <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-[20px] bg-[#8a1a1e] bg-[radial-gradient(120%_90%_at_0%_0%,#b2272d_0%,rgba(178,39,45,0)_65%)] shadow-[0_10px_24px_-12px_rgba(138,26,30,0.8)] sm:h-[72px] sm:w-[72px]">
+      <div className={cn('flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-[20px] sm:h-[72px] sm:w-[72px]', logoUrl && !imgError ? 'bg-white shadow-[0_1px_2px_rgba(27,23,25,0.06),0_10px_24px_-14px_rgba(27,23,25,0.35)] ring-1 ring-[#1b1719]/[0.06]' : 'bg-[#8a1a1e] bg-[radial-gradient(120%_90%_at_0%_0%,#b2272d_0%,rgba(178,39,45,0)_65%)] shadow-[0_10px_24px_-12px_rgba(138,26,30,0.8)]')}>
         {logoUrl && !imgError ? (
           <img
             src={logoUrl}
             alt="Logo da empresa"
-            className={cn('h-full w-full object-contain p-3', !logoUrl.includes('#original') && 'brightness-0 invert')}
+            className="h-full w-full object-contain p-2.5"
             style={{ transform: `scale(${logoScale})` }}
             onError={() => setImgError(true)}
           />

@@ -1,3 +1,4 @@
+import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
@@ -99,7 +100,9 @@ const AdvertiserOrders = () => {
   });
 
   // Resolve logo URL via signed URL for private bucket
-  const rawLogoUrl = companyData?.logo_url || userProfile?.avatar_url || null;
+  // EXA 2.0: logo enviada na aba Empresa do pedido / para a Sofia tem prioridade sobre a foto do perfil
+  const logoMarca = useLogoEmpresa(userProfile?.id, companyData?.logo_url || userProfile?.avatar_url || null);
+  const rawLogoUrl = logoMarca;
   const logoInput = React.useMemo(() => {
     if (!rawLogoUrl) return null;
     const supabasePattern = /\/storage\/v1\/object\/public\/([^/]+)\/(.+?)(\?|#|$)/;
@@ -400,6 +403,7 @@ const AdvertiserOrders = () => {
                         groups={groups}
                         onMoveToGroup={moveOrderToGroup}
                         onCreateGroup={() => setCreateGroupDialogOpen(true)}
+                        companyName={companyData?.empresa_nome}
                         draggable
                         onDragStart={handleDragStart}
                       />
@@ -446,6 +450,7 @@ const AdvertiserOrders = () => {
                         groups={groups}
                         onMoveToGroup={moveOrderToGroup}
                         onCreateGroup={() => setCreateGroupDialogOpen(true)}
+                        companyName={companyData?.empresa_nome}
                         draggable
                         onDragStart={handleDragStart}
                       />
@@ -475,7 +480,8 @@ const AdvertiserOrders = () => {
           handleStripePayment={handleStripePayment}
           groups={groups}
           onMoveToGroup={moveOrderToGroup}
-          onCreateGroup={() => setCreateGroupDialogOpen(true)} />
+          onCreateGroup={() => setCreateGroupDialogOpen(true)}
+                        companyName={companyData?.empresa_nome} />
         </SortableOrderCard>
         )}
 

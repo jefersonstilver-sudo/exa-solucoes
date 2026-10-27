@@ -23,6 +23,8 @@ interface AdvertiserOrderCardProps {
   onCreateGroup?: () => void;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent, orderId: string) => void;
+  /** nome da empresa (ja mostrado no cabecalho): se o pedido tiver o mesmo nome, o cartao mostra os predios */
+  companyName?: string;
 }
 
 const formatCurrency = (value: number) =>
@@ -46,6 +48,7 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   onCreateGroup,
   draggable,
   onDragStart,
+  companyName,
 }) => {
   const statusInfo = useOrderStatus(item, handleGeneratePix, handleStripePayment);
   const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
@@ -117,8 +120,13 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
     : ((painelsList.length || 0) * 7200);
 
   const nomeLimpo = String(item.nome_pedido || '').replace(/^\s*EXA\s*[-–—:]\s*/i, '').trim();
+  const nomesPredios = (painelsList as any[]).map((p) => { try { const o = typeof p === 'string' ? JSON.parse(p) : p; return o?.building_name || o?.nome || o?.name || null; } catch { return null; } }).filter(Boolean) as string[];
+  const norm = (x: string) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+  const repeteEmpresa = !!companyName && !!nomeLimpo && (norm(nomeLimpo) === norm(companyName) || norm(companyName).includes(norm(nomeLimpo)));
   const titulo = item.type === 'order'
-    ? nomeLimpo || `Pedido #${item.id.substring(0, 8)}`
+    ? (!nomeLimpo || repeteEmpresa)
+      ? (nomesPredios.length ? nomesPredios.slice(0, 2).join(' + ') + (nomesPredios.length > 2 ? ` + ${nomesPredios.length - 2}` : '') : `Pedido #${item.id.substring(0, 8)}`)
+      : nomeLimpo
     : `Tentativa #${item.id.substring(0, 8)}`;
   const tom = (() => {
     const st = item.type === 'attempt' ? 'tentativa' : item.status;

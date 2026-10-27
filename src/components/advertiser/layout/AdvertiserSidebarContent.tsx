@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import exaLogo from '@/assets/exa-logo.png';
+import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
 
 /**
  * EXA 2.0 — barra lateral do anunciante: vermelho EXA profundo, com luz suave no topo (sem degradê para o preto),
@@ -29,7 +30,8 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
   const { user } = useUserSession();
   const empresa = String((user as any)?.empresa_nome || '').trim();
   const nome = String(user?.nome || user?.email?.split('@')[0] || 'Anunciante').trim();
-  const inicial = (empresa || nome).charAt(0).toUpperCase() || 'A';
+  const inicial = (nome || empresa).charAt(0).toUpperCase() || 'A';
+  const logo = useLogoEmpresa((user as any)?.id, (user as any)?.avatar_url || null);
   const preservedSearch = location.search.includes('impersonate=') || location.search.includes('embedded=') ? location.search : '';
 
   const sair = async () => {
@@ -73,13 +75,13 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       {/* Conta */}
       <div className={cn(isCollapsed ? 'flex flex-col items-center gap-2 px-2 pb-4' : 'px-4 pb-5')}>
         <div className={cn('flex items-center', isCollapsed ? 'flex-col gap-2' : 'gap-3 rounded-2xl bg-white/[0.09] p-3 ring-1 ring-inset ring-white/[0.12] backdrop-blur-sm')}>
-          <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-white text-sm font-extrabold text-[#8a1a1e] shadow-sm" title={empresa || nome}>
-            {inicial}
+          <span className="flex h-9 w-9 flex-none items-center justify-center overflow-hidden rounded-full bg-white text-sm font-extrabold text-[#8a1a1e] shadow-sm" title={nome}>
+            {logo ? <img src={logo} alt="" className="h-full w-full object-contain p-1" /> : inicial}
           </span>
           {!isCollapsed && (
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13.5px] font-bold text-white">{empresa || nome}</span>
-              {empresa && <span className="block truncate text-[12px] text-white/60">{nome}</span>}
+              <span className="block truncate text-[13.5px] font-bold text-white">{nome}</span>
+              <span className="block truncate text-[12px] text-white/60">{(user as any)?.email || 'Anunciante'}</span>
             </span>
           )}
           <span className="flex-none [&_button:hover]:bg-white/10 [&_button]:text-white/80 [&_svg]:text-white/80">
