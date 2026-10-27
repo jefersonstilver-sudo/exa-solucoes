@@ -10188,6 +10188,7 @@ export type Database = {
         Row: {
           banco_autorizado: boolean
           banco_termos: string[]
+          briefing: Json
           client_id: string | null
           contact_id: string | null
           cores: Json
@@ -10212,6 +10213,7 @@ export type Database = {
         Insert: {
           banco_autorizado?: boolean
           banco_termos?: string[]
+          briefing?: Json
           client_id?: string | null
           contact_id?: string | null
           cores?: Json
@@ -10236,6 +10238,7 @@ export type Database = {
         Update: {
           banco_autorizado?: boolean
           banco_termos?: string[]
+          briefing?: Json
           client_id?: string | null
           contact_id?: string | null
           cores?: Json
@@ -11019,6 +11022,30 @@ export type Database = {
         Update: {
           ate?: string
           telefone?: string
+        }
+        Relationships: []
+      }
+      noticias_diarias: {
+        Row: {
+          criado_em: string
+          id: string
+          itens: Json
+          tipo: string
+          titulo: string | null
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          itens?: Json
+          tipo: string
+          titulo?: string | null
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          itens?: Json
+          tipo?: string
+          titulo?: string | null
         }
         Relationships: []
       }
