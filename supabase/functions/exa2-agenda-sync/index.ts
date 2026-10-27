@@ -4,15 +4,16 @@
  * Regra de ouro: A TELA OBEDECE AO SISTEMA, venha a mudança de onde vier (site, Sofia, admin, banco).
  * Por isso este sincronizador RECONCILIA: compara o estado desejado (banco do site) com o estado real
  * de cada tela (manifesto do prédio no ExaSistema, o mesmo que o NUC baixa) e corrige só o que diverge:
- *   1. ARQUIVO  — vídeo principal ou com programação que não está no manifesto da tela -> reenvia o arquivo
+ *   1. ARQUIVO  — vídeo principal ou com programação que falta na tela, ou com período (início/fim) diferente
+ *                 do pedido (pedido renovado) -> reenvia o arquivo com os dados atuais
  *   2. MASTER   — o principal do pedido na tela é diferente do principal do site -> PATCH /master
  *   3. PROGRAMA — a programação da tela é diferente da agenda efetiva -> PUT /programacao
  *
  * Agenda efetiva: janela móvel de 7 dias, mesmas regras do app (override > data > semanal; empate = a
  * instrução mais recente; principal como fallback). Cada dia da semana = 1 data da janela.
  *
- * Quem chama: o app e a Sofia (na hora da mudança), o gatilho do banco (qualquer mudança em vídeos ou
- * programação de um pedido) e o cron a cada 5 min (rede de segurança para todos os pedidos).
+ * Quem chama: o app e a Sofia (na hora da mudança), o gatilho do banco (qualquer mudança em vídeos,
+ * programação, período ou prédios de um pedido) e o cron a cada 5 min (rede de segurança para todos os pedidos).
  * Se o manifesto não puder ser lido, cai no modo antigo (envia programação só quando o hash muda).
  *
  * Segurança / custo:
@@ -76,7 +77,7 @@ Deno.serve(async (req) => {
     }
 
     // --- pedidos alvo ---
-    let q = admin.from('pedidos').select('id, lista_predios, status').in('status', ['ativo', 'pago_pendente_video', 'video_aprovado', 'video_enviado', 'aguardando_video']);
+    let q = admin.from('pedidos').select('id, lista_predios, status, data_inicio, data_fim').in('status', ['ativo', 'pago_pendente_video', 'video_aprovado', 'video_enviado', 'aguardando_video']);
     if (pedidoIds?.length) q = q.in('id', pedidoIds);
     const { data: pedidos, error: pe } = await q;
     if (pe) throw pe;
@@ -112,23 +113,36 @@ Deno.serve(async (req) => {
       // Só a rede de segurança (cron) reenvia arquivo, e só para vídeo aprovado há mais de 10 min:
       // o envio normal (site/Sofia) leva alguns minutos e não pode ser duplicado.
       let aprovadoRecente = new Set<string>();
-      if (manifestoOk && origem === 'cron') {
+      const reenviados = new Set<string>(); // o reenvio zera a programação na tela: reenviar a programação em seguida
+      if (manifestoOk && origem !== 'app') {
         const { data: pv } = await admin.from('pedido_videos').select('id, approved_at, updated_at').eq('pedido_id', ped.id);
         aprovadoRecente = new Set((pv || []).filter((p: any) => Date.now() - new Date(p.approved_at || p.updated_at || 0).getTime() < 10 * 60000).map((p: any) => p.id));
       }
-      if (manifestoOk && origem === 'cron') {
+      if (manifestoOk && origem !== 'app') {
         const precisam =slots.filter((s) => s.approved && s.titulo && (s.is_base_video || rules.some((r) => r.slotId === s.id && r.is_active !== false)));
         for (const s of precisam) {
           if (aprovadoRecente.has(s.id)) continue;
-          const faltaEm = lista.map(telaDe).filter((t) => manifestoPor.has(t) && !itensNaTela(t).some((p: any) => normT(p.titulo) === normT(s.titulo)));
+          // falta o arquivo OU o período gravado na tela é diferente do pedido (ex.: pedido renovado/estendido:
+          // a tela continua com a data antiga e tira o vídeo do ar quando ela vence)
+          const iniPed = String((ped as any).data_inicio || '').slice(0, 10);
+          const fimPed = String((ped as any).data_fim || '').slice(0, 10);
+          const motivo = new Map<string, string>();
+          for (const t of lista.map(telaDe)) {
+            if (!manifestoPor.has(t)) continue;
+            const it = itensNaTela(t).find((p: any) => normT(p.titulo) === normT(s.titulo));
+            if (!it) { motivo.set(t, 'sem arquivo'); continue; }
+            const fimTela = String(it.data_fim || '').slice(0, 10), iniTela = String(it.data_ini || '').slice(0, 10);
+            if ((fimPed && fimTela && fimTela !== fimPed) || (iniPed && iniTela && iniTela !== iniPed)) motivo.set(t, `periodo ${iniTela}>${fimTela} (pedido ${iniPed}>${fimPed})`);
+          }
+          const faltaEm = [...motivo.keys()];
           if (!faltaEm.length) continue;
-          const item: any = { pedido_id: ped.id, tipo: 'arquivo', video: s.titulo, falta_em: faltaEm };
+          const item: any = { pedido_id: ped.id, tipo: 'arquivo', video: s.titulo, falta_em: faltaEm, motivo: [...new Set(motivo.values())] };
           if (!dryRun) {
             const { data: recente } = await admin.from('exa2_alertas_entrega').select('id').eq('tipo', 'reenvio').ilike('mensagem', `%${s.id}%`).gte('criado_em', new Date(Date.now() - 15 * 60000).toISOString()).limit(1);
             if ((recente || []).length) { item.aguardando = 'reenvio feito há menos de 15 min'; correcoes.push(item); continue; }
             const r = await chamarFuncao('upload-video-to-external-api', { pedido_video_id: s.id });
-            item.ok = r.ok; if (!r.ok) item.erro = String(r.resposta?.error || r.resposta?.message || '').slice(0, 200);
-            await admin.from('exa2_alertas_entrega').insert({ cliente_id: faltaEm[0], tipo: 'reenvio', mensagem: `Arquivo reenviado (${r.ok ? 'ok' : 'falhou'}): "${s.titulo}" [${s.id}] faltava em ${faltaEm.join(', ')}`, resolvido_em: new Date().toISOString() });
+            item.ok = r.ok; if (r.ok) reenviados.add(s.id); if (!r.ok) item.erro = String(r.resposta?.error || r.resposta?.message || '').slice(0, 200);
+            await admin.from('exa2_alertas_entrega').insert({ cliente_id: faltaEm[0], tipo: 'reenvio', mensagem: `Arquivo reenviado (${r.ok ? 'ok' : 'falhou'}): "${s.titulo}" [${s.id}] ${[...new Set(motivo.values())].join(' / ')} em ${faltaEm.join(', ')}`, resolvido_em: new Date().toISOString() });
           }
           correcoes.push(item);
         }
@@ -156,7 +170,8 @@ Deno.serve(async (req) => {
         const temRegra = rules.some((r) => r.slotId === s.id);
         const anterior = estadoPorVideo.get(s.videoId);
         const naTela = manifestoOk && lista.map(telaDe).some((t) => itensNaTela(t).some((p: any) => normT(p.titulo) === normT(s.titulo)));
-        if (!temRegra && !anterior && !naTela) continue; // nunca teve agenda e nem está na tela: nada a fazer
+        if (!temRegra && !anterior && !naTela) continue;
+        if (reenviados.has(s.id) && !temRegra) continue; // sem agenda: o reenvio já foi com programação vazia // nunca teve agenda e nem está na tela: nada a fazer
         const prog = efetiva.get(s.id)!;
         const hash = await sha(stable(prog));
         const legado = programacaoLegada(rules.filter((r) => r.slotId === s.id));
@@ -165,12 +180,12 @@ Deno.serve(async (req) => {
         if (manifestoOk) {
           alvo = lista.filter((b) => {
             const it = itensNaTela(telaDe(b)).find((p: any) => normT(p.titulo) === normT(s.titulo));
-            return it && (force || stable(progDoManifesto(it.programacao)) !== stable(prog));
+            return it && (force || reenviados.has(s.id) || stable(progDoManifesto(it.programacao)) !== stable(prog));
           });
           // trava anti-laço: se já enviamos ESTA programação há menos de 30 min e a tela ainda "difere"
           // (ex.: formato diferente no manifesto), não reenvia a cada 5 min — evita a tela sincronizar à toa
           const recente = anterior?.payload_hash === hash && anterior?.sincronizado_em && Date.now() - new Date(anterior.sincronizado_em).getTime() < 30 * 60000;
-          if (alvo.length && recente && !force && origem !== 'app') alvo = [];
+          if (alvo.length && recente && !force && !reenviados.has(s.id) && origem !== 'app') alvo = [];
         } else {
           alvo = force || anterior?.payload_hash !== hash ? lista : [];
         }

@@ -1,5 +1,5 @@
 -- EXA 2.0 — "A tela obedece ao sistema"
--- 1) Gatilho: qualquer mudança em vídeos do pedido ou na programação (site, Sofia, admin, SQL)
+-- 1) Gatilho: qualquer mudança em vídeos, programação, período ou prédios do pedido (site, Sofia, admin, SQL)
 --    chama o sincronizador daquele pedido logo após o commit (pg_net é assíncrono: não atrasa a gravação).
 --    Vários registros na mesma transação = 1 chamada só por pedido.
 -- 2) Rede de segurança: o sincronizador roda para todos os pedidos a cada 5 min
@@ -64,6 +64,21 @@ create trigger exa2_sync_campaign_schedules after insert or update or delete on 
 drop trigger if exists exa2_sync_schedule_rules on public.campaign_schedule_rules;
 create trigger exa2_sync_schedule_rules after insert or update or delete on public.campaign_schedule_rules
   for each row execute function public.exa2_tg_schedule_rules();
+
+-- pedido renovado / período alterado / prédios alterados / reativado -> a tela precisa receber os dados novos
+create or replace function public.exa2_tg_pedidos()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.data_inicio is distinct from old.data_inicio or new.data_fim is distinct from old.data_fim
+     or new.lista_predios::text is distinct from old.lista_predios::text or new.status is distinct from old.status then
+    perform public.exa2_avisar_sync(new.id);
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists exa2_sync_pedidos on public.pedidos;
+create trigger exa2_sync_pedidos after update on public.pedidos
+  for each row execute function public.exa2_tg_pedidos();
 
 -- rede de segurança a cada 5 min (substitui o de 6 em 6 h)
 do $$ begin perform cron.unschedule('exa2-agenda-sync'); exception when others then null; end $$;
