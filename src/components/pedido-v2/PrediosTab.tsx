@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AgendaRule, AgendaSlot, daySegments, fmtCountdown } from '@/lib/agenda/agendaEngine';
 import { useNoArAgora } from '@/hooks/exa2/useNoArAgora';
 import { useWeatherData } from '@/hooks/useWeatherData';
-import { ReplicaPainel } from './ReplicaPainel';
+import { ReplicaPainel, type ItemReplica } from './ReplicaPainel';
 import { descreverRegra, fmtQuando } from './OnAirCard';
 import { corDoSlot } from './AgendaTab';
 import { TipoBadge, tipoDaJanela } from './VideoPreview';
@@ -195,6 +195,20 @@ const PredioAoVivo: React.FC<{
   // Relógio ao vivo (segundo a segundo); o vídeo vencedor troca sozinho quando a agenda muda.
   const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId, 1000);
   const { weatherData } = useWeatherData();
+  // Playlist REAL do prédio (todos os anunciantes, notícias, curiosidades e verticais), na ordem do painel
+  const [playlist, setPlaylist] = useState<ItemReplica[] | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    const ler = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('exa2-replica-playlist', { body: { building_id: predio.id } });
+        if (vivo && data?.ok && Array.isArray(data.itens)) setPlaylist(data.itens);
+      } catch { /* sem playlist: mostra só o vídeo do pedido */ }
+    };
+    ler();
+    const t = window.setInterval(ler, 5 * 60000);
+    return () => { vivo = false; window.clearInterval(t); };
+  }, [predio.id]);
   const slot = bloqueado ? null : atual?.slot || null;
   const minuteKey = Math.floor(now.getTime() / 60000);
   const segsHoje = useMemo(() => daySegments(slots, rules, now), [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -210,12 +224,15 @@ const PredioAoVivo: React.FC<{
 
       {/* Réplica */}
       <div className="mx-auto w-full min-w-[220px]" style={{ maxWidth: 'min(100%, 340px, calc((100dvh - 120px) * 0.5625))' }}>
-        <div className="relative">
-          <span className="absolute -top-2 right-3 z-10 flex items-center gap-1.5 rounded-full bg-[#1b1719] px-2.5 py-1 text-[10.5px] font-extrabold tracking-wide text-white shadow">
+        <div className="mb-2.5 flex items-center justify-between gap-2 px-1">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1b1719] px-2.5 py-1 text-[10.5px] font-extrabold tracking-wide text-white">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#ff4d5e]" /> AO VIVO
           </span>
-          <ReplicaPainel predioNome={predio.nome} slot={slot} now={now} clima={weatherData} />
+          <span className="truncate text-[11px] font-semibold text-[#8b8285]">
+            {playlist?.length ? `${new Set(playlist.map((x) => x.url)).size} vídeos na programação` : 'tela do elevador'}
+          </span>
         </div>
+        <ReplicaPainel predioNome={predio.nome} slot={slot} now={now} clima={weatherData} playlist={playlist || undefined} />
       </div>
 
       {/* Informações */}
@@ -277,18 +294,6 @@ const PredioAoVivo: React.FC<{
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { n: predio.quantidade_telas || predio.numero_elevadores || '—', l: 'telas' },
-            { n: predio.publico_estimado ? predio.publico_estimado.toLocaleString('pt-BR') : '—', l: 'pessoas/mês' },
-            { n: predio.numero_unidades || '—', l: 'unidades' },
-          ].map(({ n, l }) => (
-            <div key={l} className={`${CARD} p-3 text-center`}>
-              <div className="text-lg font-extrabold text-[#1b1719]">{n}</div>
-              <div className="text-[11px] text-[#8b8285]">{l}</div>
-            </div>
-          ))}
-        </div>
 
         <p className="flex gap-2 rounded-xl border border-[#f8e9ec] bg-[#fdf6f7] px-3 py-2.5 text-xs text-[#554e50]">
           <span aria-hidden>👁️</span>

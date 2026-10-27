@@ -99,6 +99,43 @@ const PlayerVideo: React.FC<{ slot: AgendaSlot | null; preencher?: boolean }> = 
   );
 };
 
+/** Item da playlist REAL do prédio (exa2-replica-playlist). */
+export interface ItemReplica { titulo: string; url: string; vertical: boolean; tipo: 'anuncio' | 'editorial' | 'vertical'; duracao: number; seu?: boolean }
+
+/** Toca a playlist do prédio na ordem do painel; o vertical premium ocupa a tela inteira, como no elevador. */
+const usePlaylist = (itens: ItemReplica[] | undefined) => {
+  const [i, setI] = useState(0);
+  const chave = (itens || []).map((x) => x.url).join('|');
+  useEffect(() => setI(0), [chave]);
+  const atual = itens && itens.length ? itens[i % itens.length] : null;
+  const proximo = () => setI((x) => x + 1);
+  useEffect(() => {
+    if (!atual) return;
+    const t = window.setTimeout(proximo, (atual.duracao + 3) * 1000); // segurança se o 'ended' não vier
+    return () => window.clearTimeout(t);
+  }, [i, chave]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { atual, proximo, i };
+};
+
+const VideoItem: React.FC<{ item: ItemReplica; onFim: () => void; chave: number }> = ({ item, onFim, chave }) => (
+  <video
+    key={chave + item.url}
+    src={item.url}
+    autoPlay
+    muted
+    playsInline
+    onEnded={onFim}
+    onError={onFim}
+    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+  />
+);
+
+const Etiqueta: React.FC<{ item: ItemReplica }> = ({ item }) => (
+  <span style={{ position: 'absolute', left: 28, top: 28, background: item.seu ? '#9C1E1E' : 'rgba(0,0,0,.5)', borderRadius: 14, padding: '10px 22px', fontSize: 28, fontWeight: 800, letterSpacing: 1, zIndex: 2 }}>
+    {item.seu ? '▶ SEU ANÚNCIO' : item.tipo === 'editorial' ? '▶ ' + (item.titulo.split(/\s\d/)[0] || 'NOTÍCIAS').toUpperCase() : '▶ PROGRAMAÇÃO DO PRÉDIO'}
+  </span>
+);
+
 const card: React.CSSProperties = {
   background: 'linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.035) 40%,rgba(255,255,255,.02))',
   border: '1px solid rgba(255,255,255,.14)',
@@ -117,9 +154,12 @@ interface Props {
   clima?: WeatherData | null;
   /** amostra: o vídeo preenche o player inteiro (formato 1080×890) */
   preencher?: boolean;
+  /** playlist real do prédio; sem ela, mostra só o vídeo do pedido (slot) */
+  playlist?: ItemReplica[];
 }
 
-export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, preencher }) => {
+export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, preencher, playlist }) => {
+  const pl = usePlaylist(playlist);
   const wrap = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0.3);
   const [camNome, setCamNome] = useState(CAMERAS[0].nome);
@@ -157,10 +197,25 @@ export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, p
           <i className="rp-anim" style={{ position: 'absolute', borderRadius: '50%', width: 700, height: 700, left: 200, top: 1420, background: 'radial-gradient(circle,rgba(255,90,60,.36),rgba(255,90,60,0) 65%)', animation: 'rpM3 12s ease-in-out infinite alternate' }} />
         </div>
 
+        {pl.atual?.vertical && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 5, background: '#000' }}>
+            <VideoItem item={pl.atual} onFim={pl.proximo} chave={pl.i} />
+            <Etiqueta item={pl.atual} />
+          </div>
+        )}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
           {/* PLAYER 1080×890 */}
           <div style={{ flex: '0 0 890px', height: 890, position: 'relative', overflow: 'hidden', background: '#000', borderBottom: '4px solid #fff' }}>
-            <PlayerVideo slot={slot} preencher={preencher} />
+            {pl.atual && !pl.atual.vertical ? (
+              <>
+                <VideoItem item={pl.atual} onFim={pl.proximo} chave={pl.i} />
+                <Etiqueta item={pl.atual} />
+              </>
+            ) : pl.atual ? (
+              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 30%,#3a1420,#120a10 70%)' }} />
+            ) : (
+              <PlayerVideo slot={slot} preencher={preencher} />
+            )}
           </div>
 
           {/* GRADE 1080×1030 */}
