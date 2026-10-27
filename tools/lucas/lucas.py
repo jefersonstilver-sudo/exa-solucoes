@@ -422,6 +422,35 @@ def coverr_buscar(termos, vertical, quantos, destdir):
     return achados
 
 
+def cores_da_logo(path, n=4):
+    """Paleta da propria logo (pixels opacos, sem quase-branco/preto) quando o cliente diz 'as cores sao as da logo'."""
+    try:
+        from PIL import Image
+        im = Image.open(path).convert("RGBA")
+        im.thumbnail((160, 160))
+        px = [p[:3] for p in im.getdata() if p[3] > 200]
+        px = [p for p in px if not (min(p) > 238 or max(p) < 22)] or px
+        if not px:
+            return []
+        tmp = Image.new("RGB", (len(px), 1))
+        tmp.putdata(px)
+        q = tmp.quantize(colors=min(n + 2, 8), method=Image.MEDIANCUT)
+        pal = q.getpalette()
+        cont = sorted(q.getcolors(), reverse=True)
+        out = []
+        for qtd, idx in cont:
+            r, g, b = pal[idx * 3: idx * 3 + 3]
+            if any(abs(r - c[0]) + abs(g - c[1]) + abs(b - c[2]) < 60 for c in out):
+                continue
+            out.append((r, g, b))
+            if len(out) >= n:
+                break
+        return [{"nome": f"cor{i+1} da logo", "hex": "#%02X%02X%02X" % c, "uso": "extraida da logo"} for i, c in enumerate(out)]
+    except Exception as e:
+        log("paleta da logo falhou", e)
+        return []
+
+
 # ---------------------------------------------------------------- job real
 def rodar_job():
     sb = SB()
@@ -545,14 +574,17 @@ def rodar_job():
             conversa = "\n".join(("CLIENTE: " if m["direction"] == "in" else "EXA: ") + str(m.get("body") or "")[:350] for m in reversed(ms))
         except Exception:
             pass
+    if not (marca.get("cores") or []) and assets.get("logo"):
+        marca["cores"] = cores_da_logo(A / "logo.png")
     ficha = {
         "empresa": marca.get("empresa") or b.get("empresa"), "segmento": marca.get("segmento") or b.get("segmento"),
         "cores": marca.get("cores") or [], "fontes_da_marca": marca.get("fontes") or [], "tom_de_voz": marca.get("tom_de_voz"),
         "PROIBIDO": marca.get("proibido"), "slogan": marca.get("slogan"), "instagram": marca.get("instagram") or b.get("instagram"),
         "whatsapp": qrnum, "endereco": marca.get("endereco"), "site": marca.get("site"), "notas": marca.get("notas"),
         "estrategia_da_serie": marca.get("estrategia"),
+        "BRIEFING_ESTRATEGICO": marca.get("briefing") or {},
     }
-    pedido = {k: b.get(k) for k in ("video_n", "tema", "mensagem", "subtitulo", "cta", "frases", "numeros", "pedido_cliente", "observacoes", "cores_estilo") if b.get(k)}
+    pedido = {k: b.get(k) for k in ("video_n", "tema", "mensagem", "subtitulo", "cta", "frases", "numeros", "pedido_cliente", "observacoes", "cores_estilo", "estilo_motion", "angulo", "gancho", "roteiro") if b.get(k)}
     spec = {"W": W, "H": H, "DUR": DUR, "FPS": FPS, "assets": assets, "marca": {"cores": ficha["cores"], "fontes": ficha["fontes_da_marca"], "empresa": ficha["empresa"]}}
 
     intro = [{"type": "text", "text": (
