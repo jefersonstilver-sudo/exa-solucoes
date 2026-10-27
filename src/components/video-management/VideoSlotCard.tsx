@@ -117,8 +117,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   // Verificar se o vídeo tem agendamento ativo
   const hasActiveSchedule = slot.schedule_rules && slot.schedule_rules.length > 0 && slot.schedule_rules.some(rule => rule.is_active && rule.days_of_week && rule.days_of_week.length > 0);
 
+  // EXA 2.0: quando a página informa o vídeo da vez (motor de agenda), só ELE fica "em exibição"
+  const noArAgora = (slot as any)._noArAgora as boolean | undefined;
   // Verificar se o agendamento está ativo AGORA (verificação temporal)
   const isScheduledActiveNow = () => {
+    if (noArAgora !== undefined) return noArAgora;
     if (!hasActiveSchedule) return false;
     const now = new Date();
     const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
@@ -254,13 +257,13 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 </TooltipProvider>}
               
               {/* Badge "ATIVO" para vídeo principal */}
-              {slot.is_base_video && !hasAnyScheduledActiveNow && <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded-lg text-xs sm:text-xs font-medium">
+              {slot.is_base_video && (noArAgora !== undefined ? noArAgora : !hasAnyScheduledActiveNow) && <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded-lg text-xs sm:text-xs font-medium">
                   <Tv className="h-3 w-3 sm:h-3 sm:w-3" />
                   <span>ATIVO</span>
                 </div>}
               
               {/* Badge "EM EXIBIÇÃO" para vídeos agendados ativos */}
-              {!slot.is_base_video && hasActiveSchedule && isScheduledActiveNow() && <TooltipProvider>
+              {!slot.is_base_video && (noArAgora !== undefined ? noArAgora : hasActiveSchedule && isScheduledActiveNow()) && <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs sm:text-xs font-semibold cursor-help animate-pulse">

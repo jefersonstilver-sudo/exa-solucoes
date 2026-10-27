@@ -31,6 +31,7 @@ import { CollapsibleOrderSummary } from '@/components/order/CollapsibleOrderSumm
 import { CollapsiblePurchaseInfo } from '@/components/order/CollapsiblePurchaseInfo';
 import { OrderInstallmentsSection } from '@/components/order/OrderInstallmentsSection';
 import { usePedidoAgenda } from '@/hooks/exa2/usePedidoAgenda';
+import { winnerAt } from '@/lib/agenda/agendaEngine';
 import { usePedidoEmpresas } from '@/hooks/exa2/usePedidoEmpresas';
 import { OnAirCard } from '@/components/pedido-v2/OnAirCard';
 import { AgendaTab } from '@/components/pedido-v2/AgendaTab';
@@ -103,6 +104,11 @@ const OrderDetailsV2 = () => {
   useVideoScheduleMonitor({ orderId: id || '', enabled: true, intervalMinutes: 45, enableRealtime: false, onDataChange: refreshSlots });
 
   const agenda = usePedidoAgenda(id || '', order?.client_id, videoSlots);
+  // Vídeo da vez segundo o motor de agenda (o mesmo que monta a programação das telas): só ele aparece "em exibição"
+  const [minutoAgenda, setMinutoAgenda] = useState(() => Math.floor(Date.now() / 60000));
+  useEffect(() => { const t = setInterval(() => setMinutoAgenda(Math.floor(Date.now() / 60000)), 20000); return () => clearInterval(t); }, []);
+  const slotNoArId = useMemo(() => winnerAt(agenda.slots, agenda.rules, new Date())?.slot.id || null, [agenda.slots, agenda.rules, minutoAgenda]); // eslint-disable-line react-hooks/exhaustive-deps
+  const videoSlotsComNoAr = useMemo(() => videoSlots.map((s: any) => (s?.id && s.approval_status === 'approved' ? { ...s, _noArAgora: s.id === slotNoArId } : s)), [videoSlots, slotNoArId]);
   const empresas = usePedidoEmpresas(id || '', order?.client_id);
 
   // ---- carregar pedido + tempo real (igual à página original) ----
@@ -319,7 +325,7 @@ const OrderDetailsV2 = () => {
                     <div className="exa2-gestao-videos [&>div]:border-0 [&>div]:shadow-none">
                       <VideoManagementCard
                         orderStatus={order.status}
-                        videoSlots={videoSlots}
+                        videoSlots={videoSlotsComNoAr}
                         uploading={uploading}
                         uploadProgress={uploadProgress}
                         onUpload={handleVideoUpload}

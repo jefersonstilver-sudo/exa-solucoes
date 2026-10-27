@@ -28,6 +28,7 @@ export interface AgendaRule {
   end_date?: string | null;
   is_override?: boolean | null;
   label?: string | null;
+  created_at?: string | null; // desempate: a instrução mais recente vence
 }
 
 export interface AgendaSlot {
@@ -109,7 +110,7 @@ export const winnerAt = (slots: AgendaSlot[], rules: AgendaRule[], at: Date): Wi
   const bySlot = new Map(slots.filter((s) => s.approved).map((s) => [s.id, s]));
   const active = rules
     .filter((r) => bySlot.has(r.slotId) && ruleActiveAt(r, at))
-    .sort((a, b) => rank(b) - rank(a) || bySlot.get(a.slotId)!.slot_position - bySlot.get(b.slotId)!.slot_position);
+    .sort((a, b) => rank(b) - rank(a) || String(b.created_at || '').localeCompare(String(a.created_at || '')) || bySlot.get(a.slotId)!.slot_position - bySlot.get(b.slotId)!.slot_position);
   if (active.length) return { slot: bySlot.get(active[0].slotId)!, rule: active[0] };
   const base = slots.find((s) => s.approved && s.is_base_video) || null;
   return base ? { slot: base, rule: null } : null;

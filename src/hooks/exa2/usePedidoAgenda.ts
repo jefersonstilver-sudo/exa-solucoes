@@ -80,7 +80,7 @@ export function usePedidoAgenda(pedidoId: string, clientId: string | undefined, 
         const { data, error } = await supabase
           .from('campaign_schedule_rules')
           .select(
-            'id, days_of_week, start_time, end_time, is_all_day, is_active, rule_type, start_date, end_date, is_override, label, campaign_video_schedules!inner(video_id)',
+            'id, days_of_week, start_time, end_time, is_all_day, is_active, rule_type, start_date, end_date, is_override, label, created_at, campaign_video_schedules!inner(video_id)',
           )
           .in('campaign_video_schedules.video_id', videoIds);
         if (error) throw error;
@@ -98,6 +98,7 @@ export function usePedidoAgenda(pedidoId: string, clientId: string | undefined, 
               end_time: r.end_time,
               is_all_day: r.is_all_day,
               is_active: r.is_active,
+              created_at: r.created_at,
               start_date: r.start_date,
               end_date: r.end_date,
               is_override: r.is_override,

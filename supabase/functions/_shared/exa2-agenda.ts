@@ -6,7 +6,7 @@
  */
 // ---------------- motor de agenda (espelho de src/lib/agenda/agendaEngine.ts) ----------------
 type RuleType = 'principal' | 'recorrente' | 'data';
-export interface Rule { id: string; slotId: string; rule_type?: string | null; days_of_week?: number[] | null; start_time?: string | null; end_time?: string | null; is_all_day?: boolean | null; is_active?: boolean | null; start_date?: string | null; end_date?: string | null; is_override?: boolean | null; }
+export interface Rule { id: string; slotId: string; rule_type?: string | null; days_of_week?: number[] | null; start_time?: string | null; end_time?: string | null; is_all_day?: boolean | null; is_active?: boolean | null; start_date?: string | null; end_date?: string | null; is_override?: boolean | null; created_at?: string | null; }
 export interface Slot { id: string; videoId: string; slot_position: number; is_base_video: boolean; approved: boolean; titulo: string; }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -32,7 +32,7 @@ const active = (r: Rule, at: Date) => {
 const rank = (r: Rule) => (r.is_override ? 3 : typeOf(r) === 'data' ? 2 : 1);
 const winner = (slots: Slot[], rules: Rule[], at: Date): { slot: Slot; rule: Rule | null } | null => {
   const by = new Map(slots.filter((s) => s.approved).map((s) => [s.id, s]));
-  const a = rules.filter((r) => by.has(r.slotId) && active(r, at)).sort((x, y) => rank(y) - rank(x) || by.get(x.slotId)!.slot_position - by.get(y.slotId)!.slot_position);
+  const a = rules.filter((r) => by.has(r.slotId) && active(r, at)).sort((x, y) => rank(y) - rank(x) || String(y.created_at || '').localeCompare(String(x.created_at || '')) || by.get(x.slotId)!.slot_position - by.get(y.slotId)!.slot_position);
   if (a.length) return { slot: by.get(a[0].slotId)!, rule: a[0] };
   const base = slots.find((s) => s.approved && s.is_base_video);
   return base ? { slot: base, rule: null } : null;
@@ -101,7 +101,7 @@ export async function agendaDoPedido(admin: any, pedidoId: string) {
   if (videoIds.length) {
     const { data: rr, error } = await admin
       .from('campaign_schedule_rules')
-      .select('id, days_of_week, start_time, end_time, is_all_day, is_active, rule_type, start_date, end_date, is_override, campaign_video_schedules!inner(video_id)')
+      .select('id, days_of_week, start_time, end_time, is_all_day, is_active, rule_type, start_date, end_date, is_override, created_at, campaign_video_schedules!inner(video_id)')
       .in('campaign_video_schedules.video_id', videoIds);
     if (error) throw error;
     rules = (rr || []).map((r: any) => ({ ...r, slotId: byVideo.get(r.campaign_video_schedules?.video_id)?.id })).filter((r: any) => r.slotId);

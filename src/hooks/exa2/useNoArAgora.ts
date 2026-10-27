@@ -23,7 +23,9 @@ export function useNoArAgora(
   const proximo = useMemo(() => nextChange(slots, rules, now, 14), [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const serverSlot = serverActiveSlotId ? slots.find((s) => s.id === serverActiveSlotId) : null;
-  const atual: Winner | null = serverSlot && serverSlot.id !== computed?.slot.id ? { slot: serverSlot, rule: null } : computed;
+  // A agenda calculada (mesmo motor que monta a programação das telas) é a verdade. selected_for_display no banco
+  // marca o vídeo PRINCIPAL, não o programado da vez — por isso só é usado quando a agenda não tem resposta.
+  const atual: Winner | null = computed || (serverSlot ? { slot: serverSlot, rule: null } : null);
 
   return { now, atual, proximo };
 }
