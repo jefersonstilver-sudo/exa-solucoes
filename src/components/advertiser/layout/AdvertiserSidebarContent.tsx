@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { ShoppingBag, User, LogOut, Receipt, MessageCircle } from 'lucide-react';
+import { ShoppingBag, User, LogOut, MessageCircle } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,7 +21,6 @@ interface AdvertiserSidebarContentProps {
 
 const ITENS = [
   { title: 'Meus pedidos', href: '/anunciante/pedidos', icon: ShoppingBag },
-  { title: 'Faturas', href: '/anunciante/faturas', icon: Receipt },
   { title: 'Meu perfil', href: '/anunciante/configuracoes', icon: User },
 ];
 

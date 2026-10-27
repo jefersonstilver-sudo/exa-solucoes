@@ -283,21 +283,31 @@ const OrderDetailsV2 = () => {
           </nav>
 
           {aba === 'videos' && (
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <div>
               <div className="min-w-0 space-y-5">
                 {!bloqueado && (
                   <section>
-                    <div className="mb-2.5 flex items-baseline justify-between gap-2 px-0.5">
+                    <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 px-0.5">
                       <h2 className="text-lg font-extrabold tracking-tight text-[#1b1719]">No ar agora</h2>
-                      <span className="text-xs text-[#8b8285]">nos {buildings.length} prédios</span>
+                      <div className="[&>*]:!m-0 [&>*]:!shadow-none [&>*]:!bg-transparent [&>*]:!p-0 text-xs">
+                        <EntregaResumo buildingIds={predioIdsAtivos} />
+                      </div>
                     </div>
-                    <OnAirCard slots={agenda.slots} rules={agenda.rules} totalPredios={buildings.length} serverActiveSlotId={serverActive} onAgendar={() => setAba('agenda')} />
+                    <OnAirCard
+                      slots={agenda.slots}
+                      rules={agenda.rules}
+                      totalPredios={buildings.length}
+                      serverActiveSlotId={serverActive}
+                      onAgendar={() => setAba('agenda')}
+                      onVerTela={() => setAba('predios')}
+                      onEnviar={gestaoTravada ? undefined : () => document.getElementById('seus-videos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    />
                   </section>
                 )}
                 {gestaoTravada ? (
                   <AvisoTravado />
                 ) : (
-                  <section className={`${CARD} overflow-hidden`}>
+                  <section id="seus-videos" className={`${CARD} scroll-mt-24 overflow-hidden`}>
                     <div className="flex items-center gap-3 border-b border-[#f1edee] px-4 py-3.5 sm:px-5">
                       <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#f8e9ec] text-[#9e1b34]"><Film className="h-4 w-4" /></span>
                       <div className="min-w-0 flex-1">
@@ -325,26 +335,8 @@ const OrderDetailsV2 = () => {
                   </section>
                 )}
               </div>
-
-              <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
-                {!bloqueado && <EntregaResumo buildingIds={predioIdsAtivos} />}
-                <div className="space-y-2.5">
-                  {[
-                    { a: 'agenda' as Aba, i: CalendarDays, t: 'Agenda de exibição', d: 'Veja e organize quando cada vídeo aparece' },
-                    { a: 'predios' as Aba, i: Building2, t: 'Meus prédios', d: `${buildings.length} prédios · veja a tela ao vivo de cada um` },
-                    { a: 'empresa' as Aba, i: Tag, t: 'Empresa', d: 'Logo, cores, público e vídeos crus para a Sofia' },
-                  ].map(({ a, i: I, t, d }) => (
-                    <button key={a} onClick={() => setAba(a)} className={`${CARD} flex w-full items-center gap-3.5 p-3.5 text-left transition active:scale-[.99]`}>
-                      <span className="flex h-11 w-11 flex-none items-center justify-center rounded-[13px] bg-[#f8e9ec] text-[#9e1b34]"><I className="h-5 w-5" /></span>
-                      <span className="min-w-0 flex-1">
-                        <b className="block text-[15px] font-extrabold text-[#1b1719]">{t}</b>
-                        <span className="block truncate text-xs text-[#8b8285]">{d}</span>
-                      </span>
-                      <ChevronRight className="h-5 w-5 text-[#c9c1c3]" />
-                    </button>
-                  ))}
-                </div>
-                <section className={`${CARD} p-4`}>
+              {agenda.historico.length > 0 && (
+                <section className={`${CARD} mt-5 p-4`}>
                   <div className="mb-2 flex items-end justify-between gap-2">
                     <h3 className="text-base font-extrabold text-[#1b1719]">Histórico</h3>
                     <span className="text-[11px] font-semibold text-[#8b8285]">guardado por 30 dias</span>
@@ -370,7 +362,8 @@ const OrderDetailsV2 = () => {
                     </div>
                   )}
                 </section>
-              </aside>
+              )}
+
             </div>
           )}
 

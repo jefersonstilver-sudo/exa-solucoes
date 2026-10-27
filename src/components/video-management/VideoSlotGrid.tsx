@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import TermoAceiteInline from '@/components/settings/TermoAceiteInline';
 import { useNavigate } from 'react-router-dom';
 import { VideoSlotCard } from './VideoSlotCard';
 import { VideoSlotStatus } from './VideoSlotStatus';
@@ -81,10 +82,6 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
         }
 
         const profileHasCompleteCompany = !!(
-          (userProfile as any)?.empresa_nome &&
-          (userProfile as any)?.empresa_pais &&
-          (userProfile as any)?.empresa_documento &&
-          (userProfile as any)?.empresa_segmento &&
           (userProfile as any)?.empresa_aceite_termo
         );
         if (profileHasCompleteCompany) {
@@ -101,10 +98,6 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
         if (error) throw error;
 
         const isComplete = !!(
-          data?.empresa_nome && 
-          data?.empresa_pais && 
-          data?.empresa_documento && 
-          data?.empresa_segmento && 
           data?.empresa_aceite_termo
         );
         
@@ -161,21 +154,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
         <VideoSlotStatus videoSlots={videoSlots} />
         
         {/* Aviso Centralizado */}
-        <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 sm:p-6 text-center">
-          <AlertTriangle className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-amber-500 mb-3" />
-          <h3 className="text-base sm:text-lg font-semibold text-amber-900 mb-2">
-            Cadastro de Empresa Pendente
-          </h3>
-          <p className="text-sm text-amber-700 mb-4">
-            Complete o cadastro para liberar o upload de vídeos
-          </p>
-          <Button 
-            onClick={() => navigate('/anunciante/configuracoes')} 
-            className="bg-amber-600 hover:bg-amber-700 text-white"
-          >
-            Completar Cadastro Agora
-          </Button>
-        </div>
+        <TermoAceiteInline userId={(userProfile as any)?.id} onAccepted={() => setCompanyInfoComplete(true)} />
 
         {/* Slots Bloqueados - Visual Apenas */}
         <div className={`grid ${isVertical ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-1 sm:grid-cols-2'} gap-3 sm:gap-3 opacity-40 pointer-events-none`}>

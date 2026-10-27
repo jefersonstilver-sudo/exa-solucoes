@@ -36,9 +36,12 @@ interface Props {
   /** Slot que o servidor marcou como exibindo agora (fonte da verdade dos painéis). */
   serverActiveSlotId?: string | null;
   onAgendar: () => void;
+  /** Palco: atalhos para ver a tela do prédio e enviar vídeo */
+  onVerTela?: () => void;
+  onEnviar?: () => void;
 }
 
-export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar }) => {
+export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar, onVerTela, onEnviar }) => {
   const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId);
 
   // Progresso da janela atual (do início do trecho de hoje até a próxima troca).
@@ -66,7 +69,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
 
   return (
     <div className={`${CARD} overflow-hidden`}>
-      <div className="md:grid md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <div className="md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         {/* Vídeo atual tocando (mudo, em loop) */}
         <div className="relative aspect-[1080/890] bg-black">
           <LoopVideo url={atual.slot.url} nome={nomeDe(atual.slot)} fit="contain" />
@@ -78,14 +81,14 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
           </span>
         </div>
 
-        <div className="flex min-w-0 flex-col justify-center gap-2 p-5">
+        <div className="flex min-w-0 flex-col justify-center gap-2.5 p-5 lg:p-7">
           <span className="inline-flex items-center gap-2 text-xs font-extrabold tracking-wide text-[#13a24a]">
             <span className="relative h-2 w-2 rounded-full bg-[#13a24a]">
               <span className="absolute -inset-1 animate-ping rounded-full border-2 border-[#13a24a]" />
             </span>
             NO AR AGORA
           </span>
-          <h3 className="truncate text-xl font-extrabold tracking-tight text-[#1b1719] sm:text-2xl">{nomeDe(atual.slot)}</h3>
+          <h3 className="truncate text-xl font-extrabold tracking-tight text-[#1b1719] sm:text-2xl lg:text-[28px]">{nomeDe(atual.slot)}</h3>
           <div className="flex flex-wrap items-center gap-1.5">
             <TipoBadge tipo={tipoAtual} />
             <span className="text-[12.5px] text-[#8b8285]">
@@ -98,6 +101,22 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
               <i className="block h-full rounded-full bg-gradient-to-r from-[#9e1b34] to-[#c0304b] transition-[width] duration-1000" style={{ width: `${pct}%` }} />
             </div>
           )}
+          {/* Palco: ações principais do pedido */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={onAgendar} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[14px] bg-[#9C1E1E] px-4 text-sm font-bold text-white shadow-[0_8px_18px_-10px_rgba(156,30,30,.9)] hover:bg-[#7c1428]">
+              <Sparkles className="h-4 w-4" /> Programar vídeos
+            </button>
+            {onVerTela && (
+              <button type="button" onClick={onVerTela} className="inline-flex min-h-[44px] items-center rounded-[14px] border border-[#e6dfe1] bg-white px-4 text-sm font-semibold text-[#1b1719] hover:bg-[#f7f5f6]">
+                Ver a tela {totalPredios === 1 ? 'do prédio' : 'dos prédios'}
+              </button>
+            )}
+            {onEnviar && (
+              <button type="button" onClick={onEnviar} className="inline-flex min-h-[44px] items-center rounded-[14px] border border-[#e6dfe1] bg-white px-4 text-sm font-semibold text-[#1b1719] hover:bg-[#f7f5f6]">
+                Enviar vídeo
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -138,9 +157,6 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
               <div className="text-[10.5px] font-bold uppercase tracking-[0.09em] text-[#8b8285]">A seguir</div>
               <div className="text-sm font-semibold text-[#554e50]">Nada programado — o principal segue no ar</div>
             </div>
-            <button onClick={onAgendar} className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-3.5 py-2 text-sm font-bold text-white hover:bg-[#7c1428]">
-              <Sparkles className="h-4 w-4" /> Programar
-            </button>
           </div>
         )}
       </div>

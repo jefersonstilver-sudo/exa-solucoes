@@ -11,7 +11,7 @@ interface CompanyTermsCheckboxProps {
   acceptedDate?: string | null;
 }
 
-const COMPANY_TERMS_TEXT = `
+export const COMPANY_TERMS_TEXT = `
 TERMO DE RESPONSABILIDADE E AUTORIZAÇÃO
 
 Ao marcar esta opção, eu declaro sob as penas da lei que:

@@ -1,596 +1,317 @@
-import React, { useEffect, useState, useCallback } from 'react';
+/**
+ * EXA 2.0 — Meu perfil (conta da PESSOA).
+ * O que é da empresa (logo, cores, marca, redes, endereço) mora no pedido, aba "Empresa".
+ * O termo de responsabilidade é aceito na compra ou antes do primeiro vídeo do pedido (não aqui).
+ * Aqui ficam: dados pessoais, WhatsApp, documento (só leitura), segurança (2FA e senha) e o status do termo.
+ */
+import React, { useEffect, useState } from 'react';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, User, Shield, Save, FileText, Pencil, ShieldCheck, AlertTriangle, Smartphone, Lock, ArrowLeft, X } from 'lucide-react';
-import { Toggle } from '@/components/ui/toggle';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { useDocumentValidation } from '@/hooks/useDocumentValidation';
-import AvatarUpload from '@/components/ui/avatar-upload';
-import DocumentUpload from '@/components/ui/document-upload';
-import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
-import ClientBrandExtrasCard from '@/components/settings/ClientBrandExtrasCard';
+import { Loader2, ShieldCheck, AlertTriangle, Pencil, Check, X, Lock, KeyRound, FileText, Smartphone, Mail, UserRound, MessageCircle } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
 import { resolveDisplayName, saveClientIdentity } from '@/services/clientProfileService';
 import { WhatsAppVerificationModal } from '@/components/settings/WhatsAppVerificationModal';
-import { cn } from '@/lib/utils';
-import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
+import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
+import LogoSelo from '@/components/exa2/LogoSelo';
 
-interface UserSettings {
-  email: string;
-  name: string;
-  phone: string;
-  cpf: string;
-  documento_estrangeiro: string;
-  documento_frente_url: string;
-  documento_verso_url: string;
-  avatar_url: string;
-  tipo_documento: 'cpf' | 'documento_estrangeiro';
-  notifications: {
-    email: boolean;
-    sms: boolean;
-    push: boolean;
-  };
-}
+const CARD = 'rounded-[22px] bg-white shadow-[0_1px_2px_rgba(30,15,18,.06),0_12px_32px_-22px_rgba(30,15,18,.35)]';
+const EYEBROW = 'text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#8a1a1e]';
+const SOFIA_WA = 'https://wa.me/5545991415920';
+
+const mascaraCpf = (c: string) => {
+  const d = String(c || '').replace(/\D/g, '');
+  return d.length === 11 ? `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**` : c;
+};
+const mascaraFone = (f: string) => {
+  const d = String(f || '').replace(/\D/g, '');
+  if (d.length < 8) return f || '';
+  return `(${d.slice(-11, -9) || '**'}) •••••-${d.slice(-4)}`;
+};
+const dataBR = (s?: string | null) => (s ? new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
+
+const Linha: React.FC<{ icon: React.ElementType; rotulo: string; children: React.ReactNode; acao?: React.ReactNode }> = ({ icon: I, rotulo, children, acao }) => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[#f0eaeb] py-4 first:border-t-0 first:pt-0 last:pb-0">
+    <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#f6f2f3]">
+      <I className="h-[18px] w-[18px] text-[#554e50]" />
+    </div>
+    <div className="min-w-0 flex-1">
+      <div className="text-xs font-semibold text-[#8b8285]">{rotulo}</div>
+      <div className="mt-0.5 text-[15px] font-semibold text-[#1b1719]">{children}</div>
+    </div>
+    {acao}
+  </div>
+);
 
 const AdvertiserSettings = () => {
   const { userProfile, refreshUserProfile, isImpersonating } = useAuth() as any;
-  const { formatDocument, validateDocument } = useDocumentValidation();
+  const uid: string | undefined = userProfile?.id;
+  const logo = useLogoEmpresa(uid);
 
-  const [settings, setSettings] = useState<UserSettings>({
-    email: '',
-    name: '',
-    phone: '',
-    cpf: '',
-    documento_estrangeiro: '',
-    documento_frente_url: '',
-    documento_verso_url: '',
-    avatar_url: '',
-    tipo_documento: 'cpf',
-    notifications: { email: true, sms: false, push: true },
-  });
-  const [originalSettings, setOriginalSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [u, setU] = useState<any>(null);
+  const [email, setEmail] = useState('');
+  const [nome, setNome] = useState('');
+  const [editNome, setEditNome] = useState(false);
+  const [nomeTmp, setNomeTmp] = useState('');
+  const [salvandoNome, setSalvandoNome] = useState(false);
+  const [twoFactor, setTwoFactor] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [currentLogoScale, setCurrentLogoScale] = useState<number | null>(null);
+  const [showWa, setShowWa] = useState(false);
+  const [senhaAberta, setSenhaAberta] = useState(false);
+  const [senha, setSenha] = useState('');
+  const [senha2, setSenha2] = useState('');
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
 
-  // Protection against unsaved changes
-  const hasChanges = isEditing && originalSettings && JSON.stringify(settings) !== JSON.stringify(originalSettings);
-
-  useEffect(() => {
-    if (!hasChanges) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [hasChanges]);
-
-  useEffect(() => {
-    loadUserSettings();
-  }, [userProfile]);
-
-  const loadUserSettings = async () => {
-    if (!userProfile) return;
+  const carregar = async () => {
+    if (!uid) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      // Usuário efetivo (cliente, inclusive quando o CEO está visualizando como cliente)
-      let authUser: any;
-      if (isImpersonating) {
-        authUser = { user: { id: userProfile.id, email: userProfile.email, user_metadata: {} } };
-      } else {
-        const { data, error: authError } = await supabase.auth.getUser();
-        if (authError) throw authError;
-        authUser = data;
-      }
-      const { data: userData, error: userError } = await supabase.from('users').select('*').eq('id', authUser.user?.id).single();
-      if (userError && userError.code !== 'PGRST116') throw userError;
-
-      if (authUser.user) {
-        const loaded: UserSettings = {
-          email: authUser.user.email || '',
-          // Fonte única da verdade: users.nome (fallback primeiro_nome + sobrenome)
-          name: resolveDisplayName(userData as any) || authUser.user.user_metadata?.name || authUser.user.user_metadata?.full_name || '',
-          phone: userData?.telefone || authUser.user.user_metadata?.phone || '',
-          cpf: userData?.cpf || '',
-          documento_estrangeiro: userData?.documento_estrangeiro || '',
-          documento_frente_url: userData?.documento_frente_url || '',
-          documento_verso_url: userData?.documento_verso_url || '',
-          avatar_url: userData?.avatar_url || '',
-          tipo_documento: (userData?.tipo_documento as 'cpf' | 'documento_estrangeiro') || 'cpf',
-          notifications: {
-            email: authUser.user.user_metadata?.notifications?.email ?? true,
-            sms: authUser.user.user_metadata?.notifications?.sms ?? false,
-            push: authUser.user.user_metadata?.notifications?.push ?? true,
-          },
-        };
-        setSettings(loaded);
-        setOriginalSettings(loaded);
-        setTwoFactorEnabled(userData?.two_factor_enabled || false);
-        setPhoneVerified(userData?.telefone_verificado === true || !!userData?.telefone_verificado_at);
-        // Initialize logo scale from user metadata
-        const savedScale = authUser.user?.user_metadata?.logo_scale;
-        if (typeof savedScale === 'number') {
-          setCurrentLogoScale(savedScale);
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
-      toast.error('Erro ao carregar configurações do usuário');
+      const { data, error } = await supabase.from('users').select('*').eq('id', uid).single();
+      if (error && error.code !== 'PGRST116') throw error;
+      setU(data || {});
+      setEmail((data as any)?.email || userProfile?.email || '');
+      setNome(resolveDisplayName(data as any) || userProfile?.nome || '');
+      setTwoFactor(!!(data as any)?.two_factor_enabled);
+      setPhoneVerified((data as any)?.telefone_verificado === true || !!(data as any)?.telefone_verificado_at);
+    } catch (e) {
+      console.error('perfil', e);
+      toast.error('Não consegui carregar o seu perfil');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEnterEditMode = () => {
-    setOriginalSettings({ ...settings });
-    setIsEditing(true);
-  };
+  useEffect(() => { carregar(); }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleCancelEdit = () => {
-    if (originalSettings) setSettings(originalSettings);
-    setIsEditing(false);
-  };
-
-  const handleSave = async () => {
+  const salvarNome = async () => {
+    const v = nomeTmp.trim();
+    if (v.split(/\s+/).length < 2) { toast.error('Informe nome e sobrenome'); return; }
+    setSalvandoNome(true);
     try {
-      setSaving(true);
-      if (settings.tipo_documento === 'cpf' && !validateDocument(settings.cpf, 'cpf')) {
-        toast.error('Por favor, informe um CPF válido');
-        return;
-      }
-      if (settings.tipo_documento === 'documento_estrangeiro') {
-        if (!settings.documento_estrangeiro.trim()) {
-          toast.error('Por favor, informe o número do documento estrangeiro');
-          return;
-        }
-        if (!settings.documento_frente_url || !settings.documento_verso_url) {
-          toast.error('Por favor, faça upload da frente e verso do documento');
-          return;
-        }
-      }
-
-      let user: any;
-      if (isImpersonating) {
-        user = { id: userProfile.id, email: userProfile.email };
-      } else {
-        const { data: { user: authU } } = await supabase.auth.getUser();
-        if (!authU) throw new Error('Usuário não autenticado');
-        user = authU;
-        const updateData: Record<string, any> = { name: settings.name, phone: settings.phone, notifications: settings.notifications };
-        if (currentLogoScale !== null) {
-          updateData.logo_scale = currentLogoScale;
-        }
-        const { error: authError } = await supabase.auth.updateUser({
-          data: updateData,
-        });
-        if (authError) throw authError;
-      }
-
-      // Nome/telefone em users (fonte única) + sincroniza pedidos.client_name
-      await saveClientIdentity(user.id, { nome: settings.name, telefone: settings.phone || null });
-
-      const { data: existingUser } = await supabase.from('users').select('role').eq('id', user.id).single();
-      const { error: userError } = await supabase.from('users').upsert({
-        id: user.id,
-        email: user.email!,
-        role: existingUser?.role || 'client',
-        cpf: settings.tipo_documento === 'cpf' ? settings.cpf : null,
-        documento_estrangeiro: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_estrangeiro : null,
-        documento_frente_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_frente_url : null,
-        documento_verso_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_verso_url : null,
-        avatar_url: settings.avatar_url,
-        tipo_documento: settings.tipo_documento,
-      });
-      if (userError) throw userError;
-
-      setOriginalSettings({ ...settings });
-      setIsEditing(false);
-      toast.success('Configurações salvas com sucesso!');
-      
-      // Atualizar perfil global para refletir mudanças imediatamente
-      if (!isImpersonating) await refreshUserProfile();
-    } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
-      toast.error('Erro ao salvar configurações');
+      if (!isImpersonating) await supabase.auth.updateUser({ data: { name: v } });
+      await saveClientIdentity(uid!, { nome: v, telefone: u?.telefone || null });
+      setNome(v); setEditNome(false);
+      toast.success('Nome atualizado');
+      if (!isImpersonating) await refreshUserProfile?.();
+    } catch (e: any) {
+      toast.error('Não consegui salvar: ' + (e?.message || ''));
     } finally {
-      setSaving(false);
+      setSalvandoNome(false);
     }
   };
 
-  const handleInputChange = (field: keyof UserSettings, value: string) => {
-    if (field === 'cpf') value = formatDocument(value, 'cpf');
-    setSettings((prev) => ({ ...prev, [field]: value }));
+  const alternar2FA = async (checked: boolean) => {
+    if (!phoneVerified) { toast.error('Verifique seu WhatsApp antes de ativar'); return; }
+    try {
+      const { error } = await supabase.from('users').update({ two_factor_enabled: checked } as any).eq('id', uid!);
+      if (error) throw error;
+      setTwoFactor(checked);
+      toast.success(checked ? 'Verificação em duas etapas ativada' : 'Verificação em duas etapas desativada');
+    } catch (e) {
+      toast.error('Não consegui alterar a verificação em duas etapas');
+    }
   };
 
-  const handleDocumentTypeChange = (type: 'cpf' | 'documento_estrangeiro') => {
-    setSettings((prev) => ({
-      ...prev,
-      tipo_documento: type,
-      cpf: type === 'cpf' ? prev.cpf : '',
-      documento_estrangeiro: type === 'documento_estrangeiro' ? prev.documento_estrangeiro : '',
-      documento_frente_url: type === 'documento_estrangeiro' ? prev.documento_frente_url : '',
-      documento_verso_url: type === 'documento_estrangeiro' ? prev.documento_verso_url : '',
-    }));
+  const trocarSenha = async () => {
+    if (senha.length < 8) { toast.error('A senha precisa ter pelo menos 8 caracteres'); return; }
+    if (senha !== senha2) { toast.error('As senhas não conferem'); return; }
+    setSalvandoSenha(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: senha, data: { has_password: true } });
+      if (error) throw error;
+      setSenha(''); setSenha2(''); setSenhaAberta(false);
+      toast.success('Senha alterada');
+    } catch (e: any) {
+      toast.error('Não consegui alterar a senha: ' + (e?.message || ''));
+    } finally {
+      setSalvandoSenha(false);
+    }
   };
-
-  const disabledFieldClass = "bg-gray-50 border-transparent shadow-none cursor-not-allowed";
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-exa-red" />
-        <p className="ml-2 text-lg">Carregando configurações...</p>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#8a1a1e]" />
       </div>
     );
   }
 
+  const documento = u?.tipo_documento === 'documento_estrangeiro'
+    ? (u?.documento_estrangeiro ? `Documento estrangeiro · ${u.documento_estrangeiro}` : '')
+    : (u?.cpf ? `CPF · ${mascaraCpf(u.cpf)}` : '');
+  const termoOk = !!u?.empresa_aceite_termo;
+
   return (
-    <div className="space-y-6 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Back Button */}
-      <button
-        onClick={() => window.history.back()}
-        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        <span className="text-sm font-medium">Voltar</span>
-      </button>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Configurações da Conta</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie as informações da sua empresa e integrações
-          </p>
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6 sm:px-6 lg:py-8">
+      {/* Cabeçalho */}
+      <section className={`${CARD} flex items-center gap-4 p-5 sm:p-6`}>
+        <LogoSelo src={logo} fallback={(nome || email || 'E').charAt(0).toUpperCase()} className="h-16 w-16 sm:h-[72px] sm:w-[72px]" pad="p-2" />
+        <div className="min-w-0 flex-1">
+          <div className={EYEBROW}>Meu perfil</div>
+          <h1 className="mt-1 truncate text-2xl font-extrabold tracking-tight text-[#1b1719]">{nome || 'Sem nome'}</h1>
+          <p className="truncate text-sm text-[#8b8285]">{email}</p>
         </div>
-        {!isEditing ? (
-          <Button variant="outline" onClick={handleEnterEditMode} className="min-h-[44px]">
-            <Pencil className="h-4 w-4 mr-2" />
-            Editar Configurações
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCancelEdit} className="min-h-[44px]">
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className="!bg-[#9C1E1E] hover:!bg-[#7a1818] !text-white min-h-[44px]">
-              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              {saving ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </div>
+        {phoneVerified && (
+          <span className="hidden flex-none items-center gap-1.5 rounded-full bg-[#e6f7ec] px-3 py-1.5 text-xs font-bold text-[#13a24a] sm:inline-flex">
+            <ShieldCheck className="h-3.5 w-3.5" /> Conta verificada
+          </span>
         )}
-      </div>
+      </section>
 
-      {/* 1. Account Summary (read-only) */}
-      <AccountSummaryCard settings={settings} />
+      {/* Dados pessoais */}
+      <section className={`${CARD} p-5 sm:p-6`}>
+        <h2 className="mb-4 text-base font-extrabold text-[#1b1719]">Seus dados</h2>
 
-      {/* 2. Personal Data + WhatsApp + Documentation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <User className="h-5 w-5 mr-2 text-exa-red" />
-            Dados Pessoais
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm">Email</Label>
-              <Input id="email" type="email" value={settings.email} disabled className={disabledFieldClass} />
-              <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
+        <Linha
+          icon={UserRound}
+          rotulo="Nome completo"
+          acao={!editNome ? (
+            <button type="button" onClick={() => { setNomeTmp(nome); setEditNome(true); }} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-[#8a1a1e] hover:bg-[#fbe9eb]" aria-label="Editar nome">
+              <Pencil className="h-4 w-4" /> Editar
+            </button>
+          ) : null}
+        >
+          {editNome ? (
+            <div className="mt-1 flex flex-wrap gap-2">
+              <label htmlFor="nome-perfil" className="sr-only">Nome completo</label>
+              <input id="nome-perfil" autoFocus value={nomeTmp} onChange={(e) => setNomeTmp(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && salvarNome()} className="min-h-[42px] min-w-0 flex-1 rounded-xl border border-[#e6dfe1] px-3 text-[15px] font-normal outline-none focus:border-[#8a1a1e]" />
+              <button type="button" onClick={salvarNome} disabled={salvandoNome} aria-label="Salvar nome" className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl bg-[#8a1a1e] text-white disabled:opacity-60">
+                {salvandoNome ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              </button>
+              <button type="button" onClick={() => setEditNome(false)} aria-label="Cancelar" className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-[#e6dfe1] text-[#554e50]">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-sm">Nome Completo</Label>
-              <Input
-                id="name"
-                value={settings.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Seu nome completo"
-                disabled={!isEditing}
-                className={cn("min-h-[44px]", !isEditing && disabledFieldClass)}
-              />
-            </div>
-          </div>
+          ) : (nome || '—')}
+        </Linha>
 
-          {/* WhatsApp */}
-          <div className="space-y-3">
-            <Label className="text-sm">WhatsApp</Label>
-            <div className="flex gap-2 items-end">
-              <Input
-                value={settings.phone ? settings.phone.replace(/(\d{2})(\d{5})(\d{4})/, '(**) *****-$3') : ''}
-                disabled
-                className={cn("flex-1 min-h-[44px]", disabledFieldClass)}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowWhatsAppModal(true)}
-                className="min-h-[44px]"
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                {phoneVerified ? 'Alterar Número' : 'Editar'}
-              </Button>
-            </div>
+        <Linha icon={Mail} rotulo="E-mail de acesso">
+          {email}
+          <span className="ml-2 text-xs font-normal text-[#8b8285]">não pode ser alterado</span>
+        </Linha>
 
-            {/* WhatsApp Status Alert */}
+        <Linha
+          icon={Smartphone}
+          rotulo="WhatsApp"
+          acao={
+            <button type="button" onClick={() => setShowWa(true)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-[#8a1a1e] hover:bg-[#fbe9eb]">
+              {phoneVerified ? 'Alterar' : 'Verificar'}
+            </button>
+          }
+        >
+          <span className="inline-flex items-center gap-2">
+            {mascaraFone(u?.telefone) || 'Não informado'}
             {phoneVerified ? (
-              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <ShieldCheck className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-semibold text-green-800">WhatsApp Conectado</p>
-                  <p className="text-sm text-green-600">Número verificado com sucesso</p>
-                </div>
-                <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 text-xs">
-                  Verificado
-                </Badge>
-              </div>
+              <span className="rounded-full bg-[#e6f7ec] px-2 py-0.5 text-[11px] font-bold text-[#13a24a]">verificado</span>
             ) : (
-              <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-amber-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-semibold text-amber-800">WhatsApp não verificado</p>
-                  <p className="text-sm text-amber-600">Verifique seu número para ativar recursos de segurança</p>
-                </div>
-                <Button size="sm" onClick={() => setShowWhatsAppModal(true)} className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0 min-h-[36px]">
-                  Verificar
-                </Button>
-              </div>
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">não verificado</span>
+            )}
+          </span>
+        </Linha>
+
+        <Linha
+          icon={FileText}
+          rotulo="Documento de quem assina o contrato"
+          acao={
+            <a href={SOFIA_WA} target="_blank" rel="noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-[#8a1a1e] hover:bg-[#fbe9eb]">
+              <MessageCircle className="h-4 w-4" /> Corrigir com a Sofia
+            </a>
+          }
+        >
+          {documento || <span className="text-[#8b8285]">ainda não informado</span>}
+        </Linha>
+      </section>
+
+      {/* Segurança */}
+      <section className={`${CARD} p-5 sm:p-6`}>
+        <h2 className="mb-4 text-base font-extrabold text-[#1b1719]">Segurança</h2>
+
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#fbe9eb]">
+            <Lock className="h-[18px] w-[18px] text-[#8a1a1e]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[15px] font-semibold text-[#1b1719]">Verificação em duas etapas</span>
+              <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${twoFactor ? 'bg-[#e6f7ec] text-[#13a24a]' : 'bg-[#f3f1f2] text-[#8b8285]'}`}>{twoFactor ? 'ativa' : 'desativada'}</span>
+            </div>
+            <p className="mt-0.5 text-sm text-[#6f6669]">Ao entrar, além da senha, pedimos um código enviado ao seu WhatsApp.</p>
+            {!phoneVerified && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-amber-700"><AlertTriangle className="h-4 w-4" /> Verifique o WhatsApp para poder ativar.</p>
             )}
           </div>
-
-          {/* Documentation */}
-          <div className="space-y-4 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-exa-red" />
-              <Label className="text-sm font-semibold">Documentação</Label>
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-sm">Tipo de Documento</Label>
-              <RadioGroup
-                value={settings.tipo_documento}
-                onValueChange={handleDocumentTypeChange}
-                disabled={!isEditing}
-                className="flex flex-col space-y-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="cpf" id="cpf" disabled={!isEditing} />
-                  <Label htmlFor="cpf" className={cn(!isEditing && "text-muted-foreground")}>CPF (Brasileiro)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="documento_estrangeiro" id="documento_estrangeiro" disabled={!isEditing} />
-                  <Label htmlFor="documento_estrangeiro" className={cn(!isEditing && "text-muted-foreground")}>Documento de Identificação Estrangeiro</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {settings.tipo_documento === 'cpf' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="cpf-field" className="text-sm">CPF *</Label>
-                <Input
-                  id="cpf-field"
-                  value={settings.cpf}
-                  onChange={(e) => handleInputChange('cpf', e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                  disabled={!isEditing}
-                  className={cn("min-h-[44px]", !isEditing && disabledFieldClass)}
-                />
-                {settings.cpf && !validateDocument(settings.cpf, 'cpf') && (
-                  <p className="text-xs text-destructive">CPF inválido</p>
-                )}
-              </div>
-            )}
-
-            {settings.tipo_documento === 'documento_estrangeiro' && (
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="doc_estrangeiro" className="text-sm">Número do Documento *</Label>
-                  <Input
-                    id="doc_estrangeiro"
-                    value={settings.documento_estrangeiro}
-                    onChange={(e) => handleInputChange('documento_estrangeiro', e.target.value)}
-                    placeholder="Número do documento de identificação"
-                    disabled={!isEditing}
-                    className={cn("min-h-[44px]", !isEditing && disabledFieldClass)}
-                  />
-                </div>
-                {isEditing && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DocumentUpload
-                      label="Frente do Documento *"
-                      value={settings.documento_frente_url}
-                      onChange={(url) => setSettings((prev) => ({ ...prev, documento_frente_url: url || '' }))}
-                    />
-                    <DocumentUpload
-                      label="Verso do Documento *"
-                      value={settings.documento_verso_url}
-                      onChange={(url) => setSettings((prev) => ({ ...prev, documento_verso_url: url || '' }))}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+          <div className="flex-none pt-1">
+            <Toggle checked={twoFactor} disabled={!phoneVerified} color="red" size="large" onChange={(e: any) => alternar2FA(e.target.checked)} />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* 3. Company/Brand */}
-      <CompanyBrandSection isEditing={isEditing} onLogoScaleChange={setCurrentLogoScale} />
-
-      {/* Redes e identidade da marca */}
-      <ClientBrandExtrasCard userId={userProfile?.id} />
-
-      {/* 4. Security */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <Shield className="h-5 w-5 mr-2 text-exa-red" />
-            Segurança
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* 2FA */}
-          <div className="rounded-xl border p-5">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 h-11 w-11 rounded-xl bg-exa-red/10 flex items-center justify-center">
-                <Lock className="h-5 w-5 text-exa-red" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-[15px] font-semibold text-foreground">Autenticação de Dois Fatores</h3>
-                  <Badge className={cn(
-                    "text-[11px]",
-                    twoFactorEnabled
-                      ? "bg-green-100 text-green-700 border-green-300 hover:bg-green-100"
-                      : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-100"
-                  )}>
-                    {twoFactorEnabled ? 'Ativo' : 'Desativado'}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Protege sua conta com uma camada adicional de segurança
-                </p>
-                {!phoneVerified && (
-                  <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
-                    <Smartphone className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                    <p className="text-[13px] text-amber-700">Verifique seu WhatsApp primeiro para ativar o 2FA</p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setShowWhatsAppModal(true)}
-                      className="ml-auto text-amber-700 hover:text-amber-800 hover:bg-amber-100 h-8 text-[13px] flex-shrink-0"
-                    >
-                      Verificar agora
-                    </Button>
-                  </div>
-                )}
-              </div>
-              <div className="flex-shrink-0 pt-1">
-                <Toggle
-                  checked={twoFactorEnabled}
-                  disabled={!phoneVerified}
-                  color="red"
-                  size="large"
-                  onChange={async (e) => {
-                    const checked = e.target.checked;
-                    if (!phoneVerified) {
-                      toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
-                      return;
-                    }
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) throw new Error('Usuário não autenticado');
-                      const { error } = await supabase.from('users').update({ two_factor_enabled: checked }).eq('id', user.id);
-                      if (error) throw error;
-                      setTwoFactorEnabled(checked);
-                      toast.success(checked ? '2FA ativado com sucesso!' : '2FA desativado');
-                    } catch (error) {
-                      console.error('Erro ao atualizar 2FA:', error);
-                      toast.error('Erro ao atualizar configuração de 2FA');
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Change Password */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-            <div className="space-y-0.5">
-              <Label className="text-[15px] font-medium">Alterar Senha</Label>
-              <p className="text-sm text-muted-foreground">Altere sua senha de acesso</p>
-            </div>
-            <Button variant="outline" onClick={() => toast.info('Funcionalidade em desenvolvimento')} className="min-h-[44px]">
-              Alterar Senha
-            </Button>
-          </div>
-
-          {/* Account Cancellation */}
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <div className="space-y-0.5">
-              <Label className="text-[15px] font-medium text-amber-900">Cancelamento de Conta</Label>
-              <p className="text-sm text-amber-700">Para cancelar sua conta, entre em contato por email: suporte@examidia.com.br</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Editing Footer */}
-      {isEditing && (
-        <div className="flex justify-center gap-3 pt-2 pb-8">
-          <Button variant="outline" onClick={handleCancelEdit} className="min-h-[48px] px-8">
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-exa-red hover:bg-exa-red/90 text-white min-h-[48px] px-8">
-            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</> : <><Save className="h-4 w-4 mr-2" /> Salvar Alterações</>}
-          </Button>
         </div>
-      )}
 
-      {/* WhatsApp Modal */}
+        <div className="mt-5 border-t border-[#f0eaeb] pt-5">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#f6f2f3]">
+              <KeyRound className="h-[18px] w-[18px] text-[#554e50]" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[15px] font-semibold text-[#1b1719]">Senha</div>
+              <p className="text-sm text-[#6f6669]">Use pelo menos 8 caracteres.</p>
+            </div>
+            {!senhaAberta && !isImpersonating && (
+              <button type="button" onClick={() => setSenhaAberta(true)} className="inline-flex min-h-[40px] items-center rounded-xl border border-[#e6dfe1] px-4 text-sm font-semibold text-[#1b1719] hover:bg-[#f6f2f3]">
+                Alterar senha
+              </button>
+            )}
+          </div>
+          {senhaAberta && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="senha-nova" className="mb-1 block text-xs font-semibold text-[#8b8285]">Nova senha</label>
+                <input id="senha-nova" type="password" autoComplete="new-password" value={senha} onChange={(e) => setSenha(e.target.value)} className="min-h-[44px] w-full rounded-xl border border-[#e6dfe1] px-3 outline-none focus:border-[#8a1a1e]" />
+              </div>
+              <div>
+                <label htmlFor="senha-conf" className="mb-1 block text-xs font-semibold text-[#8b8285]">Repita a nova senha</label>
+                <input id="senha-conf" type="password" autoComplete="new-password" value={senha2} onChange={(e) => setSenha2(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && trocarSenha()} className="min-h-[44px] w-full rounded-xl border border-[#e6dfe1] px-3 outline-none focus:border-[#8a1a1e]" />
+              </div>
+              <div className="flex gap-2 sm:col-span-2">
+                <button type="button" onClick={trocarSenha} disabled={salvandoSenha} className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[#8a1a1e] px-5 text-sm font-bold text-white disabled:opacity-60">
+                  {salvandoSenha && <Loader2 className="h-4 w-4 animate-spin" />} Salvar nova senha
+                </button>
+                <button type="button" onClick={() => { setSenhaAberta(false); setSenha(''); setSenha2(''); }} className="inline-flex min-h-[44px] items-center rounded-xl px-4 text-sm font-semibold text-[#554e50]">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Termo e conta */}
+      <section className={`${CARD} p-5 sm:p-6`}>
+        <h2 className="mb-4 text-base font-extrabold text-[#1b1719]">Termos e conta</h2>
+        <Linha icon={ShieldCheck} rotulo="Termo de responsabilidade e autorização">
+          {termoOk ? (
+            <span>Aceito{u?.empresa_aceite_termo_data ? ` em ${dataBR(u.empresa_aceite_termo_data)}` : ''}</span>
+          ) : (
+            <span className="text-[#8b8285]">Será pedido no seu primeiro envio de vídeo</span>
+          )}
+        </Linha>
+        <p className="mt-4 rounded-xl bg-[#f7f4f5] p-4 text-sm text-[#6f6669]">
+          Os dados da empresa (logo, cores, redes, endereço e público) ficam em cada pedido, na aba <b>Empresa</b>. Para encerrar a conta, fale com a Sofia ou escreva para suporte@examidia.com.br.
+        </p>
+      </section>
+
       <WhatsAppVerificationModal
-        open={showWhatsAppModal}
-        onClose={() => setShowWhatsAppModal(false)}
-        currentPhone={settings.phone}
-        userId={userProfile?.id || ''}
+        open={showWa}
+        onClose={() => setShowWa(false)}
+        currentPhone={u?.telefone || ''}
+        userId={uid || ''}
         mode={phoneVerified ? 'change' : 'verify'}
-        onSuccess={async (newPhone) => {
-          setSettings((prev) => ({ ...prev, phone: newPhone }));
+        onSuccess={async () => {
           setPhoneVerified(true);
-          await loadUserSettings();
-          toast.success('WhatsApp verificado com sucesso!');
+          await carregar();
+          toast.success('WhatsApp verificado');
         }}
       />
     </div>
-  );
-};
-
-/** Account Summary with signed URL for private avatar */
-const AccountSummaryCard: React.FC<{ settings: UserSettings }> = ({ settings }) => {
-  const avatarLogo = settings.avatar_url
-    ? {
-        file_url: settings.avatar_url,
-        storage_bucket: settings.avatar_url.includes('arquivos') ? 'arquivos' : undefined,
-        storage_key: (() => {
-          const m = settings.avatar_url.match(/arquivos\/(.+?)(\?|#|$)/);
-          return m ? m[1] : undefined;
-        })(),
-      }
-    : null;
-  const { imageUrl: resolvedAvatarUrl } = useLogoImageUrl(avatarLogo);
-
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-4 py-5">
-        <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {resolvedAvatarUrl ? (
-            <img src={resolvedAvatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-          ) : (
-            <User className="h-6 w-6 text-gray-400" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <p className="text-base font-semibold text-foreground truncate">{settings.name || 'Sem nome'}</p>
-          <p className="text-sm text-muted-foreground truncate">{settings.email}</p>
-        </div>
-      </CardContent>
-    </Card>
   );
 };
 

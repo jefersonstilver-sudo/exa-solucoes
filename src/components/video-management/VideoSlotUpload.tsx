@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import TermoAceiteInline from '@/components/settings/TermoAceiteInline';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Loader2, Video, AlertTriangle } from 'lucide-react';
 import { VideoTitleInput } from '@/components/video-upload/VideoTitleInput';
@@ -77,10 +78,6 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       }
 
       const profileHasCompleteCompany = !!(
-        (userProfile as any)?.empresa_nome &&
-        (userProfile as any)?.empresa_pais &&
-        (userProfile as any)?.empresa_documento &&
-        (userProfile as any)?.empresa_segmento &&
         (userProfile as any)?.empresa_aceite_termo
       );
       if (profileHasCompleteCompany) {
@@ -93,7 +90,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         error
       } = await supabase.from('users').select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo').eq('id', effectiveUserId).single();
       if (error) throw error;
-      const isComplete = !!(data?.empresa_nome && data?.empresa_pais && data?.empresa_documento && data?.empresa_segmento && data?.empresa_aceite_termo);
+      const isComplete = !!(data?.empresa_aceite_termo);
       setCompanyInfoComplete(isComplete);
     } catch (error) {
       console.error('Erro ao verificar informações da empresa:', error);
@@ -182,8 +179,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
     });
     if (!companyInfoComplete) {
       console.warn('⚠️ [VideoSlotUpload] Cadastro da empresa incompleto');
-      toast.error('Complete o cadastro da empresa antes de fazer upload');
-      navigate('/anunciante/configuracoes');
+      toast.error('Confirme o termo de responsabilidade antes de enviar o vídeo');
       return;
     }
     if (!validateTitle(videoTitle)) {
@@ -267,18 +263,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       </div>;
   }
   if (!companyInfoComplete) {
-    return <div className="border-2 border-amber-500 bg-amber-50 rounded-lg p-8 text-center">
-        <AlertTriangle className="mx-auto h-16 w-16 text-amber-600 mb-4" />
-        <h3 className="text-xl font-semibold text-amber-900 mb-2">
-          Cadastro de Empresa Pendente
-        </h3>
-        <p className="text-amber-800 mb-6">
-          Para fazer upload de vídeos, você precisa completar o cadastro da empresa/marca que será divulgada.
-        </p>
-        <Button onClick={() => navigate('/anunciante/configuracoes')} className="bg-amber-600 hover:bg-amber-700 text-white">
-          Completar Cadastro Agora
-        </Button>
-      </div>;
+    return <TermoAceiteInline compact userId={(userProfile as any)?.id} onAccepted={() => setCompanyInfoComplete(true)} />;
   }
   return <div className={`rounded-xl p-3 sm:p-4 text-center transition-all duration-300 ${selectedFile ? 'border-2 border-green-400 bg-green-50/60 shadow-md' : 'border border-border bg-background/50'}`}>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
