@@ -42,12 +42,18 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
   };
   const getPaymentMethod = () => {
     if (orderDetails.log_pagamento?.tipo === 'CORTESIA' || orderDetails.metodo_pagamento === 'cortesia') return 'Cortesia';
-    return orderDetails.log_pagamento?.provider === 'asaas' ? 'Pix · Asaas' : 'Histórico / confirmação administrativa';
+    const lp: any = orderDetails.log_pagamento || {};
+    if (lp.provider !== 'asaas') return 'Histórico / confirmação administrativa';
+    const tipo = lp.pix_data?.tipo || lp.modo || (orderDetails as any).tipo_pagamento;
+    return tipo === 'pix_automatico' ? 'Pix Automático · Asaas' : 'Pix · Asaas';
   };
-  const getTransactionId = () => orderDetails.log_pagamento?.asaas_payment_id || 'Não informado';
+  // Pedidos fechados pela Sofia guardam a confirmação em pix_data (pago_em + asaas_id), conferida no Asaas antes de liberar.
+  const getTransactionId = () => orderDetails.log_pagamento?.asaas_payment_id || orderDetails.log_pagamento?.pix_data?.asaas_id || 'Não informado';
+  const pagoEm: string | null = orderDetails.log_pagamento?.pix_data?.pago_em || orderDetails.log_pagamento?.paid_at || null;
+  const confirmado = isAsaasPaid(orderDetails.log_pagamento?.asaas_status) || (!!pagoEm && orderDetails.log_pagamento?.provider === 'asaas');
   const getPaymentStatus = () => ({
-    label: isAsaasPaid(orderDetails.log_pagamento?.asaas_status) ? 'Confirmado no Asaas' : 'Confirmação Asaas não verificada',
-    color: 'text-muted-foreground'
+    label: confirmado ? 'Pago e confirmado no Asaas' + (pagoEm ? ' · ' + new Date(pagoEm).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '') : 'Aguardando confirmação do Asaas',
+    color: confirmado ? 'text-emerald-600' : 'text-amber-600'
   });
   const getContractPeriod = () => {
     // Verificar se tem vídeo aprovado antes de mostrar datas
@@ -171,7 +177,7 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
                     </div>
                   </div>
                   
-                  {orderDetails.log_pagamento?.provider === 'asaas' && <div className="flex justify-between"><span>Status Asaas:</span><span>{orderDetails.log_pagamento.asaas_status || 'Não verificado'}</span></div>}
+                  {orderDetails.log_pagamento?.provider === 'asaas' && <div className="flex justify-between"><span>Status Asaas:</span><span>{orderDetails.log_pagamento.asaas_status || (confirmado ? 'Pago' : 'Aguardando')}</span></div>}
 
                 </div>
               </div>

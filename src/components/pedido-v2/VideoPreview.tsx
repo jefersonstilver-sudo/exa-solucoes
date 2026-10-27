@@ -190,8 +190,8 @@ export const HoverVideoPreview: React.FC<{
           onPointerLeave={(e) => e.pointerType === 'mouse' && later(false, 160)}
           className="z-[var(--z-floating,60)] w-64 overflow-hidden rounded-2xl bg-white shadow-[0_2px_6px_rgba(30,15,18,.08),0_24px_48px_-18px_rgba(30,15,18,.45)] outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
         >
-          <div className="relative aspect-video bg-black">
-            <LoopVideo url={info.url} nome={info.nome} />
+          <div className="relative aspect-[1080/890] bg-black">
+            <LoopVideo url={info.url} nome={info.nome} fit="contain" />
             {info.cor && <span className="absolute left-2 top-2 h-3 w-3 rounded-full ring-2 ring-white" style={{ background: info.cor }} />}
           </div>
           <div className="space-y-1 p-3">

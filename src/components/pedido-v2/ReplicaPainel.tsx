@@ -10,6 +10,51 @@ import { Cloud, CloudFog, CloudLightning, CloudRain, CloudSun, Lock, Snowflake, 
 import type { WeatherData } from '@/services/weatherService';
 import type { AgendaSlot } from '@/lib/agenda/agendaEngine';
 
+/** Câmeras reais exibidas nas telas (Portal da Cidade / logicahost; contrato autoriza a exibição). Mesma ordem e tempo do painel. */
+const CAMERAS = [
+  { url: 'https://video02.logicahost.com.br/portaldacidade/fozsentidopontedaamizade01.stream/playlist.m3u8', nome: 'SENTIDO PONTE DA AMIZADE', seg: 41 },
+  { url: 'https://video02.logicahost.com.br/portaldacidade/fozpontedaamizadesentidoparaguai.stream/playlist.m3u8', nome: 'PONTE · SENTIDO PARAGUAI', seg: 14 },
+  { url: 'https://video02.logicahost.com.br/portaldacidade/fozpontedaamizadesentidobrasil.stream/playlist.m3u8', nome: 'PONTE · SENTIDO BRASIL', seg: 14 },
+  { url: 'https://video02.logicahost.com.br/portaldacidade/fozaduanapontedaamizade.stream/playlist.m3u8', nome: 'ADUANA · PONTE DA AMIZADE', seg: 14 },
+];
+
+/** Câmera ao vivo (HLS) com rodízio igual ao do painel; se o stream falhar, fica o fundo ilustrado. */
+const CameraAoVivo: React.FC<{ onNome: (n: string) => void; onSeg: (s: number) => void }> = ({ onNome, onSeg }) => {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [i, setI] = useState(0);
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    const cam = CAMERAS[i];
+    onNome(cam.nome); onSeg(cam.seg);
+    const v = ref.current; if (!v) return;
+    setOk(false);
+    let hls: any = null; let vivo = true;
+    const tocar = () => { v.play().catch(() => undefined); };
+    if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = cam.url; v.addEventListener('loadeddata', tocar, { once: true }); }
+    else {
+      import('hls.js').then(({ default: Hls }) => {
+        if (!vivo || !Hls.isSupported()) return;
+        hls = new Hls({ lowLatencyMode: true, maxBufferLength: 8 });
+        hls.loadSource(cam.url); hls.attachMedia(v);
+        hls.on(Hls.Events.MANIFEST_PARSED, tocar);
+        hls.on(Hls.Events.ERROR, (_e: unknown, d: any) => { if (d?.fatal) { setOk(false); hls?.destroy(); hls = null; } });
+      }).catch(() => undefined);
+    }
+    const t = window.setTimeout(() => setI((x) => (x + 1) % CAMERAS.length), cam.seg * 1000);
+    return () => { vivo = false; window.clearTimeout(t); hls?.destroy(); v.removeAttribute('src'); v.load(); };
+  }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <video
+      ref={ref}
+      muted
+      playsInline
+      autoPlay
+      onPlaying={() => setOk(true)}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: ok ? 1 : 0, transition: 'opacity .6s ease' }}
+    />
+  );
+};
+
 const DS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 const MS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -77,6 +122,8 @@ interface Props {
 export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, preencher }) => {
   const wrap = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0.3);
+  const [camNome, setCamNome] = useState(CAMERAS[0].nome);
+  const [camSeg, setCamSeg] = useState(CAMERAS[0].seg);
   useLayoutEffect(() => {
     const el = wrap.current;
     if (!el) return;
@@ -170,13 +217,14 @@ export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, p
               <div style={{ ...card, height: 290 }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,#141a28 0%,#1d2638 40%,#2b2b2b 58%,#1b1d22 100%)' }} />
                 <div style={{ position: 'absolute', left: '-10%', right: '-10%', top: '58%', height: 10, background: 'repeating-linear-gradient(90deg,#f5d36b 0 40px,transparent 40px 90px)', transform: 'perspective(300px) rotateX(60deg)', opacity: 0.6 }} />
+                <CameraAoVivo onNome={setCamNome} onSeg={setCamSeg} />
                 <div style={{ position: 'absolute', left: 14, right: 14, top: 12, display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.2, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,0,0,.55)', border: '1px solid rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <i className="rp-anim" style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff4d5e', boxShadow: '0 0 10px #ff4d5e', animation: 'rpPisca 1.6s ease-in-out infinite' }} />AO VIVO
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.2, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,0,0,.55)', border: '1px solid rgba(255,255,255,.12)' }}>ADUANA · PONTE DA AMIZADE</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.2, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,0,0,.55)', border: '1px solid rgba(255,255,255,.12)' }}>{camNome}</span>
                 </div>
-                <i className="rp-anim" style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: '100%', background: 'linear-gradient(90deg,#ff4d5e,#ffc35a)', transformOrigin: 'left', animation: 'rpProg 14s linear infinite' }} />
+                <i className="rp-anim" style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: '100%', background: 'linear-gradient(90deg,#ff4d5e,#ffc35a)', transformOrigin: 'left', animation: `rpProg ${camSeg}s linear infinite` }} key={camNome} />
               </div>
 
               {/* Clima 280 (dados reais de Foz do Iguaçu) */}

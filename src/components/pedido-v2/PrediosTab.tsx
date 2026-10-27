@@ -164,7 +164,7 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
       {!lista.length && <p className="py-8 text-center text-sm text-[#8b8285]">Nenhum prédio encontrado.</p>}
 
       <Dialog open={!!aberto} onOpenChange={(o) => !o && setAberto(null)}>
-        <DialogContent className="max-w-5xl gap-0 overflow-y-auto rounded-[22px] border-0 bg-[#f3f1f2] p-0 sm:rounded-[22px]">
+        <DialogContent className="max-h-[92dvh] max-w-5xl gap-0 overflow-y-auto rounded-[22px] border-0 bg-[#f3f1f2] p-0 sm:rounded-[22px]">
           {aberto && (
             <PredioAoVivo
               predio={aberto}
@@ -203,13 +203,13 @@ const PredioAoVivo: React.FC<{
   const sd = saude ? SAUDE[saude] : null;
 
   return (
-    <div className="grid gap-5 p-4 sm:p-6 md:grid-cols-[minmax(0,auto)_minmax(0,1fr)]">
+    <div className="grid gap-5 p-4 sm:p-6 md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
       <DialogPrimitive.Close className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#554e50] shadow hover:text-[#9C1E1E]" aria-label="Fechar">
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
 
       {/* Réplica */}
-      <div className="mx-auto w-full" style={{ maxWidth: 'min(100%, 360px, calc((100dvh - 120px) * 0.5625))' }}>
+      <div className="mx-auto w-full min-w-[220px]" style={{ maxWidth: 'min(100%, 340px, calc((100dvh - 120px) * 0.5625))' }}>
         <div className="relative">
           <span className="absolute -top-2 right-3 z-10 flex items-center gap-1.5 rounded-full bg-[#1b1719] px-2.5 py-1 text-[10.5px] font-extrabold tracking-wide text-white shadow">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#ff4d5e]" /> AO VIVO

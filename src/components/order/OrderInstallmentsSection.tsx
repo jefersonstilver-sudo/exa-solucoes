@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, Download, QrCode, CheckCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
+import { Loader2, FileText, Download, QrCode, CheckCircle, Clock, AlertTriangle, Calendar, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateInstallmentPix } from '@/services/asaasPaymentService';
@@ -42,6 +42,7 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
   const { userProfile } = useAuth();
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aberto, setAberto] = useState(false); // minimizado por padrão: abre ao clicar
   const [generatingBoleto, setGeneratingBoleto] = useState<string | null>(null);
   const [generatingPix, setGeneratingPix] = useState<string | null>(null);
   
@@ -144,22 +145,33 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
 
   const parcelasPagas = parcelas.filter(p => p.status === 'pago').length;
   const isBoleto = tipoPagamento === 'boleto_fidelidade';
+  const proximaParcela: any = parcelas.find((p: any) => p.status !== 'pago') || null;
 
   return (
     <>
       <Card className="border-l-4 border-l-primary">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center justify-between text-base">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Parcelas do Plano Fidelidade
-            </div>
-            <Badge variant="outline">
-              {parcelasPagas}/{parcelas.length} pagas
-            </Badge>
-          </CardTitle>
+          <button type="button" onClick={() => setAberto((a) => !a)} aria-expanded={aberto} className="w-full text-left">
+            <CardTitle className="flex items-center justify-between gap-3 text-base">
+              <div className="flex min-w-0 items-center gap-2">
+                <Calendar className="h-4 w-4 flex-none" />
+                <span className="truncate">Parcelas do Plano Fidelidade</span>
+              </div>
+              <div className="flex flex-none items-center gap-2">
+                {!aberto && proximaParcela && (
+                  <span className="hidden text-xs font-normal text-muted-foreground sm:inline">
+                    próxima {new Date(String(proximaParcela.data_vencimento).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR')}
+                  </span>
+                )}
+                <Badge variant="outline">
+                  {parcelasPagas}/{parcelas.length} pagas
+                </Badge>
+                <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', aberto && 'rotate-180')} />
+              </div>
+            </CardTitle>
+          </button>
         </CardHeader>
-        <CardContent className="space-y-2">
+        {aberto && <CardContent className="space-y-2">
           {parcelas.map((parcela) => {
             const status = getParcelaStatus(parcela);
             const StatusIcon = status.icon;
@@ -218,7 +230,7 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
               </div>
             );
           })}
-        </CardContent>
+        </CardContent>}
       </Card>
 
       <PixQrCodeDialog

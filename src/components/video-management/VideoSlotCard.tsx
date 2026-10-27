@@ -433,7 +433,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
             {/* Desktop: Layout com Player (mantém original) */}
             <div className="hidden lg:block">
-              <div className={`${isVertical ? 'aspect-[9/16] max-w-[280px] mx-auto' : 'aspect-video'} rounded-lg overflow-hidden relative`}>
+              <div className={`${isVertical ? 'aspect-[9/16] max-w-[280px] mx-auto' : 'aspect-[1080/890] bg-black'} rounded-lg overflow-hidden relative`}>
                 <VideoPlayer 
                   src={slot.video_data.url} 
                   title={slot.video_data.nome} 

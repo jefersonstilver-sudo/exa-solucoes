@@ -83,7 +83,7 @@ export const AgendaTab: React.FC<Props> = (p) => {
         <div className="flex gap-3 overflow-x-auto pb-2">
           {slots.map((s) => (
             <div key={s.id} className={`${CARD} w-40 flex-none overflow-hidden sm:w-44`}>
-              <div className="relative aspect-video bg-black">
+              <div className="relative aspect-[1080/890] bg-black">
                 <HoverPlayVideo url={s.url} nome={s.nome} />
                 <span className="absolute left-1.5 top-1.5 h-3 w-3 rounded-full ring-2 ring-white" style={{ background: corDoSlot(s) }} />
                 {!s.approved && <span className="absolute inset-x-0 bottom-0 bg-amber-500/90 py-0.5 text-center text-[10px] font-bold text-white">em aprovação</span>}
@@ -386,7 +386,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
                   const sel = (slotId || slots.find((x) => !x.is_base_video)?.id || slots[0]?.id) === s.id;
                   return (
                     <button key={s.id} onClick={() => setSlotId(s.id)} className={`overflow-hidden rounded-xl border-2 text-left ${sel ? 'border-[#9C1E1E]' : 'border-gray-200'}`}>
-                      <div className="aspect-video bg-black">{s.url && <video src={s.url} className="h-full w-full object-cover" muted autoPlay loop playsInline />}</div>
+                      <div className="aspect-[1080/890] bg-black">{s.url && <video src={s.url} className="h-full w-full object-contain" muted autoPlay loop playsInline />}</div>
                       <div className="truncate px-2 py-1 text-[11px] font-bold">{s.is_base_video && '★ '}{s.nome}</div>
                     </button>
                   );
