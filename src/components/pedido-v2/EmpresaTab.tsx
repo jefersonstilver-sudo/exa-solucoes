@@ -388,7 +388,7 @@ const FichaEmpresa: React.FC<Props & { marca: Marca }> = (p) => {
         {/* IDENTIDADE */}
         <section id="emp-identidade" className={`${CARD} scroll-mt-24 p-4 sm:p-5`}>
           <div className="flex items-start gap-4">
-            <LogoBox marca={marca} logo={logo} logoInfo={logoInfo} disabled={dis} enviarArquivo={p.enviarArquivo} atualizarEmpresa={p.atualizarEmpresa} />
+            <LogoBox marca={marca} logo={logo} logoInfo={logoInfo} disabled={dis} enviarArquivo={p.enviarArquivo} atualizarEmpresa={p.atualizarEmpresa} arquivos={arquivos} removerArquivo={p.removerArquivo} />
             <div className="min-w-0 flex-1">
               <NomeEditavel marca={marca} disabled={dis} atualizar={p.atualizarEmpresa} />
               <div className="text-[12.5px] text-[#8b8285]">{valorDe(IDENTIDADE[0]) || 'Segmento a definir'}</div>
@@ -519,7 +519,8 @@ const NomeEditavel: React.FC<{ marca: Marca; disabled?: boolean; atualizar: Prop
 const LogoBox: React.FC<{
   marca: Marca; logo: string | null; logoInfo: any; disabled?: boolean;
   enviarArquivo: Props['enviarArquivo']; atualizarEmpresa: Props['atualizarEmpresa'];
-}> = ({ marca, logo, logoInfo, disabled, enviarArquivo, atualizarEmpresa }) => {
+  arquivos: MarcaArquivo[]; removerArquivo: Props['removerArquivo'];
+}> = ({ marca, logo, logoInfo, disabled, enviarArquivo, atualizarEmpresa, arquivos, removerArquivo }) => {
   const ref = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(false);
   const onFile = async (f?: File | null) => {
@@ -541,6 +542,22 @@ const LogoBox: React.FC<{
     }
   };
   const [ver, setVer] = useState(false);
+  const [removendo, setRemovendo] = useState(false);
+  const remover = async () => {
+    if (!window.confirm(`Remover a logo de ${marca.empresa}? Depois você envia a certa aqui ou pela Sofia.`)) return;
+    setRemovendo(true);
+    try {
+      await atualizarEmpresa(marca.id, { logo: null } as any);
+      // tira também as cópias da logo na pasta desta empresa (senão a tela volta a mostrar a logo errada)
+      for (const a of arquivos.filter((x) => x.marca_id === marca.id && x.tipo === 'logo')) await removerArquivo(a);
+      setVer(false);
+      toast.success('Logo removida. Envie a logo certa quando quiser.');
+    } catch (e: any) {
+      toast.error(e?.message || 'Não consegui remover a logo');
+    } finally {
+      setRemovendo(false);
+    }
+  };
   const xadrez = 'bg-[conic-gradient(#ece7e8_25%,#fff_0_50%,#ece7e8_0_75%,#fff_0)] bg-[length:14px_14px]';
   return (
     <div className="flex-none">
@@ -571,6 +588,11 @@ const LogoBox: React.FC<{
       {logo && (
         <button type="button" disabled={disabled || enviando} onClick={() => ref.current?.click()} className="mt-2 inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11.5px] font-bold text-[#9C1E1E] hover:bg-[#fbe9eb] disabled:opacity-50">
           {enviando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Trocar logo
+        </button>
+      )}
+      {logo && (
+        <button type="button" disabled={disabled || removendo} onClick={remover} className="ml-1 mt-2 inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11.5px] font-bold text-[#8b8285] hover:bg-[#f3f1f2] hover:text-red-700 disabled:opacity-50">
+          {removendo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} Remover
         </button>
       )}
       {logoInfo?.transparente === false && <div className="mt-1 text-[10px] font-bold text-[#c2740a]">logo com fundo</div>}
@@ -604,6 +626,7 @@ const LogoBox: React.FC<{
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={disabled || enviando} onClick={() => ref.current?.click()} className={`${BTN} px-4 py-2 text-sm`}>Trocar logo</button>
               <a href={logo} target="_blank" rel="noreferrer" className={`${BTN_SOFT} px-4 py-2 text-sm`}>Baixar PNG</a>
+              <button type="button" disabled={disabled || removendo} onClick={remover} className="rounded-xl px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-50">Esta não é a logo certa · remover</button>
             </div>
           </DialogContent>
         </Dialog>
