@@ -47,6 +47,20 @@ serve(async (req) => {
       throw new Error('pedido_video_id é obrigatório');
     }
 
+    // Segurança: só o sistema (service role), um admin ou o dono do pedido podem mandar vídeo para as telas.
+    // (verify_jwt aceita a chave pública do site; sem isto qualquer pessoa disparava envio para os painéis.)
+    const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+    let papelJwt = '';
+    try { papelJwt = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role || ''; } catch { papelJwt = ''; }
+    let chamadorId: string | null = null; let chamadorAdmin = papelJwt === 'service_role';
+    if (!chamadorAdmin) {
+      const { data: u } = await supabase.auth.getUser(jwt);
+      if (!u?.user) return new Response(JSON.stringify({ success: false, error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      chamadorId = u.user.id;
+      const { data: papeis } = await supabase.from('user_roles').select('role').eq('user_id', u.user.id);
+      chamadorAdmin = (papeis || []).some((r: any) => ['admin', 'super_admin', 'comercial'].includes(String(r.role)));
+    }
+
     console.log('📋 [UPLOAD_EXTERNAL_API] Buscando dados do vídeo:', { pedido_video_id });
 
     // 1. Buscar dados completos do pedido_video
@@ -87,6 +101,9 @@ serve(async (req) => {
 
     // Supabase infere relações como arrays; aqui são objetos únicos (!inner + .single()).
     const pedidoVideo = pedidoVideoRaw as any;
+    if (!chamadorAdmin && pedidoVideo?.pedidos?.client_id !== chamadorId) {
+      return new Response(JSON.stringify({ success: false, error: 'forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // 🚧 BLOQUEIO: vídeos com corte metadata-only (sem corte físico) NÃO devem
     // ser enviados aos painéis sem reencode. Caso contrário o painel reproduz o original inteiro.
@@ -177,8 +194,13 @@ serve(async (req) => {
     if (!videoTitle) {
       throw new Error('Título do vídeo (videos.nome) está vazio - não é possível enviar para API externa');
     }
-    // Nome do arquivo enviado à API externa = título cadastrado (ver comentário acima).
-    const storageFileName = videoTitle;
+    // Nome do ARQUIVO enviado = nome do arquivo no Storage (ASCII, único). A API casa o arquivo com os metadados
+    // pela CHAVE == nome do arquivo (com .mp4); se não casar, recusa com "id_pedido é obrigatório" (devolvendo HTTP 200).
+    // O título (videos.nome) vai em metadados.titulo — é por ele que a programação (PUT /programacao/{tela}/{titulo}) acha o vídeo.
+    let storageFileName = '';
+    try { storageFileName = decodeURIComponent(String(pedidoVideo.videos.url || '').split('?')[0].split('/').pop() || ''); } catch { storageFileName = ''; }
+    if (!/^[A-Za-z0-9._-]+$/.test(storageFileName)) storageFileName = `${pedidoVideo.video_id}.mp4`;
+    if (!storageFileName.toLowerCase().endsWith('.mp4')) storageFileName = `${storageFileName}.mp4`;
 
     console.log('📝 [UPLOAD_EXTERNAL_API] Título do vídeo:', {
       nome_usuario: pedidoVideo.videos.nome,
@@ -336,9 +358,15 @@ serve(async (req) => {
           body: responseText.substring(0, 200)
         });
         
-        if (externalApiResponse.ok) {
+        // A API devolve 200 "queued" mesmo quando recusa o arquivo; o erro real vem em detalhes[].status === 'error'
+        let recusa: string | null = null;
+        try { const j = JSON.parse(responseText); const d = (j?.detalhes || []).find((x: any) => String(x?.status).toLowerCase() === 'error'); if (d) recusa = String(d.error || 'arquivo recusado'); } catch { /* resposta em texto */ }
+        if (externalApiResponse.ok && !recusa) {
           console.log(`✅ [UPLOAD_EXTERNAL_API] Upload para ${clientId} concluído com sucesso`);
           uploadResults.push({ clientId, success: true, status: externalApiResponse.status });
+        } else if (recusa) {
+          console.error(`❌ [UPLOAD_EXTERNAL_API] API recusou o arquivo em ${clientId}:`, recusa);
+          uploadResults.push({ clientId, success: false, status: externalApiResponse.status, error: recusa });
         } else {
           console.error(`❌ [UPLOAD_EXTERNAL_API] Erro no upload para ${clientId}:`, responseText);
           uploadResults.push({ clientId, success: false, status: externalApiResponse.status, error: responseText });
