@@ -82,6 +82,23 @@ serve(async (req) => {
       );
     }
 
+    // ---- autenticação de quem chama: service role (funções internas/Sofia), equipe interna ou dono do pedido ----
+    const negado = (status: number, error: string) => new Response(JSON.stringify({ success: false, error }), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+    if (!jwt) return negado(401, 'unauthorized');
+    let papelJwt = '';
+    try { papelJwt = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role || ''; } catch { papelJwt = ''; }
+    if (jwt !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') && papelJwt !== 'service_role') {
+      const { data: u } = await supabase.auth.getUser(jwt);
+      if (!u?.user) return negado(401, 'unauthorized');
+      const { data: papeis } = await supabase.from('user_roles').select('role').eq('user_id', u.user.id);
+      const interno = (papeis || []).some((r: any) => ['admin', 'super_admin', 'comercial'].includes(String(r.role)));
+      if (!interno) {
+        const { data: dono } = await supabase.from('pedidos').select('id').eq('id', pedido_id).eq('client_id', u.user.id).maybeSingle();
+        if (!dono) return negado(403, 'forbidden');
+      }
+    }
+
     const ativar = stripExt(ativar_titulo);
     const desativar = stripExt(desativar_titulo) || '';
 
