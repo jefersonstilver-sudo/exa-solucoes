@@ -36,6 +36,21 @@ interface Props {
   removerArquivo: (a: MarcaArquivo) => Promise<void>;
 }
 
+const dataHora = (iso?: string | null) => (iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+const tamanho = (b?: number | null) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+const TIPO_NOME: Record<string, string> = { video: 'Vídeo', foto: 'Foto', referencia: 'Referência', print: 'Print', pdf: 'PDF', logo: 'Logo', video_final: 'Vídeo feito pela Sofia' };
+const nomeArquivo = (a: MarcaArquivo) => {
+  const m: any = a.meta || {};
+  const bruto = (m.nome_original as string) || (m.nome as string) || a.legenda || '';
+  if (bruto && bruto !== 'arquivo' && !/^(vídeo|foto) enviad[oa] pelo whatsapp$/i.test(bruto)) return bruto;
+  return `${TIPO_NOME[a.tipo] || 'Arquivo'} do WhatsApp · ${dataHora(m.at || a.created_at)}`;
+};
+const origemNome = (o?: string | null) => (o === 'portal' ? 'Você' : o === 'admin' ? 'EXA' : 'Sofia (WhatsApp)');
+const removerComConfirmacao = async (a: MarcaArquivo, remover: Props['removerArquivo']) => {
+  if (!window.confirm(`Remover "${nomeArquivo(a)}" da biblioteca? A Sofia deixa de usar este arquivo nos próximos vídeos.`)) return;
+  try { await remover(a); toast.success('Arquivo removido da biblioteca'); } catch (e: any) { toast.error(e?.message || 'Não consegui remover'); }
+};
+
 const quando = (iso?: string | null) => {
   if (!iso) return '';
   const d = (Date.now() - new Date(iso).getTime()) / 864e5;
@@ -854,6 +869,8 @@ const Biblioteca: React.FC<{
   const [filtro, setFiltro] = useState<Filtro>('video');
   const [fila, setFila] = useState<{ total: number; feitos: number } | null>(null);
   const [arrastando, setArrastando] = useState(false);
+  const [modo, setModo] = useState<'grade' | 'historico'>('grade');
+  const historico = useMemo(() => [...arquivos].filter((a) => a.tipo !== 'logo').sort((x, y) => String(y.created_at).localeCompare(String(x.created_at))), [arquivos]);
   const visiveis = FILTROS.filter((f) => f.id !== 'final' || arquivos.some((a) => a.tipo === 'video_final'));
   const atual = FILTROS.find((f) => f.id === filtro)!;
   const lista = arquivos.filter((a) => atual.tipos.includes(a.tipo));
@@ -906,7 +923,49 @@ const Biblioteca: React.FC<{
         <input ref={ref} type="file" multiple accept="video/*,image/*,application/pdf" className="hidden" onChange={(e) => enviar(e.target.files)} />
       </div>
 
-      <div className="mt-4 flex gap-1 overflow-x-auto rounded-xl bg-[#f7f5f6] p-1">
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8b8285]">{modo === 'grade' ? 'Arquivos por tipo' : `Histórico · ${historico.length} arquivos`}</div>
+        <div role="tablist" aria-label="Modo de visualização" className="flex rounded-lg bg-[#f7f5f6] p-0.5">
+          {(['grade', 'historico'] as const).map((m) => (
+            <button key={m} role="tab" aria-selected={modo === m} onClick={() => setModo(m)} className={`rounded-md px-3 py-1.5 text-[12px] font-bold ${modo === m ? 'bg-white text-[#9C1E1E] shadow-sm' : 'text-[#8b8285]'}`}>
+              {m === 'grade' ? 'Grade' : 'Histórico'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {modo === 'historico' ? (
+        historico.length === 0 ? (
+          <p className="py-8 text-center text-sm text-[#8b8285]">Nenhum arquivo ainda.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-[#f1edee] rounded-xl border border-[#ebe6e7]">
+            {historico.map((a) => {
+              const m: any = a.meta || {};
+              const ehVideo = a.tipo === 'video' || a.tipo === 'video_final';
+              const ehImg = ['foto', 'referencia', 'print'].includes(a.tipo);
+              return (
+                <li key={a.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="relative h-12 w-16 flex-none overflow-hidden rounded-lg bg-[#1b1719]">
+                    {ehVideo ? <video src={`${a.url}#t=1`} muted preload="metadata" className="h-full w-full object-cover" /> : ehImg ? <img src={a.url} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center bg-[#f7f5f6] text-[#9e1b34]"><FileText className="h-5 w-5" /></span>}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-bold text-[#1b1719]">{nomeArquivo(a)}</div>
+                    <div className="text-[11.5px] text-[#8b8285]">
+                      {TIPO_NOME[a.tipo] || a.tipo} · enviado por {origemNome(a.origem)} · {dataHora(m.at || a.created_at)}
+                      {m.seg ? ` · ${m.seg}s` : ''}{m.w && m.h ? ` · ${m.w}×${m.h}` : ''}{m.bytes ? ` · ${tamanho(m.bytes)}` : ''}
+                    </div>
+                  </div>
+                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="rounded-lg p-2 text-[#8b8285] hover:bg-[#f7f5f6] hover:text-[#9C1E1E]" aria-label="Abrir arquivo"><ExternalLink className="h-4 w-4" /></a>
+                  {!disabled && (
+                    <button onClick={() => removerComConfirmacao(a, removerArquivo)} className="rounded-lg p-2 text-[#8b8285] hover:bg-red-50 hover:text-red-600" aria-label="Remover arquivo"><Trash2 className="h-4 w-4" /></button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )
+      ) : (<>
+      <div className="mt-3 flex gap-1 overflow-x-auto rounded-xl bg-[#f7f5f6] p-1">
         {visiveis.map((f) => (
           <button key={f.id} onClick={() => setFiltro(f.id)} className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-bold transition ${filtro === f.id ? 'bg-white text-[#9C1E1E] shadow-sm' : 'text-[#8b8285]'}`}>
             <f.icon className="h-3.5 w-3.5" /> {f.t} <span className="text-[11px] opacity-70">{contagem(f)}</span>
@@ -925,6 +984,7 @@ const Biblioteca: React.FC<{
           ))}
         </div>
       )}
+      </>)}
     </div>
   );
 };
@@ -932,7 +992,7 @@ const Biblioteca: React.FC<{
 const ArquivoTile: React.FC<{ a: MarcaArquivo; disabled?: boolean; remover: Props['removerArquivo'] }> = ({ a, disabled, remover }) => {
   const ehVideo = a.tipo === 'video' || a.tipo === 'video_final';
   const ehImg = ['foto', 'referencia', 'print', 'logo'].includes(a.tipo);
-  const nome = a.legenda || ((a.meta as any)?.nome_original as string) || 'arquivo';
+  const nome = nomeArquivo(a);
   return (
     <div className="group overflow-hidden rounded-[14px] border border-[#ebe6e7] bg-white">
       <div className="relative aspect-video bg-[#1b1719]">
@@ -949,11 +1009,11 @@ const ArquivoTile: React.FC<{ a: MarcaArquivo; disabled?: boolean; remover: Prop
       <div className="flex items-center gap-1.5 px-2 py-1.5">
         <div className="min-w-0 flex-1">
           <div className="truncate text-[11.5px] font-bold text-[#1b1719]" title={nome}>{nome}</div>
-          <div className="text-[10px] text-[#8b8285]">{a.origem === 'portal' ? '✎ você' : a.origem === 'admin' ? 'EXA' : '✦ Sofia'} · {quando(a.created_at)}</div>
+          <div className="text-[10px] text-[#8b8285]">{a.origem === 'portal' ? '✎ você' : a.origem === 'admin' ? 'EXA' : '✦ Sofia'} · {dataHora((a.meta as any)?.at || a.created_at)}</div>
         </div>
         <a href={a.url} target="_blank" rel="noopener noreferrer" className="rounded p-1 text-[#c9c1c3] hover:text-[#9C1E1E]" title="Abrir"><ExternalLink className="h-3.5 w-3.5" /></a>
-        {a.origem === 'portal' && !disabled && (
-          <button onClick={async () => { if (window.confirm('Remover este arquivo da biblioteca?')) { try { await remover(a); toast.success('Arquivo removido'); } catch (e: any) { toast.error(e.message); } } }} className="rounded p-1 text-[#c9c1c3] hover:text-red-600" title="Remover"><Trash2 className="h-3.5 w-3.5" /></button>
+        {!disabled && (
+          <button onClick={() => removerComConfirmacao(a, remover)} className="rounded p-1.5 text-[#b3aaad] hover:bg-red-50 hover:text-red-600" title="Remover" aria-label="Remover arquivo"><Trash2 className="h-4 w-4" /></button>
         )}
       </div>
     </div>
