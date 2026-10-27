@@ -11,6 +11,8 @@ import { AlertCircle, ArrowLeft, Building2, CalendarDays, Check, ChevronRight, C
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
+import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
+import LogoSelo from '@/components/exa2/LogoSelo';
 import { useAdvertiserProtection } from '@/hooks/useAdvertiserProtection';
 import { useOrderViewTracking } from '@/hooks/tracking/useOrderViewTracking';
 import { useVideoActivityTracking } from '@/hooks/tracking/useVideoActivityTracking';
@@ -79,6 +81,7 @@ const OrderDetailsV2 = () => {
   const { trackOrderView } = useOrderViewTracking();
   const { trackVideoUpload } = useVideoActivityTracking();
   const [order, setOrder] = useState<any | null>(null);
+  const logoPedido = useLogoEmpresa(order?.client_id || (userProfile as any)?.id || null, null);
   const [loading, setLoading] = useState(true);
   const [editNome, setEditNome] = useState(false);
   const [nome, setNome] = useState('');
@@ -231,7 +234,8 @@ const OrderDetailsV2 = () => {
           </button>
 
           {/* Cabeçalho do pedido */}
-          <header className="flex items-start gap-3">
+          <header className="flex items-start gap-4">
+            <LogoSelo src={logoPedido} fallback={(order.nome_pedido || 'E').replace(/^\s*EXA\s*[-–—:]\s*/i, '').charAt(0).toUpperCase()} className="mt-1 hidden h-[72px] w-[72px] sm:flex" rounded="rounded-[20px]" pad="p-2" />
             <div className="min-w-0 flex-1">
               <div className={EYEBROW}>Seu pedido</div>
               {editNome ? (

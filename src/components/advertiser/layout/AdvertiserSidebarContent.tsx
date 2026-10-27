@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import exaLogo from '@/assets/exa-logo.png';
 import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
+import LogoSelo from '@/components/exa2/LogoSelo';
 
 /**
  * EXA 2.0 — barra lateral do anunciante: vermelho EXA profundo, com luz suave no topo (sem degradê para o preto),
@@ -75,9 +76,11 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       {/* Conta */}
       <div className={cn(isCollapsed ? 'flex flex-col items-center gap-2 px-2 pb-4' : 'px-4 pb-5')}>
         <div className={cn('flex items-center', isCollapsed ? 'flex-col gap-2' : 'gap-3 rounded-2xl bg-white/[0.09] p-3 ring-1 ring-inset ring-white/[0.12] backdrop-blur-sm')}>
-          <span className="flex h-9 w-9 flex-none items-center justify-center overflow-hidden rounded-full bg-white text-sm font-extrabold text-[#8a1a1e] shadow-sm" title={nome}>
-            {logo ? <img src={logo} alt="" className="h-full w-full object-contain p-1" /> : inicial}
-          </span>
+          {logo ? (
+            <LogoSelo src={logo} fallback={inicial} className="h-11 w-11 ring-1 ring-white/25" rounded="rounded-xl" pad="p-1.5" />
+          ) : (
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-white text-sm font-extrabold text-[#8a1a1e] shadow-sm" title={nome}>{inicial}</span>
+          )}
           {!isCollapsed && (
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13.5px] font-bold text-white">{nome}</span>
