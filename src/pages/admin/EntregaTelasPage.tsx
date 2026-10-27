@@ -17,13 +17,14 @@ type Saude = {
 type Alerta = { id: number; cliente_id: string; tipo: string; mensagem: string; criado_em: string };
 
 const STATUS: Record<string, { label: string; cls: string; icon: React.ElementType; desc: string }> = {
+  programacao_atrasada: { label: 'Programação divergente', cls: 'bg-red-50 text-red-800 border-red-200', icon: AlertTriangle, desc: 'A tela confirmou a versão, mas não está tocando o vídeo que a agenda manda agora (o vigia já reenviou a agenda)' },
   atrasada: { label: 'Atrasada', cls: 'bg-red-50 text-red-800 border-red-200', icon: AlertTriangle, desc: 'Online, mas não aplicou a última mudança há 15 min ou mais' },
   aplicando: { label: 'Aplicando', cls: 'bg-blue-50 text-blue-800 border-blue-200', icon: Clock, desc: 'Mudança enviada há menos de 15 min (o NUC sincroniza a cada 5 min)' },
   offline: { label: 'Offline', cls: 'bg-gray-100 text-gray-700 border-gray-200', icon: WifiOff, desc: 'Sem sinal: aplica quando voltar' },
   sem_confirmacao: { label: 'Sem confirmação', cls: 'bg-amber-50 text-amber-800 border-amber-200', icon: ShieldQuestion, desc: 'Player antigo (v7): toca, mas não confirma o que aplicou' },
   sincronizada: { label: 'Confirmada', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200', icon: CheckCircle2, desc: 'O NUC confirmou a versão atual com todos os arquivos' },
 };
-const ORDEM = ['atrasada', 'aplicando', 'offline', 'sem_confirmacao', 'sincronizada'];
+const ORDEM = ['programacao_atrasada', 'atrasada', 'aplicando', 'offline', 'sem_confirmacao', 'sincronizada'];
 const ha = (iso: string | null) => {
   if (!iso) return '—';
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
