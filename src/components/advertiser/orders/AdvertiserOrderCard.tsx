@@ -167,7 +167,7 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               {item.type === 'order' && item.nome_pedido ? (
                 <>
                   <h3 className="font-bold text-base sm:text-lg text-foreground truncate">
-                    {item.nome_pedido}
+                    {String(item.nome_pedido).replace(/^\s*EXA\s*[-–—:]\s*/i, '')}
                   </h3>
                   <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">

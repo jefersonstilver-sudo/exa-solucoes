@@ -113,7 +113,7 @@ const OrderDetailsV2 = () => {
         return;
       }
       setOrder(data);
-      setNome(data.nome_pedido || '');
+      setNome((data.nome_pedido || '').replace(/^\s*EXA\s*[-–—:]\s*/i, ''));
       trackOrderView(data.id);
     } catch (e: any) {
       toast.error(`Erro ao carregar o pedido: ${e.message || 'erro desconhecido'}`);
@@ -222,8 +222,8 @@ const OrderDetailsV2 = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-[#f3f1f2] text-[#1b1719] antialiased">
-        <div className="mx-auto max-w-6xl space-y-5 px-4 py-4 sm:px-6 sm:py-6">
+      <div className="text-[#1b1719] antialiased">
+        <div className="mx-auto max-w-6xl space-y-5">
           <button onClick={() => navigate('/anunciante/pedidos')} className="inline-flex items-center gap-1 text-sm font-bold text-[#9C1E1E] hover:underline">
             <ArrowLeft className="h-4 w-4" /> Meus pedidos
           </button>
@@ -240,7 +240,7 @@ const OrderDetailsV2 = () => {
                 </div>
               ) : (
                 <button onClick={() => setEditNome(true)} title="Renomear pedido" className="group flex max-w-full items-center gap-2 text-left">
-                  <h1 className="truncate text-[26px] font-extrabold leading-tight tracking-tight text-[#1b1719] sm:text-3xl">{order.nome_pedido?.trim() || `Pedido #${order.id.slice(0, 8)}`}</h1>
+                  <h1 className="truncate text-[26px] font-extrabold leading-tight tracking-tight text-[#1b1719] sm:text-3xl">{(order.nome_pedido || '').replace(/^\s*EXA\s*[-–—:]\s*/i, '').trim() || `Pedido #${order.id.slice(0, 8)}`}</h1>
                   <Pencil className="h-4 w-4 flex-none text-[#c9c1c3] group-hover:text-[#9C1E1E]" />
                 </button>
               )}

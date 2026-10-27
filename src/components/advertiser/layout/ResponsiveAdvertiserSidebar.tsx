@@ -39,7 +39,7 @@ const ResponsiveAdvertiserSidebar = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[100] bg-black/50"
+              className="fixed inset-0 z-[100] bg-[#1b1719]/40 backdrop-blur-[2px]"
               onClick={onClose}
               style={{ pointerEvents: 'auto' }}
             />
@@ -50,14 +50,14 @@ const ResponsiveAdvertiserSidebar = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed left-0 top-0 z-[110] h-full w-80 max-w-[85vw]"
+              className="fixed left-0 top-0 z-[110] h-full w-72 max-w-[85vw]"
               style={{ pointerEvents: 'auto' }}
             >
-              <div className="relative h-full bg-gradient-to-b from-exa-red via-exa-red/90 to-exa-red/80">
+              <div className="relative h-full bg-white shadow-2xl">
                 <AdvertiserSidebarContent onItemClick={onClose} />
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-lg z-10 transition-colors"
+                  className="absolute top-4 right-3 p-2 text-[#8b8285] hover:bg-[#f5f1f2] rounded-lg z-10 transition-colors"
                   aria-label="Fechar menu"
                 >
                   <X className="h-5 w-5" />
@@ -73,7 +73,7 @@ const ResponsiveAdvertiserSidebar = ({
   // Desktop: Fixed sidebar with collapse support
   return (
     <motion.div
-      animate={{ width: isCollapsed ? 64 : 320 }}
+      animate={{ width: isCollapsed ? 72 : 288 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
       className="hidden lg:flex fixed inset-y-0 z-30"
     >

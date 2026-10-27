@@ -12,20 +12,20 @@ const UnifiedAdvertiserMobileHeader = ({
   onMenuClick 
 }: UnifiedAdvertiserMobileHeaderProps) => {
   return (
-    <header className="sticky top-0 z-40 bg-gradient-to-r from-[#7A3838] to-[#9C1E1E] border-b border-white/10 shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2">
+    <header className="sticky top-0 z-40 border-b border-[#ebe6e7] bg-white/90 backdrop-blur">
+      <div className="flex items-center justify-between px-3 py-2.5">
         {/* Menu Button */}
         <button
           onClick={onMenuClick}
-          className="p-1.5 hover:bg-white/10 rounded-md transition-colors"
+          className="rounded-xl p-2 transition-colors hover:bg-[#f5f1f2]"
           aria-label="Abrir menu"
         >
-          <Menu className="h-4 w-4 text-white" />
+          <Menu className="h-5 w-5 text-[#1b1719]" />
         </button>
 
         {/* Título simples no centro */}
         <div className="absolute left-1/2 transform -translate-x-1/2">
-          <span className="text-sm font-medium text-white/90 tracking-tight">
+          <span className="text-[15px] font-bold tracking-tight text-[#1b1719]">
             {title}
           </span>
         </div>
