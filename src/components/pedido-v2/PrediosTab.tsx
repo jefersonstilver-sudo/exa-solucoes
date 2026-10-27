@@ -197,6 +197,7 @@ const PredioAoVivo: React.FC<{
   const { weatherData } = useWeatherData();
   // Playlist REAL do prédio (todos os anunciantes, notícias, curiosidades e verticais), na ordem do painel
   const [playlist, setPlaylist] = useState<ItemReplica[] | null>(null);
+  const [tocando, setTocando] = useState(0);
   useEffect(() => {
     let vivo = true;
     const ler = async () => {
@@ -232,7 +233,7 @@ const PredioAoVivo: React.FC<{
             {playlist?.length ? `${new Set(playlist.map((x) => x.url)).size} vídeos na programação` : 'tela do elevador'}
           </span>
         </div>
-        <ReplicaPainel predioNome={predio.nome} slot={slot} now={now} clima={weatherData} playlist={playlist || undefined} />
+        <ReplicaPainel predioNome={predio.nome} slot={slot} now={now} clima={weatherData} playlist={playlist || undefined} onAtual={setTocando} />
       </div>
 
       {/* Informações */}
@@ -250,8 +251,37 @@ const PredioAoVivo: React.FC<{
           </div>
         </div>
 
+        {playlist && playlist.length > 0 && (() => {
+          const atualPl = playlist[tocando % playlist.length];
+          const rotulo = (x: ItemReplica) => (x.seu ? 'Seu anúncio' : x.tipo === 'editorial' ? (x.titulo.split(/\s\d/)[0] || 'Notícias') : x.vertical ? 'Vertical premium · tela cheia' : 'Anúncio');
+          const cor = (x: ItemReplica) => (x.seu ? 'bg-[#9C1E1E] text-white' : x.tipo === 'editorial' ? 'bg-[#e8f0fe] text-[#1d4ed8]' : x.vertical ? 'bg-[#f3e8ff] text-[#7e22ce]' : 'bg-[#f3f1f2] text-[#554e50]');
+          const fila = Array.from({ length: Math.min(12, playlist.length) }, (_, k) => ({ k, x: playlist[(tocando + k) % playlist.length] }));
+          return (
+            <div className={`${CARD} p-4`}>
+              <div className="text-xs font-extrabold tracking-wide text-[#13a24a]">● NA TELA AGORA</div>
+              <div className="mt-1 flex min-w-0 items-center gap-2">
+                <span className="truncate text-lg font-extrabold text-[#1b1719]">{atualPl.seu ? atualPl.titulo : rotulo(atualPl)}</span>
+                <span className={`flex-none rounded-full px-2 py-0.5 text-[10.5px] font-bold ${cor(atualPl)}`}>{rotulo(atualPl)}</span>
+              </div>
+              <div className="mt-3 border-t border-[#f1edee] pt-3">
+                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8b8285]">Fila desta tela · igual ao elevador</div>
+                <ol className="space-y-1">
+                  {fila.map(({ k, x }) => (
+                    <li key={k} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-[13px] ${k === 0 ? 'bg-[#e6f6ec]' : ''}`}>
+                      <span className="w-5 flex-none text-right text-[11px] font-bold tabular-nums text-[#b3aaad]">{k === 0 ? '▶' : k}</span>
+                      <span className={`min-w-0 flex-1 truncate ${x.seu ? 'font-extrabold text-[#9C1E1E]' : 'font-semibold text-[#1b1719]'}`}>{x.seu ? x.titulo : rotulo(x)}</span>
+                      <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold ${cor(x)}`}>{x.seu ? 'seu' : x.tipo === 'editorial' ? 'notícias' : x.vertical ? 'vertical' : 'anúncio'}</span>
+                      <span className="w-8 flex-none text-right text-[11px] tabular-nums text-[#8b8285]">{x.duracao}s</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          );
+        })()}
+
         <div className={`${CARD} p-4`}>
-          <div className="text-xs font-extrabold tracking-wide text-[#13a24a]">● PASSANDO AGORA NESTA TELA</div>
+          <div className="text-xs font-extrabold tracking-wide text-[#9C1E1E]">● SEU VÍDEO NESTE PRÉDIO</div>
           {slot ? (
             <>
               <div className="mt-1 truncate text-lg font-extrabold text-[#1b1719]">{(slot.nome || `Vídeo ${slot.slot_position}`).replace(/_/g, ' ')}</div>
@@ -275,7 +305,7 @@ const PredioAoVivo: React.FC<{
 
         {!bloqueado && segsHoje.length > 0 && (
           <div className={`${CARD} p-4`}>
-            <div className="mb-2.5 text-sm font-extrabold text-[#1b1719]">Programação de hoje nesta tela</div>
+            <div className="mb-2.5 text-sm font-extrabold text-[#1b1719]">Seus vídeos hoje nesta tela</div>
             <div className="space-y-1.5">
               {segsHoje.map((sg, i) => {
                 const s = sg.winner?.slot;

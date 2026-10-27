@@ -33,7 +33,7 @@ const safeName = (n: string) =>
 
 /**
  * Empresas (marcas) do pedido + ficha de conhecimento da Sofia + arquivos.
- * Regra: marcas com pedido_id = este pedido. Se não houver, mostra a marca da conta (nível cliente).
+ * Regra: a marca da conta (nível cliente) + as marcas extras deste pedido (pedido_id), nessa ordem.
  */
 export function usePedidoEmpresas(pedidoId: string, clientId: string | undefined) {
   const [marcas, setMarcas] = useState<Marca[]>([]);
@@ -45,17 +45,15 @@ export function usePedidoEmpresas(pedidoId: string, clientId: string | undefined
   const load = useCallback(async () => {
     if (!pedidoId) return;
     try {
-      const { data: doPedido } = await supabase.from('marcas_clientes').select('*').eq('pedido_id', pedidoId).order('created_at');
-      let lista = doPedido || [];
-      if (!lista.length && clientId) {
-        const { data: daConta } = await supabase
-          .from('marcas_clientes')
-          .select('*')
-          .eq('client_id', clientId)
-          .is('pedido_id', null)
-          .order('created_at');
-        lista = daConta || [];
-      }
+      // Empresa da conta (vale para todos os pedidos) SEMPRE aparece primeiro; depois as empresas extras deste pedido
+      // (ex.: o cliente da Baby Close que também anuncia a Harley Foz). Uma nunca substitui a outra.
+      const [{ data: doPedido }, { data: daConta }] = await Promise.all([
+        supabase.from('marcas_clientes').select('*').eq('pedido_id', pedidoId).order('created_at'),
+        clientId
+          ? supabase.from('marcas_clientes').select('*').eq('client_id', clientId).is('pedido_id', null).order('created_at')
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const lista = [...(daConta || []), ...(doPedido || []).filter((m: any) => !(daConta || []).some((c: any) => c.id === m.id))];
       setMarcas(lista);
       const ids = lista.map((m) => m.id);
       if (ids.length) {

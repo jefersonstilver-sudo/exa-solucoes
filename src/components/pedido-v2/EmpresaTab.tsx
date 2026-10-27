@@ -267,8 +267,10 @@ export const EmpresaTab: React.FC<Props> = (p) => {
           </button>
         )}
       </div>
-      {!marca.pedido_id && (
-        <p className="text-xs text-[#8b8285]">Esta é a empresa da sua conta — vale para todos os seus pedidos. Se este pedido for de outra empresa, adicione acima.</p>
+      {!marca.pedido_id ? (
+        <p className="text-xs text-[#8b8285]">Esta é a empresa principal da sua conta — vale para todos os seus pedidos. Para anunciar outra empresa neste pedido, adicione acima.</p>
+      ) : (
+        <p className="text-xs text-[#8b8285]">Empresa adicional deste pedido. Os vídeos dela usam só as informações dela; a empresa principal continua intacta.</p>
       )}
 
       <FichaEmpresa key={marca.id} marca={marca} {...p} />

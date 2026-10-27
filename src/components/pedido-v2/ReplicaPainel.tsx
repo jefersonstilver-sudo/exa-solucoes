@@ -156,10 +156,13 @@ interface Props {
   preencher?: boolean;
   /** playlist real do prédio; sem ela, mostra só o vídeo do pedido (slot) */
   playlist?: ItemReplica[];
+  /** avisa qual item da playlist está tocando (para a fila ao lado) */
+  onAtual?: (indice: number) => void;
 }
 
-export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, preencher, playlist }) => {
+export const ReplicaPainel: React.FC<Props> = ({ predioNome, slot, now, clima, preencher, playlist, onAtual }) => {
   const pl = usePlaylist(playlist);
+  useEffect(() => { if (playlist?.length) onAtual?.(pl.i % playlist.length); }, [pl.i, playlist?.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const wrap = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0.3);
   const [camNome, setCamNome] = useState(CAMERAS[0].nome);
