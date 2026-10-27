@@ -118,10 +118,20 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         }
       }
 
-      // Buscar dados reais dos buildings (visualizacoes_mes, publico_estimado, quantidade_telas)
-      const allBuildingIds = [...new Set(
-        (orders || []).flatMap(order => order.lista_paineis || [])
-      )];
+      // Prédios do pedido: pedidos novos guardam em lista_predios (uuid[]); antigos em lista_paineis
+      // (uuid ou JSON {building_id}). Une as duas fontes, sem repetir.
+      const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const idsDoPedido = (o: any): string[] => {
+        const out = new Set<string>();
+        for (const x of [...(o.lista_predios || []), ...(o.lista_paineis || [])]) {
+          let v: any = x;
+          if (typeof v === 'string' && v.trim().startsWith('{')) { try { v = JSON.parse(v); } catch { /* ignora */ } }
+          const id = typeof v === 'string' ? v : v?.building_id || v?.id;
+          if (typeof id === 'string' && UUID.test(id)) out.add(id);
+        }
+        return [...out];
+      };
+      const allBuildingIds = [...new Set((orders || []).flatMap((order: any) => idsDoPedido(order)))];
 
       let buildingsData: Record<string, { 
         visualizacoes_mes: number; 
@@ -158,21 +168,25 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
       // Processar pedidos completos com dados de vídeo e totais reais
       const processedOrders: UserCompleteOrder[] = (orders || []).map(order => {
         // Calcular totais reais somando os dados dos buildings
-        const totals = (order.lista_paineis || []).reduce((acc, buildingId) => {
+        const ids = idsDoPedido(order);
+        // Exibições/mês pelo padrão oficial EXA (Manual 2026): por tela, horizontal 15.060 e vertical premium 5.010
+        const porTela = String(order.tipo_produto || '').startsWith('vertical') ? 5010 : 15060;
+        const totals = ids.reduce((acc: any, buildingId: string) => {
           const data = buildingsData[buildingId] || { 
             visualizacoes_mes: 0, 
             publico_estimado: 0,
             quantidade_telas: 0
           };
+          const telas = data.quantidade_telas || 1;
           return {
-            visualizacoes: acc.visualizacoes + data.visualizacoes_mes,
+            visualizacoes: acc.visualizacoes + telas * porTela,
             publico: acc.publico + data.publico_estimado,
-            telas: acc.telas + data.quantidade_telas
+            telas: acc.telas + telas
           };
         }, { visualizacoes: 0, publico: 0, telas: 0 });
 
         console.log(`📊 [ORDER ${order.id.substring(0, 8)}] Totais calculados:`, {
-          buildings: order.lista_paineis?.length || 0,
+          buildings: ids.length,
           visualizacoes_mes: totals.visualizacoes,
           publico_estimado: totals.publico,
           quantidade_telas: totals.telas
@@ -183,7 +197,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           created_at: order.created_at,
           status: order.status,
           valor_total: order.valor_total || 0,
-          lista_paineis: order.lista_paineis || [],
+          lista_paineis: ids,
           plano_meses: order.plano_meses,
           data_inicio: order.data_inicio,
           data_fim: order.data_fim,

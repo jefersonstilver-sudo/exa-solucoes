@@ -115,9 +115,11 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   };
 
   // Estimated impressions
+  // Exibições por mês (padrão oficial EXA por tela: horizontal 15.060 · vertical premium 5.010)
+  const porTela = String((item as any).tipo_produto || '').startsWith('vertical') ? 5010 : 15060;
   const impressions = item.type === 'order' && item.total_visualizacoes_mes
-    ? ((item.total_visualizacoes_mes || 0) * (item.plano_meses || 1))
-    : ((painelsList.length || 0) * 7200);
+    ? item.total_visualizacoes_mes
+    : (painelsList.length || 0) * porTela;
 
   const nomeLimpo = String(item.nome_pedido || '').replace(/^\s*EXA\s*[-–—:]\s*/i, '').trim();
   const nomesPredios = (painelsList as any[]).map((p) => { try { const o = typeof p === 'string' ? JSON.parse(p) : p; return o?.building_name || o?.nome || o?.name || null; } catch { return null; } }).filter(Boolean) as string[];
@@ -212,7 +214,7 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               { k: 'Valor', v: formatCurrency(item.valor_total || 0) },
               { k: 'Duração', v: item.type === 'order' ? `${item.plano_meses} meses` : '1 mês' },
               { k: 'Prédios', v: String(painelsList.length) },
-              { k: 'Exibições', v: impressions.toLocaleString('pt-BR') },
+              { k: 'Exibições/mês', v: impressions.toLocaleString('pt-BR') },
             ].map((m) => (
               <div key={m.k}>
                 <div className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#a39a9d]">{m.k}</div>
