@@ -6,6 +6,7 @@ import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLa
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 
 const SuperAdminPage = () => {
@@ -14,6 +15,8 @@ const SuperAdminPage = () => {
   const { userProfile, isLoading, isLoggedIn, isSuperAdmin } = useAuth();
   const [accessGranted, setAccessGranted] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
+  const [aguardouSessao, setAguardouSessao] = useState(false);
+  const [semSessao, setSemSessao] = useState(false);
 
   useEffect(() => {
     console.log('🔄 SUPER ADMIN PAGE - Estado atual:', {
@@ -39,6 +42,16 @@ const SuperAdminPage = () => {
     console.log('🔍 INICIANDO VERIFICAÇÃO: Auth carregado, fazendo verificação de acesso');
 
     if (!isLoggedIn) {
+      // O perfil pode chegar alguns instantes depois da sessão: se há sessão salva, espera em vez de mandar para o login
+      if (!aguardouSessao) {
+        setAguardouSessao(true);
+        supabase.auth.getSession().then(({ data }) => {
+          if (!data.session) setSemSessao(true);
+          else setTimeout(() => setSemSessao(true), 4000); // sessão existe mas o perfil não veio em 4 s
+        });
+        return;
+      }
+      if (!semSessao) return;
       console.log('❌ NÃO LOGADO: Redirecionando para login ERP');
       toast.error('Você precisa estar logado para acessar esta área.');
       // volta para a mesma página depois do login (links diretos: painel, Nando, alertas)
@@ -89,7 +102,7 @@ const SuperAdminPage = () => {
     
     setAccessGranted(true);
     setHasChecked(true);
-  }, [userProfile, isLoading, isLoggedIn, isSuperAdmin, navigate, hasChecked, location.pathname]);
+  }, [userProfile, isLoading, isLoggedIn, isSuperAdmin, navigate, hasChecked, location.pathname, aguardouSessao, semSessao]);
 
   useEffect(() => {
     const securityTimeout = setTimeout(() => {

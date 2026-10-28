@@ -45,6 +45,11 @@ const TwoFactorVerificationPage = lazy(() => import('@/pages/auth/TwoFactorVerif
 
 // Importação direta APENAS para a homepage (rota /)
 const Exa = lazy(() => import('./pages/Exa'));
+// Site público novo (Opção 2, 28/10/2026). As páginas antigas ficam em /*-antiga até 27/11/2026.
+const SiteHome = lazy(() => import('./site/SiteHome'));
+const SitePredios = lazy(() => import('./site/SitePredios'));
+const SiteSindico = lazy(() => import('./site/SiteSindico'));
+const SiteNaoEncontrado = lazy(() => import('./site/SiteNaoEncontrado'));
 
 // Lazy load para todas as outras páginas (reduz carga inicial no proxy)
 const BuildingStore = lazy(() => import('./pages/BuildingStore'));
@@ -235,7 +240,8 @@ const AppContent = () => {
         
         <Routes>
           {/* Rotas principais */}
-          <Route path="/" element={<Suspense fallback={<GlobalLoadingPage />}><Exa /></Suspense>} />
+          <Route path="/" element={<Suspense fallback={null}><SiteHome /></Suspense>} />
+          <Route path="/home-antiga" element={<Suspense fallback={<GlobalLoadingPage />}><Exa /></Suspense>} />
           <Route path="/catalogo-clientes" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Mídia Kit..." />}>
               <CatalogoClientes />
@@ -372,9 +378,10 @@ const AppContent = () => {
           } />
           
           {/* CORREÇÃO: Rotas da loja unificadas */}
-          <Route path="/loja" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
-          <Route path="/paineis-digitais/loja" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
-          <Route path="/building-store" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
+          <Route path="/loja" element={<Suspense fallback={null}><SitePredios /></Suspense>} />
+          <Route path="/loja-antiga" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
+          <Route path="/paineis-digitais/loja" element={<Navigate to="/loja" replace />} />
+          <Route path="/building-store" element={<Navigate to="/loja" replace />} />
           
           <Route path="/plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
           <Route path="/planos" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
@@ -438,7 +445,8 @@ const AppContent = () => {
           <Route path="/exa" element={<Navigate to="/" replace />} />
           
           {/* PÁGINAS PRINCIPAIS - SEM LAZY LOADING PARA PERFORMANCE */}
-          <Route path="/sou-sindico" element={
+          <Route path="/sou-sindico" element={<Suspense fallback={null}><SiteSindico /></Suspense>} />
+          <Route path="/sou-sindico-antigo" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Sou Síndico..." />}>
               <SouSindico />
             </Suspense>
@@ -637,7 +645,7 @@ const AppContent = () => {
           <Route path="/programacao/petclube/*" element={<StaticRedirect to="/programacao/petclube/index.html" />} />
 
           {/* Rota catch-all para páginas não encontradas */}
-          <Route path="*" element={<Suspense fallback={<GlobalLoadingPage />}><NaoEncontrado /></Suspense>} />
+          <Route path="*" element={<Suspense fallback={null}><SiteNaoEncontrado /></Suspense>} />
         </Routes>
         <Toaster />
       </div>
