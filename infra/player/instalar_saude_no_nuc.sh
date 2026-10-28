@@ -8,8 +8,17 @@ APP="$HOME/Documentos/appUbuntu"
 
 # 1) descobre o código da tela usando o próprio player (só leitura)
 if [ ! -s "$HOME/.exa_saude.json" ]; then
-  ID=$(cd "$APP" && timeout 40 nice -n 19 python3 -c 'import sys; sys.path.insert(0,"."); import atualizadores.sistema as s; print(s.CLIENTE_ID)' 2>/dev/null | tail -n1 | tr -d '[:space:]')
-  if [ -z "$ID" ] || [ "$ID" = "101" ]; then echo "ABORTADO: nao consegui descobrir o codigo da tela (veio '$ID')"; exit 1; fi
+  # 1a) procura "tela_id" nos arquivos de configuração do player
+  ID=$(grep -rhoE '"tela_id"[[:space:]]*:[[:space:]]*"?[0-9a-fA-F]{4}"?' "$APP" --include='*.json' 2>/dev/null | head -n1 | grep -oE '[0-9a-fA-F]{4}"?$' | tr -d '"')
+  # 1b) se não achar, pergunta ao próprio player
+  if [ -z "$ID" ]; then
+    ID=$(cd "$APP" && timeout 40 nice -n 19 python3 -c 'import sys; sys.path.insert(0,"."); import atualizadores.sistema as s; print("TELA=" + str(s.CLIENTE_ID))' 2>/tmp/exa_saude_id.err | grep -oE 'TELA=[0-9a-fA-F]+' | tail -n1 | cut -d= -f2)
+  fi
+  if [ -z "$ID" ] || [ "$ID" = "101" ]; then
+    echo "ABORTADO: nao consegui descobrir o codigo da tela. Erro do player:"; tail -n 5 /tmp/exa_saude_id.err 2>/dev/null
+    echo "Se souber o codigo (ex.: bc17), rode:  echo '{\"cliente_id\": \"bc17\"}' > ~/.exa_saude.json   e cole este comando de novo."
+    exit 1
+  fi
   printf '{"cliente_id": "%s"}\n' "$ID" > "$HOME/.exa_saude.json"
 fi
 echo "Tela: $(cat "$HOME/.exa_saude.json")"
