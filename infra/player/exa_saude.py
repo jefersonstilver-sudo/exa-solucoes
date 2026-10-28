@@ -4,7 +4,7 @@ EXA 2.0 — Coletor de saúde do NUC ("auditoria v7", automática).
 
 Roda a cada 15 min pelo cron do usuário (instalado por instalar_saude_no_nuc.sh), SEPARADO do player:
   - só LÊ o sistema (nada é alterado, nada é reiniciado);
-  - prioridade mínima de CPU e disco (nice 19 / ionice idle) e limite total de 90 s (timeout no cron);
+  - prioridade mínima de CPU e disco (nice 19 / ionice idle) e limite total de 150 s (timeout no cron);
   - cada medição tem limite próprio; se uma falhar, as outras seguem;
   - se a internet estiver fora, apenas não envia (tenta de novo no próximo ciclo).
 
@@ -24,8 +24,10 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v6.1"
+VERSAO_COLETOR = "saude-v7"
 API_TELAS = "18.228.252.149"
+URL_VEL_S3 = "https://sistema-update.s3.sa-east-1.amazonaws.com/diag/velocidade_5mb.bin"
+URL_VEL_CF = "https://speed.cloudflare.com/__down?bytes=5000000"
 
 
 def sh(cmd, timeout=8, env=None):
@@ -170,31 +172,35 @@ def rede():
     return d
 
 
+def _baixar_medindo(url, limite_s):
+    t0 = time.time()
+    n = 0
+    req = urllib.request.Request(url, headers={"User-Agent": "exa-saude"})
+    with urllib.request.urlopen(req, timeout=8) as r:
+        while time.time() - t0 < limite_s:
+            bloco = r.read(65536)
+            if not bloco:
+                break
+            n += len(bloco)
+    seg = max(time.time() - t0, 0.001)
+    return round(n * 8 / seg / 1e6, 2), n, round(seg, 1)
+
+
 def velocidade_download(estado):
-    """5 MB, no máximo 1x a cada 20 h."""
-    if time.time() - estado.get("ultimo_speedtest", 0) < 20 * 3600:
-        return estado.get("download_mbps")
-    try:
-        t0 = time.time()
-        req = urllib.request.Request("https://speed.cloudflare.com/__down?bytes=5000000", headers={"User-Agent": "exa-saude"})
-        n = 0
-        # v6.1: no máximo 20 s (internet lenta/instável não pode estourar o limite de 90 s e matar o envio)
-        with urllib.request.urlopen(req, timeout=10) as r:
-            while time.time() - t0 < 20:
-                bloco = r.read(65536)
-                if not bloco:
-                    break
-                n += len(bloco)
-        seg = max(time.time() - t0, 0.001)
-        if n < 200000:
-            raise IOError("download insuficiente para medir (%d bytes em %.0f s)" % (n, seg))
-        mbps = round(n * 8 / seg / 1e6, 1)
-        estado["ultimo_speedtest"] = time.time()
-        estado["download_mbps"] = mbps
-        return mbps
-    except Exception:
-        estado["ultimo_speedtest"] = time.time() - 18 * 3600  # tenta de novo em ~2 h
-        return None
+    """v7: mede do NOSSO S3 (de onde vêm os vídeos) e da Cloudflare (referência). No máx. 1x a cada 6 h; 15 s cada."""
+    if time.time() - estado.get("ultimo_speedtest", 0) < 6 * 3600:
+        return estado.get("velocidade")
+    d = {}
+    for nome, url in (("s3", URL_VEL_S3), ("cloudflare", URL_VEL_CF)):
+        try:
+            mbps, n, seg = _baixar_medindo(url, 15)
+            d[nome] = {"mbps": mbps, "bytes": n, "seg": seg}
+        except Exception as e:
+            d[nome] = {"erro": str(e)[:80]}
+    d["medido_em"] = time.strftime("%Y-%m-%d %H:%M")
+    estado["ultimo_speedtest"] = time.time() if any("mbps" in v for v in d.values() if isinstance(v, dict)) else time.time() - 5 * 3600
+    estado["velocidade"] = d
+    return d
 
 
 def monitor():
@@ -211,6 +217,65 @@ def monitor():
     xs = sh("xset q 2>/dev/null", timeout=6, env=env)
     if "Monitor is" in xs:
         d["monitor_ligado"] = "Monitor is On" in xs
+    return d
+
+
+def tela(resolucao):
+    """v7: duas capturas pequenas da tela com 3 s de intervalo. Igual = possivelmente CONGELADA
+    (o relógio da tela mostra segundos, então uma tela viva sempre muda). Brilho ~0 = tela PRETA."""
+    if not shutil.which("ffmpeg"):
+        return {"metodo": "sem ffmpeg"}
+    env = dict(os.environ)
+    env.setdefault("DISPLAY", ":0")
+    env.setdefault("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
+    tam = resolucao or "1080x1920"
+
+    def foto():
+        r = subprocess.run(["nice", "-n", "19", "ffmpeg", "-loglevel", "error", "-f", "x11grab", "-video_size", tam, "-i",
+                            env["DISPLAY"], "-frames:v", "1", "-vf", "scale=48:-1", "-pix_fmt", "gray", "-f", "rawvideo", "-"],
+                           capture_output=True, timeout=12, env=env)
+        return r.stdout
+
+    a = foto()
+    time.sleep(3)
+    b = foto()
+    if not a or not b:
+        return {"erro": "captura falhou"}
+    dif = sum(1 for x, y in zip(a, b) if abs(x - y) > 8)
+    return {"mudou": dif > 0, "pixels_mudaram": dif, "brilho": round(sum(b) / len(b), 1), "preta": sum(b) / len(b) < 4}
+
+
+def motivo_boot(estado):
+    """v7: quando o NUC ligou de novo, descobre como a sessão anterior terminou (journal da sessão anterior)."""
+    bid = ler("/proc/sys/kernel/random/boot_id")
+    if not bid:
+        return estado.get("ultimo_boot")
+    if estado.get("boot_id") == bid:
+        return estado.get("ultimo_boot")
+    d = {"detectado_em": time.strftime("%Y-%m-%d %H:%M:%S")}
+    try:
+        d["ligou_em"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() - float(ler("/proc/uptime", "0").split()[0])))
+    except Exception:
+        pass
+    ant = sh("journalctl -b -1 -n 80 -o short-iso --no-pager 2>/dev/null", timeout=15)
+    if not ant:
+        d["tipo"] = "desconhecido (sem registro da sessao anterior)"
+    else:
+        linhas = [l for l in ant.splitlines() if l and not l.startswith("--")]
+        d["anterior_terminou"] = linhas[-1][:25] if linhas else None
+        if re.search(r"Reached target .*(Reboot|System Reboot)|systemd-shutdown.*reboot|Rebooting", ant, re.I):
+            d["tipo"] = "reinicio pelo sistema"
+        elif re.search(r"Reached target .*(Power-Off|Shutdown|Halt)|systemd-shutdown|Journal stopped|System is powering down", ant, re.I):
+            d["tipo"] = "desligamento pelo sistema"
+        else:
+            d["tipo"] = "abrupto (falta de energia ou travamento)"
+    vlog = ler(os.path.expanduser("~/.exa_vigia/vigia.log"))
+    if d.get("anterior_terminou") and "REINICIANDO O NUC" in vlog:
+        dia = d["anterior_terminou"][:10]
+        if any(l.startswith(dia) and "REINICIANDO O NUC" in l for l in vlog.splitlines()[-20:]):
+            d["tipo"] = "reiniciado pelo vigia (NUC sem rede)"
+    estado["boot_id"] = bid
+    estado["ultimo_boot"] = d
     return d
 
 
@@ -312,27 +377,41 @@ def sistema():
     return d
 
 
-def vigia():
-    """Vigia de rede (exa_vigia_rede.sh): eventos dos últimos 7 dias + estado do cabo."""
+def vigia(estado):
+    """Vigia de rede: diário de conexão (mudanças de estado minuto a minuto) + ações + estado do cabo."""
     d = {"instalado": "exa_vigia_rede.sh" in sh("crontab -l 2>/dev/null")}
+    base = os.path.expanduser("~/.exa_vigia/")
+    d["estado_agora"] = ler(base + "estado") or None
     try:
-        d["falhas_agora"] = int(ler(os.path.expanduser("~/.exa_vigia/falhas"), "0") or 0)
+        d["falhas_agora_min"] = int(ler(base + "falhas", "0") or 0)
     except Exception:
-        d["falhas_agora"] = 0
-    linhas = ler(os.path.expanduser("~/.exa_vigia/vigia.log")).splitlines()
+        d["falhas_agora_min"] = 0
+    acoes = ler(base + "vigia.log").splitlines()
     limite = time.strftime("%Y-%m-%d", time.localtime(time.time() - 7 * 86400))
-    rec = [l for l in linhas if l[:10] >= limite]
+    rec = [l for l in acoes if l[:10] >= limite]
     d["reboots_7d"] = sum("REINICIANDO O NUC" in l for l in rec)
     d["rede_reiniciada_7d"] = sum("reiniciando a rede" in l for l in rec)
-    d["sem_rede_7d"] = sum("SEM REDE" in l for l in rec)
-    d["operadora_fora_7d"] = sum("operadora" in l for l in rec)
-    d["eventos"] = [l[:140] for l in rec[-8:]]
+    d["acoes"] = [l[:140] for l in rec[-6:]]
+    # diário: envia o que ainda não foi enviado (até 60 linhas) + resumo das últimas 24 h
+    diario = ler(base + "diario.log").splitlines()
+    ultimo = estado.get("diario_ultimo", "")
+    novos = [l for l in diario if l > ultimo] if ultimo else diario[-60:]
+    d["diario_novos"] = [l[:120] for l in novos[-60:]]
+    estado["_diario_pendente"] = diario[-1] if diario else ultimo
+    lim24 = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() - 86400))
+    res = {}
+    for l in diario:
+        if l[:19] >= lim24:
+            tipo = (l[20:].split(" ") or ["?"])[0]
+            res[tipo] = res.get(tipo, 0) + 1
+    d["eventos_24h"] = res
     for dev in sorted(os.listdir("/sys/class/net")):
         if dev.startswith(("en", "eth")):
             b = "/sys/class/net/" + dev
             d["cabo"] = {"placa": dev, "sinal": ler(b + "/carrier") == "1", "velocidade_mbps": ler(b + "/speed") or None,
                          "driver": os.path.basename(os.path.realpath(b + "/device/driver")) if os.path.exists(b + "/device/driver") else None,
-                         "erros_rx": ler(b + "/statistics/rx_errors") or None}
+                         "erros_rx": ler(b + "/statistics/rx_errors") or None,
+                         "quedas_link": ler(b + "/carrier_changes") or None}
             break
     return d
 
@@ -360,7 +439,14 @@ def enviar(payload, env):
     )
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
-            return 200 <= r.status < 300
+            if not 200 <= r.status < 300:
+                return False
+            corpo = r.read(300).decode("utf-8", "replace").strip().strip('"')
+            # v7: o servidor (telas_registrar_saude v2) diz se gravou; versão antiga responde vazio = gravou
+            if corpo.startswith("ignorado"):
+                print("servidor recusou: %s" % corpo)
+                return False
+            return True
     except Exception as e:
         print("envio falhou: %s" % e)
         return False
@@ -387,7 +473,9 @@ def main():
                "coletado_em": int(time.time()), "temp_c": t, "temp_fonte": fonte}
     inicio = time.time()
     tempos = {}
-    for nome, fn in (("sistema", sistema), ("cpu", cpu), ("rede", rede), ("monitor", monitor), ("player", player), ("vigia", vigia)):
+    for nome, fn in (("sistema", sistema), ("cpu", cpu), ("rede", rede), ("monitor", monitor), ("player", player),
+                     ("vigia", lambda: vigia(estado)), ("boot", lambda: motivo_boot(estado)),
+                     ("tela", lambda: tela((payload.get("monitor") or {}).get("resolucao")))):
         t0 = time.time()
         try:
             payload[nome] = fn()
@@ -397,11 +485,13 @@ def main():
     # v6.1: o teste de velocidade só roda se ainda sobra tempo (o envio é o que importa)
     if time.time() - inicio < 45:
         t0 = time.time()
-        payload["download_mbps"] = velocidade_download(estado)
+        payload["velocidade"] = velocidade_download(estado)
         tempos["velocidade"] = round(time.time() - t0, 1)
     else:
-        payload["download_mbps"] = estado.get("download_mbps")
+        payload["velocidade"] = estado.get("velocidade")
         tempos["velocidade"] = "pulado"
+    v = payload.get("velocidade") or {}
+    payload["download_mbps"] = next((v[k]["mbps"] for k in ("s3", "cloudflare") if isinstance(v.get(k), dict) and "mbps" in v[k]), None)
     payload["tempos_s"] = tempos
     try:  # v10: o que o próprio player garantiu (padrão EXA)
         pd = json.loads(ler(os.path.expanduser("~/.exa_padrao.json"), "{}"))
@@ -409,6 +499,9 @@ def main():
     except Exception:
         pass
     ok = enviar(payload, env_do_player())
+    if ok and estado.get("_diario_pendente"):
+        estado["diario_ultimo"] = estado["_diario_pendente"]  # só marca como enviado se o envio deu certo
+    estado.pop("_diario_pendente", None)
     try:
         with open(ESTADO, "w") as f:
             json.dump(estado, f)

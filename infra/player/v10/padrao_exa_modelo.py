@@ -18,7 +18,7 @@ import subprocess
 import threading
 import time
 
-VERSAO = "padrao-v3"
+VERSAO = "padrao-v4"
 APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOME = os.path.expanduser("~")
 ESTADO = os.path.join(HOME, ".exa_padrao.json")
@@ -66,7 +66,7 @@ def _linhas_cron():
     vigia = os.path.join(APP, "exa_vigia_rede.sh")
     return {
         "exa_saude.py": "*/15 * * * * cd %s && flock -n /tmp/exa_saude.lock timeout 150 nice -n 19 ionice -c3 python3 %s >/tmp/exa_saude.log 2>&1" % (APP, coletor),
-        "exa_vigia_rede.sh": "*/5 * * * * flock -n /tmp/exa_vigia.lock timeout 120 bash %s >/dev/null 2>&1" % vigia,
+        "exa_vigia_rede.sh": "* * * * * flock -n /tmp/exa_vigia.lock timeout 50 bash %s >/dev/null 2>&1" % vigia,
     }
 
 
