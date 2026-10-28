@@ -183,3 +183,6 @@
 .login-novo button[type=submit]{height:54px;border-radius:999px;background:#EA251D;font-weight:800;font-size:16px}
 .login-novo button[type=submit]:hover{background:#9E1014}
 .login-novo a{color:#0B0B0D}
+/* vídeos reais dos clientes são horizontais: mostra inteiro, sem cortar */
+.exa-site .track.reais .cc .fr{aspect-ratio:16/9}
+.exa-site .track.reais .cc video{object-fit:contain;background:#0B0B0D}

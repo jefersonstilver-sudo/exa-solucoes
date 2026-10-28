@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
       const v = doPedido.map((x) => vPorId.get(x.video_id)).find((x) => x?.url && x.orientacao !== 'vertical');
       const u = uPorId.get(p.client_id);
       const nome = (u?.empresa_nome || '').trim();
-      if (!v || !nome || /exa|indexa|teste/i.test(nome)) continue;
+      // sem nome de fantasia (razão social de MEI começa com o CNPJ) não aparece
+      if (!v || !nome || /exa|indexa|teste/i.test(nome) || /^\d/.test(nome)) continue;
       visto.add(p.client_id);
       out.push({ nome, segmento: u?.empresa_segmento || null, video: v.url });
       if (out.length >= 16) break;

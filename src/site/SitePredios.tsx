@@ -107,7 +107,7 @@ export default function SitePredios() {
 
   const planoLabel = PLANOS.find((x) => x.m === plano)?.label || '';
   const msgSofia = naLista.length
-    ? `Oi Sofia! Montei minha lista no site da EXA e quero anunciar nestes ${naLista.length} ${naLista.length > 1 ? 'prédios' : 'prédio'}:\n${naLista.map((p) => `• ${p.nome} (${reais(p.preco_base || 0)}/mês)`).join('\n')}\n\nPlano: ${planoLabel}. Valor que apareceu no site: ${reais(preco.pricePerMonth)}/mês${plano > 1 ? ` (total ${reais(preco.totalPrice)})` : ''}.${meuLocal && endereco ? `\nMeu negócio fica em: ${endereco}.` : ''}\nPode me ajudar a fechar?`
+    ? `Oi Sofia! Montei minha lista no site da EXA e quero anunciar nestes ${naLista.length} ${naLista.length > 1 ? 'prédios' : 'prédio'}:\n${naLista.map((p) => `• ${p.nome.trim()} (${reais(p.preco_base || 0)}/mês)`).join('\n')}\n\nPlano: ${planoLabel}. Valor que apareceu no site: ${reais(preco.pricePerMonth)}/mês${plano > 1 ? ` (total ${reais(preco.totalPrice)})` : ''}.${meuLocal && endereco ? `\nMeu negócio fica em: ${endereco}.` : ''}\nPode me ajudar a fechar?`
     : 'Oi Sofia, vim pela página de prédios do site e quero anunciar.';
 
   return (
@@ -129,7 +129,7 @@ export default function SitePredios() {
           </div>
           <form onSubmit={buscarEndereco} className="busca-end" role="search">
             <label htmlFor="end" className="sr-only">Endereço do seu negócio</label>
-            <input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço do seu negócio, para ver os prédios mais perto" autoComplete="street-address" />
+            <input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço do seu negócio" autoComplete="street-address" />
             <button type="submit" className="b br" disabled={buscandoEnd}>{buscandoEnd ? 'Buscando…' : 'Ver os mais perto'}</button>
           </form>
           {erroEnd && <p style={{ margin: 0, color: '#FFB3AE', fontSize: 14 }}>{erroEnd}</p>}

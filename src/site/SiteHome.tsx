@@ -42,6 +42,21 @@ const FAQ = () => [
 
 type ClienteReal = { nome: string; segmento: string | null; video: string };
 
+// segmentos gravados como código no cadastro → texto para o site
+const SEGMENTOS: Record<string, string> = {
+  pest_control: 'Controle de pragas', restaurant: 'Restaurante', food: 'Alimentação', bar: 'Bar e choperia', health: 'Saúde',
+  dentist: 'Odontologia', clinic: 'Clínica', beauty: 'Beleza', aesthetics: 'Estética', fashion: 'Moda', clothing: 'Moda',
+  education: 'Educação', school: 'Educação', real_estate: 'Imóveis', optics: 'Ótica', gym: 'Academia', fitness: 'Academia',
+  pet: 'Pet shop', automotive: 'Automotivo', services: 'Serviços', retail: 'Comércio', tourism: 'Turismo', hotel: 'Hotelaria',
+  pharmacy: 'Farmácia', legal: 'Advocacia', finance: 'Finanças', technology: 'Tecnologia', construction: 'Construção',
+};
+const segTexto = (s: string | null) => {
+  if (!s) return 'No ar agora';
+  const k = s.trim().toLowerCase();
+  if (SEGMENTOS[k]) return SEGMENTOS[k];
+  return /^[a-z_]+$/.test(k) ? 'No ar agora' : s.trim();
+};
+
 /** Vídeos reais que estão no ar nos pedidos ativos (função site-clientes-videos). */
 function useClientesReais() {
   const [lista, setLista] = useState<ClienteReal[] | null>(null);
@@ -69,7 +84,7 @@ export default function SiteHome() {
   const reais = useClientesReais();
   // enquanto carrega (ou se a função falhar) mostra os anúncios gravados das telas
   const clientes = reais && reais.length
-    ? reais.map((c) => ({ nome: c.nome, seg: c.segmento || 'No ar agora', src: c.video, poster: undefined as string | undefined }))
+    ? reais.map((c) => ({ nome: c.nome, seg: segTexto(c.segmento), src: c.video, poster: undefined as string | undefined }))
     : CLIENTES.map((c) => ({ nome: c.nome, seg: c.seg, src: `/site/cliente-${c.arq}.mp4`, poster: `/site/cliente-${c.arq}.jpg` }));
 
   useEffect(() => {
@@ -146,7 +161,7 @@ export default function SiteHome() {
               <button className="arr" type="button" onClick={() => mover(1)} aria-label="Próximos clientes"><svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></button>
             </div>
           </div>
-          <div className="track" ref={trilho} role="list" aria-label="Clientes da EXA">
+          <div className={`track${reais && reais.length ? ' reais' : ''}`} ref={trilho} role="list" aria-label="Clientes da EXA">
             {clientes.map((c) => (
               <figure className="cc" role="listitem" key={c.nome}>
                 <div className="fr"><VideoLeve src={c.src} poster={c.poster} preload="metadata" aria-label={`Anúncio ${c.nome}`} /></div>

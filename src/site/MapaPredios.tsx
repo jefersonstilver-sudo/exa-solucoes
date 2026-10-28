@@ -65,6 +65,9 @@ export default function MapaPredios({ predios, naLista, selecionado, onAbrir, me
       el.style.cssText = `position:absolute;transform:translate(-50%,-100%);white-space:nowrap;min-width:0;min-height:0;padding:6px 10px;border-radius:999px;border:2px solid #fff;font:800 13px Manrope,system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 16px -6px rgba(0,0,0,.45);background:${on ? '#0B0B0D' : '#EA251D'};color:#fff;${sel ? 'transform:translate(-50%,-100%) scale(1.15);z-index:2;' : ''}`;
       el.title = p.nome;
       el.addEventListener('click', (e) => { e.stopPropagation(); onAbrir(p); });
+      // na região central as etiquetas se encostam: a que está sob o mouse vem para frente
+      el.addEventListener('mouseenter', () => { el.style.zIndex = '5'; });
+      el.addEventListener('mouseleave', () => { el.style.zIndex = sel ? '2' : ''; });
       const ov = new g.OverlayView();
       ov.onAdd = function () { this.getPanes()?.overlayMouseTarget.appendChild(el); };
       ov.draw = function () {
