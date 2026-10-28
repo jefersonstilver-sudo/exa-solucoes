@@ -69,7 +69,7 @@ export function createVideoSubmittedEmail(data: VideoSubmittedEmailData): string
     </p>
     
     <div class="cta-container">
-      <a href="https://examidia.com.br/painel" class="cta-button">📊 Acompanhar Pedido</a>
+      <a href="https://examidia.com.br/anunciante/pedidos" class="cta-button">📊 Acompanhar Pedido</a>
     </div>
   `;
 
@@ -168,7 +168,7 @@ export function createVideoApprovedEmail(data: VideoApprovedEmailData): string {
     </div>
     
     <div class="cta-container">
-      <a href="https://examidia.com.br/painel" class="cta-button">📊 Ver Meu Painel</a>
+      <a href="https://examidia.com.br/anunciante/pedidos" class="cta-button">📊 Ver Meu Painel</a>
     </div>
   `;
 
@@ -253,7 +253,7 @@ export function createVideoRejectedEmail(data: VideoRejectedEmailData): string {
     </div>
     
     <div class="cta-container">
-      <a href="https://examidia.com.br/painel" class="cta-button">📤 Enviar Novo Vídeo</a>
+      <a href="https://examidia.com.br/anunciante/pedidos" class="cta-button">📤 Enviar Novo Vídeo</a>
     </div>
   `;
 

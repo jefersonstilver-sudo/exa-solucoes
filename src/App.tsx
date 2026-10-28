@@ -1,5 +1,11 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+
+// Links antigos /predio/:id abrem a página comercial do prédio
+const PredioLegadoRedirect = () => {
+  const { buildingId } = useParams();
+  return <Navigate to={`/painel-comercial/${buildingId}`} replace />;
+};
 
 // Redireciona para uma página estática em public/ (bypass do SPA router)
 function StaticRedirect({ to }: { to: string }) {
@@ -58,7 +64,6 @@ const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const PainelKiosk = lazy(() => import('./pages/PainelKiosk'));
 
 const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
-const TestLinks = lazy(() => import('./pages/TestLinks'));
 const AIReportsPage = lazy(() => import('./pages/admin/monitoramento-ia/AIReportsPage'));
 const AdvertiserInvoices = lazy(() => import('./pages/advertiser/AdvertiserInvoices'));
 const ParanaNutriTalentos = lazy(() => import('./pages/ParanaNutriTalentos'));
@@ -104,7 +109,7 @@ const CaseSucessoAcademia = lazy(() => import('./pages/blog/CaseSucessoAcademia'
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const ValidateOrder = lazy(() => import('./pages/public/ValidateOrder'));
-const PreviewPedido = lazy(() => import('./pages/public/PreviewPedido'));
+const EsqueciSenha = lazy(() => import('./pages/public/EsqueciSenha'));
 
 // Lazy load das páginas da área do anunciante
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
@@ -291,12 +296,11 @@ const AppContent = () => {
           
           {/* ROTAS PÚBLICAS DE EXIBIÇÃO - Novo padrão com nome+código */}
 
-          {/* Prévia (layout novo do pedido) - sem autenticação, dados fictícios */}
-          <Route path="/preview/pedido" element={
-            <Suspense fallback={<GlobalLoadingPage message="Carregando prévia..." />}>
-              <PreviewPedido />
-            </Suspense>
-          } />
+          {/* Links antigos de e-mails e do admin (28/10/2026) */}
+          <Route path="/painel" element={<Navigate to="/anunciante/pedidos" replace />} />
+          <Route path="/predio/:buildingId" element={<PredioLegadoRedirect />} />
+          <Route path="/esqueci-senha" element={<Suspense fallback={<GlobalLoadingPage />}><EsqueciSenha /></Suspense>} />
+          <Route path="/preview/pedido" element={<Navigate to="/" replace />} />
 
           {/* Relatório Público VAR - Sem autenticação */}
           <Route path="/r/:reportId" element={
@@ -528,6 +532,7 @@ const AppContent = () => {
             </ErrorBoundary>
           }>
             <Route index element={<Navigate to="pedidos" replace />} />
+            <Route path="meus-pedidos" element={<Navigate to="/anunciante/pedidos" replace />} />
             <Route path="pedidos" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando pedidos..." />}>
                 <AdvertiserOrders />
@@ -607,8 +612,6 @@ const AppContent = () => {
             </Suspense>
           } />
 
-          {/* Página de teste de links */}
-          <Route path="/test-links" element={<Suspense fallback={<GlobalLoadingPage />}><TestLinks /></Suspense>} />
 
           {/* Redirects para rotas antigas do Monitoramento IA - agora integrado no AdminRoutes */}
           <Route path="/admin/monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />

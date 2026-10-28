@@ -116,7 +116,7 @@ serve(async (req) => {
           <!-- CTA Button -->
           <tr>
             <td style="padding: 0 32px 32px 32px;">
-              <a href="${clicksignUrl || `https://indexamidia.com.br/contrato/${contratoId}`}" 
+              <a href="${clicksignUrl || `https://examidia.com.br/anunciante/pedidos`}" 
                  style="display: block; background-color: #9C1E1E; color: #ffffff; text-align: center; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-size: 16px; font-weight: 600;">
                 Assinar Contrato
               </a>

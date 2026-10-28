@@ -116,7 +116,7 @@ serve(async (req) => {
           const formattedPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
 
           // Construir link da proposta - usar domínio Lovable
-          const proposalLink = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/propostacomercial/${proposal.id}`;
+          const proposalLink = `https://examidia.com.br/propostacomercial/${proposal.id}`;
 
           // Mensagem WhatsApp - Template Curto e Profissional
           const message = `🎁 *PRESENTE EXCLUSIVO — EXA MÍDIA*

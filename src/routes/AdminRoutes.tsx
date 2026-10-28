@@ -116,6 +116,19 @@ const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsP
 
 // Financeiro
 const CategoriasFinanceirasPage = lazy(() => import('@/pages/admin/financeiro/CategoriasFinanceirasPage'));
+const FinanceiroDashboard = lazy(() => import('@/pages/admin/financeiro/DashboardFinanceiroV2'));
+const ContasPagarPage = lazy(() => import('@/pages/admin/financeiro/ContasPagarPage'));
+const ContasReceberPage = lazy(() => import('@/pages/admin/financeiro/ContasReceberPage'));
+const LancamentosPage = lazy(() => import('@/pages/admin/financeiro/LancamentosPage'));
+const ExtratoAsaasPage = lazy(() => import('@/pages/admin/financeiro/ExtratoAsaasPage'));
+const FluxoCaixaPage = lazy(() => import('@/pages/admin/financeiro/FluxoCaixaPage'));
+const DREPage = lazy(() => import('@/pages/admin/financeiro/DREPage'));
+const InadimplenciaPage = lazy(() => import('@/pages/admin/financeiro/InadimplenciaPage'));
+const InvestimentosPage = lazy(() => import('@/pages/admin/financeiro/InvestimentosPage'));
+const AportesPage = lazy(() => import('@/pages/admin/financeiro/AportesPage'));
+const AlertasFinanceirosPage = lazy(() => import('@/pages/admin/financeiro/AlertasFinanceirosPage'));
+const RelatoriosFinanceirosPage = lazy(() => import('@/pages/admin/financeiro/RelatoriosFinanceirosPage'));
+const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
 
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
@@ -505,6 +518,97 @@ const AdminRoutes = () => {
       } />
       
       {/* ============ FINANCEIRO ============ */}
+      <Route path="financeiro" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <FinanceiroDashboard />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/contas-pagar" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <ContasPagarPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/contas-receber" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <ContasReceberPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/lancamentos" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <LancamentosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/extrato" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <ExtratoAsaasPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/fluxo-caixa" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <FluxoCaixaPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/dre" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <DREPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/inadimplencia" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <InadimplenciaPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/investimentos" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <InvestimentosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/aportes" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <AportesPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/alertas" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <AlertasFinanceirosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/relatorios" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Financeiro..." />}>
+            <RelatoriosFinanceirosPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="vendas" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.pedidos}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando Vendas..." />}>
+            <VendasPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
       <Route path="financeiro/categorias" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Categorias..." />}>

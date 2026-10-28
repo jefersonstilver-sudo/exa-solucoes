@@ -83,7 +83,7 @@ serve(async (req) => {
     ` : `
       <!-- Access Button for existing users -->
       <div style="text-align: center; margin: 36px 0;">
-        <a href="https://examidia.com.br/anunciante/meus-pedidos" 
+        <a href="https://examidia.com.br/anunciante/pedidos" 
            style="display: inline-block; background: linear-gradient(135deg, #8B1A1A 0%, #A52020 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 16px rgba(139, 26, 26, 0.3);">
           Acessar Minha Conta →
         </a>

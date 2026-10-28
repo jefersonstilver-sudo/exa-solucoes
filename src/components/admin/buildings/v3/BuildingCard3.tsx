@@ -181,7 +181,7 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                     className="text-[9px] bg-blue-50 text-blue-600 border-blue-200 px-1 py-0 h-4 cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
-                      window.open(`/predio/${building.id}`, '_blank');
+                      window.open(`/painel-comercial/${building.id}`, '_blank');
                     }}
                     title="Abrir página pública do prédio"
                   >
@@ -295,7 +295,7 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                     <List className="h-3.5 w-3.5 mr-2" />
                     Ver playlist
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.open(`/predio/${building.id}`, '_blank')}>
+                  <DropdownMenuItem onClick={() => window.open(`/painel-comercial/${building.id}`, '_blank')}>
                     <Link2 className="h-3.5 w-3.5 mr-2" />
                     Link Público
                   </DropdownMenuItem>

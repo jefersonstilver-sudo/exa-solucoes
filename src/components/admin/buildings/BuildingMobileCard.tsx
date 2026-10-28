@@ -56,7 +56,7 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
     if (type === 'panel') {
       url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
     } else if (type === 'commercial') {
-      url = generatePublicUrl(`/predio/${building.id}`);
+      url = generatePublicUrl(`/painel-comercial/${building.id}`);
     } else if (type === 'embed') {
       url = `<iframe src="${generatePublicUrl(generatePanelPath(building.nome, buildingCode))}" width="100%" height="600" frameborder="0"></iframe>`;
     }
