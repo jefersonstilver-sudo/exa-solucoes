@@ -642,3 +642,6 @@ verify_jwt = false
 
 [functions.exa2-saude-frota]
 verify_jwt = false
+
+[functions.site-clientes-videos]
+verify_jwt = false

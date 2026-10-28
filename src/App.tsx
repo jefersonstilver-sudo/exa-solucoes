@@ -52,10 +52,6 @@ const SiteSindico = lazy(() => import('./site/SiteSindico'));
 const SiteNaoEncontrado = lazy(() => import('./site/SiteNaoEncontrado'));
 
 // Lazy load para todas as outras páginas (reduz carga inicial no proxy)
-const BuildingStore = lazy(() => import('./pages/BuildingStore'));
-const PlanSelection = lazy(() => import('./pages/PlanSelection'));
-const CheckoutCoupon = lazy(() => import('./pages/CheckoutCoupon'));
-const CheckoutSummary = lazy(() => import('./pages/CheckoutSummary'));
 const CheckoutFinish = lazy(() => import('./pages/CheckoutFinish'));
 const Payment = lazy(() => import('./pages/Payment'));
 const PixPayment = lazy(() => import('./pages/PixPayment'));
@@ -379,13 +375,13 @@ const AppContent = () => {
           
           {/* CORREÇÃO: Rotas da loja unificadas */}
           <Route path="/loja" element={<Suspense fallback={null}><SitePredios /></Suspense>} />
-          <Route path="/loja-antiga" element={<Suspense fallback={<GlobalLoadingPage message="Carregando loja..." />}><BuildingStore /></Suspense>} />
           <Route path="/paineis-digitais/loja" element={<Navigate to="/loja" replace />} />
           <Route path="/building-store" element={<Navigate to="/loja" replace />} />
           
-          <Route path="/plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
-          <Route path="/planos" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
-          <Route path="/selecionar-plano" element={<Suspense fallback={<GlobalLoadingPage />}><PlanSelection /></Suspense>} />
+          {/* Por enquanto não se compra pelo site: a lista vai para a Sofia no WhatsApp. As entradas da compra voltam para /loja. */}
+          {['/loja-antiga', '/plano', '/planos', '/selecionar-plano', '/checkout', '/checkout/cupom', '/checkout/resumo'].map((p) => (
+            <Route key={p} path={p} element={<Navigate to="/loja" replace />} />
+          ))}
           
           {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
           <Route path="/confirmacao" element={<Suspense fallback={<GlobalLoadingPage />}><Confirmacao /></Suspense>} />
@@ -397,9 +393,6 @@ const AppContent = () => {
           } />
           
           {/* CHECKOUT FLOW - Redirect antigo checkout para novo fluxo */}
-          <Route path="/checkout" element={<Navigate to="/selecionar-plano" replace />} />
-          <Route path="/checkout/cupom" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutCoupon /></Suspense>} />
-          <Route path="/checkout/resumo" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutSummary /></Suspense>} />
           <Route path="/checkout/fidelidade" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando contrato..." />}>
               {React.createElement(lazy(() => import('./pages/CheckoutFidelidade')))}

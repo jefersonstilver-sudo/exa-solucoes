@@ -66,7 +66,7 @@ export const useSimpleCart = () => {
     setTimeout(() => setIsAnimating(false), 600);
   }, []);
 
-  const addToCart = useCallback((panel: Panel, duration: number = 30) => {
+  const addToCart = useCallback((panel: Panel, duration: number = 30, opcoes?: { silencioso?: boolean }) => {
     setCartItems(prev => {
       const existingIndex = prev.findIndex(item => item.panel?.id === panel.id);
       
@@ -96,13 +96,13 @@ export const useSimpleCart = () => {
     // Track cart add event
     trackCartAdd(panel.id, panel.buildings?.nome || 'Painel', panel.buildings?.preco_base || 200);
     
-    toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
+    if (!opcoes?.silencioso) toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
       duration: 2000,
       position: 'top-center'
     });
   }, [triggerAnimation, trackCartAdd]);
 
-  const removeFromCart = useCallback((panelId: string) => {
+  const removeFromCart = useCallback((panelId: string, opcoes?: { silencioso?: boolean }) => {
     const item = cartItems.find(item => item.panel?.id === panelId);
     setCartItems(prev => prev.filter(item => item.panel?.id !== panelId));
     
@@ -111,7 +111,7 @@ export const useSimpleCart = () => {
       trackCartRemove(item.panel.id);
     }
     
-    toast.success(`${item?.panel.buildings?.nome || 'Painel'} removido do carrinho`);
+    if (!opcoes?.silencioso) toast.success(`${item?.panel.buildings?.nome || 'Painel'} removido do carrinho`);
   }, [cartItems, trackCartRemove]);
 
   const clearCart = useCallback(() => {

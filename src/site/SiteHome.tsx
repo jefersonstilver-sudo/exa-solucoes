@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CabecalhoSite, RodapeSite, BarraCelular, VideoLeve, IconeWhats, waSofia, useFonteSite, useTituloPagina } from './comum';
 import { usePrediosPublicos } from './usePrediosPublicos';
+import { supabase } from '@/integrations/supabase/client';
 
 /** Home do site público — Opção 2 aprovada (28/10/2026). Leve: só CSS, vídeos tocam quando aparecem. */
 
@@ -31,18 +32,33 @@ const TURNOS = [
   { label: 'Noite', hora: '19:30', text: 'Peça agora pelo QR.', bg: '#EA251D' },
 ];
 
-const FAQ = (predios: number) => [
-  { q: 'Quantos prédios vocês têm?', a: `${predios || 'Mais de 20'} prédios residenciais em Foz do Iguaçu. Você escolhe em quais aparecer e vê o preço de cada um na página de prédios.` },
+const FAQ = () => [
+  { q: 'Quantos prédios vocês têm?', a: 'A rede está em prédios residenciais de Foz do Iguaçu e cresce todo mês. Você escolhe em quais aparecer e vê o preço de cada um na página de prédios.' },
   { q: 'Não tenho fotos nem vídeos. E agora?', a: 'A EXA cria o vídeo com você. Basta a sua logo e o que você quer destacar. São até 5 vídeos novos por mês.' },
-  { q: 'Quanto custa?', a: 'Cada prédio tem o seu valor mensal, que aparece na página de prédios. Planos de 3, 6 e 12 meses têm desconto. A Sofia também te passa o valor na hora, com a oferta do mês.' },
+  { q: 'Quanto custa?', a: 'Cada prédio tem o seu valor mensal, que aparece na página de prédios. Planos de 3, 6 e 12 meses têm desconto. Você monta a sua lista no site e envia para a Sofia no WhatsApp, que fecha com você.' },
   { q: 'O vídeo tem som?', a: 'Não. A tela do elevador é muda, então o vídeo é feito para funcionar só com imagem e texto grande.' },
   { q: 'Como sei que o meu anúncio está passando?', a: 'Na sua área de anunciante você vê a tela de cada prédio ao vivo.' },
 ];
 
+type ClienteReal = { nome: string; segmento: string | null; video: string };
+
+/** Vídeos reais que estão no ar nos pedidos ativos (função site-clientes-videos). */
+function useClientesReais() {
+  const [lista, setLista] = useState<ClienteReal[] | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    supabase.functions.invoke('site-clientes-videos', { body: {} })
+      .then(({ data }) => { if (vivo) setLista(Array.isArray(data?.clientes) ? data.clientes : []); })
+      .catch(() => { if (vivo) setLista([]); });
+    return () => { vivo = false; };
+  }, []);
+  return lista;
+}
+
 export default function SiteHome() {
   useFonteSite();
   useTituloPagina('EXA Mídia · Sua marca no elevador dos prédios de Foz do Iguaçu', 'Telas nos elevadores de prédios residenciais de Foz do Iguaçu. Escolha os prédios, veja o preço e a Sofia cria o seu vídeo.');
-  const { predios, totalPredios, totalTelas } = usePrediosPublicos();
+  const { predios } = usePrediosPublicos();
 
   const agora = new Date();
   const [cap, setCap] = useState(0);
@@ -50,6 +66,11 @@ export default function SiteHome() {
   const [dia, setDia] = useState(agora.getDay());
   const [turno, setTurno] = useState(agora.getHours() < 12 ? 0 : agora.getHours() < 18 ? 1 : 2);
   const trilho = useRef<HTMLDivElement>(null);
+  const reais = useClientesReais();
+  // enquanto carrega (ou se a função falhar) mostra os anúncios gravados das telas
+  const clientes = reais && reais.length
+    ? reais.map((c) => ({ nome: c.nome, seg: c.segmento || 'No ar agora', src: c.video, poster: undefined as string | undefined }))
+    : CLIENTES.map((c) => ({ nome: c.nome, seg: c.seg, src: `/site/cliente-${c.arq}.mp4`, poster: `/site/cliente-${c.arq}.jpg` }));
 
   useEffect(() => {
     let reduz = false;
@@ -82,7 +103,7 @@ export default function SiteHome() {
     .filter((p) => p.x > 2 && p.x < 98 && p.y > 2 && p.y < 98), [predios]);
 
   const tt = TURNOS[turno];
-  const resumo = totalPredios ? `${totalPredios} prédios · ${totalTelas} telas · Foz do Iguaçu` : 'Prédios residenciais de Foz do Iguaçu';
+  const resumo = 'Prédios residenciais de Foz do Iguaçu';
 
   return (
     <div className="exa-site com-barra">
@@ -94,7 +115,7 @@ export default function SiteHome() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28, minWidth: 0 }}>
             <h1 className="t h1">Sua marca no elevador de quem compra de você. Todo dia.</h1>
             <p className="sub" style={{ color: '#C9C7C2', fontSize: 21 }}>
-              Telas em {totalPredios || 'mais de 20'} prédios residenciais de Foz do Iguaçu. Você escolhe os prédios, vê o preço e a Sofia cria o seu vídeo. Ele entra no ar no mesmo dia.
+              Telas nos elevadores de prédios residenciais de Foz do Iguaçu. Você escolhe os prédios, vê o preço e a Sofia cria o seu vídeo. Ele entra no ar no mesmo dia.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 26px', alignItems: 'center' }}>
               <Link className="b br" to="/loja">Ver prédios e preços</Link>
@@ -118,7 +139,7 @@ export default function SiteHome() {
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <h2 className="t h2" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>Alguns dos nossos clientes</h2>
-              <p style={{ margin: 0, fontSize: 16, color: '#77756F' }}>Anúncios reais, gravados nas telas da EXA.</p>
+              <p style={{ margin: 0, fontSize: 16, color: '#77756F' }}>Os anúncios que estão passando agora nas telas da EXA.</p>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="arr" type="button" onClick={() => mover(-1)} aria-label="Clientes anteriores"><svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
@@ -126,9 +147,9 @@ export default function SiteHome() {
             </div>
           </div>
           <div className="track" ref={trilho} role="list" aria-label="Clientes da EXA">
-            {CLIENTES.map((c) => (
+            {clientes.map((c) => (
               <figure className="cc" role="listitem" key={c.nome}>
-                <div className="fr"><VideoLeve src={`/site/cliente-${c.arq}.mp4`} poster={`/site/cliente-${c.arq}.jpg`} aria-label={`Anúncio ${c.nome}`} /></div>
+                <div className="fr"><VideoLeve src={c.src} poster={c.poster} preload="metadata" aria-label={`Anúncio ${c.nome}`} /></div>
                 <figcaption style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
                   <strong style={{ fontSize: 17, fontWeight: 800 }}>{c.nome}</strong>
                   <span style={{ fontSize: 14, color: '#77756F' }}>{c.seg}</span>
@@ -282,7 +303,7 @@ export default function SiteHome() {
       <section className="sec">
         <div className="w two">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
-            <h2 className="t h2">{totalPredios || 'Mais de 20'} prédios. Escolha os mais perto de você.</h2>
+            <h2 className="t h2">Escolha os prédios mais perto de você.</h2>
             <p className="sub">Do Centro ao Jardim Central, da Vila Yolanda às Três Fronteiras. Veja cada prédio no mapa, com quantas telas tem e o preço por mês.</p>
             <div><Link className="b br" to="/loja">Ver prédios e preços</Link></div>
           </div>
@@ -307,7 +328,7 @@ export default function SiteHome() {
       <section className="sec" style={{ background: '#0B0B0D', color: '#fff', textAlign: 'center' }}>
         <div className="w" style={{ display: 'flex', flexDirection: 'column', gap: 22, alignItems: 'center', maxWidth: 820 }}>
           <h2 className="t h2">Quanto custa?</h2>
-          <p style={{ margin: 0, fontSize: 21, color: '#C9C7C2', maxWidth: '30em' }}>Cada prédio tem o seu preço por mês, com o vídeo incluso. Planos de 3, 6 e 12 meses saem mais baratos.</p>
+          <p style={{ margin: 0, fontSize: 21, color: '#C9C7C2', maxWidth: '30em' }}>Cada prédio tem o seu preço por mês, com o vídeo incluso. Planos de 3, 6 e 12 meses saem mais baratos. Você vê os preços aqui e fecha com a Sofia no WhatsApp.</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
             <Link className="b br" to="/loja">Ver o preço de cada prédio</Link>
             <a className="b bw" href={waSofia('Oi Sofia, quanto custa anunciar?')}>Perguntar à Sofia</a>
@@ -331,7 +352,7 @@ export default function SiteHome() {
         <div className="w faq">
           <h2 className="t h2" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>Dúvidas de quem vai anunciar</h2>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {FAQ(totalPredios).map((f, i, arr) => (
+            {FAQ().map((f, i, arr) => (
               <details key={f.q} open={i === 0} style={{ borderTop: '1px solid #E4E2DD', borderBottom: i === arr.length - 1 ? '1px solid #E4E2DD' : undefined, paddingBlock: 22 }}>
                 <summary>{f.q}</summary>
                 <p style={{ margin: '12px 0 0', color: '#55545A' }}>{f.a}</p>

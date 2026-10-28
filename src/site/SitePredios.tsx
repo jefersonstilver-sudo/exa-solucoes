@@ -1,242 +1,349 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { CabecalhoSite, RodapeSite, BarraCelular, VideoLeve, IconeWhats, waSofia, useFonteSite, useTituloPagina } from './comum';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { CabecalhoSite, RodapeSite, VideoLeve, IconeWhats, waSofia, useFonteSite, useTituloPagina } from './comum';
 import { usePrediosPublicos } from './usePrediosPublicos';
 import { useCart } from '@/contexts/SimpleCartContext';
 import { adaptBuildingToPanel } from '@/services/buildingToPanelAdapter';
 import { getImageUrl, type BuildingStore } from '@/services/buildingStoreService';
 import { calculateBuildingsPrice, type PlanDuration } from '@/utils/buildingPriceUtils';
+import loadGoogleMaps from '@/utils/googleMapsLoader';
 
-/** Prédios e preços (rota /loja) — Opção 2 com preço por prédio e a lista ligada ao checkout de sempre. */
+const MapaPredios = lazy(() => import('./MapaPredios'));
 
-const PLANOS: { m: PlanDuration; label: string; nota: string }[] = [
-  { m: 1, label: 'Mensal', nota: 'sem fidelidade' },
-  { m: 3, label: 'Trimestral', nota: 'com desconto' },
-  { m: 6, label: 'Semestral', nota: 'com desconto' },
-  { m: 12, label: 'Anual', nota: 'maior desconto' },
+/**
+ * Prédios e preços (rota /loja). Mistura do layout antigo (lista + mapa do Google lado a lado, busca pelo endereço)
+ * com o visual novo. NÃO vende pelo site: a lista vai para a Sofia no WhatsApp, que fecha o atendimento.
+ */
+
+const PLANOS: { m: PlanDuration; label: string }[] = [
+  { m: 1, label: 'Mensal' }, { m: 3, label: '3 meses' }, { m: 6, label: '6 meses' }, { m: 12, label: '12 meses' },
 ];
-type Ordem = 'publico' | 'preco' | 'turistas' | 'az';
-
-const reais = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: n % 1 ? 2 : 0 });
+type Ordem = 'perto' | 'moradores' | 'preco' | 'turistas' | 'az';
+const reais = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const num = (n: number) => Math.round(n).toLocaleString('pt-BR');
+const kmEntre = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const R = 6371, dLat = ((b.lat - a.lat) * Math.PI) / 180, dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+};
+const fmtKm = (k: number) => (k < 1 ? `${Math.round(k * 1000)} m` : `${k.toFixed(1).replace('.', ',')} km`);
+const telas = (p: BuildingStore) => p.quantidade_telas || 1;
 
 export default function SitePredios() {
   useFonteSite();
-  useTituloPagina('Prédios e preços · EXA Mídia', 'Escolha os prédios de Foz do Iguaçu onde a sua marca vai aparecer. Veja telas, público e o preço por mês de cada um.');
-  const navigate = useNavigate();
-  const { predios, carregando, totalPredios, totalTelas } = usePrediosPublicos();
+  useTituloPagina('Prédios e preços · EXA Mídia', 'Veja os prédios de Foz do Iguaçu com tela EXA no elevador, no mapa, com o preço por mês de cada um. Monte a sua lista e a Sofia fecha com você pelo WhatsApp.');
+  const { predios, carregando } = usePrediosPublicos();
   const { cartItems, addToCart, removeFromCart, isItemInCart } = useCart() as any;
-  const [ordem, setOrdem] = useState<Ordem>('publico');
+  const [ordem, setOrdem] = useState<Ordem>('moradores');
   const [busca, setBusca] = useState('');
+  const [endereco, setEndereco] = useState('');
+  const [meuLocal, setMeuLocal] = useState<{ lat: number; lng: number } | null>(null);
+  const [buscandoEnd, setBuscandoEnd] = useState(false);
+  const [erroEnd, setErroEnd] = useState('');
   const [plano, setPlano] = useState<PlanDuration>(3);
   const [aberto, setAberto] = useState<BuildingStore | null>(null);
-  const [verMapa, setVerMapa] = useState(false);
+  const [gaveta, setGaveta] = useState(false);
+  const [mapaCel, setMapaCel] = useState(false);
+
+  // Esc fecha janelas; trava a rolagem do fundo quando há janela aberta
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => { if (e.key === 'Escape') { setAberto(null); setGaveta(false); setMapaCel(false); } };
+    window.addEventListener('keydown', f);
+    return () => window.removeEventListener('keydown', f);
+  }, []);
+  const algumaJanela = !!aberto || gaveta || mapaCel;
+  useEffect(() => {
+    if (!algumaJanela) return;
+    const antes = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = antes; };
+  }, [algumaJanela]);
+
+  const idsLista = useMemo(() => new Set<string>((cartItems || []).map((i: any) => i.panel?.id)), [cartItems]);
+  const naLista: BuildingStore[] = useMemo(() => predios.filter((p) => idsLista.has(p.id)), [idsLista, predios]);
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    const r = predios.filter((p) => !q || `${p.nome} ${p.bairro} ${p.endereco}`.toLowerCase().includes(q));
-    const s = [...r];
-    if (ordem === 'publico') s.sort((a, b) => (b.publico_estimado || 0) - (a.publico_estimado || 0));
-    if (ordem === 'preco') s.sort((a, b) => (a.preco_base || 0) - (b.preco_base || 0));
-    if (ordem === 'turistas') s.sort((a, b) => Number(!!b.tem_airbnb) - Number(!!a.tem_airbnb) || (b.publico_estimado || 0) - (a.publico_estimado || 0));
-    if (ordem === 'az') s.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    return s;
-  }, [predios, busca, ordem]);
+    const r = predios
+      .filter((p) => !q || `${p.nome} ${p.bairro} ${p.endereco}`.toLowerCase().includes(q))
+      .map((p) => ({ p, km: meuLocal && p.latitude && p.longitude ? kmEntre(meuLocal, { lat: p.latitude, lng: p.longitude }) : null }));
+    if (ordem === 'perto') r.sort((a, b) => (a.km ?? 999) - (b.km ?? 999));
+    if (ordem === 'moradores') r.sort((a, b) => (b.p.publico_estimado || 0) - (a.p.publico_estimado || 0));
+    if (ordem === 'preco') r.sort((a, b) => (a.p.preco_base || 0) - (b.p.preco_base || 0));
+    if (ordem === 'turistas') r.sort((a, b) => Number(!!b.p.tem_airbnb) - Number(!!a.p.tem_airbnb) || (b.p.publico_estimado || 0) - (a.p.publico_estimado || 0));
+    if (ordem === 'az') r.sort((a, b) => a.p.nome.localeCompare(b.p.nome, 'pt-BR'));
+    return r;
+  }, [predios, busca, ordem, meuLocal]);
 
-  const naLista: BuildingStore[] = useMemo(() => {
-    const ids = new Set<string>((cartItems || []).map((i: any) => i.panel?.id));
-    return predios.filter((p) => ids.has(p.id));
-  }, [cartItems, predios]);
-  const ordemNaLista = (id: string) => naLista.findIndex((p) => p.id === id) + 1;
+  const precoPor = useCallback((m: PlanDuration) => calculateBuildingsPrice(naLista as any, m), [naLista]);
+  const preco = useMemo(() => precoPor(plano), [precoPor, plano]);
+  const telasLista = naLista.reduce((s, p) => s + telas(p), 0);
+  const moradoresLista = naLista.reduce((s, p) => s + (p.publico_estimado || 0), 0);
 
-  const preco = useMemo(() => calculateBuildingsPrice(naLista as any, plano), [naLista, plano]);
-  const telasLista = naLista.reduce((s, p) => s + (p.quantidade_telas || 1), 0);
-  const publicoLista = naLista.reduce((s, p) => s + (p.publico_estimado || 0), 0);
+  const alternar = useCallback((p: BuildingStore) => {
+    if (isItemInCart(p.id)) removeFromCart(p.id, { silencioso: true });
+    else addToCart(adaptBuildingToPanel(p as any), 30, { silencioso: true });
+  }, [isItemInCart, removeFromCart, addToCart]);
+  const abrir = useCallback((p: BuildingStore) => setAberto(p), []);
+  const abrirDoMapaCel = useCallback((p: BuildingStore) => { setMapaCel(false); setAberto(p); }, []);
 
-  const alternar = (p: BuildingStore) => {
-    if (isItemInCart(p.id)) removeFromCart(p.id);
-    else addToCart(adaptBuildingToPanel(p), 30);
+  const buscarEndereco = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!endereco.trim()) return;
+    setBuscandoEnd(true); setErroEnd('');
+    try {
+      const maps = await loadGoogleMaps();
+      const geo = new maps.Geocoder();
+      const { results } = await geo.geocode({ address: `${endereco}, Foz do Iguaçu - PR`, region: 'br' });
+      const loc = results?.[0]?.geometry?.location;
+      if (!loc) throw new Error('sem resultado');
+      setMeuLocal({ lat: loc.lat(), lng: loc.lng() });
+      setOrdem('perto');
+    } catch {
+      setErroEnd('Não encontrei esse endereço. Tente com o nome da rua e o número.');
+    } finally { setBuscandoEnd(false); }
   };
-  const waLista = waSofia(`Oi Sofia! Montei minha lista no site e quero anunciar nestes prédios: ${naLista.map((p) => p.nome).join(', ')}.`);
-  const continuar = () => navigate('/selecionar-plano');
+  const limparEndereco = () => { setMeuLocal(null); setEndereco(''); setErroEnd(''); setOrdem('moradores'); };
 
-  const pinos = predios.filter((p) => p.latitude && p.longitude).map((p) => ({
-    p, x: ((p.longitude + 54.596) / 0.028) * 100, y: ((p.latitude + 25.505) / -0.058) * 100,
-  })).filter((m) => m.x > 1 && m.x < 99 && m.y > 1 && m.y < 99);
-
-  const Mapa = ({ alto }: { alto?: boolean }) => (
-    <div style={{ position: 'relative', aspectRatio: alto ? '.6' : '.62', borderRadius: 20, background: '#E2E0DA', overflow: 'hidden', boxShadow: 'inset 0 0 0 1px #D2D0CB' }} aria-label="Mapa dos prédios">
-      <svg viewBox="0 0 100 155" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} aria-hidden="true">
-        <path d="M-2 0 C 6 30, 2 60, 8 90 S 4 140, 14 160 L -2 160 Z" fill="#C9D6DC" />
-        <path d="M48 0 C 46 50, 44 100, 47 155" stroke="#fff" strokeWidth="2" fill="none" />
-        <path d="M0 70 C 40 72, 70 66, 100 60" stroke="#fff" strokeWidth="2" fill="none" />
-      </svg>
-      <span style={{ position: 'absolute', left: '56%', top: '50%', fontSize: 11, fontWeight: 800, color: '#77756F' }}>Centro</span>
-      {pinos.map(({ p, x, y }) => {
-        const n = ordemNaLista(p.id);
-        return (
-          <button key={p.id} className="pinb" type="button" onClick={() => setAberto(p)} aria-label={p.nome} title={p.nome}
-            style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)', width: n ? 22 : 14, height: n ? 22 : 14, borderRadius: '50%', border: 0, padding: 0, cursor: 'pointer', background: '#EA251D', color: '#fff', font: '800 10px Manrope,sans-serif', boxShadow: '0 0 0 3px rgba(234,37,29,.22)' }}>
-            {n || ''}
-          </button>
-        );
-      })}
-    </div>
-  );
+  const planoLabel = PLANOS.find((x) => x.m === plano)?.label || '';
+  const msgSofia = naLista.length
+    ? `Oi Sofia! Montei minha lista no site da EXA e quero anunciar nestes ${naLista.length} ${naLista.length > 1 ? 'prédios' : 'prédio'}:\n${naLista.map((p) => `• ${p.nome} (${reais(p.preco_base || 0)}/mês)`).join('\n')}\n\nPlano: ${planoLabel}. Valor que apareceu no site: ${reais(preco.pricePerMonth)}/mês${plano > 1 ? ` (total ${reais(preco.totalPrice)})` : ''}.${meuLocal && endereco ? `\nMeu negócio fica em: ${endereco}.` : ''}\nPode me ajudar a fechar?`
+    : 'Oi Sofia, vim pela página de prédios do site e quero anunciar.';
 
   return (
-    <div className="exa-site com-barra" style={{ background: '#EFEEEB' }}>
-      <CabecalhoSite acao={<a className="b br" href="#lista" style={{ minHeight: 42, padding: '0 18px', fontSize: 15 }}>Minha lista · {naLista.length}</a>} />
+    <div className="exa-site" style={{ background: '#F4F3F0', minHeight: '100vh' }}>
+      <CabecalhoSite acao={
+        <button type="button" className="b br" onClick={() => setGaveta(true)} style={{ minHeight: 42, padding: '0 18px', fontSize: 15 }}>
+          Minha lista{naLista.length ? ` · ${naLista.length}` : ''}
+        </button>
+      } />
 
-      <section style={{ background: '#0B0B0D', color: '#fff', paddingBlock: '40px 36px' }}>
-        <div className="w" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <h1 className="t" style={{ fontSize: 'clamp(34px,5vw,48px)' }}>Escolha os seus prédios.</h1>
-          <p style={{ margin: 0, color: '#9C9A96', fontSize: 15, fontWeight: 700 }}>
-            {carregando ? 'Carregando prédios…' : `${totalPredios} prédios no ar em Foz do Iguaçu · ${totalTelas} telas · preço por mês de cada um`}
-          </p>
+      {/* topo + busca pelo endereço (como no layout antigo) */}
+      <section style={{ background: '#0B0B0D', color: '#fff', paddingBlock: '32px 30px' }}>
+        <div className="w" style={{ maxWidth: 1400, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <h1 className="t" style={{ fontSize: 'clamp(30px,4.4vw,48px)' }}>Escolha os prédios da sua marca.</h1>
+            <p style={{ margin: '8px 0 0', color: '#9C9A96', fontSize: 15, fontWeight: 700 }}>
+              {carregando ? 'Carregando prédios…' : 'Prédios residenciais de Foz do Iguaçu · preço por mês de cada um'}
+            </p>
+          </div>
+          <form onSubmit={buscarEndereco} className="busca-end" role="search">
+            <label htmlFor="end" className="sr-only">Endereço do seu negócio</label>
+            <input id="end" value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço do seu negócio, para ver os prédios mais perto" autoComplete="street-address" />
+            <button type="submit" className="b br" disabled={buscandoEnd}>{buscandoEnd ? 'Buscando…' : 'Ver os mais perto'}</button>
+          </form>
+          {erroEnd && <p style={{ margin: 0, color: '#FFB3AE', fontSize: 14 }}>{erroEnd}</p>}
+          {meuLocal && !erroEnd && (
+            <p style={{ margin: 0, fontSize: 14, color: '#C9C7C2' }}>
+              Mostrando os prédios mais perto de “{endereco}”.{' '}
+              <button type="button" onClick={limparEndereco} style={{ background: 'none', border: 0, color: '#fff', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer', minHeight: 0, minWidth: 0, padding: 0, font: 'inherit' }}>Limpar</button>
+            </p>
+          )}
         </div>
       </section>
 
-      <section style={{ paddingBlock: '28px 120px' }}>
-        <div className="w predios-grid">
+      <section style={{ paddingBlock: '24px 140px' }}>
+        <div className="w loja-grid" style={{ maxWidth: 1400 }}>
           {/* lista */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-              <label style={{ position: 'relative', flex: '1 1 220px' }}>
-                <span className="sr-only">Buscar prédio ou bairro</span>
-                <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio ou bairro"
-                  style={{ width: '100%', minHeight: 44, borderRadius: 999, border: '1.5px solid #D2D0CB', background: '#fff', padding: '0 18px', font: '600 15px Manrope,sans-serif' }} />
+              <label style={{ flex: '1 1 200px' }}>
+                <span className="sr-only">Filtrar por nome ou bairro</span>
+                <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Filtrar por nome ou bairro" className="campo" />
               </label>
-              {([['publico', 'Mais público'], ['preco', 'Menor preço'], ['turistas', 'Com turistas'], ['az', 'A a Z']] as [Ordem, string][]).map(([id, label]) => (
-                <button key={id} type="button" className="chip" aria-pressed={ordem === id} onClick={() => setOrdem(id)}
-                  style={{ minHeight: 40, fontSize: 14, background: ordem === id ? '#0B0B0D' : '#fff', color: ordem === id ? '#fff' : '#0B0B0D', border: `1.5px solid ${ordem === id ? '#0B0B0D' : '#D2D0CB'}` }}>{label}</button>
-              ))}
-              <button type="button" className="chip so-celular" onClick={() => setVerMapa((v) => !v)}
-                style={{ minHeight: 40, fontSize: 14, background: '#fff', border: '1.5px solid #D2D0CB' }}>{verMapa ? 'Ver lista' : 'Ver no mapa'}</button>
+              <select aria-label="Ordenar" value={ordem} onChange={(e) => setOrdem(e.target.value as Ordem)} className="campo" style={{ flex: '0 0 auto', width: 'auto', fontWeight: 700 }}>
+                {meuLocal && <option value="perto">Mais perto de mim</option>}
+                <option value="moradores">Mais moradores</option>
+                <option value="preco">Menor preço</option>
+                <option value="turistas">Com turistas</option>
+                <option value="az">A a Z</option>
+              </select>
             </div>
-
-            {verMapa && <div className="so-celular" style={{ display: 'block', maxWidth: 420, margin: '0 auto', width: '100%' }}><Mapa alto /></div>}
-
-            {carregando && <p style={{ color: '#5A5852' }}>Carregando prédios…</p>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(100%,250px),1fr))', gap: 16 }}>
-              {lista.map((p) => {
-                const on = isItemInCart(p.id);
+            {carregando && <p style={{ color: '#5A5852', margin: 0 }}>Carregando prédios…</p>}
+            <div className="pcards">
+              {lista.map(({ p, km }) => {
+                const on = idsLista.has(p.id);
                 const foto = p.imagem_principal ? getImageUrl(p.imagem_principal) : '';
                 return (
-                  <article key={p.id} style={{ display: 'flex', flexDirection: 'column', borderRadius: 18, background: '#fff', overflow: 'hidden', border: `1.5px solid ${on ? '#EA251D' : '#E2E0DA'}` }}>
-                    <button type="button" onClick={() => setAberto(p)} aria-label={`Ver detalhes de ${p.nome}`}
-                      style={{ position: 'relative', aspectRatio: '4/3', background: 'linear-gradient(180deg,#24242A,#3A1416)', border: 0, padding: 0, cursor: 'pointer', display: 'block', width: '100%', overflow: 'hidden' }}>
-                      {foto && <img src={foto} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
-                      {p.tem_airbnb && <span style={{ position: 'absolute', left: 12, top: 12, background: '#fff', color: '#0B0B0D', padding: '5px 8px', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>Tem turistas</span>}
+                  <article key={p.id} className="pcard" style={{ borderColor: on ? '#EA251D' : undefined }}>
+                    <button type="button" className="pcard-foto" onClick={() => abrir(p)} aria-label={`Ver detalhes de ${p.nome}`}>
+                      {foto ? <img src={foto} alt="" loading="lazy" decoding="async" /> : <span className="pcard-sem">{p.nome}</span>}
+                      <span style={{ position: 'absolute', left: 12, top: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {km !== null && <span className="selo selo-escuro">{fmtKm(km)} de você</span>}
+                        {p.tem_airbnb && <span className="selo">Tem turistas</span>}
+                      </span>
                     </button>
-                    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <strong className="t" style={{ fontSize: 20, lineHeight: 1.15 }}>{p.nome}</strong>
+                    <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+                      <div>
+                        <strong className="t" style={{ fontSize: 19, lineHeight: 1.2, display: 'block' }}>{p.nome}</strong>
                         <span style={{ fontSize: 14, color: '#5A5852' }}>{p.bairro}</span>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 8, fontSize: 13, color: '#5A5852' }}>
-                        <span><strong style={{ display: 'block', fontSize: 17, color: '#0B0B0D' }}>{p.quantidade_telas || 1}</strong>{(p.quantidade_telas || 1) > 1 ? 'telas' : 'tela'}</span>
-                        <span><strong style={{ display: 'block', fontSize: 17, color: '#0B0B0D' }}>{p.publico_estimado ? num(p.publico_estimado) : '—'}</strong>moradores</span>
+                      <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#5A5852' }}>
+                        <span><strong style={{ color: '#0B0B0D', fontSize: 15 }}>{telas(p)}</strong> {telas(p) > 1 ? 'telas' : 'tela'}</span>
+                        {!!p.publico_estimado && <span><strong style={{ color: '#0B0B0D', fontSize: 15 }}>{num(p.publico_estimado)}</strong> moradores</span>}
                       </div>
-                      <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
-                        <span style={{ lineHeight: 1.1 }}><strong style={{ fontSize: 22, letterSpacing: '-.02em' }}>{reais(p.preco_base || 0)}</strong><span style={{ fontSize: 13, color: '#5A5852' }}>/mês</span></span>
+                      <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <span style={{ lineHeight: 1.1 }}>
+                          <strong style={{ fontSize: 22, letterSpacing: '-.02em' }}>{reais(p.preco_base || 0)}</strong><span style={{ fontSize: 13, color: '#5A5852' }}>/mês</span>
+                        </span>
                         <button className="b" type="button" onClick={() => alternar(p)} aria-pressed={on}
-                          style={{ minHeight: 44, padding: '0 16px', fontSize: 15, background: on ? '#0B0B0D' : '#fff', color: on ? '#fff' : '#0B0B0D', border: `1.5px solid ${on ? '#0B0B0D' : '#D2D0CB'}` }}>{on ? 'Na lista ✓' : 'Adicionar'}</button>
+                          style={{ minHeight: 44, padding: '0 18px', fontSize: 15, background: on ? '#0B0B0D' : '#EA251D', color: '#fff' }}>{on ? 'Na lista ✓' : 'Adicionar'}</button>
                       </div>
                     </div>
                   </article>
                 );
               })}
             </div>
-            {!carregando && !lista.length && <p style={{ color: '#5A5852' }}>Nenhum prédio com essa busca.</p>}
+            {!carregando && !lista.length && <p style={{ color: '#5A5852' }}>Nenhum prédio com esse filtro.</p>}
           </div>
 
-          {/* mapa + lista (coluna da direita) */}
-          <aside id="lista" className="predios-lado" aria-label="Sua lista de prédios">
-            <div className="so-desktop"><Mapa /></div>
-            <div style={{ borderRadius: 22, background: '#0B0B0D', color: '#fff', padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <h2 className="t" style={{ fontSize: 28 }}>Sua lista</h2>
-              {!naLista.length && <p style={{ margin: 0, color: '#9C9A96', fontSize: 16 }}>Toque em “Adicionar” nos prédios ou nos pinos do mapa.</p>}
-              {!!naLista.length && (
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflow: 'auto' }}>
-                  {naLista.map((p) => (
-                    <li key={p.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', fontSize: 15, borderBottom: '1px solid #1C1C20', paddingBottom: 8 }}>
-                      <span>{p.nome} <span style={{ color: '#77756F' }}>· {reais(p.preco_base || 0)}</span></span>
-                      <button type="button" onClick={() => removeFromCart(p.id)} aria-label={`Remover ${p.nome}`} style={{ background: 'none', border: 0, color: '#9C9A96', cursor: 'pointer', font: 'inherit', minHeight: 32 }}>Remover</button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div role="group" aria-label="Plano" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 8 }}>
-                {PLANOS.map((pl) => {
-                  const on = pl.m === plano;
-                  return (
-                    <button key={pl.m} type="button" aria-pressed={on} onClick={() => setPlano(pl.m)}
-                      style={{ textAlign: 'left', borderRadius: 12, padding: '10px 12px', cursor: 'pointer', font: 'inherit', background: on ? '#fff' : '#141418', color: on ? '#0B0B0D' : '#fff', border: `1.5px solid ${on ? '#fff' : '#2A2A30'}` }}>
-                      <strong style={{ display: 'block', fontSize: 15 }}>{pl.label}</strong>
-                      <span style={{ fontSize: 12, opacity: 0.7 }}>{pl.nota}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, borderTop: '1px solid #1C1C20', paddingTop: 14 }}>
-                <div><span className="t" style={{ display: 'block', fontSize: 28, color: '#EA251D' }}>{naLista.length}</span><span style={{ fontSize: 13, color: '#9C9A96' }}>prédios</span></div>
-                <div><span className="t" style={{ display: 'block', fontSize: 28 }}>{telasLista}</span><span style={{ fontSize: 13, color: '#9C9A96' }}>telas</span></div>
-                <div><span className="t" style={{ display: 'block', fontSize: 28 }}>{publicoLista ? num(publicoLista) : '—'}</span><span style={{ fontSize: 13, color: '#9C9A96' }}>moradores</span></div>
-              </div>
-              {!!naLista.length && (
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-                  <span style={{ fontSize: 14, color: '#9C9A96' }}>{plano === 1 ? 'Por mês' : `Por mês no plano de ${plano} meses`}</span>
-                  <span className="t" style={{ fontSize: 30 }}>{reais(preco.pricePerMonth)}</span>
-                </div>
-              )}
-              {!!naLista.length && plano > 1 && <p style={{ margin: 0, fontSize: 13, color: '#9C9A96' }}>Total {reais(preco.totalPrice)} em {plano} meses · economia de {reais(preco.savings || 0)}. Vídeo incluso.</p>}
-              <button className="b br" type="button" onClick={continuar} disabled={!naLista.length} style={{ width: '100%', opacity: naLista.length ? 1 : 0.5 }}>Continuar para o pedido</button>
-              <a className="b" href={naLista.length ? waLista : waSofia()} style={{ width: '100%', background: '#141418', color: '#fff', border: '1.5px solid #2A2A30' }}><IconeWhats />Fechar com a Sofia no WhatsApp</a>
-              <p style={{ margin: 0, fontSize: 13, color: '#9C9A96' }}>No pedido você confirma o plano, cria a conta e paga por PIX, boleto ou cartão. A Sofia também fecha pelo WhatsApp e cria o vídeo com você.</p>
-            </div>
+          {/* mapa do Google fixo ao lado (computador) */}
+          <aside className="loja-mapa" aria-label="Mapa dos prédios">
+            {!mapaCel && (
+              <Suspense fallback={<div style={{ height: '100%', background: '#E2E0DA' }} />}>
+                <MapaPredios predios={predios} naLista={idsLista} selecionado={aberto?.id} onAbrir={abrir} meuLocal={meuLocal} altura="100%" />
+              </Suspense>
+            )}
           </aside>
         </div>
       </section>
 
       <RodapeSite />
+      <div style={{ height: 90 }} aria-hidden="true" />
 
-      <BarraCelular>
-        <span style={{ lineHeight: 1.2, color: '#fff' }}>
-          <strong>{naLista.length} na lista</strong>
-          <span style={{ display: 'block', fontSize: 12, color: '#9C9A96' }}>{naLista.length ? `${reais(preco.pricePerMonth)}/mês · ${telasLista} telas` : 'Adicione prédios'}</span>
-        </span>
-        <button className="b br" type="button" onClick={continuar} disabled={!naLista.length} style={{ minHeight: 46, opacity: naLista.length ? 1 : 0.5 }}>Continuar</button>
-      </BarraCelular>
+      {/* barra flutuante da lista */}
+      {!algumaJanela && (
+        <div className="lista-flutuante" role="region" aria-label="Sua lista">
+          <button type="button" className="lf-mapa" onClick={() => setMapaCel(true)} aria-label="Ver no mapa">
+            <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></svg>
+            <span>Mapa</span>
+          </button>
+          <button type="button" className="lf-lista" onClick={() => setGaveta(true)}>
+            <span className="lf-num">{naLista.length}</span>
+            <span style={{ textAlign: 'left', lineHeight: 1.25, minWidth: 0 }}>
+              <strong style={{ display: 'block', fontSize: 15 }}>{naLista.length ? `${naLista.length} ${naLista.length > 1 ? 'prédios' : 'prédio'} na lista` : 'Sua lista está vazia'}</strong>
+              <span style={{ fontSize: 13, color: '#C9C7C2' }}>{naLista.length ? `${reais(preco.pricePerMonth)}/mês · ${planoLabel}` : 'Adicione prédios para ver o valor'}</span>
+            </span>
+            <span className="lf-seta" aria-hidden="true">→</span>
+          </button>
+        </div>
+      )}
 
-      {aberto && (
-        <div role="dialog" aria-modal="true" aria-label={aberto.nome} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(11,11,13,.55)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="button" onClick={() => setAberto(null)} aria-label="Fechar" style={{ flex: 1, background: 'none', border: 0, cursor: 'pointer' }} />
-          <div style={{ width: 'min(100%,480px)', height: '100%', overflow: 'auto', background: '#fff', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ position: 'relative', aspectRatio: '16/11', background: 'linear-gradient(180deg,#24242A,#3A1416)' }}>
-              {aberto.imagem_principal && <img src={getImageUrl(aberto.imagem_principal)} alt={`Fachada do ${aberto.nome}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
-              <button type="button" onClick={() => setAberto(null)} aria-label="Fechar" style={{ position: 'absolute', right: 14, top: 14, width: 44, height: 44, borderRadius: '50%', border: 0, background: '#fff', cursor: 'pointer', font: '800 20px Manrope,sans-serif' }}>×</button>
+      {/* mapa em tela cheia (celular) */}
+      {mapaCel && (
+        <div role="dialog" aria-modal="true" aria-label="Mapa dos prédios" style={{ position: 'fixed', inset: 0, zIndex: 60, background: '#0B0B0D', padding: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', padding: '4px 6px' }}>
+            <strong>Toque no preço para ver o prédio</strong>
+            <button type="button" className="b bw" onClick={() => setMapaCel(false)} style={{ minHeight: 42, padding: '0 18px', fontSize: 15 }}>Fechar</button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <Suspense fallback={null}>
+              <MapaPredios predios={predios} naLista={idsLista} selecionado={aberto?.id} onAbrir={abrirDoMapaCel} meuLocal={meuLocal} altura="100%" />
+            </Suspense>
+          </div>
+        </div>
+      )}
+
+      {/* gaveta da lista → Sofia */}
+      {gaveta && (
+        <div role="dialog" aria-modal="true" aria-label="Sua lista de prédios" className="gaveta-fundo">
+          <button type="button" className="gaveta-fora" onClick={() => setGaveta(false)} aria-label="Fechar" />
+          <div className="gaveta">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <h2 className="t" style={{ fontSize: 30 }}>Sua lista</h2>
+              <button type="button" onClick={() => setGaveta(false)} aria-label="Fechar" className="x">×</button>
             </div>
-            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <h2 className="t" style={{ fontSize: 36 }}>{aberto.nome}</h2>
-                <p style={{ margin: '4px 0 0', color: '#5A5852' }}>{aberto.endereco || aberto.bairro} · Foz do Iguaçu</p>
+            {!naLista.length ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <p style={{ margin: 0, color: '#5A5852' }}>Toque em “Adicionar” nos prédios ou nas etiquetas de preço do mapa.</p>
+                <button type="button" className="b bk" onClick={() => setGaveta(false)}>Ver os prédios</button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '16px 12px', borderBlock: '1px solid #E2E0DA', paddingBlock: 18 }}>
-                <div><span className="t" style={{ display: 'block', fontSize: 34, color: '#EA251D' }}>{reais(aberto.preco_base || 0)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>por mês</span></div>
-                <div><span className="t" style={{ display: 'block', fontSize: 34 }}>{aberto.quantidade_telas || 1}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{(aberto.quantidade_telas || 1) > 1 ? 'telas' : 'tela'} no elevador</span></div>
-                <div><span className="t" style={{ display: 'block', fontSize: 34 }}>{aberto.publico_estimado ? num(aberto.publico_estimado) : '—'}</span><span style={{ fontSize: 13, color: '#5A5852' }}>moradores</span></div>
-                <div><span className="t" style={{ display: 'block', fontSize: 22 }}>{aberto.bairro}</span><span style={{ fontSize: 13, color: '#5A5852' }}>bairro</span></div>
-              </div>
-              {aberto.tem_airbnb && <p style={{ margin: 0, padding: '12px 14px', borderRadius: 12, background: '#EFEEEB', fontSize: 14 }}><strong>Tem apartamentos de temporada.</strong> A tela também é vista por turistas hospedados no prédio.</p>}
-              <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', gap: 16, alignItems: 'center' }}>
-                <div style={{ borderRadius: 10, background: '#0B0B0D', padding: 5, aspectRatio: '9/16' }}>
-                  <VideoLeve src="/site/tela-real.mp4" poster="/site/tela-real.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6, display: 'block' }} aria-label="O que passa nesta tela" />
+            ) : (
+              <>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {naLista.map((p) => (
+                    <li key={p.id} style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr) auto', gap: 12, alignItems: 'center' }}>
+                      <span style={{ width: 56, height: 56, borderRadius: 12, overflow: 'hidden', background: '#E2E0DA', display: 'block' }}>
+                        {p.imagem_principal && <img src={getImageUrl(p.imagem_principal)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <strong style={{ display: 'block', fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nome}</strong>
+                        <span style={{ fontSize: 13, color: '#5A5852' }}>{p.bairro} · {reais(p.preco_base || 0)}/mês</span>
+                      </span>
+                      <button type="button" onClick={() => removeFromCart(p.id, { silencioso: true })} aria-label={`Tirar ${p.nome} da lista`} className="tirar">Tirar</button>
+                    </li>
+                  ))}
+                </ul>
+
+                <div>
+                  <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 800, color: '#5A5852' }}>Por quanto tempo?</p>
+                  <div className="planos" role="group" aria-label="Plano">
+                    {PLANOS.map((pl) => {
+                      const on = pl.m === plano;
+                      const v = precoPor(pl.m);
+                      return (
+                        <button key={pl.m} type="button" aria-pressed={on} onClick={() => setPlano(pl.m)} className={on ? 'on' : ''}>
+                          <strong>{pl.label}</strong>
+                          <span>{reais(v.pricePerMonth)}/mês</span>
+                          {pl.m > 1 && v.savings > 0 && <em>economia de {reais(v.savings)}</em>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <p style={{ margin: 0, fontSize: 14, color: '#5A5852' }}>Nesta tela passam os avisos do prédio, notícias de Foz e do Brasil, a câmera da ponte e os anúncios. O seu vídeo entra na janela do alto.</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, borderBlock: '1px solid #E2E0DA', paddingBlock: 14 }}>
+                  <div><span className="t" style={{ display: 'block', fontSize: 26, color: '#EA251D' }}>{naLista.length}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{naLista.length > 1 ? 'prédios' : 'prédio'}</span></div>
+                  <div><span className="t" style={{ display: 'block', fontSize: 26 }}>{telasLista}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{telasLista > 1 ? 'telas' : 'tela'}</span></div>
+                  <div><span className="t" style={{ display: 'block', fontSize: 26 }}>{moradoresLista ? num(moradoresLista) : '—'}</span><span style={{ fontSize: 13, color: '#5A5852' }}>moradores</span></div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                  <span style={{ fontSize: 15, color: '#5A5852' }}>{plano === 1 ? 'Por mês' : `Por mês, no plano de ${plano} meses`}</span>
+                  <span className="t" style={{ fontSize: 32 }}>{reais(preco.pricePerMonth)}</span>
+                </div>
+                {plano > 1 && <p style={{ margin: '-8px 0 0', fontSize: 14, color: '#5A5852' }}>Total de {reais(preco.totalPrice)} em {plano} meses.</p>}
+              </>
+            )}
+            <a className="b wa" href={waSofia(msgSofia)} target="_blank" rel="noopener noreferrer" style={{ width: '100%', minHeight: 58, marginTop: 'auto' }}>
+              <IconeWhats />{naLista.length ? 'Enviar minha lista para a Sofia' : 'Falar com a Sofia'}
+            </a>
+            <p style={{ margin: 0, fontSize: 13, color: '#77756F' }}>A Sofia recebe a sua lista no WhatsApp, confirma a disponibilidade, ajuda com o vídeo e fecha com você. Os valores do site são de referência.</p>
+          </div>
+        </div>
+      )}
+
+      {/* detalhe do prédio */}
+      {aberto && (
+        <div role="dialog" aria-modal="true" aria-label={aberto.nome} className="gaveta-fundo" style={{ zIndex: 70 }}>
+          <button type="button" className="gaveta-fora" onClick={() => setAberto(null)} aria-label="Fechar" />
+          <div className="gaveta" style={{ padding: 0, gap: 0 }}>
+            <div style={{ position: 'relative', aspectRatio: '16/11', background: 'linear-gradient(180deg,#24242A,#3A1416)', flex: 'none' }}>
+              {aberto.imagem_principal && <img src={getImageUrl(aberto.imagem_principal)} alt={`Fachada do ${aberto.nome}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+              <button type="button" onClick={() => setAberto(null)} aria-label="Fechar" className="x" style={{ position: 'absolute', right: 14, top: 14 }}>×</button>
+            </div>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div>
+                <h2 className="t" style={{ fontSize: 32 }}>{aberto.nome}</h2>
+                <p style={{ margin: '4px 0 0', color: '#5A5852' }}>{aberto.endereco || aberto.bairro}</p>
               </div>
-              <button className="b" type="button" onClick={() => alternar(aberto)}
-                style={{ background: isItemInCart(aberto.id) ? '#0B0B0D' : '#EA251D', color: '#fff' }}>{isItemInCart(aberto.id) ? 'Na lista ✓ (tirar)' : 'Adicionar à lista'}</button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '16px 12px', borderBlock: '1px solid #E2E0DA', paddingBlock: 16 }}>
+                <div><span className="t" style={{ display: 'block', fontSize: 28, color: '#EA251D' }}>{reais(aberto.preco_base || 0)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>por mês (mensal)</span></div>
+                <div><span className="t" style={{ display: 'block', fontSize: 28 }}>{telas(aberto)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{telas(aberto) > 1 ? 'telas' : 'tela'} no elevador</span></div>
+                {!!aberto.publico_estimado && <div><span className="t" style={{ display: 'block', fontSize: 28 }}>{num(aberto.publico_estimado)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>moradores</span></div>}
+                <div><span className="t" style={{ display: 'block', fontSize: 20 }}>{aberto.bairro}</span><span style={{ fontSize: 13, color: '#5A5852' }}>bairro</span></div>
+              </div>
+              {aberto.tem_airbnb && <p style={{ margin: 0, padding: '12px 14px', borderRadius: 12, background: '#F4F3F0', fontSize: 14 }}><strong>Tem apartamentos de temporada.</strong> A tela também é vista por turistas hospedados no prédio.</p>}
+              <div style={{ display: 'grid', gridTemplateColumns: '100px minmax(0,1fr)', gap: 16, alignItems: 'center' }}>
+                <div style={{ borderRadius: 10, background: '#0B0B0D', padding: 5, aspectRatio: '9/16' }}>
+                  <VideoLeve src="/site/tela-real.mp4" poster="/site/tela-real.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6, display: 'block' }} aria-label="Exemplo do que passa nesta tela" />
+                </div>
+                <p style={{ margin: 0, fontSize: 14, color: '#5A5852' }}>Na tela passam os avisos do prédio, notícias de Foz e do Brasil e os anúncios. O seu vídeo entra na janela do alto.</p>
+              </div>
+              <button className="b" type="button" onClick={() => alternar(aberto)} style={{ background: idsLista.has(aberto.id) ? '#0B0B0D' : '#EA251D', color: '#fff' }}>
+                {idsLista.has(aberto.id) ? 'Na lista ✓ · tirar' : 'Adicionar à lista'}
+              </button>
+              {idsLista.has(aberto.id) && <button className="b bw" type="button" onClick={() => { setAberto(null); setGaveta(true); }} style={{ border: '1.5px solid #D2D0CB' }}>Ver minha lista</button>}
               <Link to="/" className="lk" style={{ alignSelf: 'flex-start', fontSize: 15 }}>Como funciona a EXA</Link>
             </div>
           </div>

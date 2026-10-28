@@ -21,7 +21,7 @@ const FAQ = [
 export default function SiteSindico() {
   useFonteSite();
   useTituloPagina('Sou síndico · Tela no elevador sem custo · EXA Mídia', 'A EXA instala, mantém e paga a internet da tela no elevador do seu prédio. Os avisos você manda pelo WhatsApp, com o Nando.');
-  const { predios, totalPredios } = usePrediosPublicos();
+  const { predios } = usePrediosPublicos();
   const nomes = predios.map((p) => p.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
   return (
@@ -123,7 +123,7 @@ export default function SiteSindico() {
             <a className="b wa" href={waNando('Quero saber se o meu prédio pode ter a tela da EXA')} style={{ alignSelf: 'flex-start', minHeight: 52, fontSize: 16 }}>Ver se o meu prédio pode</a>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-            <h2 className="t" style={{ fontSize: 30 }}>{totalPredios || 'Mais de 20'} prédios de Foz já usam</h2>
+            <h2 className="t" style={{ fontSize: 30 }}>Prédios de Foz que já usam</h2>
             <p style={{ margin: 0, color: '#55545A', fontSize: 16, lineHeight: 1.9 }}>{nomes.join(' · ')}</p>
           </div>
         </div>
