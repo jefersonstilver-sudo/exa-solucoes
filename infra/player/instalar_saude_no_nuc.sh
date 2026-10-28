@@ -23,6 +23,14 @@ if [ ! -s "$HOME/.exa_saude.json" ]; then
 fi
 echo "Tela: $(cat "$HOME/.exa_saude.json")"
 
+# 1c) bloqueia o desligamento programado da 01:00 (NUC com bateria do relógio fraca não religa sozinho).
+#     Reversível: sudo -n systemctl unmask poweroff.target halt.target
+if sudo -n systemctl mask poweroff.target halt.target >/dev/null 2>&1; then
+  echo "Desligamento das 01:00: BLOQUEADO ($(systemctl is-enabled poweroff.target 2>/dev/null))"
+else
+  echo "AVISO: nao consegui bloquear o desligamento das 01:00 (sudo sem permissao)"
+fi
+
 # 2) grava o coletor (conteúdo abaixo)
 cat > "$APP/exa_saude.py.tmp" <<'EOF_PY'
 __COLETOR__

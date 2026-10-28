@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
       }
       if (typeof sis.ram_uso_pct === 'number' && sis.ram_uso_pct >= 90) achados.push({ chave: `ram:${t}`, sev: 'atencao', predio: nome, lembrar_h: 24, texto: `*${nome}* — memória RAM ${sis.ram_uso_pct}% usada` });
       if ((sis.boots_24h || 0) >= 2) achados.push({ chave: `reboot:${t}`, sev: 'atencao', predio: nome, lembrar_h: 24, texto: `*${nome}* — reiniciou ${sis.boots_24h}x em 24 h (energia ou travamento)` });
+      if (sis.poweroff_mascarado === false) achados.push({ chave: `poweroff:${t}`, sev: 'atencao', predio: nome, lembrar_h: 24, texto: `*${nome}* — desligamento programado da 01:00 ATIVO (risco de não religar). Rodar o instalador do coletor de novo` });
       if (sis.ntp_ok === false) achados.push({ chave: `ntp:${t}`, sev: 'atencao', predio: nome, lembrar_h: 24, texto: `*${nome}* — relógio sem sincronizar (programação por horário pode errar)` });
       const net = rede.internet || {}, gw = rede.gw || {};
       if (rede.sem_rota) achados.push({ chave: `semrede:${t}`, sev: 'critico', predio: nome, lembrar_h: 6, texto: `*${nome}* — NUC sem rede (sem rota padrão)` });

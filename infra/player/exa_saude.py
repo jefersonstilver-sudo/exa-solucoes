@@ -24,7 +24,7 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v3"
+VERSAO_COLETOR = "saude-v4"
 API_TELAS = "18.228.252.149"
 
 
@@ -286,6 +286,8 @@ def sistema():
     d["disco_uso_pct"] = round(100 * du.used / du.total)
     d.update(memoria())
     d["ntp_ok"] = sh("timedatectl show -p NTPSynchronized --value 2>/dev/null") == "yes"
+    # desligamento programado da 01:00 (cron do root): só é seguro com poweroff/halt mascarados
+    d["poweroff_mascarado"] = sh("systemctl is-enabled poweroff.target 2>/dev/null") == "masked"
     boots = sh("journalctl --list-boots --no-pager 2>/dev/null | tail -n 30", timeout=10)
     if boots:
         agora = time.time()
