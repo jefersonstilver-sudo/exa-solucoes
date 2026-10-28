@@ -24,7 +24,7 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v6"
+VERSAO_COLETOR = "saude-v6.1"
 API_TELAS = "18.228.252.149"
 
 
@@ -178,13 +178,16 @@ def velocidade_download(estado):
         t0 = time.time()
         req = urllib.request.Request("https://speed.cloudflare.com/__down?bytes=5000000", headers={"User-Agent": "exa-saude"})
         n = 0
-        with urllib.request.urlopen(req, timeout=40) as r:
-            while True:
+        # v6.1: no máximo 20 s (internet lenta/instável não pode estourar o limite de 90 s e matar o envio)
+        with urllib.request.urlopen(req, timeout=10) as r:
+            while time.time() - t0 < 20:
                 bloco = r.read(65536)
                 if not bloco:
                     break
                 n += len(bloco)
         seg = max(time.time() - t0, 0.001)
+        if n < 200000:
+            raise IOError("download insuficiente para medir (%d bytes em %.0f s)" % (n, seg))
         mbps = round(n * 8 / seg / 1e6, 1)
         estado["ultimo_speedtest"] = time.time()
         estado["download_mbps"] = mbps
@@ -382,12 +385,24 @@ def main():
     ad, nuc = identidade()
     payload = {"cliente_id": cliente, "nuc_id": nuc, "anydesk_id": ad or None, "coletor": VERSAO_COLETOR,
                "coletado_em": int(time.time()), "temp_c": t, "temp_fonte": fonte}
+    inicio = time.time()
+    tempos = {}
     for nome, fn in (("sistema", sistema), ("cpu", cpu), ("rede", rede), ("monitor", monitor), ("player", player), ("vigia", vigia)):
+        t0 = time.time()
         try:
             payload[nome] = fn()
         except Exception as e:
             payload[nome] = {"erro": str(e)[:120]}
-    payload["download_mbps"] = velocidade_download(estado)
+        tempos[nome] = round(time.time() - t0, 1)
+    # v6.1: o teste de velocidade só roda se ainda sobra tempo (o envio é o que importa)
+    if time.time() - inicio < 45:
+        t0 = time.time()
+        payload["download_mbps"] = velocidade_download(estado)
+        tempos["velocidade"] = round(time.time() - t0, 1)
+    else:
+        payload["download_mbps"] = estado.get("download_mbps")
+        tempos["velocidade"] = "pulado"
+    payload["tempos_s"] = tempos
     try:  # v10: o que o próprio player garantiu (padrão EXA)
         pd = json.loads(ler(os.path.expanduser("~/.exa_padrao.json"), "{}"))
         payload["padrao"] = {k: pd.get(k) for k in ("versao", "quando", "ok", "itens", "erros")}

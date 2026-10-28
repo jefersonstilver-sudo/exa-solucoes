@@ -18,7 +18,7 @@ import subprocess
 import threading
 import time
 
-VERSAO = "padrao-v2"
+VERSAO = "padrao-v3"
 APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOME = os.path.expanduser("~")
 ESTADO = os.path.join(HOME, ".exa_padrao.json")
@@ -65,7 +65,7 @@ def _linhas_cron():
     coletor = os.path.join(APP, "exa_saude.py")
     vigia = os.path.join(APP, "exa_vigia_rede.sh")
     return {
-        "exa_saude.py": "*/15 * * * * cd %s && flock -n /tmp/exa_saude.lock timeout 90 nice -n 19 ionice -c3 python3 %s >/tmp/exa_saude.log 2>&1" % (APP, coletor),
+        "exa_saude.py": "*/15 * * * * cd %s && flock -n /tmp/exa_saude.lock timeout 150 nice -n 19 ionice -c3 python3 %s >/tmp/exa_saude.log 2>&1" % (APP, coletor),
         "exa_vigia_rede.sh": "*/5 * * * * flock -n /tmp/exa_vigia.lock timeout 120 bash %s >/dev/null 2>&1" % vigia,
     }
 
@@ -163,7 +163,7 @@ def _garantir(cliente_id):
               "itens": itens, "erros": erros, "primeira_leitura": anterior.get("primeira_leitura")}
     if "tela" in itens and (mudou_coletor or anterior.get("versao") != VERSAO):
         try:  # primeira leitura agora, para o sistema ver o NUC sem esperar 15 min
-            subprocess.Popen(["nice", "-n", "19", "timeout", "90", "python3", os.path.join(APP, "exa_saude.py")],
+            subprocess.Popen(["nice", "-n", "19", "timeout", "150", "python3", os.path.join(APP, "exa_saude.py")],
                              cwd=APP, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
             estado["primeira_leitura"] = estado["quando"]
         except Exception as e:
