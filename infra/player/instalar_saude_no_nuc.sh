@@ -7,6 +7,7 @@ APP="$HOME/Documentos/appUbuntu"
 [ -d "$APP" ] || { echo "ABORTADO: pasta $APP nao existe"; exit 1; }
 
 # 1) descobre o código da tela usando o próprio player (só leitura)
+if [ -n "${EXA_TELA:-}" ]; then printf '{"cliente_id": "%s"}\n' "$EXA_TELA" > "$HOME/.exa_saude.json"; fi
 if [ ! -s "$HOME/.exa_saude.json" ]; then
   # 1a) procura "tela_id" nos arquivos de configuração do player
   ID=$(grep -rhoE '"tela_id"[[:space:]]*:[[:space:]]*"?[0-9a-fA-F]{4}"?' "$APP" --include='*.json' 2>/dev/null | head -n1 | grep -oE '[0-9a-fA-F]{4}"?$' | tr -d '"')
@@ -30,6 +31,8 @@ if sudo -n systemctl mask poweroff.target halt.target >/dev/null 2>&1; then
 else
   echo "AVISO: nao consegui bloquear o desligamento das 01:00 (sudo sem permissao)"
 fi
+# 1d) desliga a atualização automática do Ubuntu (packagekit), que pesa no NUC e pode reiniciar coisas (igual à v6.1)
+sudo -n systemctl mask packagekit.service >/dev/null 2>&1 && echo "Atualizacao automatica do Ubuntu: BLOQUEADA" || true
 
 # 2) grava o coletor (conteúdo abaixo)
 cat > "$APP/exa_saude.py.tmp" <<'EOF_PY'
