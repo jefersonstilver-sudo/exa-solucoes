@@ -43,7 +43,7 @@ export const useOrdersWithAttemptsRefactored = () => {
       // Buscar tipo_produto e is_master de cada pedido (não disponível na RPC)
       const pedidoIds = (pedidosComClientes || []).map((p: any) => p.id);
       const { data: pedidosExtra } = pedidoIds.length > 0 
-        ? await supabase.from('pedidos').select('id, tipo_produto, is_master, email, whatsapp').in('id', pedidoIds)
+        ? await supabase.from('pedidos').select('id, tipo_produto, is_master, email, whatsapp, valor_mensal').in('id', pedidoIds)
         : { data: [] };
       const tipoProdutoMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.tipo_produto]));
       const isMasterMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.is_master]));

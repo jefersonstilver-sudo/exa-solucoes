@@ -5,6 +5,7 @@ export interface OrderOrAttempt {
   created_at: string;
   status: string;
   valor_total: number;
+  valor_mensal?: number;
   lista_paineis?: string[];
   lista_predios?: string[];
   plano_meses?: number;
