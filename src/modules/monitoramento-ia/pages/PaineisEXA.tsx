@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Activity, ChevronDown, MoreHorizontal, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, Sparkles, ExternalLink, BellOff,
+  Activity, ChevronDown, MoreHorizontal, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, ExternalLink, BellOff,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generatePublicUrl } from '@/config/domain';
@@ -70,7 +70,6 @@ export default function PaineisEXA() {
   const [filtroElev, setFiltroElev] = useState<string>('todas');
   const [ordem, setOrdem] = useState<Ordem>('estado');
   const [modo, setModo] = useState<'cards' | 'tabela'>('cards');
-  const [iaAberta, setIaAberta] = useState(false);
   const [cardAberto, setCardAberto] = useState<string | null>(null);
   const [gruposFechados, setGruposFechados] = useState<Set<string>>(new Set());
   const [selecionado, setSelecionado] = useState<Device | null>(null);
@@ -176,7 +175,6 @@ export default function PaineisEXA() {
     };
   }, [daRede]);
 
-  const fora = useMemo(() => daRede.filter((p) => p.estado === 'sem_sinal' || p.estado === 'sem_imagem'), [daRede]);
 
   const abrir = (id: string) => { const d = devPorId.get(id); if (d) setSelecionado(d); else toast.error('Painel ainda carregando, tente de novo.'); };
   const copiar = async (p: FrotaPainel) => {
@@ -197,15 +195,6 @@ export default function PaineisEXA() {
   };
   const alternarGrupo = (id: string) => setGruposFechados((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
-  const manchete = (() => {
-    const partes: string[] = [];
-    if (kpis.semSinal) partes.push(`${kpis.semSinal} sem sinal`);
-    const pior = porOperadora.find((o) => o.total >= 3 && (o.fora + o.ruins) / o.total >= 0.3);
-    if (pior) partes.push(`${pior.nome} com problema em ${pior.fora + pior.ruins} de ${pior.total} prédios`);
-    if (kpis.quentes) partes.push(`${kpis.quentes} NUC${kpis.quentes > 1 ? 's' : ''} quente${kpis.quentes > 1 ? 's' : ''}`);
-    if (kpis.semColetor) partes.push(`${kpis.semColetor} sem diagnóstico`);
-    return partes.join(' · ') || 'Tudo tocando normalmente';
-  })();
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 text-[#17181A] md:space-y-6" style={{ fontFeatureSettings: '"tnum"' }}>
@@ -280,54 +269,6 @@ export default function PaineisEXA() {
                 </button>
               ))}
             </div>
-          </section>
-
-          {/* Atenção agora: a análise do Técnico EXA e quem está fora ficam no MESMO quadro */}
-          <section className={`${glass} rounded-[22px] p-4 md:p-5`} aria-labelledby="t-atencao">
-            <div className="flex items-start gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FCE9E7] text-[#B0261D]"><Sparkles className="h-4 w-4" /></span>
-              <div className="min-w-0 flex-1">
-                <h2 id="t-atencao" className="text-[15px] font-extrabold">Técnico EXA · o que precisa de atenção</h2>
-                <p className="text-sm text-[#45464A]">{manchete}</p>
-                <button type="button" onClick={() => { const n = !iaAberta; setIaAberta(n); if (n && !frota.tecnico && !frota.analisando) frota.analisar(); }}
-                  aria-expanded={iaAberta} className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-[#9C1E1E]">
-                  {iaAberta ? 'Fechar análise' : 'Ver análise completa'}<ChevronDown className={`h-4 w-4 transition-transform ${iaAberta ? 'rotate-180' : ''}`} />
-                </button>
-                {iaAberta && (
-                  <div className="mt-2 rounded-2xl bg-white/70 p-3">
-                    {frota.analisando ? (
-                      <p className="text-sm text-[#5E5F63]">Analisando histórico, diário de conexão e leituras dos NUCs…</p>
-                    ) : (
-                      <div className="whitespace-pre-line text-sm leading-relaxed text-[#2A2B2E]">{frota.tecnico}</div>
-                    )}
-                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[#6A6B70]">
-                      <span>Escrita pela IA só com os dados medidos; confira antes de mandar alguém ao prédio.</span>
-                      <button type="button" onClick={frota.analisar} disabled={frota.analisando} className="font-bold text-[#9C1E1E] disabled:opacity-50">Analisar de novo</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {fora.length === 0 ? (
-              <p className="mt-4 rounded-2xl bg-[#EAF5EF] px-3 py-2.5 text-sm font-semibold text-[#1E6B47]">Todas as telas dos prédios estão online.</p>
-            ) : (
-              <ul className="mt-4 grid gap-2 lg:grid-cols-2">
-                {fora.map((p) => (
-                  <li key={p.id} className="rounded-2xl border border-[#F3C9C4] bg-[#FDF3F2] p-3">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <button type="button" onClick={() => abrir(p.id)} className="text-left text-[15px] font-extrabold text-[#8E1F17] hover:underline">{p.nome}</button>
-                      <span className="text-xs text-[#6A6B70]">{p.operadora || 'operadora ?'} · {p.endereco || 'sem endereço'}</span>
-                    </div>
-                    <p className="mt-1 text-sm leading-snug text-[#3F4044]">{p.causa}</p>
-                    <div className="mt-2 flex gap-2">
-                      <button type="button" onClick={() => copiar(p)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 text-xs font-semibold"><Copy className="h-3.5 w-3.5" />Copiar</button>
-                      {p.anydesk && <a href={`anydesk:${String(p.anydesk).replace(/\D/g, '')}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 text-xs font-semibold"><ExternalLink className="h-3.5 w-3.5" />AnyDesk</a>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
           </section>
 
           {/* Busca e filtros */}
