@@ -33,6 +33,13 @@ else
 fi
 # 1d) desliga a atualização automática do Ubuntu (packagekit), que pesa no NUC e pode reiniciar coisas (igual à v6.1)
 sudo -n systemctl mask packagekit.service >/dev/null 2>&1 && echo "Atualizacao automatica do Ubuntu: BLOQUEADA" || true
+# 1e) atualizações automáticas do apt (unattended-upgrades) e a janela "Atualizador de Programas", que aparece por cima
+#     do painel e esquenta o NUC (visto no Las Brisas ao religar: CPU 99%, 83 °C). A instalação em curso termina sozinha.
+for u in apt-daily.timer apt-daily-upgrade.timer update-notifier-download.timer update-notifier-motd.timer; do
+  sudo -n systemctl mask "$u" >/dev/null 2>&1 || true
+done
+pkill -f update-manager >/dev/null 2>&1 || true
+echo "Atualizacoes automaticas do apt: $(systemctl is-enabled apt-daily-upgrade.timer 2>/dev/null)"
 
 # 2) grava o coletor (conteúdo abaixo)
 cat > "$APP/exa_saude.py.tmp" <<'EOF_PY'
