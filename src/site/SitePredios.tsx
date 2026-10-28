@@ -75,7 +75,7 @@ export default function SitePredios() {
       {pinos.map(({ p, x, y }) => {
         const n = ordemNaLista(p.id);
         return (
-          <button key={p.id} type="button" onClick={() => setAberto(p)} aria-label={p.nome} title={p.nome}
+          <button key={p.id} className="pinb" type="button" onClick={() => setAberto(p)} aria-label={p.nome} title={p.nome}
             style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)', width: n ? 22 : 14, height: n ? 22 : 14, borderRadius: '50%', border: 0, padding: 0, cursor: 'pointer', background: '#EA251D', color: '#fff', font: '800 10px Manrope,sans-serif', boxShadow: '0 0 0 3px rgba(234,37,29,.22)' }}>
             {n || ''}
           </button>
@@ -136,7 +136,7 @@ export default function SitePredios() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 8, fontSize: 13, color: '#5A5852' }}>
                         <span><strong style={{ display: 'block', fontSize: 17, color: '#0B0B0D' }}>{p.quantidade_telas || 1}</strong>{(p.quantidade_telas || 1) > 1 ? 'telas' : 'tela'}</span>
-                        <span><strong style={{ display: 'block', fontSize: 17, color: '#0B0B0D' }}>{p.publico_estimado ? num(p.publico_estimado) : '—'}</strong>pessoas/mês</span>
+                        <span><strong style={{ display: 'block', fontSize: 17, color: '#0B0B0D' }}>{p.publico_estimado ? num(p.publico_estimado) : '—'}</strong>moradores</span>
                       </div>
                       <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
                         <span style={{ lineHeight: 1.1 }}><strong style={{ fontSize: 22, letterSpacing: '-.02em' }}>{reais(p.preco_base || 0)}</strong><span style={{ fontSize: 13, color: '#5A5852' }}>/mês</span></span>
@@ -182,7 +182,7 @@ export default function SitePredios() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, borderTop: '1px solid #1C1C20', paddingTop: 14 }}>
                 <div><span className="t" style={{ display: 'block', fontSize: 28, color: '#EA251D' }}>{naLista.length}</span><span style={{ fontSize: 13, color: '#9C9A96' }}>prédios</span></div>
                 <div><span className="t" style={{ display: 'block', fontSize: 28 }}>{telasLista}</span><span style={{ fontSize: 13, color: '#9C9A96' }}>telas</span></div>
-                <div><span className="t" style={{ display: 'block', fontSize: 28 }}>{publicoLista ? num(publicoLista) : '—'}</span><span style={{ fontSize: 13, color: '#9C9A96' }}>pessoas/mês</span></div>
+                <div><span className="t" style={{ display: 'block', fontSize: 28 }}>{publicoLista ? num(publicoLista) : '—'}</span><span style={{ fontSize: 13, color: '#9C9A96' }}>moradores</span></div>
               </div>
               {!!naLista.length && (
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
@@ -225,7 +225,7 @@ export default function SitePredios() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '16px 12px', borderBlock: '1px solid #E2E0DA', paddingBlock: 18 }}>
                 <div><span className="t" style={{ display: 'block', fontSize: 34, color: '#EA251D' }}>{reais(aberto.preco_base || 0)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>por mês</span></div>
                 <div><span className="t" style={{ display: 'block', fontSize: 34 }}>{aberto.quantidade_telas || 1}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{(aberto.quantidade_telas || 1) > 1 ? 'telas' : 'tela'} no elevador</span></div>
-                <div><span className="t" style={{ display: 'block', fontSize: 34 }}>{aberto.publico_estimado ? num(aberto.publico_estimado) : '—'}</span><span style={{ fontSize: 13, color: '#5A5852' }}>pessoas por mês</span></div>
+                <div><span className="t" style={{ display: 'block', fontSize: 34 }}>{aberto.publico_estimado ? num(aberto.publico_estimado) : '—'}</span><span style={{ fontSize: 13, color: '#5A5852' }}>moradores</span></div>
                 <div><span className="t" style={{ display: 'block', fontSize: 22 }}>{aberto.bairro}</span><span style={{ fontSize: 13, color: '#5A5852' }}>bairro</span></div>
               </div>
               {aberto.tem_airbnb && <p style={{ margin: 0, padding: '12px 14px', borderRadius: 12, background: '#EFEEEB', fontSize: 14 }}><strong>Tem apartamentos de temporada.</strong> A tela também é vista por turistas hospedados no prédio.</p>}

@@ -123,3 +123,5 @@
 @keyframes exa-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @media (prefers-reduced-motion:no-preference){.exa-site .nf-seta{animation:exa-bob 1.6s ease-in-out infinite}}
 .exa-site .nl.sempre{display:inline-flex;align-items:center}
+/* o app inteiro força botão com 48 px (pwa-native.css); os pinos do mapa são menores de propósito */
+.exa-site .pinb{min-width:0;min-height:0}
