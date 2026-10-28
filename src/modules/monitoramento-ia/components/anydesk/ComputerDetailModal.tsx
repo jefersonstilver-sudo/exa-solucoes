@@ -12,12 +12,9 @@ import { AuditoriaCard } from "./AuditoriaCard";
 import { DiagnosticoTab } from "./DiagnosticoTab";
 import { PainelResumoEXA } from "../paineis/PainelResumoEXA";
 import type { FrotaPainel } from "../../hooks/useFrotaSaude";
-import { Stethoscope, Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning, Layers } from "lucide-react";
+import { Stethoscope, Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Building2, Pencil, Trash2, FileWarning, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { useRealTimeCounter } from "../../hooks/useRealTimeCounter";
 import { useDeviceIncidents } from "../../hooks/useDeviceIncidents";
@@ -42,11 +39,6 @@ interface ComputerDetailModalProps {
   saude?: FrotaPainel | null;
 }
 
-interface AlertConfig {
-  alerts_enabled: boolean;
-  offline_threshold_minutes: number;
-}
-
 export const ComputerDetailModal = ({ 
   computer, 
   isOpen, 
@@ -62,11 +54,6 @@ export const ComputerDetailModal = ({
   moveDeviceToGroup,
   saude,
 }: ComputerDetailModalProps) => {
-  const [alertConfig, setAlertConfig] = useState<AlertConfig>({
-    alerts_enabled: true,
-    offline_threshold_minutes: 5,
-  });
-  const [loading, setLoading] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isElevatorDialogOpen, setIsElevatorDialogOpen] = useState(false);
   const [assignedBuilding, setAssignedBuilding] = useState<{ id: string; nome: string } | null>(null);
@@ -78,33 +65,10 @@ export const ComputerDetailModal = ({
 
   useEffect(() => {
     if (computer?.id && isOpen) {
-      loadAlertConfig();
       loadAssignedBuilding();
       loadElevatorCompany();
     }
   }, [computer?.id, isOpen]);
-
-  const loadAlertConfig = async () => {
-    try {
-      // @ts-ignore - Table will exist after migration
-      const { data, error } = await (supabase as any)
-        .from('device_alert_configs')
-        .select('*')
-        .eq('device_id', computer.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      
-      if (data) {
-        setAlertConfig({
-          alerts_enabled: data.alerts_enabled,
-          offline_threshold_minutes: data.offline_threshold_minutes,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading alert config:', error);
-    }
-  };
 
   const loadAssignedBuilding = async () => {
     try {
@@ -164,60 +128,6 @@ export const ComputerDetailModal = ({
 
   const handleElevatorCompanySelected = () => {
     loadElevatorCompany();
-  };
-
-  const saveAlertConfig = async () => {
-    setLoading(true);
-    try {
-      // @ts-ignore - Table will exist after migration
-      const { error } = await (supabase as any)
-        .from('device_alert_configs')
-        .upsert({
-          device_id: computer.id,
-          alerts_enabled: alertConfig.alerts_enabled,
-          offline_threshold_minutes: alertConfig.offline_threshold_minutes,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'device_id'
-        });
-
-      if (error) throw error;
-
-      // SYNC: Also update device metadata.notifications_paused_until
-      // This ensures monitor-panels respects BOTH device_alert_configs AND metadata
-      const currentMetadata = computer.metadata || {};
-      let newMetadata: Record<string, any>;
-
-      if (!alertConfig.alerts_enabled) {
-        // Alerts disabled - set notifications_paused_until to 'indefinite'
-        newMetadata = {
-          ...currentMetadata,
-          notifications_paused_until: 'indefinite',
-          paused_by: 'admin_interface',
-          paused_at: new Date().toISOString()
-        };
-      } else {
-        // Alerts enabled - clear pause
-        newMetadata = {
-          ...currentMetadata,
-          notifications_paused_until: null,
-          paused_by: null,
-          paused_at: null
-        };
-      }
-
-      await supabase
-        .from('devices')
-        .update({ metadata: newMetadata })
-        .eq('id', computer.id);
-
-      toast.success('Configurações de alertas salvas com sucesso!');
-    } catch (error) {
-      console.error('Error saving alert config:', error);
-      toast.error('Erro ao salvar configurações de alertas');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleDeleteDevice = async () => {
@@ -283,22 +193,22 @@ export const ComputerDetailModal = ({
           />
 
           {/* 3 CARDS SUPERIORES */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             {/* CARD 1: INFORMAÇÕES DO SISTEMA */}
-            <Card className="bg-module-card border-module shadow-sm">
-              <CardHeader className="pb-3">
+            <Card className="bg-module-card border-module shadow-sm min-w-0">
+              <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
                   <Info className="h-4 w-4 text-module-accent" />
                   Sistema
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="px-4 pb-4 space-y-2">
                 <div>
                   <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
                     Local/Prédio
                   </p>
-                  <p className="text-base font-semibold text-module-primary">{displayName}</p>
+                  <p className="text-sm font-semibold break-words text-module-primary">{displayName}</p>
                 </div>
                 <div>
                   <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
@@ -330,14 +240,14 @@ export const ComputerDetailModal = ({
             </Card>
 
             {/* CARD 2: ATIVIDADE */}
-            <Card className="bg-module-card border-module shadow-sm">
-              <CardHeader className="pb-3">
+            <Card className="bg-module-card border-module shadow-sm min-w-0">
+              <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
                   <Activity className="h-4 w-4 text-module-accent" />
                   Atividade
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="px-4 pb-4 space-y-2">
                 <div>
                   <p className="text-xs text-module-secondary mb-1">Status Atual</p>
                   <Badge
@@ -361,11 +271,12 @@ export const ComputerDetailModal = ({
                     )}
                   </p>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-module-secondary mb-1">
                     Eventos {periodLabel}
                   </p>
-                  <p className="text-2xl font-bold text-module-primary">
+                  <p className="text-lg font-bold text-module-primary">
                     {periodEventsCount !== undefined ? periodEventsCount : (computer.total_events || 0)}
                   </p>
                 </div>
@@ -374,207 +285,71 @@ export const ComputerDetailModal = ({
                     <AlertTriangle className="h-3 w-3 text-red-600" />
                     Quedas {periodLabel}
                   </p>
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-lg font-bold text-red-600">
                     {periodOfflineCount !== undefined ? periodOfflineCount : (computer.offline_count || 0)}
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* CARD 3: CONFIGURAÇÃO DE ALERTAS */}
-            <Card className="bg-module-card border-module shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
-                  <Bell className="h-4 w-4 text-module-accent" />
-                  Alertas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="alerts-enabled" className="text-sm text-module-primary">Alertas Automáticos</Label>
-                  <Toggle
-                    checked={alertConfig.alerts_enabled}
-                    onChange={(e) => setAlertConfig({ ...alertConfig, alerts_enabled: e.target.checked })}
-                    color="red"
-                    size="large"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="threshold" className="text-xs text-module-secondary">
-                    Alertar após (minutos offline)
-                  </Label>
-                  <Input
-                    id="threshold"
-                    type="number"
-                    min="1"
-                    value={alertConfig.offline_threshold_minutes}
-                    onChange={(e) => setAlertConfig({ ...alertConfig, offline_threshold_minutes: parseInt(e.target.value) || 5 })}
-                    className="mt-1 bg-module-secondary border-module text-module-primary"
-                  />
-                </div>
-                <Button 
-                  onClick={saveAlertConfig} 
-                  disabled={loading}
-                  className="w-full bg-module-accent hover:bg-module-accent-hover text-white"
-                  size="sm"
-                >
-                  {loading ? 'Salvando...' : 'Salvar Configurações'}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* CARD 4: PRÉDIO ATRIBUÍDO */}
-            <Card className="bg-module-card border-module shadow-sm md:col-span-3">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
-                  <Building2 className="h-4 w-4 text-module-accent" />
-                  Prédio Atribuído (Loja)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {assignedBuilding ? (
-                      <>
-                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                          <Link2 className="h-5 w-5 text-emerald-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-700">{assignedBuilding.nome}</p>
-                          <p className="text-xs text-module-secondary">Vinculado à loja</p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                          <Unlink className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">Não atribuído</p>
-                          <p className="text-xs text-module-secondary">Clique para vincular a um prédio</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    onClick={() => setIsAssignDialogOpen(true)}
-                    variant={assignedBuilding ? "outline" : "default"}
-                    size="sm"
-                    className={assignedBuilding ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "bg-module-accent hover:bg-module-accent-hover text-white"}
-                  >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    {assignedBuilding ? 'Alterar Prédio' : 'Atribuir Prédio'}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* CARD 4.5: GRUPO DO PAINEL */}
-            <Card className="bg-module-card border-module shadow-sm md:col-span-3">
-              <CardHeader className="pb-3">
+            {/* CARD 3: VÍNCULOS DO PAINEL */}
+            <Card className="bg-module-card border-module shadow-sm min-w-0">
+              <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
                   <Layers className="h-4 w-4 text-module-accent" />
-                  Grupo do Painel
+                  Vínculos do Painel
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{
-                        backgroundColor: deviceGroups.find(g => g.id === computer?.device_group_id)?.cor
-                          ? `${deviceGroups.find(g => g.id === computer?.device_group_id)!.cor}20`
-                          : 'rgb(243 244 246)',
+              <CardContent className="px-4 pb-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 shrink-0 text-module-secondary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-module-secondary">Prédio Atribuído (Loja)</p>
+                    <p className="text-sm font-medium text-module-primary break-words">{assignedBuilding?.nome || 'Não atribuído'}</p>
+                  </div>
+                  <Button onClick={() => setIsAssignDialogOpen(true)} variant="ghost" size="icon" className="h-11 w-11 shrink-0 text-module-accent" aria-label={assignedBuilding ? 'Alterar Prédio' : 'Atribuir Prédio'} title={assignedBuilding ? 'Alterar Prédio' : 'Atribuir Prédio'}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 border-t border-module pt-2">
+                  <Layers className="h-4 w-4 shrink-0 text-module-secondary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-module-secondary mb-1">Grupo do Painel</p>
+                    <Select
+                      value={computer?.device_group_id || '__none__'}
+                      onValueChange={async (val) => {
+                        if (moveDeviceToGroup && computer?.id) {
+                          await moveDeviceToGroup(computer.id, val === '__none__' ? null : val);
+                          onGroupChanged?.();
+                          onClose();
+                        }
                       }}
                     >
-                      <Layers
-                        className="h-5 w-5"
-                        style={{
-                          color: deviceGroups.find(g => g.id === computer?.device_group_id)?.cor || '#9CA3AF',
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-module-primary">
-                        {deviceGroups.find(g => g.id === computer?.device_group_id)?.nome || 'Sem grupo'}
-                      </p>
-                      <p className="text-xs text-module-secondary">Categoria de organização</p>
-                    </div>
+                      <SelectTrigger aria-label="Grupo do Painel" className="w-full min-h-11 bg-module-secondary border-module text-module-primary">
+                        <SelectValue placeholder="Selecionar grupo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sem grupo</SelectItem>
+                        {deviceGroups.map((g) => (
+                          <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select
-                    value={computer?.device_group_id || '__none__'}
-                    onValueChange={async (val) => {
-                      if (moveDeviceToGroup && computer?.id) {
-                        await moveDeviceToGroup(computer.id, val === '__none__' ? null : val);
-                        onGroupChanged?.();
-                        onClose();
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px] h-9 bg-module-secondary border-module text-module-primary">
-                      <SelectValue placeholder="Selecionar grupo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Sem grupo</SelectItem>
-                      {deviceGroups.map((g) => (
-                        <SelectItem key={g.id} value={g.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: g.cor }} />
-                            {g.nome}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* CARD 5: EMPRESA DE ELEVADOR */}
-            <Card className="bg-module-card border-module shadow-sm md:col-span-3">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
-                  🛗 Empresa de Elevador
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {elevatorCompany ? (
-                      <>
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <span className="text-xl">🛗</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-blue-700">{elevatorCompany.nome_fantasia}</p>
-                          <p className="text-xs text-module-secondary">Empresa responsável</p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                          <span className="text-xl opacity-40">🛗</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">Não definida</p>
-                          <p className="text-xs text-module-secondary">Clique para selecionar empresa</p>
-                        </div>
-                      </>
-                    )}
+                <div className="flex items-center gap-2 border-t border-module pt-2">
+                  <span className="shrink-0" aria-hidden="true">🛗</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-module-secondary">Empresa de Elevador</p>
+                    <p className="text-sm font-medium text-module-primary break-words">{elevatorCompany?.nome_fantasia || 'Não definida'}</p>
                   </div>
-                  <Button
-                    onClick={() => setIsElevatorDialogOpen(true)}
-                    variant={elevatorCompany ? "outline" : "default"}
-                    size="sm"
-                    className={elevatorCompany ? "border-blue-300 text-blue-700 hover:bg-blue-50" : "bg-module-accent hover:bg-module-accent-hover text-white"}
-                  >
-                    🛗 {elevatorCompany ? 'Alterar Empresa' : 'Selecionar Empresa'}
+                  <Button onClick={() => setIsElevatorDialogOpen(true)} variant="ghost" size="icon" className="h-11 w-11 shrink-0 text-module-accent" aria-label={elevatorCompany ? 'Alterar Empresa' : 'Selecionar Empresa'} title={elevatorCompany ? 'Alterar Empresa' : 'Selecionar Empresa'}>
+                    <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
-
 
             {/* CARD 6: INCIDENTE OFFLINE */}
             {!isOnline && (
