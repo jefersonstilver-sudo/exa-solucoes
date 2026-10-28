@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogIn } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ClientOnly } from '@/components/ui/client-only';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -55,17 +54,17 @@ export default function Login() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="flex items-center justify-center min-h-[calc(100vh-80px)] px-4 pt-24 pb-8 sm:pt-28 sm:pb-12 md:pt-32 md:pb-16"
+          className="login-novo flex items-center justify-center min-h-[calc(100vh-68px)] px-4 py-12 sm:py-16"
         >
-          <Card className="w-full max-w-md shadow-lg border-[#9C1E1E]/10">
+          <Card className="w-full max-w-md rounded-3xl border-0 shadow-[0_30px_70px_-40px_rgba(11,11,13,.45)] p-2 sm:p-4">
             <CardHeader className="space-y-1 text-center">
               <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.5 }}
               >
-                <CardTitle className="text-2xl font-bold text-[#9C1E1E] flex items-center justify-center gap-2">
-                  <LogIn size={24} /> {isResetMode ? 'Redefinir senha' : 'Acesse sua conta'}
+                <CardTitle className="text-[30px] font-extrabold tracking-tight text-[#0B0B0D] flex items-center justify-center gap-2">
+                  {isResetMode ? 'Redefinir senha' : 'Acesse sua conta'}
                 </CardTitle>
                 <CardDescription>
                   {isResetMode 

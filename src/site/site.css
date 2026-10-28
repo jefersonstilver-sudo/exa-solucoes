@@ -175,3 +175,11 @@
   .exa-site .gaveta{width:100vw}
   .exa-site .pcard-foto{aspect-ratio:16/8}
 }
+
+/* login no visual do site novo (a página usa a moldura Layout) */
+.login-novo{font-family:'Manrope',system-ui,sans-serif}
+.login-novo input{height:50px;border-radius:14px;border-color:#D2D0CB;font-size:16px}
+.login-novo input:focus{border-color:#0B0B0D}
+.login-novo button[type=submit]{height:54px;border-radius:999px;background:#EA251D;font-weight:800;font-size:16px}
+.login-novo button[type=submit]:hover{background:#9E1014}
+.login-novo a{color:#0B0B0D}

@@ -1,9 +1,5 @@
-
 import React, { ReactNode, memo } from 'react';
-import Header from './Header';
-import MobileOptimizedFooter from './MobileOptimizedFooter';
-import CartDrawer from '@/components/cart/CartDrawer';
-import { useCartOptional } from '@/hooks/useCartOptional';
+import { CabecalhoSite, RodapeSite, useFonteSite } from '@/site/comum';
 import '@/styles/components.css';
 
 interface LayoutProps {
@@ -11,34 +7,24 @@ interface LayoutProps {
   className?: string;
 }
 
+/**
+ * Moldura das páginas públicas antigas (login, cadastro, termos, mídia kit…).
+ * Usa o mesmo cabeçalho e rodapé do site novo. Sem carrinho e sem "Finalizar compra":
+ * por enquanto ninguém compra pelo site, a lista de prédios vai para a Sofia no WhatsApp (/loja).
+ */
 const Layout: React.FC<LayoutProps> = memo(({ children, className = '' }) => {
-  const cart = useCartOptional();
-
+  useFonteSite();
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 mobile-scroll-fix safe-area-top">
-      <Header 
-        cartItemsCount={cart?.itemCount || 0}
-        cartAnimation={false}
-        onToggleCart={cart?.toggleCart || (() => {})}
-      />
-      
-      <main className={`flex-1 relative mobile-scroll-fix pt-0 ${className}`}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#F4F3F0' }}>
+      <div className="exa-site" style={{ minHeight: 0, background: 'transparent', position: 'sticky', top: 0, zIndex: 40, overflow: 'visible' }}>
+        <CabecalhoSite />
+      </div>
+      <main className={`flex-1 relative pt-0 ${className}`}>
         {children}
       </main>
-      
-      {cart && (
-        <CartDrawer
-          cartItems={cart.cartItems}
-          isOpen={cart.isOpen}
-          onClose={cart.toggleCart}
-          onRemoveFromCart={cart.removeFromCart}
-          onClearCart={cart.clearCart}
-          onChangeDuration={cart.updateDuration}
-          onProceedToCheckout={cart.proceedToCheckout}
-        />
-      )}
-      
-      <MobileOptimizedFooter />
+      <div className="exa-site" style={{ minHeight: 0 }}>
+        <RodapeSite />
+      </div>
     </div>
   );
 });
