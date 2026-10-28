@@ -60,3 +60,6 @@
 # Publicação do site (26/10)
 - [ ] Publicar o examidia.com.br com o commit 5f75c23 (página do pedido: vídeo no hover, réplica do prédio ao vivo, aba Empresa completa, layout moderno) — bloqueado: o projeto ainda não recebeu esse commit (arquivos novos ausentes); precisa de um novo push na main para acionar a sincronização. Sem alterar arquivos ou funções.
 - [ ] Não publicar sofia-agent, asaas-*, clicksign-* (regra permanente); manter os alertas críticos antigos abertos conforme autorização.
+
+# Site: commit db4d036 (28/10)
+- [ ] Puxar o commit db4d036 (loja com mapa do Google, lista flutuante para a Sofia, vídeos reais dos clientes), fazer deploy da função nova site-clientes-videos (verify_jwt = false) e publicar o site — bloqueado: o projeto ainda está no 7daacc3 (main local), sem os arquivos do commit; precisa de sincronização do GitHub. Sem alterar arquivos.
