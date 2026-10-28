@@ -24,7 +24,7 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v4"
+VERSAO_COLETOR = "saude-v5"
 API_TELAS = "18.228.252.149"
 
 
@@ -309,6 +309,31 @@ def sistema():
     return d
 
 
+def vigia():
+    """Vigia de rede (exa_vigia_rede.sh): eventos dos últimos 7 dias + estado do cabo."""
+    d = {"instalado": "exa_vigia_rede.sh" in sh("crontab -l 2>/dev/null")}
+    try:
+        d["falhas_agora"] = int(ler(os.path.expanduser("~/.exa_vigia/falhas"), "0") or 0)
+    except Exception:
+        d["falhas_agora"] = 0
+    linhas = ler(os.path.expanduser("~/.exa_vigia/vigia.log")).splitlines()
+    limite = time.strftime("%Y-%m-%d", time.localtime(time.time() - 7 * 86400))
+    rec = [l for l in linhas if l[:10] >= limite]
+    d["reboots_7d"] = sum("REINICIANDO O NUC" in l for l in rec)
+    d["rede_reiniciada_7d"] = sum("reiniciando a rede" in l for l in rec)
+    d["sem_rede_7d"] = sum("SEM REDE" in l for l in rec)
+    d["operadora_fora_7d"] = sum("operadora" in l for l in rec)
+    d["eventos"] = [l[:140] for l in rec[-8:]]
+    for dev in sorted(os.listdir("/sys/class/net")):
+        if dev.startswith(("en", "eth")):
+            b = "/sys/class/net/" + dev
+            d["cabo"] = {"placa": dev, "sinal": ler(b + "/carrier") == "1", "velocidade_mbps": ler(b + "/speed") or None,
+                         "driver": os.path.basename(os.path.realpath(b + "/device/driver")) if os.path.exists(b + "/device/driver") else None,
+                         "erros_rx": ler(b + "/statistics/rx_errors") or None}
+            break
+    return d
+
+
 def identidade():
     """Um prédio pode ter 2+ NUCs com o mesmo código de tela: cada NUC se identifica pelo ID do AnyDesk
     (o mesmo do painel de monitoramento) ou, sem ele, pelo machine-id."""
@@ -357,7 +382,7 @@ def main():
     ad, nuc = identidade()
     payload = {"cliente_id": cliente, "nuc_id": nuc, "anydesk_id": ad or None, "coletor": VERSAO_COLETOR,
                "coletado_em": int(time.time()), "temp_c": t, "temp_fonte": fonte}
-    for nome, fn in (("sistema", sistema), ("cpu", cpu), ("rede", rede), ("monitor", monitor), ("player", player)):
+    for nome, fn in (("sistema", sistema), ("cpu", cpu), ("rede", rede), ("monitor", monitor), ("player", player), ("vigia", vigia)):
         try:
             payload[nome] = fn()
         except Exception as e:
