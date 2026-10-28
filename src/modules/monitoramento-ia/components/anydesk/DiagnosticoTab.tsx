@@ -163,6 +163,7 @@ export const DiagnosticoTab = ({ computerId }: Props) => {
             <Kpi icon={m.monitor_conectado === false || m.monitor_ligado === false ? MonitorX : MonitorCheck} rotulo="Monitor" valor={m.monitor_conectado === false ? "Desconectado" : m.monitor_ligado === false ? "Desligado" : m.monitor_conectado ? "Ligado" : "—"} sub={m.resolucao || undefined} tom={m.monitor_conectado === false || m.monitor_ligado === false ? "critico" : m.monitor_conectado ? "bom" : "neutro"} />
             <Kpi icon={p.main_rodando === false ? Square : Play} rotulo="Player" valor={p.main_rodando === false ? "Parado" : p.main_rodando ? "Rodando" : "—"} sub={p.main_ha_min != null ? `há ${p.main_ha_min >= 120 ? Math.round(p.main_ha_min / 60) + " h" : p.main_ha_min + " min"} · ${p.videos_no_cache ?? "?"} vídeos` : undefined} tom={p.main_rodando === false ? "critico" : p.main_rodando ? "bom" : "neutro"} />
             <Kpi icon={HardDrive} rotulo="Disco" valor={s.disco_uso_pct != null ? `${s.disco_uso_pct}%` : "—"} sub={[s.disco_total_gb ? `${s.disco_total_gb} GB` : null, p.disco_gravavel === false ? "SOMENTE LEITURA" : null].filter(Boolean).join(" · ")} tom={p.disco_gravavel === false || s.disco_uso_pct >= 90 ? "critico" : s.disco_uso_pct >= 80 ? "atencao" : s.disco_uso_pct != null ? "bom" : "neutro"} />
+            <Kpi icon={Activity} rotulo="CPU" valor={a.cpu?.cpu_uso_pct != null ? `${a.cpu.cpu_uso_pct}%` : "—"} sub={a.cpu?.top?.[0] ? `maior: ${a.cpu.top[0].proc} ${a.cpu.top[0].cpu}%` : undefined} tom={a.cpu?.cpu_uso_pct == null ? "neutro" : a.cpu.cpu_uso_pct < 75 ? "bom" : a.cpu.cpu_uso_pct < 90 ? "atencao" : "critico"} />
             <Kpi icon={MemoryStick} rotulo="Memória" valor={s.ram_uso_pct != null ? `${s.ram_uso_pct}%` : "—"} sub={[s.ram_total_gb ? `${s.ram_total_gb} GB` : null, s.load1 != null ? `carga ${s.load1}` : null].filter(Boolean).join(" · ")} tom={s.ram_uso_pct == null ? "neutro" : s.ram_uso_pct < 85 ? "bom" : "atencao"} />
             <Kpi icon={Clock} rotulo="Ligado há" valor={s.uptime_h != null ? (s.uptime_h >= 48 ? `${Math.round(s.uptime_h / 24)} dias` : `${s.uptime_h} h`) : "—"} sub={s.boots_24h != null ? `${s.boots_24h} partida(s) em 24 h · relógio ${s.ntp_ok ? "ok" : "fora"}` : undefined} tom={(s.boots_24h || 0) >= 2 || s.ntp_ok === false ? "atencao" : s.uptime_h != null ? "bom" : "neutro"} />
             <Kpi icon={Server} rotulo="Hardware" valor={s.produto || s.fabricante || "—"} sub={s.cpu || undefined} />
@@ -173,12 +174,12 @@ export const DiagnosticoTab = ({ computerId }: Props) => {
       {/* gráficos */}
       {serie.length > 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <Grafico titulo="Perda de pacotes" unidade="%" dominio={[0, 100]} dados={serie} linhas={[{ k: "perda_net", nome: "Internet", cor: "#ef4444" }, { k: "perda_gw", nome: "Roteador", cor: "#f59e0b" }]} />
+          <Grafico titulo="Perda de pacotes" unidade="%" dominio={[0, 100]} dados={serie} linhas={[{ k: "perda_net", nome: "Internet", cor: "#ef4444" }, { k: "perda_gw", nome: "Roteador", cor: "#f59e0b" }, { k: "perda_api", nome: "Servidor das telas", cor: "#8b5cf6" }]} />
           <Grafico titulo="Latência da internet" unidade=" ms" dados={serie} linhas={[{ k: "lat_net", nome: "Latência", cor: "#3b82f6" }, { k: "jitter", nome: "Variação", cor: "#8b5cf6" }]} />
           <Grafico titulo="Temperatura do NUC" unidade="°C" dados={serie} linhas={[{ k: "temp", nome: "Temperatura", cor: "#f97316" }]} />
           {serie.some((x: any) => typeof x.sinal === "number")
             ? <Grafico titulo="Sinal do Wi-Fi" unidade=" dBm" dados={serie} linhas={[{ k: "sinal", nome: "Sinal", cor: "#10b981" }]} />
-            : <Grafico titulo="Disco e memória" unidade="%" dominio={[0, 100]} dados={serie} linhas={[{ k: "disco", nome: "Disco", cor: "#64748b" }, { k: "ram", nome: "RAM", cor: "#0ea5e9" }]} />}
+            : <Grafico titulo="CPU e memória" unidade="%" dominio={[0, 100]} dados={serie} linhas={[{ k: "cpu", nome: "CPU", cor: "#ef4444" }, { k: "ram", nome: "RAM", cor: "#0ea5e9" }]} />}
         </div>
       )}
 

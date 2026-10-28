@@ -51,7 +51,7 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v2"
+VERSAO_COLETOR = "saude-v3"
 API_TELAS = "18.228.252.149"
 
 
@@ -130,6 +130,26 @@ def ping(host, n=10):
     }
 
 
+def tcp(host, porta, n=5):
+    """Servidor das telas não responde ping (firewall da AWS): mede abrindo conexão na porta da API."""
+    tempos, falhas = [], 0
+    for _ in range(n):
+        t0 = time.time()
+        try:
+            c = socket.create_connection((host, porta), timeout=3)
+            c.close()
+            tempos.append((time.time() - t0) * 1000)
+        except Exception:
+            falhas += 1
+        time.sleep(0.2)
+    return {
+        "perda_pct": round(100.0 * falhas / n, 1),
+        "lat_ms": round(sum(tempos) / len(tempos), 1) if tempos else None,
+        "lat_max_ms": round(max(tempos), 1) if tempos else None,
+        "metodo": "tcp",
+    }
+
+
 def rede():
     d = {}
     rota = sh("ip -4 route show default 2>/dev/null").splitlines()
@@ -162,7 +182,7 @@ def rede():
             d["wifi_ssid"] = ss.group(1).strip()[:40]
     d["gw"] = ping(gw)
     d["internet"] = ping("8.8.8.8")
-    d["api_telas"] = ping(API_TELAS, 6)
+    d["api_telas"] = tcp(API_TELAS, 8000)
     try:
         with urllib.request.urlopen("https://api.ipify.org", timeout=6) as r:
             d["ip_publico"] = r.read(64).decode().strip()
@@ -218,12 +238,40 @@ def monitor():
     return d
 
 
+def versao_player():
+    m = re.search(r'APP_VERSAO\s*=\s*"([^"]+)"', ler(os.path.join(APP, "atualizadores", "sistema.py")))
+    return m.group(1) if m else (ler(os.path.join(APP, "version_app.txt")) or None)
+
+
+def cpu():
+    """Uso real de CPU em 2 s e os processos que mais consomem (explica carga alta)."""
+    def amostra():
+        v = [int(x) for x in ler("/proc/stat").splitlines()[0].split()[1:]]
+        ocioso = v[3] + (v[4] if len(v) > 4 else 0)
+        return sum(v), ocioso
+    try:
+        t1, o1 = amostra()
+        time.sleep(2)
+        t2, o2 = amostra()
+        uso = round(100 * (1 - (o2 - o1) / max(t2 - t1, 1)))
+    except Exception:
+        uso = None
+    top = []
+    for linha in sh("ps -eo pcpu,pmem,comm --sort=-pcpu --no-headers 2>/dev/null | head -n 5").splitlines():
+        p = linha.split(None, 2)
+        if len(p) == 3:
+            top.append({"cpu": float(p[0]), "mem": float(p[1]), "proc": p[2][:30]})
+    io = sh("cat /proc/pressure/io 2>/dev/null | head -n1")
+    m = re.search(r"avg60=([\d.]+)", io)
+    return {"cpu_uso_pct": uso, "top": top, "io_espera_pct": float(m.group(1)) if m else None}
+
+
 def player():
     procs = sh("pgrep -af 'python' 2>/dev/null")
     d = {
         "main_rodando": "main.py" in procs,
         "atualizador_rodando": "atualizador.py" in procs,
-        "app_versao": ler(os.path.join(APP, "version_app.txt")) or None,
+        "app_versao": versao_player(),
     }
     pid = sh("pgrep -of 'main.py'")
     if pid.isdigit():
@@ -334,7 +382,7 @@ def main():
     ad, nuc = identidade()
     payload = {"cliente_id": cliente, "nuc_id": nuc, "anydesk_id": ad or None, "coletor": VERSAO_COLETOR,
                "coletado_em": int(time.time()), "temp_c": t, "temp_fonte": fonte}
-    for nome, fn in (("sistema", sistema), ("rede", rede), ("monitor", monitor), ("player", player)):
+    for nome, fn in (("sistema", sistema), ("cpu", cpu), ("rede", rede), ("monitor", monitor), ("player", player)):
         try:
             payload[nome] = fn()
         except Exception as e:

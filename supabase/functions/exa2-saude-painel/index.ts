@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
         disco: s.disco_uso_pct ?? null,
         ram: s.ram_uso_pct ?? null,
         load: s.load1 ?? null,
+        cpu: d.cpu?.cpu_uso_pct ?? null,
         uptime_h: s.uptime_h ?? null,
         monitor: d.monitor?.monitor_conectado === false ? 'desconectado' : d.monitor?.monitor_ligado === false ? 'desligado' : (d.monitor?.monitor_conectado ? 'ok' : null),
         player: d.player?.main_rodando === false ? 'parado' : d.player?.main_rodando ? 'ok' : null,
@@ -131,6 +132,7 @@ Deno.serve(async (req) => {
       marca('player', d.player?.main_rodando === false, t, 'critico', 'Player parado', 'o programa da tela não estava rodando');
       marca('disco', (s.disco_uso_pct ?? 0) >= 85 || d.player?.disco_gravavel === false, t, 'critico', 'Disco', d.player?.disco_gravavel === false ? 'somente leitura' : `${s.disco_uso_pct}% cheio`);
       marca('wifi', r.tipo === 'wifi' && (r.wifi_sinal_dbm ?? 0) <= -72, t, 'atencao', 'Wi-Fi fraco', `${r.wifi_sinal_dbm} dBm (${r.wifi_banda})`);
+      marca('cpu', (d.cpu?.cpu_uso_pct ?? 0) >= 90, t, 'atencao', 'CPU no limite', `${d.cpu?.cpu_uso_pct}% · maior consumo: ${(d.cpu?.top || [])[0]?.proc || '?'} (risco de vídeo travando)`);
       marca('ntp', s.ntp_ok === false, t, 'atencao', 'Relógio fora de sincronia', 'programação por horário pode errar');
       if (prevUp !== null && typeof s.uptime_h === 'number' && s.uptime_h < prevUp) ev.push({ em: t, nivel: 'atencao', tipo: 'reinicio', titulo: 'NUC reiniciou', detalhe: `ligado há ${Math.round(s.uptime_h * 60)} min nesta leitura` });
       if (typeof s.uptime_h === 'number') prevUp = s.uptime_h;
