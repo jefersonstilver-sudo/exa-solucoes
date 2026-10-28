@@ -135,7 +135,6 @@ export default function SiteHome() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 26px', alignItems: 'center' }}>
               <Link className="b br" to="/loja">Ver prédios e preços</Link>
             </div>
-            <p style={{ margin: 0, fontSize: 15, color: '#8E8C87' }}>{resumo}</p>
           </div>
           <figure className="monw" style={{ margin: '0 auto', width: '100%', maxWidth: 360, position: 'relative' }}>
             <div className="mon boot"><div className="scr">
