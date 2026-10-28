@@ -9,7 +9,7 @@
 # Antes de gravar, faz um teste de 6 s de cada modo e so usa o que acompanha o tempo real.
 import os, subprocess, shutil, time, urllib.request, urllib.error, json, glob, re
 
-SEGUNDOS = 240
+SEGUNDOS = int(os.environ.get("EXA_GRAV_SEG") or 240)  # duração ajustável: EXA_GRAV_SEG=60
 ENDERECO_ENVIO = "https://sistema-update.s3.sa-east-1.amazonaws.com/diag/envio_gravacao.json"
 ARQ = "/tmp/gravacao_painel.mp4"
 DISPLAY = os.environ.get("DISPLAY") or ":0"
