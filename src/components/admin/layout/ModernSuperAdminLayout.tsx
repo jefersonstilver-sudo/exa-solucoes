@@ -6,8 +6,7 @@ import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import AdminMenuButton from './AdminMenuButton';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
-import { SofiaVoiceButton } from '@/components/admin/sofia';
-import { SofiaProvider } from '@/contexts/SofiaContext';
+import { SofiaLauncher } from '@/components/admin/sofia/SofiaLauncher';
 import AdminMasterWelcomeDialog from '@/components/impersonation/AdminMasterWelcomeDialog';
 
 // Rotas que devem ocultar o header para modo fullscreen
@@ -25,7 +24,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
   const sidebarDefaultOpen = isFullscreenMode ? false : !isMobile;
 
   return (
-    <SofiaProvider>
+    <>
       <SidebarProvider
         defaultOpen={sidebarDefaultOpen}
         style={{
@@ -61,11 +60,11 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
             {isMobile && !isFullscreenMode && <MobileBottomNav />}
           </SidebarInset>
 
-          <SofiaVoiceButton />
+          <SofiaLauncher />
           <AdminMasterWelcomeDialog />
         </div>
       </SidebarProvider>
-    </SofiaProvider>
+    </>
   );
 };
 

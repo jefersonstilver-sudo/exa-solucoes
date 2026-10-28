@@ -12,9 +12,12 @@ const FULLSCREEN_HIDDEN_ROUTES = ['tarefas/fullscreen', '/tarefas'];
 
 interface SofiaVoiceButtonProps {
   className?: string;
+  /** Inicia a chamada assim que o botão aparece (quando aberto pelo SofiaLauncher). */
+  autoIniciar?: boolean;
 }
 
-export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className }) => {
+export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className, autoIniciar }) => {
+  const jaIniciou = React.useRef(false);
   const location = useLocation();
   const [sofiaAtiva, setSofiaAtiva] = useState<boolean | null>(null);
   const { userProfile } = useAuth();
@@ -63,6 +66,13 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
       supabase.removeChannel(channel);
     };
   }, [isSuperAdmin]);
+
+  useEffect(() => {
+    if (autoIniciar && !jaIniciou.current && sofiaAtiva === true && state === 'idle') {
+      jaIniciou.current = true;
+      startCall();
+    }
+  }, [autoIniciar, sofiaAtiva, state, startCall]);
 
   // Hide on fullscreen routes (replaced by custom FAB)
   const isFullscreenRoute = FULLSCREEN_HIDDEN_ROUTES.some(r => location.pathname.includes(r));

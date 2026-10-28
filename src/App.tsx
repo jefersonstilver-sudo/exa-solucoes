@@ -21,24 +21,30 @@ import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import { ResponsiveProvider } from '@/contexts/ResponsiveContext';
 import { DebugProvider } from '@/contexts/DebugContext';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
-import PageTransitionLoader from '@/components/loading/PageTransitionLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { hasLaunchTimePassed, MAINTENANCE_MODE } from '@/config/comingSoonConfig';
-import ComingSoonPage from '@/pages/ComingSoonPage';
+const ComingSoonPage = lazy(() => import('@/pages/ComingSoonPage'));
 import { useState } from 'react';
-import { usePageTransition } from '@/hooks/usePageTransition';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTracker';
-import { FloatingDebugButton } from '@/components/debug/FloatingDebugButton';
+import { useDebugContext } from '@/contexts/DebugContext';
+const FloatingDebugButton = lazy(() => import('@/components/debug/FloatingDebugButton').then(m => ({ default: m.FloatingDebugButton })));
+
+/** O painel de debug (pesado) só é baixado para quem tem permissão de debug. */
+const DebugSoParaAutorizados = () => {
+  const { isDebugAuthorized } = useDebugContext();
+  if (!isDebugAuthorized) return null;
+  return <Suspense fallback={null}><FloatingDebugButton /></Suspense>;
+};
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { GlobalNotificationProvider } from '@/providers/GlobalNotificationProvider';
-import { ZAPIDisconnectAlert } from '@/components/notifications/ZAPIDisconnectAlert';
+const ZAPIDisconnectAlert = lazy(() => import('@/components/notifications/ZAPIDisconnectAlert').then(m => ({ default: m.ZAPIDisconnectAlert })));
 import { useForceCacheClear } from '@/hooks/useForceCacheClear';
 import { useVersionWatcher } from '@/hooks/useVersionWatcher';
-import TwoFactorVerificationPage from '@/pages/auth/TwoFactorVerificationPage';
+const TwoFactorVerificationPage = lazy(() => import('@/pages/auth/TwoFactorVerificationPage'));
 
 // Importação direta APENAS para a homepage (rota /)
-import Exa from './pages/Exa';
+const Exa = lazy(() => import('./pages/Exa'));
 
 // Lazy load para todas as outras páginas (reduz carga inicial no proxy)
 const BuildingStore = lazy(() => import('./pages/BuildingStore'));
@@ -170,11 +176,6 @@ const AppContent = () => {
   // ⚠️ Active session tracking - passa flag para desabilitar internamente para painéis públicos
   useActiveSession({ disabled: isPublicDisplayRoute });
   
-  // Page transition hook
-  const { isLoading: isTransitioning, loadingMessage } = usePageTransition({
-    minLoadingTime: 300,
-    transitionDelay: 50
-  });
   
   // Global loading state
   const { isGlobalLoading, loadingMessage: globalMessage, loadingProgress, showProgress } = useLoadingState();
@@ -203,7 +204,7 @@ const AppContent = () => {
 
   if (isMaintenanceMode && !isDevSession) {
     console.log('🚧 Maintenance mode ON - showing ComingSoonPage');
-    return <ComingSoonPage />;
+    return <Suspense fallback={null}><ComingSoonPage /></Suspense>;
   }
 
   console.log('✅ Maintenance bypass or OFF - showing main app');
@@ -221,26 +222,26 @@ const AppContent = () => {
 
   // Normal app routes with page transitions
   return (
-    <PageTransitionLoader isLoading={isInteresseSindicoRoute ? false : isTransitioning} loadingMessage={loadingMessage}>
+    <>
       <div className={isInteresseSindicoRoute ? 'bg-background' : 'min-h-screen bg-background'}>
         {/* Global Activity Tracker - tracks login/logout */}
         <GlobalActivityTracker />
         
         {/* Floating Debug Button - appears on all pages when Debug AI is enabled */}
-        <FloatingDebugButton />
+        <DebugSoParaAutorizados />
         
         {/* Z-API Disconnect Alert - global alert for agent disconnections */}
-        <ZAPIDisconnectAlert />
+        <Suspense fallback={null}><ZAPIDisconnectAlert /></Suspense>
         
         <Routes>
           {/* Rotas principais */}
-          <Route path="/" element={<Exa />} />
+          <Route path="/" element={<Suspense fallback={<GlobalLoadingPage />}><Exa /></Suspense>} />
           <Route path="/catalogo-clientes" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Mídia Kit..." />}>
               <CatalogoClientes />
             </Suspense>
           } />
-          <Route path="/coming-soon" element={<ComingSoonPage />} />
+          <Route path="/coming-soon" element={<Suspense fallback={null}><ComingSoonPage /></Suspense>} />
           <Route path="/portrasdamarca" element={
             <Suspense fallback={<GlobalLoadingPage message="" />}>
               {React.createElement(lazy(() => import('./pages/PortrasDaMarca')))}
@@ -600,7 +601,7 @@ const AppContent = () => {
           <Route path="/email-not-confirmed" element={<Suspense fallback={<GlobalLoadingPage />}><EmailNotConfirmed /></Suspense>} />
           <Route path="/termos-uso" element={<Suspense fallback={<GlobalLoadingPage />}><TermosUso /></Suspense>} />
           <Route path="/politica-privacidade" element={<Suspense fallback={<GlobalLoadingPage />}><PoliticaPrivacidade /></Suspense>} />
-          <Route path="/verificacao-2fa" element={<TwoFactorVerificationPage />} />
+          <Route path="/verificacao-2fa" element={<Suspense fallback={<GlobalLoadingPage />}><TwoFactorVerificationPage /></Suspense>} />
 
           {/* Rota pública de escolha de benefício prestadores */}
           <Route path="/presente" element={<Suspense fallback={<GlobalLoadingPage />}><ProviderBenefitChoice /></Suspense>} />
@@ -640,7 +641,7 @@ const AppContent = () => {
         </Routes>
         <Toaster />
       </div>
-    </PageTransitionLoader>
+    </>
   );
 };
 

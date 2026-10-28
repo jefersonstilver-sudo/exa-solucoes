@@ -6,10 +6,11 @@
  * "Conexões" mostra todas as conexões por operadora com ranking de quedas.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Activity, ChevronDown, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, Sparkles, ExternalLink, BellOff,
+  Activity, ChevronDown, MoreHorizontal, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, Sparkles, ExternalLink, BellOff,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generatePublicUrl } from '@/config/domain';
@@ -47,12 +48,6 @@ const Chip = ({ children, fundo = 'rgba(23,24,26,0.05)', cor = '#45464A' }: { ch
   <span className="inline-flex h-6 max-w-full items-center gap-1.5 truncate rounded-full px-2.5 text-[11px] font-bold" style={{ background: fundo, color: cor }}>{children}</span>
 );
 
-const BotaoIcone = ({ titulo, onClick, children, escuro }: { titulo: string; onClick: () => void; children: React.ReactNode; escuro?: boolean }) => (
-  <button type="button" title={titulo} aria-label={titulo} onClick={onClick}
-    className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors ${escuro ? 'bg-[#17181A] text-white hover:bg-black' : `${glass} text-[#17181A] hover:bg-white`}`}>
-    {children}
-  </button>
-);
 
 export default function PaineisEXA() {
   const { devices, refresh, lastUpdate } = useDevices(0, 500);
@@ -214,33 +209,43 @@ export default function PaineisEXA() {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 text-[#17181A] md:space-y-6" style={{ fontFeatureSettings: '"tnum"' }}>
-      {/* Cabeçalho */}
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[28px] font-extrabold leading-none tracking-[-0.03em] md:text-[32px]">Painéis</h1>
-            <span className={`inline-flex h-7 items-center gap-2 rounded-full px-3 text-xs font-bold text-[#1E6B47] ${glass}`}>
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#2E9B62]" />Ao vivo · {hhmm(frota.geradoEm || lastUpdate)}
-            </span>
-          </div>
-          <div className="mt-3 inline-flex rounded-xl bg-black/[0.05] p-1" role="tablist">
+      {/* Cabeçalho: título, ao vivo, abas e só 2 ações (as outras ficam em "Mais") */}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="text-[26px] font-extrabold leading-none tracking-[-0.03em] md:text-[30px]">Painéis EXA</h1>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E6B47]">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-[#2E9B62]" />ao vivo {hhmm(frota.geradoEm || lastUpdate).slice(0, 5)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-xl bg-black/[0.05] p-1" role="tablist" aria-label="Visão">
             {(['paineis', 'conexoes'] as Visao[]).map((v) => (
               <button key={v} role="tab" aria-selected={visao === v} type="button" onClick={() => setVisao(v)}
-                className={`h-9 rounded-lg px-4 text-sm font-bold transition-colors ${visao === v ? 'bg-white shadow-sm' : 'text-[#5E5F63] hover:text-[#17181A]'}`}>
-                {v === 'paineis' ? 'Painéis' : 'Conexões'}
+                className={`h-8 rounded-lg px-3 text-sm font-bold transition-colors ${visao === v ? 'bg-white shadow-sm' : 'text-[#5E5F63] hover:text-[#17181A]'}`}>
+                {v === 'paineis' ? 'Visão geral' : 'Conexões'}
               </button>
             ))}
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <PeriodSelector value={periodo} onChange={(p, a, b) => { setPeriodo(p); if (a) setIni(a); if (b) setFim(b); }} customStartDate={ini} customEndDate={fim} />
-          <BotaoIcone titulo="Mapa dos painéis" onClick={() => setMapa(true)}><MapPin className="h-4 w-4" /><span className="hidden sm:inline">Mapa</span></BotaoIcone>
-          <BotaoIcone titulo="Grupos de painéis" onClick={() => setGruposDlg(true)}><Layers className="h-4 w-4" /><span className="hidden sm:inline">Grupos</span></BotaoIcone>
-          <BotaoIcone titulo="Horário de funcionamento" onClick={() => setHorarioDlg(true)}><Clock className="h-4 w-4" /></BotaoIcone>
-          <BotaoIcone titulo="Saúde da sincronia AnyDesk" onClick={() => setSyncDlg(true)}><Activity className="h-4 w-4" /></BotaoIcone>
-          <BotaoIcone titulo="Copiar link do monitor público" onClick={() => { const u = generatePublicUrl('/monitor'); navigator.clipboard.writeText(u); toast.success('Link copiado', { description: u }); }}><Link2 className="h-4 w-4" /></BotaoIcone>
-          <BotaoIcone titulo="Monitor em tela cheia" onClick={() => setTelaCheia(true)}><Maximize2 className="h-4 w-4" /></BotaoIcone>
-          <BotaoIcone titulo="Sincronizar AnyDesk" onClick={sincronizar} escuro><RefreshCw className={`h-4 w-4 ${sincronizando ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Sincronizar</span></BotaoIcone>
+          <button type="button" onClick={sincronizar} title="Buscar agora o status no AnyDesk"
+            className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold ${glass} hover:bg-white`}>
+            <RefreshCw className={`h-4 w-4 ${sincronizando ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Atualizar</span>
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Mais ações" className={`inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold ${glass} hover:bg-white`}>
+                <MoreHorizontal className="h-4 w-4" /><span className="hidden sm:inline">Mais</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem onClick={() => setMapa(true)}><MapPin className="mr-2 h-4 w-4" />Ver mapa dos painéis</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setGruposDlg(true)}><Layers className="mr-2 h-4 w-4" />Gerenciar grupos</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHorarioDlg(true)}><Clock className="mr-2 h-4 w-4" />Horário de funcionamento</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTelaCheia(true)}><Maximize2 className="mr-2 h-4 w-4" />Monitor em tela cheia</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSyncDlg(true)}><Activity className="mr-2 h-4 w-4" />Saúde da conexão com o AnyDesk</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { const u = generatePublicUrl('/monitor'); navigator.clipboard.writeText(u); toast.success('Link copiado', { description: u }); }}><Link2 className="mr-2 h-4 w-4" />Copiar link do monitor público</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -250,105 +255,78 @@ export default function PaineisEXA() {
 
       {visao === 'paineis' ? (
         <>
-          {/* KPIs */}
-          <section aria-label="Resumo" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            {[
-              { r: 'Tocando agora', v: `${kpis.tocando}`, s: `de ${kpis.total} telas`, c: '#17181A', f: 'todos' as FiltroEstado },
-              { r: 'Sem sinal', v: kpis.semSinal, s: 'NUC não responde', c: '#B0261D', f: 'sem_sinal' as FiltroEstado },
-              { r: 'Sem imagem', v: kpis.semImagem, s: 'monitor/player', c: '#B0261D', f: 'sem_imagem' as FiltroEstado },
-              { r: 'Internet ruim', v: kpis.internet, s: 'perda ou instável', c: '#9A5300', f: 'internet_ruim' as FiltroEstado },
-              { r: 'Quentes', v: kpis.quentes, s: '≥ 85 °C', c: '#9A5300', f: 'quente' as FiltroEstado },
-              { r: 'Quedas 24 h', v: kpis.quedas24, s: `${kpis.semColetor} sem diagnóstico`, c: '#17181A', f: 'problema' as FiltroEstado },
-            ].map((k) => (
-              <button key={k.r} type="button" onClick={() => { setFiltroEstado(k.f); document.getElementById('lista-paineis')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className={`${glass} flex flex-col gap-1 rounded-[20px] p-4 text-left transition-transform hover:-translate-y-0.5`}>
-                <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#6A6B70]">{k.r}</span>
-                <span className="text-[34px] font-extrabold leading-none tracking-[-0.03em]" style={{ color: k.c }}>{frota.carregando ? '–' : k.v}</span>
-                <span className="text-xs text-[#6A6B70]">{k.s}</span>
-              </button>
-            ))}
+          {/* Resumo em uma faixa: online (verde) + o que precisa de atenção */}
+          <section aria-label="Resumo" className={`${glass} grid gap-4 rounded-[22px] p-4 md:grid-cols-[1.3fr_2fr] md:items-center md:p-5`}>
+            <button type="button" onClick={() => setFiltroEstado('todos')} className="text-left">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#1E6B47]">Online agora</span>
+              <span className="mt-1 flex items-baseline gap-2">
+                <span className="text-[40px] font-extrabold leading-none tracking-[-0.03em] text-[#1E6B47]">{frota.carregando ? '–' : kpis.tocando}</span>
+                <span className="text-base font-bold text-[#8A8B90]">de {kpis.total} telas</span>
+              </span>
+              <span className="mt-2 block h-2 overflow-hidden rounded-full bg-black/[0.06]">
+                <span className="block h-full rounded-full bg-[#2E9B62] transition-all" style={{ width: kpis.total ? `${(kpis.tocando / kpis.total) * 100}%` : '0%' }} />
+              </span>
+            </button>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { r: 'Sem sinal', v: kpis.semSinal + kpis.semImagem, c: '#B0261D', f: 'sem_sinal' as FiltroEstado },
+                { r: 'Com problema', v: kpis.internet + kpis.quentes, c: '#9A5300', f: 'problema' as FiltroEstado },
+                { r: 'Quedas 24 h', v: kpis.quedas24, c: '#45464A', f: 'instavel' as FiltroEstado },
+              ].map((k) => (
+                <button key={k.r} type="button" onClick={() => { setFiltroEstado(k.f); document.getElementById('lista-paineis')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  className="rounded-2xl bg-white/70 px-3 py-2.5 text-left transition-colors hover:bg-white">
+                  <span className="block text-[11px] font-bold text-[#6A6B70]">{k.r}</span>
+                  <span className="block text-[26px] font-extrabold leading-tight" style={{ color: k.v ? k.c : '#1E6B47' }}>{frota.carregando ? '–' : k.v}</span>
+                </button>
+              ))}
+            </div>
           </section>
 
-          {/* Fora agora + operadoras */}
-          <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <section className={`${glass} rounded-[22px] p-4 md:p-5`} aria-labelledby="t-fora">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 id="t-fora" className="text-lg font-extrabold tracking-tight">Fora agora e por quê</h2>
-                <Chip fundo={fora.length ? '#FCE9E7' : '#EAF5EF'} cor={fora.length ? '#B0261D' : '#1E6B47'}>{fora.length} tela{fora.length === 1 ? '' : 's'}</Chip>
-              </div>
-              {fora.length === 0 ? (
-                <p className="text-sm text-[#45464A]">Nenhuma tela fora agora.</p>
-              ) : (
-                <ul className="divide-y divide-black/[0.06]">
-                  {fora.map((p) => (
-                    <li key={p.id} className="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <button type="button" onClick={() => abrir(p.id)} className="text-left text-[15px] font-extrabold hover:underline">{p.nome}</button>
-                        <span className="text-xs text-[#6A6B70]">{p.operadora || 'operadora ?'} · {p.endereco || 'sem endereço'}</span>
-                      </div>
-                      <p className="text-sm leading-snug text-[#3F4044]"><strong>Causa provável:</strong> {p.causa}</p>
-                      <div className="flex gap-2">
-                        <button type="button" onClick={() => copiar(p)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 text-xs font-semibold"><Copy className="h-3.5 w-3.5" />Copiar</button>
-                        {p.anydesk && <a href={`anydesk:${String(p.anydesk).replace(/\D/g, '')}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 text-xs font-semibold"><ExternalLink className="h-3.5 w-3.5" />AnyDesk {p.anydesk}</a>}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className={`${glass} rounded-[22px] p-4 md:p-5`} aria-labelledby="t-op">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 id="t-op" className="text-lg font-extrabold tracking-tight">Operadoras agora</h2>
-                <button type="button" onClick={() => setVisao('conexoes')} className="text-sm font-bold text-[#9C1E1E]">Ver todas as conexões →</button>
-              </div>
-              <ul className="space-y-3">
-                {porOperadora.map((o) => {
-                  const ok = o.total - o.fora - o.ruins;
-                  return (
-                    <li key={o.nome}>
-                      <button type="button" onClick={() => { setFiltroOp(o.nome); setVisao('conexoes'); }} className="w-full text-left">
-                        <div className="flex items-baseline justify-between gap-2 text-sm">
-                          <strong>{o.nome}</strong>
-                          <span className="text-xs text-[#6A6B70]">{o.total} prédios · {o.fora} fora · {o.ruins} com problema · {o.quedas} quedas/7d</span>
-                        </div>
-                        <div className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-black/[0.06]">
-                          <span style={{ width: `${(ok / o.total) * 100}%`, background: '#2E9B62' }} />
-                          <span style={{ width: `${(o.ruins / o.total) * 100}%`, background: '#E08A1E' }} />
-                          <span style={{ width: `${(o.fora / o.total) * 100}%`, background: '#D93A2B' }} />
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-                {!porOperadora.length && <li className="text-sm text-[#6A6B70]">Carregando…</li>}
-              </ul>
-            </section>
-          </div>
-
-          {/* Técnico EXA (recolhido) */}
-          <section className={`${glass} rounded-[22px]`}>
-            <button type="button" onClick={() => { const n = !iaAberta; setIaAberta(n); if (n && !frota.tecnico && !frota.analisando) frota.analisar(); }}
-              aria-expanded={iaAberta} className="flex w-full items-center gap-3 p-4 text-left md:p-5">
+          {/* Atenção agora: a análise do Técnico EXA e quem está fora ficam no MESMO quadro */}
+          <section className={`${glass} rounded-[22px] p-4 md:p-5`} aria-labelledby="t-atencao">
+            <div className="flex items-start gap-3">
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FCE9E7] text-[#B0261D]"><Sparkles className="h-4 w-4" /></span>
-              <span className="min-w-0 flex-1">
-                <strong className="block text-[15px]">Análise do Técnico EXA</strong>
-                <span className="block truncate text-sm text-[#5E5F63]">{manchete}</span>
-              </span>
-              <ChevronDown className={`h-5 w-5 shrink-0 text-[#6A6B70] transition-transform ${iaAberta ? 'rotate-180' : ''}`} />
-            </button>
-            {iaAberta && (
-              <div className="border-t border-black/[0.06] px-4 pb-5 pt-4 md:px-5">
-                {frota.analisando ? (
-                  <p className="text-sm text-[#5E5F63]">Analisando histórico, diário de conexão e leituras dos NUCs…</p>
-                ) : (
-                  <div className="whitespace-pre-line text-sm leading-relaxed text-[#2A2B2E]">{frota.tecnico}</div>
+              <div className="min-w-0 flex-1">
+                <h2 id="t-atencao" className="text-[15px] font-extrabold">Técnico EXA · o que precisa de atenção</h2>
+                <p className="text-sm text-[#45464A]">{manchete}</p>
+                <button type="button" onClick={() => { const n = !iaAberta; setIaAberta(n); if (n && !frota.tecnico && !frota.analisando) frota.analisar(); }}
+                  aria-expanded={iaAberta} className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-[#9C1E1E]">
+                  {iaAberta ? 'Fechar análise' : 'Ver análise completa'}<ChevronDown className={`h-4 w-4 transition-transform ${iaAberta ? 'rotate-180' : ''}`} />
+                </button>
+                {iaAberta && (
+                  <div className="mt-2 rounded-2xl bg-white/70 p-3">
+                    {frota.analisando ? (
+                      <p className="text-sm text-[#5E5F63]">Analisando histórico, diário de conexão e leituras dos NUCs…</p>
+                    ) : (
+                      <div className="whitespace-pre-line text-sm leading-relaxed text-[#2A2B2E]">{frota.tecnico}</div>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[#6A6B70]">
+                      <span>Escrita pela IA só com os dados medidos; confira antes de mandar alguém ao prédio.</span>
+                      <button type="button" onClick={frota.analisar} disabled={frota.analisando} className="font-bold text-[#9C1E1E] disabled:opacity-50">Analisar de novo</button>
+                    </div>
+                  </div>
                 )}
-                <div className="mt-3 flex items-center gap-3 text-xs text-[#6A6B70]">
-                  <span>Escrita pela IA só com os dados medidos acima; confira antes de mandar alguém ao prédio.</span>
-                  <button type="button" onClick={frota.analisar} disabled={frota.analisando} className="font-bold text-[#9C1E1E] disabled:opacity-50">Analisar de novo</button>
-                </div>
               </div>
+            </div>
+
+            {fora.length === 0 ? (
+              <p className="mt-4 rounded-2xl bg-[#EAF5EF] px-3 py-2.5 text-sm font-semibold text-[#1E6B47]">Todas as telas dos prédios estão online.</p>
+            ) : (
+              <ul className="mt-4 grid gap-2 lg:grid-cols-2">
+                {fora.map((p) => (
+                  <li key={p.id} className="rounded-2xl border border-[#F3C9C4] bg-[#FDF3F2] p-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <button type="button" onClick={() => abrir(p.id)} className="text-left text-[15px] font-extrabold text-[#8E1F17] hover:underline">{p.nome}</button>
+                      <span className="text-xs text-[#6A6B70]">{p.operadora || 'operadora ?'} · {p.endereco || 'sem endereço'}</span>
+                    </div>
+                    <p className="mt-1 text-sm leading-snug text-[#3F4044]">{p.causa}</p>
+                    <div className="mt-2 flex gap-2">
+                      <button type="button" onClick={() => copiar(p)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 text-xs font-semibold"><Copy className="h-3.5 w-3.5" />Copiar</button>
+                      {p.anydesk && <a href={`anydesk:${String(p.anydesk).replace(/\D/g, '')}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 text-xs font-semibold"><ExternalLink className="h-3.5 w-3.5" />AnyDesk</a>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
@@ -380,6 +358,7 @@ export default function PaineisEXA() {
                 <option value="nome">Ordenar: nome</option>
               </select>
             </div>
+            <PeriodSelector value={periodo} onChange={(p, a, b) => { setPeriodo(p); if (a) setIni(a); if (b) setFim(b); }} customStartDate={ini} customEndDate={fim} />
             <div className="inline-flex self-start rounded-xl bg-black/[0.05] p-1 md:ml-auto">
               {(['cards', 'tabela'] as const).map((m) => (
                 <button key={m} type="button" onClick={() => setModo(m)} aria-pressed={modo === m}
@@ -428,7 +407,7 @@ export default function PaineisEXA() {
                           const predio = p.building_id ? predios.get(p.building_id) : null;
                           const inc = incidentStatusMap.get(p.id);
                           return (
-                            <div key={p.id} className={`${glass} overflow-hidden rounded-[20px]`}>
+                            <div key={p.id} className="overflow-hidden rounded-[20px] border shadow-[0_10px_24px_-22px_rgba(70,20,20,0.35)]" style={{ background: info.cardFundo, borderColor: info.cardBorda }}>
                               <button type="button" onClick={() => setCardAberto(aberto ? null : p.id)} aria-expanded={aberto}
                                 className="flex w-full flex-col gap-2 p-4 text-left">
                                 <span className="flex items-start justify-between gap-2">

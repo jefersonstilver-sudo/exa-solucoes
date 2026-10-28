@@ -51,31 +51,16 @@ export function useDevices(
     }
   }, [page, pageSize, filters, sort]);
 
-  // Forçar sincronização ao montar o componente
+  // Mostra a lista na hora e sincroniza o AnyDesk em segundo plano (antes a página esperava a sincronização terminar)
   useEffect(() => {
-    const forceSyncOnMount = async () => {
-      console.log('🔄 [DEVICES] Forçando sincronização ao abrir página...');
-      setSyncing(true);
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('sync-anydesk', {
-          body: { force: true, triggered_by: 'page_mount' }
-        });
-        
-        if (error) {
-          console.error('❌ [DEVICES] Erro ao forçar sincronização:', error);
-        } else {
-          console.log('✅ [DEVICES] Sincronização forçada concluída:', data);
-        }
-      } catch (err) {
-        console.error('❌ [DEVICES] Erro crítico ao sincronizar:', err);
-      } finally {
-        setSyncing(false);
-        await loadDevices(false);
-      }
-    };
-
-    forceSyncOnMount();
+    let ativo = true;
+    loadDevices(false);
+    setSyncing(true);
+    supabase.functions.invoke('sync-anydesk', { body: { force: true, triggered_by: 'page_mount' } })
+      .catch((err) => console.error('[DEVICES] sync-anydesk', err))
+      .finally(() => { if (ativo) { setSyncing(false); loadDevices(true); } });
+    return () => { ativo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Apenas ao montar
 
   // Auto-refresh com polling

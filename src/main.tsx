@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
@@ -8,9 +8,10 @@ import { ThemeProvider } from './components/ui/theme-provider'
 import './utils/debugHelpers'
 import { APP_VERSION } from './config/version'
 import { HelmetProvider } from 'react-helmet-async'
-import VideoStylesPage from './pages/public/VideoStylesPage'
-import NandoPrevia from './pages/public/NandoPrevia'
-import NandoPainel from './pages/public/NandoPainel'
+// Páginas avulsas (fora do App): carregadas só quando o endereço pede, para não pesar o site inteiro
+const VideoStylesPage = lazy(() => import('./pages/public/VideoStylesPage'))
+const NandoPrevia = lazy(() => import('./pages/public/NandoPrevia'))
+const NandoPainel = lazy(() => import('./pages/public/NandoPainel'))
 
 console.log(`🚀 Starting application v${APP_VERSION}...`);
 
@@ -61,7 +62,9 @@ try {
     <React.StrictMode>
       <ThemeProvider defaultTheme="light">
         <BootGuard>
+          <Suspense fallback={null}>
           {window.location.pathname.replace(/\/$/, '') === '/estilos' ? <HelmetProvider><VideoStylesPage /></HelmetProvider> : window.location.pathname.startsWith('/nando/previa/') ? <NandoPrevia /> : (window.location.pathname.startsWith('/nando/predio/') || window.location.pathname.replace(/\/$/, '') === '/nando/painel' || window.location.pathname.replace(/\/$/, '').toLowerCase() === '/paineldosindico' || window.location.pathname.toLowerCase().startsWith('/paineldosindico/')) ? <NandoPainel /> : <App />}
+          </Suspense>
         </BootGuard>
       </ThemeProvider>
     </React.StrictMode>,

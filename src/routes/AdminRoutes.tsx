@@ -1,49 +1,49 @@
 import React, { Suspense, lazy } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from '@/pages/admin/Dashboard';
-import BuildingsManagement3 from '@/pages/admin/BuildingsManagement3';
-import OrdersPage from '@/pages/admin/OrdersPage';
-import OrderDetails from '@/pages/admin/OrderDetails';
-import ApprovalsPage from '@/pages/admin/ApprovalsPage';
-import SindicosInteressados from '@/pages/admin/SindicosInteressados';
-import FormulariosSindicosPage from '@/pages/admin/FormulariosSindicosPage';
-import CouponsPage from '@/pages/admin/CouponsPage';
-import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
-import NotificationsPage from '@/pages/admin/NotificationsPage';
-import ComunicacoesPage from '@/pages/admin/ComunicacoesPage';
-import VideoManagement from '@/pages/admin/VideoManagement';
-import VideosSitePage from '@/pages/admin/VideosSitePage';
-import LeadsExa from '@/pages/admin/LeadsExa';
-import LogosAdmin from '@/components/admin/LogosAdmin';
-import ProviderBenefits from '@/pages/admin/ProviderBenefits';
-import PaineisExa from '@/pages/admin/PaineisExa';
-import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructions';
-import BenefitManagement from '@/pages/admin/BenefitManagement';
-import FinancialReports from '@/pages/admin/FinancialReports';
-import EmailLogs from '@/pages/admin/EmailLogs';
-import AssinaturasPage from '@/pages/admin/AssinaturasPage';
-import ProdutosPage from '@/pages/admin/ProdutosPage';
-import PropostasPage from '@/pages/admin/proposals/PropostasPage';
-import NovaPropostaPage from '@/pages/admin/proposals/NovaPropostaPage';
-import PropostaDetalhesPage from '@/pages/admin/proposals/PropostaDetalhesPage';
-import ContratosPage from '@/pages/admin/contracts/ContratosPage';
-import NovoContratoPage from '@/pages/admin/contracts/NovoContratoPage';
-import NovoContratoSindicoPage from '@/pages/admin/contracts/NovoContratoSindicoPage';
-import ContratoDetalhesPage from '@/pages/admin/contracts/ContratoDetalhesPage';
-import SyncNotionPage from '@/pages/admin/SyncNotionPage';
-import AgendaPage from '@/pages/admin/AgendaPage';
-import UsersPage from '@/pages/admin/UsersPage';
-import CRM360Page from '@/pages/admin/crm/CRM360Page';
-import ConsolidacaoPage from '@/pages/admin/crm/ConsolidacaoPage';
-import TiposContaPage from '@/pages/admin/TiposContaPage';
-import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
-import SecurityPage from '@/pages/admin/SecurityPage';
-import AcessoNegadoPage from '@/pages/admin/AcessoNegadoPage';
-import PosicoesDisponiveisPage from '@/pages/admin/PosicoesDisponiveisPage';
-import ProtectedModuleRoute from '@/components/admin/ProtectedModuleRoute';
+const Dashboard = lazy(() => import('@/pages/admin/Dashboard'));
+const BuildingsManagement3 = lazy(() => import('@/pages/admin/BuildingsManagement3'));
+const OrdersPage = lazy(() => import('@/pages/admin/OrdersPage'));
+const OrderDetails = lazy(() => import('@/pages/admin/OrderDetails'));
+const ApprovalsPage = lazy(() => import('@/pages/admin/ApprovalsPage'));
+const SindicosInteressados = lazy(() => import('@/pages/admin/SindicosInteressados'));
+const FormulariosSindicosPage = lazy(() => import('@/pages/admin/FormulariosSindicosPage'));
+const CouponsPage = lazy(() => import('@/pages/admin/CouponsPage'));
+const HomepageImagesPage = lazy(() => import('@/pages/admin/HomepageImagesPage'));
+const NotificationsPage = lazy(() => import('@/pages/admin/NotificationsPage'));
+const ComunicacoesPage = lazy(() => import('@/pages/admin/ComunicacoesPage'));
+const VideoManagement = lazy(() => import('@/pages/admin/VideoManagement'));
+const VideosSitePage = lazy(() => import('@/pages/admin/VideosSitePage'));
+const LeadsExa = lazy(() => import('@/pages/admin/LeadsExa'));
+const LogosAdmin = lazy(() => import('@/components/admin/LogosAdmin'));
+const ProviderBenefits = lazy(() => import('@/pages/admin/ProviderBenefits'));
+const PaineisExa = lazy(() => import('@/pages/admin/PaineisExa'));
+const BenefitPurchaseInstructions = lazy(() => import('@/pages/admin/BenefitPurchaseInstructions'));
+const BenefitManagement = lazy(() => import('@/pages/admin/BenefitManagement'));
+const FinancialReports = lazy(() => import('@/pages/admin/FinancialReports'));
+const EmailLogs = lazy(() => import('@/pages/admin/EmailLogs'));
+const AssinaturasPage = lazy(() => import('@/pages/admin/AssinaturasPage'));
+const ProdutosPage = lazy(() => import('@/pages/admin/ProdutosPage'));
+const PropostasPage = lazy(() => import('@/pages/admin/proposals/PropostasPage'));
+const NovaPropostaPage = lazy(() => import('@/pages/admin/proposals/NovaPropostaPage'));
+const PropostaDetalhesPage = lazy(() => import('@/pages/admin/proposals/PropostaDetalhesPage'));
+const ContratosPage = lazy(() => import('@/pages/admin/contracts/ContratosPage'));
+const NovoContratoPage = lazy(() => import('@/pages/admin/contracts/NovoContratoPage'));
+const NovoContratoSindicoPage = lazy(() => import('@/pages/admin/contracts/NovoContratoSindicoPage'));
+const ContratoDetalhesPage = lazy(() => import('@/pages/admin/contracts/ContratoDetalhesPage'));
+const SyncNotionPage = lazy(() => import('@/pages/admin/SyncNotionPage'));
+const AgendaPage = lazy(() => import('@/pages/admin/AgendaPage'));
+const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
+const CRM360Page = lazy(() => import('@/pages/admin/crm/CRM360Page'));
+const ConsolidacaoPage = lazy(() => import('@/pages/admin/crm/ConsolidacaoPage'));
+const TiposContaPage = lazy(() => import('@/pages/admin/TiposContaPage'));
+const ConfiguracoesPage = lazy(() => import('@/pages/admin/ConfiguracoesPage'));
+const SecurityPage = lazy(() => import('@/pages/admin/SecurityPage'));
+const AcessoNegadoPage = lazy(() => import('@/pages/admin/AcessoNegadoPage'));
+const PosicoesDisponiveisPage = lazy(() => import('@/pages/admin/PosicoesDisponiveisPage'));
+const ProtectedModuleRoute = lazy(() => import('@/components/admin/ProtectedModuleRoute'));
 import { MODULE_KEYS, MODULE_ROUTES, useDynamicModulePermissions } from '@/hooks/useDynamicModulePermissions';
-import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+import GlobalLoadingPage from '@/components/loading/CarregandoConteudo';
 
 // Redirect inteligente: redireciona ao primeiro módulo permitido
 const AdminIndexRedirect = () => {
@@ -145,6 +145,7 @@ const RelatorioPlaylistPage = lazy(() => import('@/pages/admin/RelatorioPlaylist
 
 const AdminRoutes = () => {
   return (
+    <Suspense fallback={<GlobalLoadingPage />}>
     <Routes>
       {/* Access Denied Page */}
       <Route path="acesso-negado" element={<AcessoNegadoPage />} />
@@ -652,6 +653,7 @@ const AdminRoutes = () => {
       <Route path="monitoramento-ia/alertas" element={<Navigate to="/admin/exa-alerts" replace />} />
       <Route path="monitoramento-ia/escalacoes" element={<Navigate to="/admin/escalacoes" replace />} />
     </Routes>
+    </Suspense>
   );
 };
 
