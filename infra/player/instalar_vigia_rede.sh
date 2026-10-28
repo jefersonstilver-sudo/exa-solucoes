@@ -52,7 +52,7 @@ fi
 EOF_VIG
 chmod +x "$APP/exa_vigia_rede.sh" && bash -n "$APP/exa_vigia_rede.sh" && echo "Vigia gravado: OK"
 LINHA="*/5 * * * * flock -n /tmp/exa_vigia.lock timeout 120 bash $APP/exa_vigia_rede.sh >/dev/null 2>&1"
-( crontab -l 2>/dev/null | grep -v 'exa_vigia_rede.sh' ; echo "$LINHA" ) | crontab -
+( crontab -l 2>/dev/null | grep -v 'exa_vigia_rede.sh' || true ; echo "$LINHA" ) | crontab -
 echo "Vigia agendado a cada 5 min: $( [ "$(crontab -l | grep -c exa_vigia_rede.sh)" = 1 ] && echo OK || echo ERRO )"
 echo "Coletor de saude agendado: $( [ "$(crontab -l | grep -c exa_saude.py)" = 1 ] && echo OK || echo FALTA )"
 echo "Desligamento 01:00: $(systemctl is-enabled poweroff.target 2>/dev/null)"
