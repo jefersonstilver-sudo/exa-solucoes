@@ -11,13 +11,14 @@ Roda em segundo plano dentro do atualizador (thread daemon), 60 s depois de inic
   6. registra o resultado em ~/.exa_padrao.json (o coletor envia isso ao sistema)
 Nunca levanta exceção para fora, nunca para nem reinicia o player.
 """
+import fcntl
 import json
 import os
 import subprocess
 import threading
 import time
 
-VERSAO = "padrao-v1"
+VERSAO = "padrao-v2"
 APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOME = os.path.expanduser("~")
 ESTADO = os.path.join(HOME, ".exa_padrao.json")
@@ -103,6 +104,23 @@ def _garantir_bloqueios():
 
 
 def garantir(cliente_id):
+    # main.py e atualizador.py carregam o sistema; só um processo por vez faz o trabalho
+    try:
+        trava = open("/tmp/exa_padrao.lock", "w")
+        fcntl.flock(trava, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except Exception:
+        return {"ok": None, "pulado": "outro processo esta garantindo o padrao agora"}
+    try:
+        return _garantir(cliente_id)
+    finally:
+        try:
+            fcntl.flock(trava, fcntl.LOCK_UN)
+            trava.close()
+        except Exception:
+            pass
+
+
+def _garantir(cliente_id):
     itens, erros = {}, {}
     cid = str(cliente_id or "").strip()
     if not cid or cid == "101":
