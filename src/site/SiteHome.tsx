@@ -118,7 +118,6 @@ export default function SiteHome() {
     .filter((p) => p.x > 2 && p.x < 98 && p.y > 2 && p.y < 98), [predios]);
 
   const tt = TURNOS[turno];
-  const resumo = 'Prédios residenciais de Foz do Iguaçu';
 
   return (
     <div className="exa-site com-barra">
