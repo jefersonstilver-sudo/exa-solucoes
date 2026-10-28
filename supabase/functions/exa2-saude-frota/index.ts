@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
           : 'A tela está preta na captura do NUC.';
       } else if ((quedas.length >= 15 || q24 >= 5) && porqueCai) {
         estado = 'instavel';
-        causa = `${q24} quedas hoje, ${quedas.length} em 7 dias: ${porqueCai}.`;
+        causa = `${q24} quedas nas últimas 24 h, ${quedas.length} em 7 dias: ${porqueCai}.`;
       } else if ((perdaNet ?? 0) >= 20 || (perdaGw ?? 0) >= 5) {
         estado = 'internet_ruim';
         causa = (perdaGw ?? 0) >= 5
