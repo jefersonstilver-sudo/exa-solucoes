@@ -71,6 +71,23 @@ Deno.serve(async (req) => {
     const incPorDev = new Map<string, any[]>();
     for (const i of incs) { if (!incPorDev.has(i.device_id)) incPorDev.set(i.device_id, []); incPorDev.get(i.device_id)!.push(i); }
 
+    // operadora escrita de jeitos diferentes ("NEWOESTE" / "New Oeste") vira um nome só: o mais usado
+    const contagem = new Map<string, Map<string, number>>();
+    for (const d of devs) {
+      const rot = String(d.provider || '').trim().replace(/\s+/g, ' ').toUpperCase();
+      if (!rot) continue;
+      const k = rot.replace(/[^A-Z0-9]/g, '');
+      const m = contagem.get(k) || new Map<string, number>();
+      m.set(rot, (m.get(rot) || 0) + 1 + (rot.includes(' ') ? 0.5 : 0));
+      contagem.set(k, m);
+    }
+    const operadoraDe = (prov: unknown) => {
+      const rot = String(prov || '').trim().replace(/\s+/g, ' ').toUpperCase();
+      if (!rot) return null;
+      const m = contagem.get(rot.replace(/[^A-Z0-9]/g, ''));
+      return m ? [...m.entries()].sort((a, b) => b[1] - a[1])[0][0] : rot;
+    };
+
     const paineis = devs.map((dev: any) => {
       const tela = String(dev.metadata?.auditoria?.tela_id || telaDe(dev.building_id) || '');
       const anydesk = String(dev.anydesk_client_id || '').replace(/\D/g, '');
@@ -124,6 +141,9 @@ Deno.serve(async (req) => {
         causa = semMonitor ? 'O NUC não detecta o monitor (HDMI solto ou monitor desligado).'
           : playerParado ? 'O programa da tela não está rodando.'
           : 'A tela está preta na captura do NUC.';
+      } else if ((quedas.length >= 15 || q24 >= 5) && porqueCai) {
+        estado = 'instavel';
+        causa = `${q24} quedas hoje, ${quedas.length} em 7 dias: ${porqueCai}.`;
       } else if ((perdaNet ?? 0) >= 20 || (perdaGw ?? 0) >= 5) {
         estado = 'internet_ruim';
         causa = (perdaGw ?? 0) >= 5
@@ -134,7 +154,7 @@ Deno.serve(async (req) => {
         causa = `${temp} °C: precisa de ventilação no local do NUC.`;
       } else if (quedas.length >= 15 || q24 >= 5) {
         estado = 'instavel';
-        causa = `${quedas.length} quedas em 7 dias${porqueCai ? `: ${porqueCai}` : ''}.`;
+        causa = `${quedas.length} quedas em 7 dias (${q24} nas últimas 24 h).`;
       } else if (!s) {
         estado = 'sem_diagnostico';
         causa = 'Coletor de diagnóstico ainda não instalado neste NUC.';
@@ -150,7 +170,7 @@ Deno.serve(async (req) => {
         nome: dev.name,
         condominio: dev.condominio_name,
         endereco: dev.address || null,
-        operadora: dev.provider || null,
+        operadora: operadoraDe(dev.provider),
         grupo_id: dev.device_group_id || null,
         building_id: dev.building_id || null,
         anydesk: dev.anydesk_client_id || null,
@@ -178,7 +198,11 @@ Deno.serve(async (req) => {
     }).sort((a: any, b: any) => PESO[a.estado as Estado] - PESO[b.estado as Estado] || b.quedas_7d - a.quedas_7d);
 
     let tecnico: string | null = null;
-    if (body.ia) tecnico = await resumoTecnico(paineis).catch((e) => { console.error('[frota] ia', e?.message); return null; });
+    // a análise considera só as telas do grupo "Prédios" (internos, bancada e estoque ficam de fora)
+    const { data: grupos } = await main.from('device_groups').select('id, nome');
+    const gPredios = (grupos || []).find((g: any) => /^pr[eé]dios$/i.test(String(g.nome || '').trim()));
+    const daRede = gPredios ? paineis.filter((p: any) => p.grupo_id === gPredios.id) : paineis;
+    if (body.ia) tecnico = await resumoTecnico(daRede).catch((e) => { console.error('[frota] ia', e?.message); return null; });
 
     return json({ success: true, gerado_em: new Date().toISOString(), paineis, tecnico });
   } catch (e: any) {

@@ -168,20 +168,20 @@ export default function PaineisEXA() {
   }, [daRede]);
 
   const kpis = useMemo(() => {
-    const c = (f: (p: FrotaPainel) => boolean) => paineis.filter(f).length;
+    const c = (f: (p: FrotaPainel) => boolean) => daRede.filter(f).length;
     return {
-      total: paineis.length,
+      total: daRede.length,
       tocando: c((p) => p.estado !== 'sem_sinal' && p.estado !== 'sem_imagem'),
       semSinal: c((p) => p.estado === 'sem_sinal'),
       semImagem: c((p) => p.estado === 'sem_imagem'),
       internet: c((p) => p.estado === 'internet_ruim' || p.estado === 'instavel'),
       quentes: c((p) => p.estado === 'quente' || (p.temp_c ?? 0) >= 85),
       semColetor: c((p) => !p.coletor),
-      quedas24: paineis.reduce((a, p) => a + p.quedas_24h, 0),
+      quedas24: daRede.reduce((a, p) => a + p.quedas_24h, 0),
     };
-  }, [paineis]);
+  }, [daRede]);
 
-  const fora = useMemo(() => paineis.filter((p) => p.estado === 'sem_sinal' || p.estado === 'sem_imagem'), [paineis]);
+  const fora = useMemo(() => daRede.filter((p) => p.estado === 'sem_sinal' || p.estado === 'sem_imagem'), [daRede]);
 
   const abrir = (id: string) => { const d = devPorId.get(id); if (d) setSelecionado(d); else toast.error('Painel ainda carregando, tente de novo.'); };
   const copiar = async (p: FrotaPainel) => {
