@@ -1,4 +1,5 @@
 import React from 'react';
+import { TelaCarregando, temaDaRota } from './MarcaCarregando';
 
 interface GlobalLoadingPageProps {
   message?: string;
@@ -7,36 +8,16 @@ interface GlobalLoadingPageProps {
 }
 
 /**
- * Tela de carregamento leve (só CSS, sem framer-motion).
- * Aparece com 200 ms de atraso: se a página carrega rápido, o usuário não vê "piscar" nada.
+ * Tela de carregamento com a marca EXA animada (layout novo). Versão clara por padrão;
+ * escura nas telas de acesso (login, criar senha). Aparece com 200 ms de atraso.
+ * O texto genérico "Carregando..." não aparece — a marca já mostra que está carregando.
  */
-const GlobalLoadingPage: React.FC<GlobalLoadingPageProps> = ({
-  message = 'Carregando...',
-  showProgress = false,
-  progress = 0,
-}) => (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-[#F4F1EC] opacity-0 [animation:exa-aparece_200ms_ease-out_200ms_forwards]"
-    role="status"
-    aria-live="polite"
-  >
-    <style>{'@keyframes exa-aparece{to{opacity:1}}@keyframes exa-gira{to{transform:rotate(360deg)}}'}</style>
-    <div className="text-center">
-      <div
-        className="mx-auto h-10 w-10 rounded-full border-[3px] border-[#9C1E1E]/15 border-t-[#9C1E1E] [animation:exa-gira_0.8s_linear_infinite]"
-        aria-hidden="true"
-      />
-      {showProgress && (
-        <div className="mx-auto mt-6 w-56">
-          <div className="h-1 overflow-hidden rounded-full bg-black/10">
-            <div className="h-full rounded-full bg-[#9C1E1E] transition-[width] duration-300" style={{ width: `${progress}%` }} />
-          </div>
-          <p className="mt-2 text-xs text-[#6A6B70]">{Math.round(progress)}%</p>
-        </div>
-      )}
-      {message && message.trim() !== '' && <p className="mt-4 text-sm font-medium text-[#45464A]">{message}</p>}
-    </div>
-  </div>
-);
+const GENERICAS = /^\s*carregando\s*(\.\.\.|…)?\s*$/i;
+
+const GlobalLoadingPage: React.FC<GlobalLoadingPageProps> = ({ message, showProgress = false, progress = 0 }) => {
+  const tema = typeof window !== 'undefined' ? temaDaRota(window.location.pathname) : 'claro';
+  const msg = message && !GENERICAS.test(message) ? message : undefined;
+  return <TelaCarregando tema={tema} mensagem={msg} progresso={showProgress ? progress : null} />;
+};
 
 export default GlobalLoadingPage;

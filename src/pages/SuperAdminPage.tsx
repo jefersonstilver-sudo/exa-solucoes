@@ -8,6 +8,7 @@ import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
+import { TelaCarregando } from '@/components/loading/MarcaCarregando';
 
 const SuperAdminPage = () => {
   const navigate = useNavigate();
@@ -117,26 +118,7 @@ const SuperAdminPage = () => {
   }, [isLoading, hasChecked]);
 
   if (isLoading || !hasChecked) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col items-center justify-center">
-        {/* Logo EXA animada */}
-        <div className="text-center">
-          <img 
-            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" 
-            alt="EXA Mídia" 
-            className="w-16 h-16 mx-auto mb-8 animate-pulse"
-          />
-          
-          {/* Loader circular elegante estilo Nubank */}
-          <div className="relative w-10 h-10 mx-auto mb-6">
-            <div className="absolute inset-0 border-2 border-gray-200 rounded-full" />
-            <div className="absolute inset-0 border-2 border-[#9C1E1E] border-t-transparent rounded-full animate-spin" />
-          </div>
-          
-          <p className="text-gray-600 text-sm font-medium">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <TelaCarregando tema="claro" />;
   }
 
   if (!accessGranted) {
