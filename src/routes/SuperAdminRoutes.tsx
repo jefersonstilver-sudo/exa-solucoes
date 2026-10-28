@@ -34,6 +34,7 @@ const EmailLogs = lazy(() => import('@/pages/admin/EmailLogs'));
 const FormulariosSindicosPage = lazy(() => import('@/pages/admin/FormulariosSindicosPage'));
 const LogosAdmin = lazy(() => import('@/components/admin/LogosAdmin'));
 import GlobalLoadingPage from '@/components/loading/CarregandoConteudo';
+const QrScansAdminPage = lazy(() => import('@/pages/admin/QrScansAdminPage'));
 const SyncNotionPage = lazy(() => import('@/pages/admin/SyncNotionPage'));
 const AgendaPage = lazy(() => import('@/pages/admin/AgendaPage'));
 const ProdutosPage = lazy(() => import('@/pages/admin/ProdutosPage'));
@@ -118,7 +119,7 @@ const SuperAdminRoutes = () => {
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="qr-scans" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando scans..." />}>
-          {React.createElement(lazy(() => import('@/pages/admin/QrScansAdminPage')))}
+          <QrScansAdminPage />
         </Suspense>
       } />
       <Route path="produtos" element={<ProdutosPage />} />

@@ -283,3 +283,10 @@
   .exa-login .el-cartao{padding:30px 22px 24px;border-radius:24px}
   .exa-login .el-t{font-size:30px}
 }
+.exa-login .el-forca{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:800;color:rgba(255,255,255,.75)}
+.exa-login .el-barras{display:flex;gap:4px;flex:1}
+.exa-login .el-barras i{flex:1;height:4px;border-radius:4px;background:rgba(255,255,255,.15)}
+.exa-login .el-barras i.on.n1{background:#FF5A4F}.exa-login .el-barras i.on.n2{background:#F5A524}.exa-login .el-barras i.on.n3{background:#9BD36A}.exa-login .el-barras i.on.n4{background:#5BD08F}
+.exa-login .el-b-wa{background:#1F9D55;color:#fff;text-decoration:none}
+.exa-login .el-b-wa:hover{background:#188246}
+.exa-login a.el-lnk{text-decoration:none}

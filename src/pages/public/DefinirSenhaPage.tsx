@@ -1,417 +1,214 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Check, Loader2, AlertCircle, LogIn, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import UnifiedLogo from '@/components/layout/UnifiedLogo';
+import { useFonteSite, useTituloPagina, waSofia } from '@/site/comum';
 
-type TokenErrorType = 'expired' | 'used' | 'invalid' | null;
+/**
+ * Criar a senha da conta (rota /definir-senha) — link que a Sofia e as propostas mandam.
+ *
+ * Por que foi refeito (28/10/2026): o link ficava girando em "Validando link..." ou o "Definir senha"
+ * não salvava. Nos logs do Auth: o token era aceito (POST /verify = login), mas a troca de senha
+ * (PUT /user) nunca saía do aparelho — a biblioteca do Supabase ficava presa esperando a própria trava
+ * de sessão, e a página ainda era recriada a cada mudança de login. Agora:
+ *  - link novo (?th=…): nada é validado ao abrir (preview do WhatsApp/antivírus não queimam o link);
+ *    ao salvar, o token é conferido e a senha gravada por chamadas diretas ao Auth, com tempo-limite;
+ *  - nunca usa uma sessão que já estava aberta no aparelho (não troca a senha de outra pessoa);
+ *  - link antigo (#access_token=…): usa o token do próprio link, também por chamada direta;
+ *  - nenhuma tela fica girando para sempre: tudo tem tempo-limite e mensagem clara.
+ */
 
-const DefinirSenhaPage = () => {
+const URL_SUPA = 'https://aakenoljsycyrcrchgxj.supabase.co';
+const CHAVE_PUBLICA = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk';
+
+type Etapa = 'form' | 'salvando' | 'pronto' | 'expirado' | 'erro';
+type Sessao = { access_token: string; refresh_token: string; user?: { email?: string } };
+
+async function chamarAuth(caminho: string, init: RequestInit & { token?: string }, ms = 15000) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(`${URL_SUPA}/auth/v1${caminho}`, {
+      ...init,
+      signal: ctl.signal,
+      headers: {
+        apikey: CHAVE_PUBLICA,
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${init.token || CHAVE_PUBLICA}`,
+      },
+    });
+    const corpo = await r.json().catch(() => ({}));
+    return { ok: r.ok, status: r.status, corpo };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+const comTempo = <T,>(p: Promise<T>, ms: number) =>
+  Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new Error('tempo')), ms))]);
+
+const Olho = ({ aberto }: { aberto: boolean }) => aberto ? (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.4 5.2A9.7 9.7 0 0 1 12 5c5 0 9 4.5 10 7a12.7 12.7 0 0 1-3.2 4.2M6.1 6.4C3.9 7.8 2.5 9.9 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.6-1.2" /></svg>
+) : (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7S3 14.5 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+);
+
+function forca(s: string) {
+  if (!s) return { n: 0, txt: '' };
+  if (s.length < 6) return { n: 1, txt: 'Curta demais' };
+  const tipos = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((r) => r.test(s)).length;
+  if (s.length < 8 || tipos <= 1) return { n: 2, txt: 'Fraca' };
+  if (tipos === 2) return { n: 3, txt: 'Boa' };
+  return { n: 4, txt: 'Forte' };
+}
+
+export default function DefinirSenhaPage() {
+  useFonteSite();
+  useTituloPagina('Criar sua senha · EXA Mídia', 'Crie a senha da sua conta de anunciante da EXA Mídia.');
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isValidating, setIsValidating] = useState(true);
-  const [tokenError, setTokenError] = useState<TokenErrorType>(null);
+  const [params] = useSearchParams();
+  const th = params.get('th');
+  const tipo = params.get('t') || 'recovery';
+  const emailLink = params.get('e') || '';
 
-  // Validate token on mount
-  useEffect(() => {
-    const validateSession = async () => {
-      try {
-        // Link novo (Sofia v71): o token so e usado quando a pessoa salva a senha.
-        // Assim, antivirus/preview de e-mail que "abrem" o link antes nao queimam o acesso.
-        if (searchParams.get('th')) {
-          setIsValidating(false);
-          return;
-        }
-        // Check URL hash for tokens or errors
-        const hash = window.location.hash;
-        const params = new URLSearchParams(hash.substring(1));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        const errorCode = params.get('error_code');
-        const errorDescription = params.get('error_description');
-        const error = params.get('error');
-
-
-        // Check for error in URL (Supabase redirects with error if token invalid)
-        if (errorCode || error || errorDescription?.toLowerCase().includes('expired')) {
-          console.error('🔐 [DEFINIR SENHA] Erro detectado na URL:', errorCode, errorDescription);
-          setTokenError('expired');
-          setIsValidating(false);
-          return;
-        }
-
-        // If we have tokens in URL, try to set session
-        if (accessToken && refreshToken) {
-          const { error: setError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
-          
-          if (setError) {
-            console.error('🔐 [DEFINIR SENHA] Erro ao definir sessão:', setError);
-            
-            // Check error type
-            if (setError.message?.toLowerCase().includes('expired') || 
-                setError.message?.toLowerCase().includes('invalid')) {
-              setTokenError('expired');
-            } else {
-              setTokenError('invalid');
-            }
-            setIsValidating(false);
-            return;
-          }
-
-          // Success - session set from URL tokens
-          console.log('🔐 [DEFINIR SENHA] Sessão definida com sucesso via URL tokens');
-          setIsValidating(false);
-          return;
-        }
-
-        // Check existing session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('🔐 [DEFINIR SENHA] Erro ao verificar sessão:', sessionError);
-          setTokenError('invalid');
-          setIsValidating(false);
-          return;
-        }
-
-        if (session) {
-          // User already has valid session - can proceed
-          console.log('🔐 [DEFINIR SENHA] Sessão existente válida encontrada');
-          setIsValidating(false);
-          return;
-        }
-
-        // No session, no tokens in URL = link was already used or never valid
-        console.warn('🔐 [DEFINIR SENHA] Sem sessão e sem tokens na URL - link provavelmente já usado');
-        setTokenError('used');
-        setIsValidating(false);
-        
-      } catch (err) {
-        console.error('🔐 [DEFINIR SENHA] Erro na validação:', err);
-        setTokenError('invalid');
-        setIsValidating(false);
-      }
-    };
-
-    validateSession();
-  }, [navigate]);
-
-  const passwordStrength = () => {
-    if (password.length === 0) return { score: 0, label: '', color: '' };
-    if (password.length < 6) return { score: 1, label: 'Muito fraca', color: 'bg-red-500' };
-    if (password.length < 8) return { score: 2, label: 'Fraca', color: 'bg-orange-500' };
-    
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    const strength = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
-    
-    if (strength <= 1) return { score: 2, label: 'Fraca', color: 'bg-orange-500' };
-    if (strength === 2) return { score: 3, label: 'Média', color: 'bg-yellow-500' };
-    if (strength === 3) return { score: 4, label: 'Forte', color: 'bg-emerald-500' };
-    return { score: 5, label: 'Muito forte', color: 'bg-emerald-600' };
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      toast.error('As senhas não coincidem');
-      return;
-    }
-
-    setIsLoading(true);
-
+  // link antigo: tokens no endereço (#access_token=…)
+  const [sessaoDoLink] = useState<Sessao | null>(() => {
     try {
-      // Link com token_hash: valida o token agora (um único uso), na hora de salvar a senha
-      const th = searchParams.get('th');
-      if (th) {
-        const { error: otpErr } = await supabase.auth.verifyOtp({ token_hash: th, type: (searchParams.get('t') as any) || 'recovery' });
-        if (otpErr) {
-          console.error('🔐 [DEFINIR SENHA] token_hash inválido/expirado:', otpErr.message);
-          const { data: { session: s0 } } = await supabase.auth.getSession();
-          if (!s0) { setTokenError('expired'); setIsLoading(false); return; }
-        }
-      }
+      const h = new URLSearchParams(window.location.hash.slice(1));
+      const a = h.get('access_token'), r = h.get('refresh_token');
+      return a && r ? { access_token: a, refresh_token: r } : null;
+    } catch { return null; }
+  });
+  const erroNoLink = (() => {
+    try {
+      const h = new URLSearchParams(window.location.hash.slice(1));
+      return !!(h.get('error') || h.get('error_code'));
+    } catch { return false; }
+  })();
 
-      // Verify session before updating
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setTokenError('used');
-        setIsLoading(false);
+  const [senha, setSenha] = useState('');
+  const [confirma, setConfirma] = useState('');
+  const [ver, setVer] = useState(false);
+  const [aviso, setAviso] = useState('');
+  const [etapa, setEtapa] = useState<Etapa>(() => (th || sessaoDoLink ? 'form' : 'expirado'));
+  const [emailFinal, setEmailFinal] = useState(emailLink);
+
+  useEffect(() => { if (erroNoLink) setEtapa('expirado'); }, [erroNoLink]);
+
+  const f = forca(senha);
+
+  const salvar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAviso('');
+    if (senha.length < 6) { setAviso('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    if (senha !== confirma) { setAviso('As duas senhas não estão iguais.'); return; }
+    setEtapa('salvando');
+    try {
+      // 1) sessão do próprio link (nunca a que já estava aberta no aparelho)
+      let sessao: Sessao | null = sessaoDoLink;
+      if (th) {
+        const v = await chamarAuth('/verify', { method: 'POST', body: JSON.stringify({ type: tipo, token_hash: th }) });
+        if (!v.ok || !v.corpo?.access_token) {
+          const msg = String(v.corpo?.msg || v.corpo?.error_description || v.corpo?.message || '');
+          console.warn('[DEFINIR SENHA] verify', v.status, msg);
+          setEtapa(v.status === 403 || v.status === 401 || /expired|not found|invalid/i.test(msg) ? 'expirado' : 'erro');
+          return;
+        }
+        sessao = v.corpo as Sessao;
+      }
+      if (!sessao) { setEtapa('expirado'); return; }
+
+      // 2) grava a senha com o token do link (chamada direta, com tempo-limite)
+      const u = await chamarAuth('/user', { method: 'PUT', token: sessao.access_token, body: JSON.stringify({ password: senha, data: { has_password: true } }) });
+      if (!u.ok) {
+        const msg = String(u.corpo?.msg || u.corpo?.message || '');
+        console.warn('[DEFINIR SENHA] update', u.status, msg);
+        if (/same|different from the old/i.test(msg)) { setAviso('Essa já é a sua senha. Use outra ou entre com ela.'); setEtapa('form'); return; }
+        if (/weak|short|characters/i.test(msg)) { setAviso('Senha fraca demais. Use pelo menos 8 caracteres, com letras e números.'); setEtapa('form'); return; }
+        setEtapa(u.status === 401 || u.status === 403 ? 'expirado' : 'erro');
         return;
       }
+      const email = u.corpo?.email || sessao.user?.email || emailLink;
+      setEmailFinal(email);
 
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-        data: { has_password: true },
-      });
-
-      if (error) {
-        throw error;
+      // 3) entra na conta com a sessão nova (sem travar: se demorar, segue pelo botão)
+      try {
+        await comTempo(supabase.auth.setSession({ access_token: sessao.access_token, refresh_token: sessao.refresh_token }), 6000);
+        if (window.location.hash) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      } catch (err) {
+        console.warn('[DEFINIR SENHA] setSession lento; segue pelo botão', err);
       }
-
-      setIsSuccess(true);
-      toast.success('Senha definida com sucesso!');
-      
-      // Redirect to orders page after 2 seconds
-      setTimeout(() => {
-        navigate('/anunciante/pedidos');
-      }, 2000);
-
-    } catch (err: any) {
-      console.error('Password update error:', err);
-      
-      // Check if it's an auth session error
-      if (err.message?.toLowerCase().includes('session') || 
-          err.message?.toLowerCase().includes('auth')) {
-        setTokenError('used');
-      } else {
-        toast.error(err.message || 'Erro ao definir senha. Tente novamente.');
-      }
-    } finally {
-      setIsLoading(false);
+      setEtapa('pronto');
+      setTimeout(() => navigate('/anunciante/pedidos', { replace: true }), 1800);
+    } catch (err) {
+      console.error('[DEFINIR SENHA] erro', err);
+      setEtapa('erro');
     }
   };
 
-  const strength = passwordStrength();
+  const pedirNovo = waSofia(`Oi Sofia! O link para criar a senha da minha conta${emailLink ? ` (${emailLink})` : ''} não funcionou. Pode me mandar um novo?`);
 
-  // Loading state
-  if (isValidating) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#9C1E1E] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Validando link...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Token error state - show friendly message with options
-  if (tokenError) {
-    const errorConfig = {
-      expired: {
-        title: 'Link Expirado',
-        message: 'Este link de definição de senha expirou ou já foi usado. Peça um novo link aqui embaixo ou para a Sofia no WhatsApp.',
-        icon: <AlertCircle className="h-8 w-8 text-amber-600" />,
-        bgIcon: 'bg-amber-100'
-      },
-      used: {
-        title: 'Link Já Utilizado',
-        message: 'Parece que você já definiu sua senha anteriormente. Tente fazer login com sua senha atual ou solicite um novo link.',
-        icon: <Check className="h-8 w-8 text-blue-600" />,
-        bgIcon: 'bg-blue-100'
-      },
-      invalid: {
-        title: 'Link Inválido',
-        message: 'Este link não é válido. Verifique se copiou o link corretamente ou solicite um novo link.',
-        icon: <AlertCircle className="h-8 w-8 text-red-600" />,
-        bgIcon: 'bg-red-100'
-      }
-    };
-
-    const config = errorConfig[tokenError];
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center bg-white/95 backdrop-blur-sm shadow-xl">
-          {/* Logo */}
-          <UnifiedLogo variant="light" size="lg" className="mx-auto mb-6" />
-          
-          {/* Error Icon */}
-          <div className={`w-16 h-16 ${config.bgIcon} rounded-full flex items-center justify-center mx-auto mb-6`}>
-            {config.icon}
-          </div>
-          
-          <h1 className="text-xl font-bold text-foreground mb-2">{config.title}</h1>
-          <p className="text-muted-foreground text-sm mb-8">{config.message}</p>
-          
-          <div className="space-y-3">
-            <Button 
-              onClick={() => navigate('/login')} 
-              className="w-full h-11 bg-[#9C1E1E] hover:bg-[#7D1818] text-white font-semibold"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Fazer Login
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/esqueci-senha')} 
-              className="w-full h-11"
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Solicitar Novo Link
-            </Button>
-          </div>
-
-          <p className="text-xs text-muted-foreground mt-6">
-            Se precisar de ajuda, entre em contato com nosso suporte.
-          </p>
-        </Card>
-      </div>
-    );
-  }
-
-  // Success state
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center bg-white/95 backdrop-blur-sm shadow-xl">
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-            <Check className="h-10 w-10 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Senha Definida!</h1>
-          <p className="text-muted-foreground mb-6">
-            Sua senha foi configurada com sucesso. Redirecionando para a plataforma...
-          </p>
-          <div className="w-8 h-8 border-4 border-[#9C1E1E] border-t-transparent rounded-full animate-spin mx-auto" />
-        </Card>
-      </div>
-    );
-  }
-
-  // Main form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full p-8 bg-white/95 backdrop-blur-sm shadow-xl">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <UnifiedLogo variant="light" size="lg" className="mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-foreground">Defina sua senha</h1>
-          <p className="text-muted-foreground text-sm mt-2">
-            Crie uma senha segura para acessar sua conta
-          </p>
-        </div>
+    <div className="exa-login">
+      <img className="el-amb" src="/site/tela-real.jpg" alt="" aria-hidden="true" />
+      <span className="el-veu" aria-hidden="true" />
+      <Link className="el-marca" to="/" aria-label="EXA, início"><img src="/site/exa-branco.svg" alt="EXA" width={96} height={42} /></Link>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Password */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Nova senha</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="pl-10 pr-10 h-12"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+      {(etapa === 'form' || etapa === 'salvando') && (
+        <form className="el-cartao" onSubmit={salvar} aria-label="Criar senha" noValidate>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'center' }}>
+            <h1 className="el-t">Crie sua senha</h1>
+            <p className="el-p">{emailLink ? <>Para entrar como <strong style={{ color: '#fff' }}>{emailLink}</strong>.</> : 'É com ela que você entra na sua área de anunciante.'}</p>
+          </div>
+          {aviso && <div className="el-msg" role="alert">{aviso}</div>}
+          {emailLink && <input type="email" name="email" autoComplete="username" value={emailLink} readOnly hidden />}
+          <div className="el-campo">
+            <label htmlFor="s1">Nova senha</label>
+            <div className="el-inp">
+              <input id="s1" type={ver ? 'text' : 'password'} autoComplete="new-password" placeholder="Mínimo de 6 caracteres" value={senha} onChange={(e) => setSenha(e.target.value)} disabled={etapa === 'salvando'} style={{ paddingRight: 54 }} />
+              <button className="el-olho" type="button" onClick={() => setVer((v) => !v)} aria-label={ver ? 'Esconder senha' : 'Mostrar senha'}><Olho aberto={ver} /></button>
             </div>
-            
-            {/* Password strength */}
-            {password.length > 0 && (
-              <div className="space-y-1">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((level) => (
-                    <div
-                      key={level}
-                      className={`h-1 flex-1 rounded-full transition-colors ${
-                        level <= strength.score ? strength.color : 'bg-gray-200'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className={`text-xs ${strength.score >= 3 ? 'text-emerald-600' : 'text-orange-600'}`}>
-                  Força: {strength.label}
-                </p>
+            {!!senha && (
+              <div className="el-forca" aria-live="polite">
+                <span className="el-barras">{[1, 2, 3, 4].map((i) => <i key={i} className={i <= f.n ? `on n${f.n}` : ''} />)}</span>
+                <span>{f.txt}</span>
               </div>
             )}
           </div>
-
-          {/* Confirm Password */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Confirmar senha</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className={`pl-10 pr-10 h-12 ${
-                  confirmPassword && password !== confirmPassword 
-                    ? 'border-red-500 focus-visible:ring-red-500' 
-                    : ''
-                }`}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-            {confirmPassword && password !== confirmPassword && (
-              <p className="text-xs text-red-500">As senhas não coincidem</p>
-            )}
+          <div className="el-campo">
+            <label htmlFor="s2">Repita a senha</label>
+            <input id="s2" type={ver ? 'text' : 'password'} autoComplete="new-password" placeholder="Digite de novo" value={confirma} onChange={(e) => setConfirma(e.target.value)} disabled={etapa === 'salvando'} className={confirma && confirma !== senha ? 'erro' : ''} />
           </div>
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            disabled={isLoading || password.length < 6 || password !== confirmPassword}
-            className="w-full h-12 bg-[#9C1E1E] hover:bg-[#7D1818] text-white font-semibold"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Check className="h-5 w-5 mr-2" />
-                Definir Senha
-              </>
-            )}
-          </Button>
+          <button className="el-b" type="submit" disabled={etapa === 'salvando'}>
+            {etapa === 'salvando' ? <><span className="el-gira" aria-hidden="true" />Salvando</> : 'Criar senha e entrar'}
+          </button>
         </form>
+      )}
 
-        {/* Tips */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-          <p className="text-xs font-medium text-muted-foreground mb-2">💡 Dicas para uma senha forte:</p>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• Mínimo de 8 caracteres</li>
-            <li>• Letras maiúsculas e minúsculas</li>
-            <li>• Números e caracteres especiais</li>
-          </ul>
+      {etapa === 'pronto' && (
+        <div className="el-cartao" role="status" style={{ alignItems: 'center', textAlign: 'center' }}>
+          <span className="el-ok" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12.5l5 5L20 6.5" /></svg></span>
+          <h1 className="el-t" style={{ fontSize: 30 }}>Senha criada.</h1>
+          <p className="el-p">Abrindo a sua área de anunciante…</p>
+          <button className="el-b" type="button" onClick={() => navigate('/anunciante/pedidos', { replace: true })}>Entrar agora</button>
+          <Link className="el-lnk" to={`/login${emailFinal ? `?email=${encodeURIComponent(emailFinal)}` : ''}`}>Entrar com e-mail e senha</Link>
         </div>
-      </Card>
+      )}
+
+      {(etapa === 'expirado' || etapa === 'erro') && (
+        <div className="el-cartao" role="alert" style={{ alignItems: 'center', textAlign: 'center' }}>
+          <h1 className="el-t" style={{ fontSize: 30 }}>{etapa === 'expirado' ? 'Este link já foi usado ou expirou' : 'Não consegui salvar agora'}</h1>
+          <p className="el-p">{etapa === 'expirado'
+            ? 'Por segurança, cada link funciona uma vez só. Peça um novo para a Sofia: ele chega na hora no seu WhatsApp.'
+            : 'A conexão falhou no meio do caminho. Tente de novo; se continuar, a Sofia manda um link novo.'}</p>
+          {etapa === 'erro' && <button className="el-b" type="button" onClick={() => setEtapa('form')}>Tentar de novo</button>}
+          <a className="el-b el-b-wa" href={pedirNovo} target="_blank" rel="noopener noreferrer">Pedir novo link à Sofia</a>
+          <Link className="el-lnk" to="/login">Já tenho senha · Entrar</Link>
+        </div>
+      )}
+
+      <nav className="el-pe" aria-label="Ajuda">
+        <span>Dúvidas? <a href={waSofia('Oi Sofia, preciso de ajuda para acessar a minha conta.')} target="_blank" rel="noopener noreferrer">Fale com a Sofia</a></span>
+      </nav>
     </div>
   );
-};
-
-export default DefinirSenhaPage;
+}

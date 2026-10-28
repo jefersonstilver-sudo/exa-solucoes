@@ -47,6 +47,20 @@ const TwoFactorVerificationPage = lazy(() => import('@/pages/auth/TwoFactorVerif
 const Exa = lazy(() => import('./pages/Exa'));
 // Site público novo (Opção 2, 28/10/2026). As páginas antigas ficam em /*-antiga até 27/11/2026.
 const SiteHome = lazy(() => import('./site/SiteHome'));
+// Páginas carregadas sob demanda. Ficam FORA do componente: criar lazy() dentro do render
+// gerava um componente novo a cada render do App (a página era desmontada e montada de novo
+// a cada mudança de login — foi o que travava o /definir-senha).
+const LazyPortrasDaMarca = lazy(() => import('./pages/PortrasDaMarca'));
+const LazyVagaVideomaker = lazy(() => import('./pages/VagaVideomaker'));
+const LazyRelatorioPublicoPage = lazy(() => import('./pages/public/RelatorioPublicoPage'));
+const LazyPropostaPassouGanhou = lazy(() => import('./pages/public/PropostaPassouGanhou'));
+const LazyCheckoutFidelidade = lazy(() => import('./pages/CheckoutFidelidade'));
+const LazyPaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
+const LazyPaymentCanceled = lazy(() => import('./pages/PaymentCanceled'));
+const LazyPropostaPublicaPage = lazy(() => import('./pages/public/PropostaPublicaPage'));
+const LazyAssinaturaConfirmadaPage = lazy(() => import('./pages/public/AssinaturaConfirmadaPage'));
+const LazyDefinirSenhaPage = lazy(() => import('./pages/public/DefinirSenhaPage'));
+
 const SitePredios = lazy(() => import('./site/SitePredios'));
 const SiteSindico = lazy(() => import('./site/SiteSindico'));
 const SiteNaoEncontrado = lazy(() => import('./site/SiteNaoEncontrado'));
@@ -246,14 +260,14 @@ const AppContent = () => {
           <Route path="/coming-soon" element={<Suspense fallback={null}><ComingSoonPage /></Suspense>} />
           <Route path="/portrasdamarca" element={
             <Suspense fallback={<GlobalLoadingPage message="" />}>
-              {React.createElement(lazy(() => import('./pages/PortrasDaMarca')))}
+              {<LazyPortrasDaMarca />}
             </Suspense>
           } />
 
           {/* VAGA PÚBLICA - Videomaker de Performance (HTML standalone em /public) */}
           <Route path="/vagadevideomaker" element={
             <Suspense fallback={<GlobalLoadingPage message="" />}>
-              {React.createElement(lazy(() => import('./pages/VagaVideomaker')))}
+              {<LazyVagaVideomaker />}
             </Suspense>
           } />
 
@@ -308,7 +322,7 @@ const AppContent = () => {
           {/* Relatório Público VAR - Sem autenticação */}
           <Route path="/r/:reportId" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando relatório..." />}>
-              {React.createElement(lazy(() => import('./pages/public/RelatorioPublicoPage')))}
+              {<LazyRelatorioPublicoPage />}
             </Suspense>
           } />
           
@@ -336,7 +350,7 @@ const AppContent = () => {
           {/* Proposta Linkaê × Passou Ganhou */}
           <Route path="/propostapassouganhou3029" element={
             <Suspense fallback={<GlobalLoadingPage />}>
-              {React.createElement(lazy(() => import('./pages/public/PropostaPassouGanhou')))}
+              {<LazyPropostaPassouGanhou />}
             </Suspense>
           } />
           
@@ -395,7 +409,7 @@ const AppContent = () => {
           {/* CHECKOUT FLOW - Redirect antigo checkout para novo fluxo */}
           <Route path="/checkout/fidelidade" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando contrato..." />}>
-              {React.createElement(lazy(() => import('./pages/CheckoutFidelidade')))}
+              {<LazyCheckoutFidelidade />}
             </Suspense>
           } />
           <Route path="/checkout/finalizar" element={<Suspense fallback={<GlobalLoadingPage />}><CheckoutFinish /></Suspense>} />
@@ -404,12 +418,12 @@ const AppContent = () => {
           <Route path="/payment" element={<Suspense fallback={<GlobalLoadingPage />}><Payment /></Suspense>} />
           <Route path="/payment/success" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
-              {React.createElement(lazy(() => import('./pages/PaymentSuccess')))}
+              {<LazyPaymentSuccess />}
             </Suspense>
           } />
           <Route path="/payment/canceled" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
-              {React.createElement(lazy(() => import('./pages/PaymentCanceled')))}
+              {<LazyPaymentCanceled />}
             </Suspense>
           } />
           <Route path="/pix-payment" element={<Suspense fallback={<GlobalLoadingPage />}><PixPayment /></Suspense>} />
@@ -507,21 +521,21 @@ const AppContent = () => {
           {/* PROPOSTA PÚBLICA - indexamidia.com.br/propostacomercial/:id */}
           <Route path="/propostacomercial/:id" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando proposta..." />}>
-              {React.createElement(lazy(() => import('./pages/public/PropostaPublicaPage')))}
+              {<LazyPropostaPublicaPage />}
             </Suspense>
           } />
 
           {/* ASSINATURA CONFIRMADA - Após pagamento recorrente com cartão */}
           <Route path="/assinatura-confirmada" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
-              {React.createElement(lazy(() => import('./pages/public/AssinaturaConfirmadaPage')))}
+              {<LazyAssinaturaConfirmadaPage />}
             </Suspense>
           } />
           
           {/* DEFINIR SENHA - Para novos clientes via proposta */}
           <Route path="/definir-senha" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
-              {React.createElement(lazy(() => import('./pages/public/DefinirSenhaPage')))}
+              {<LazyDefinirSenhaPage />}
             </Suspense>
           } />
 
@@ -610,7 +624,7 @@ const AppContent = () => {
           {/* Página pública de proposta comercial */}
           <Route path="/proposta" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando proposta..." />}>
-              {React.createElement(lazy(() => import('./pages/public/PropostaPublicaPage')))}
+              {<LazyPropostaPublicaPage />}
             </Suspense>
           } />
 

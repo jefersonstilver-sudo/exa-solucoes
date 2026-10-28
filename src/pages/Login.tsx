@@ -30,6 +30,12 @@ export default function Login() {
   const [verSenha, setVerSenha] = useState(false);
   const { sendReset, isLoading: enviando, cooldown } = usePasswordReset(email, { onSuccess: () => setVista('enviado') });
 
+  // e-mail vindo do link (ex.: depois de criar a senha)
+  useEffect(() => {
+    const e = new URLSearchParams(location.search).get('email');
+    if (e) setEmail(e);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // já logado: vai para a área certa
   useEffect(() => {
     if (isLoading || !isLoggedIn || !userProfile) return;
