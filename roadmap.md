@@ -63,4 +63,3 @@
 
 # Site: commit db4d036 (28/10)
 - [ ] Puxar o commit db4d036 (loja com mapa do Google, lista flutuante para a Sofia, vídeos reais dos clientes), fazer deploy da função nova site-clientes-videos (verify_jwt = false) e publicar o site — bloqueado: o projeto ainda está no 7daacc3 (main local), sem os arquivos do commit; precisa de sincronização do GitHub. Sem alterar arquivos.
-- [ ] Republicar a exa2-saude-frota do commit 450d0b1 (texto 'ultimas 24 h') — pendente desde a mensagem anterior; a função no ar ainda é a versão sem esse texto.
