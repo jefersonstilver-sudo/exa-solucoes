@@ -633,3 +633,6 @@ verify_jwt = false
 
 [functions.exa2-vigia-telas]
 verify_jwt = false
+
+[functions.exa2-auditoria-diaria]
+verify_jwt = false
