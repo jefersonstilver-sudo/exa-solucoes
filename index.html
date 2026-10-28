@@ -162,17 +162,23 @@
       (function() {
         var BUILD_ID = '__BUILD_ID__';
         var key = 'html-build-id';
+        // mantém ?parâmetros e #hash do endereço (links de senha, propostas, UTM)
+        function comCb() { var q = location.search || ''; return location.pathname + q + (q ? '&' : '?') + '_cb=' + Date.now() + (location.hash || ''); }
         var stored = localStorage.getItem(key);
-        if (stored && stored !== BUILD_ID) {
+        // Páginas de link único (criar/redefinir senha, confirmação, 2FA) NUNCA recarregam sozinhas:
+        // o recarregamento perdia o ?th=… / #access_token=… do link e o cliente via "link inválido".
+        var semRecarga = /^\/(definir-senha|reset-password|redefinir-senha|esqueci-senha|confirmacao|verificacao-2fa|email-not-confirmed|auth)/i.test(location.pathname);
+        if (semRecarga) { localStorage.setItem(key, BUILD_ID); }
+        else if (stored && stored !== BUILD_ID) {
           localStorage.setItem(key, BUILD_ID);
           if ('caches' in window) {
             caches.keys().then(function(names) {
               return Promise.all(names.map(function(n) { return caches.delete(n); }));
             }).then(function() {
-              window.location.href = window.location.pathname + '?_cb=' + Date.now();
+              window.location.replace(comCb());
             });
           } else {
-            window.location.href = window.location.pathname + '?_cb=' + Date.now();
+            window.location.replace(comCb());
           }
           return;
         }
@@ -196,7 +202,7 @@
           var doReload = function() {
             var search = location.search || '';
             var sep = search ? '&' : '?';
-            location.replace(location.pathname + search + sep + '_v=' + Date.now());
+            location.replace(location.pathname + search + sep + '_v=' + Date.now() + (location.hash || ''));
           };
           if ('caches' in window) {
             caches.keys()
@@ -208,6 +214,7 @@
         }
 
         function checkVersion() {
+          if (/^\/(definir-senha|reset-password|redefinir-senha|esqueci-senha|confirmacao|verificacao-2fa|email-not-confirmed|auth)/i.test(location.pathname)) return;
           try {
             var lastTs = parseInt(localStorage.getItem('last-version-check-ts') || '0', 10);
             if (Date.now() - lastTs < MIN_RECHECK_MS) return;

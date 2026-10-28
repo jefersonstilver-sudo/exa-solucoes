@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
+export const ROTAS_SEM_RECARGA = /^\/(definir-senha|reset-password|redefinir-senha|esqueci-senha|confirmacao|verificacao-2fa|email-not-confirmed|auth)/i;
+
 /**
  * useVersionWatcher
  *
@@ -42,6 +44,8 @@ export const useVersionWatcher = () => {
 
     const checkOnce = async () => {
       if (cancelled || toastShown) return;
+      // páginas de link único não recarregam sozinhas (perderiam o token do link)
+      if (ROTAS_SEM_RECARGA.test(window.location.pathname)) return;
       try {
         const ctrl = new AbortController();
         const timeout = setTimeout(() => ctrl.abort(), 4000);
@@ -68,7 +72,7 @@ export const useVersionWatcher = () => {
             } else {
               const search = window.location.search || '';
               const separator = search ? '&' : '?';
-              window.location.replace(`${window.location.pathname}${search}${separator}_v=${Date.now()}`);
+              window.location.replace(`${window.location.pathname}${search}${separator}_v=${Date.now()}${window.location.hash || ''}`);
             }
           }, 5000);
         }

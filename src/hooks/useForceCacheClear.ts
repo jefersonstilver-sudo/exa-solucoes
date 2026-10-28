@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { APP_VERSION, BUILD_TIMESTAMP } from '@/config/version';
 import { setStoredVersion } from '@/config/version';
 import { supabase } from '@/integrations/supabase/client';
+import { ROTAS_SEM_RECARGA } from '@/hooks/useVersionWatcher';
 
 const RELOAD_KEY = 'cache-reload-done';
 
@@ -47,6 +48,9 @@ export const useForceCacheClear = () => {
 
   const checkRemoteVersion = async () => {
     try {
+      // páginas de link único (senha, confirmação) não recarregam sozinhas: perderiam o token do link
+      if (ROTAS_SEM_RECARGA.test(window.location.pathname)) return;
+
       // Anti-loop: only reload once per session
       const alreadyReloaded = sessionStorage.getItem(RELOAD_KEY);
       if (alreadyReloaded) {
