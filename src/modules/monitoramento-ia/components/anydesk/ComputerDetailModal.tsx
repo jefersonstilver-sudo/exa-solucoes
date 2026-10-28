@@ -10,6 +10,8 @@ import { OfflineIncidentCard } from "./OfflineIncidentCard";
 import { IncidentHistoryTab } from "./IncidentHistoryTab";
 import { AuditoriaCard } from "./AuditoriaCard";
 import { DiagnosticoTab } from "./DiagnosticoTab";
+import { PainelResumoEXA } from "../paineis/PainelResumoEXA";
+import type { FrotaPainel } from "../../hooks/useFrotaSaude";
 import { Stethoscope, Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +39,7 @@ interface ComputerDetailModalProps {
   periodLabel?: string;
   deviceGroups?: { id: string; nome: string; cor: string; ordem: number }[];
   moveDeviceToGroup?: (deviceId: string, groupId: string | null) => Promise<void>;
+  saude?: FrotaPainel | null;
 }
 
 interface AlertConfig {
@@ -57,6 +60,7 @@ export const ComputerDetailModal = ({
   periodLabel = 'no período',
   deviceGroups = [],
   moveDeviceToGroup,
+  saude,
 }: ComputerDetailModalProps) => {
   const [alertConfig, setAlertConfig] = useState<AlertConfig>({
     alerts_enabled: true,
@@ -269,6 +273,14 @@ export const ComputerDetailModal = ({
               Detalhes completos do painel {displayName}
             </DialogDescription>
           </DialogHeader>
+
+          <PainelResumoEXA
+            computer={computer}
+            saude={saude}
+            predioNome={assignedBuilding?.nome}
+            elevadorNome={elevatorCompany?.nome_fantasia}
+            grupoNome={deviceGroups.find((g) => g.id === computer.device_group_id)?.nome}
+          />
 
           {/* 3 CARDS SUPERIORES */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

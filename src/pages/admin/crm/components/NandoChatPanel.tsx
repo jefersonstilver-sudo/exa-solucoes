@@ -79,7 +79,9 @@ const PAPEL_COR: Record<string, string> = {
   'contato do prédio': 'bg-gray-50 text-gray-700 border-gray-200',
 };
 
-export const NandoChatPanel: React.FC = () => {
+export interface NandoAbrirConversa { telefone: string; nome?: string; predio?: string; papel?: string }
+
+export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = ({ abrir = null }) => {
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState<string | null>(null);
@@ -101,15 +103,32 @@ export const NandoChatPanel: React.FC = () => {
   const carregar = useCallback(async () => {
     try {
       const d = await call('list');
-      setConversas(d.conversas || []);
-      setSel((cur) => cur ?? d.conversas?.[0]?.telefone ?? null);
+      let lista: Conversa[] = d.conversas || [];
+      // Aberto pelo painel do prédio: seleciona o contato; se ainda não conversou, cria a conversa em branco
+      if (abrir?.telefone) {
+        const alvo = abrir.telefone.replace(/\D/g, '');
+        const achada = lista.find((c) => c.telefone.replace(/\D/g, '').endsWith(alvo.slice(-10)));
+        if (!achada) {
+          lista = [{
+            telefone: alvo, nome: abrir.nome || alvo, nome_whatsapp: null,
+            predios: abrir.predio ? [{ id: '', nome: abrir.predio, papel: abrir.papel || 'contato do prédio' }] : [],
+            predio_atual: abrir.predio || null, tipo: 'contato', modo: 'auto', humano_ate: null, assumido_por: null,
+            ultima_em: new Date().toISOString(), preview: 'Nova conversa', ultima_papel: 'sistema', aguardando: 0, total: 0,
+          }, ...lista];
+        }
+        setConversas(lista);
+        setSel((cur) => cur ?? (achada ? achada.telefone : alvo));
+        return;
+      }
+      setConversas(lista);
+      setSel((cur) => cur ?? lista[0]?.telefone ?? null);
     } catch (e: any) {
       console.error('[NANDO-CRM] lista', e);
       toast.error('Não foi possível carregar as conversas do Nando: ' + e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [abrir?.telefone, abrir?.nome, abrir?.predio, abrir?.papel]);
 
   const carregarMsgs = useCallback(async (tel: string) => {
     try {

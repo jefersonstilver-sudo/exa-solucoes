@@ -54,7 +54,8 @@ const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages
 const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').then(m => ({ default: m.Agentes })));
 const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
 const EntregaTelasPage = lazy(() => import('@/pages/admin/EntregaTelasPage'));
-const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis').then(m => ({ default: m.PaineisPage })));
+const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/PaineisEXA'));
+const NandoConversaPage = lazy(() => import('@/pages/admin/nando/NandoConversaPage'));
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 
 // Lazy imports para Contatos & Inteligência Comercial
@@ -265,6 +266,7 @@ const SuperAdminRoutes = () => {
           <RelatorioPlaylistPage />
         </Suspense>
       } />
+      <Route path="nando" element={<Suspense fallback={<GlobalLoadingPage message="Carregando Nando..." />}><NandoConversaPage /></Suspense>} />
       <Route path="paineis-exa" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>
           <PaineisPage />

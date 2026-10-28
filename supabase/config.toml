@@ -639,3 +639,6 @@ verify_jwt = false
 
 [functions.exa2-saude-painel]
 verify_jwt = false
+
+[functions.exa2-saude-frota]
+verify_jwt = false
