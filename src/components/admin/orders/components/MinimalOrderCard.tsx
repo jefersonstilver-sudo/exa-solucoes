@@ -159,7 +159,9 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
               )}
               {isOrder && <SofiaSoldBadge pedidoId={item.id} />}
             </div>
-            <span className="text-base font-bold text-foreground whitespace-nowrap">{formatCurrency(item.valor_total || 0)}</span>
+            <span className="text-base font-bold text-foreground whitespace-nowrap" title="Valor por mês">
+              {formatCurrency(valorMensal)}{isOrder ? '/mês' : ''}
+            </span>
           </div>
 
           {/* Linha 2: cliente + Conversar | plano e quando */}

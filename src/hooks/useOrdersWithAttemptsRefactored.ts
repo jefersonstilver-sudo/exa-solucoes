@@ -78,6 +78,7 @@ export const useOrdersWithAttemptsRefactored = () => {
         created_at: pedido.created_at,
         status: pedido.status,
         valor_total: pedido.valor_total,
+        valor_mensal: contactMap.get(pedido.id)?.valor_mensal ?? null,
         lista_paineis: pedido.lista_paineis,
         plano_meses: pedido.plano_meses,
         data_inicio: pedido.data_inicio,
