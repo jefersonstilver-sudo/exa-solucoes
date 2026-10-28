@@ -42,7 +42,7 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v1"
+VERSAO_COLETOR = "saude-v2"
 API_TELAS = "18.228.252.149"
 
 
@@ -154,6 +154,11 @@ def rede():
     d["gw"] = ping(gw)
     d["internet"] = ping("8.8.8.8")
     d["api_telas"] = ping(API_TELAS, 6)
+    try:
+        with urllib.request.urlopen("https://api.ipify.org", timeout=6) as r:
+            d["ip_publico"] = r.read(64).decode().strip()
+    except Exception:
+        pass
     try:
         socket.setdefaulttimeout(5)
         socket.gethostbyname("iwlscwsenzgyylopnwpu.supabase.co")
@@ -272,6 +277,15 @@ def sistema():
     return d
 
 
+def identidade():
+    """Um prédio pode ter 2+ NUCs com o mesmo código de tela: cada NUC se identifica pelo ID do AnyDesk
+    (o mesmo do painel de monitoramento) ou, sem ele, pelo machine-id."""
+    ad = sh("anydesk --get-id 2>/dev/null", timeout=8)
+    ad = ad if ad.isdigit() else ""
+    mid = ler("/etc/machine-id")[:12]
+    return ad, (ad or mid or socket.gethostname())
+
+
 def enviar(payload, env):
     url = (env.get("SUPABASE_URL") or "").rstrip("/")
     chave = env.get("SUPABASE_KEY") or env.get("SUPABASE_ANON_KEY") or env.get("SUPABASE_SERVICE_KEY") or ""
@@ -308,8 +322,9 @@ def main():
     except Exception:
         pass
     t, fonte = temperatura()
-    payload = {"cliente_id": cliente, "coletor": VERSAO_COLETOR, "coletado_em": int(time.time()),
-               "temp_c": t, "temp_fonte": fonte}
+    ad, nuc = identidade()
+    payload = {"cliente_id": cliente, "nuc_id": nuc, "anydesk_id": ad or None, "coletor": VERSAO_COLETOR,
+               "coletado_em": int(time.time()), "temp_c": t, "temp_fonte": fonte}
     for nome, fn in (("sistema", sistema), ("rede", rede), ("monitor", monitor), ("player", player)):
         try:
             payload[nome] = fn()

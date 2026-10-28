@@ -9,7 +9,8 @@ import { SelectElevatorCompanyDialog } from "./SelectElevatorCompanyDialog";
 import { OfflineIncidentCard } from "./OfflineIncidentCard";
 import { IncidentHistoryTab } from "./IncidentHistoryTab";
 import { AuditoriaCard } from "./AuditoriaCard";
-import { Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning, Layers } from "lucide-react";
+import { DiagnosticoTab } from "./DiagnosticoTab";
+import { Stethoscope, Monitor, Info, Clock, Settings, BarChart3, Wifi, MapPin, Tag, Activity, AlertTriangle, Bell, Building2, Link2, Unlink, Trash2, FileWarning, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -673,8 +674,12 @@ export const ComputerDetailModal = ({
           <AuditoriaCard metadata={computer.metadata} />
 
           {/* TABS */}
-          <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-module-secondary border-module">
+          <Tabs defaultValue="diagnostico" className="w-full">
+            <TabsList className="flex w-full justify-start overflow-x-auto sm:grid sm:grid-cols-5 bg-module-secondary border-module">
+              <TabsTrigger value="diagnostico" className="shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground">
+                <Stethoscope className="h-4 w-4 mr-2" />
+                Diagnóstico
+              </TabsTrigger>
               <TabsTrigger value="info" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground">
                 <Info className="h-4 w-4 mr-2" />
                 Informações
@@ -692,6 +697,10 @@ export const ComputerDetailModal = ({
                 Gráficos
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="diagnostico" className="mt-4">
+              <DiagnosticoTab computerId={computer.id} />
+            </TabsContent>
 
             <TabsContent value="info" className="space-y-4 mt-4">
               <Card className="bg-module-card border-module shadow-sm">
