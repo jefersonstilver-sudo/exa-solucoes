@@ -134,7 +134,6 @@ export default function SiteHome() {
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 26px', alignItems: 'center' }}>
               <Link className="b br" to="/loja">Ver prédios e preços</Link>
-              <a className="lk" href={waSofia()} style={{ color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeWhats />Falar com a Sofia</a>
             </div>
             <p style={{ margin: 0, fontSize: 15, color: '#8E8C87' }}>{resumo}</p>
           </div>
