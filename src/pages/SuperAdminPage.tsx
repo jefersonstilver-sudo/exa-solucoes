@@ -41,7 +41,8 @@ const SuperAdminPage = () => {
     if (!isLoggedIn) {
       console.log('❌ NÃO LOGADO: Redirecionando para login ERP');
       toast.error('Você precisa estar logado para acessar esta área.');
-      navigate('/login', { replace: true });
+      // volta para a mesma página depois do login (links diretos: painel, Nando, alertas)
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`, { replace: true });
       setHasChecked(true);
       return;
     }

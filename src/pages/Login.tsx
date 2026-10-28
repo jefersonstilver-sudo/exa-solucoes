@@ -36,9 +36,9 @@ export default function Login() {
       let targetPath = redirectPath;
       
       if (userProfile.role === 'super_admin') {
-        targetPath = '/super_admin';
+        targetPath = redirectPath.startsWith('/super_admin') ? redirectPath : '/super_admin';
       } else if (['admin', 'admin_marketing', 'admin_financeiro'].includes(userProfile.role)) {
-        targetPath = '/admin';
+        targetPath = redirectPath.startsWith('/admin') ? redirectPath : '/admin';
       } else if (userProfile.role === 'client') {
         targetPath = redirectPath === '/loja' ? '/loja' : redirectPath;
       }
