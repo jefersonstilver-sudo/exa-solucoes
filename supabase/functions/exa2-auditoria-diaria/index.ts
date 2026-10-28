@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       telas ? telas.from('updates_clientes').select('cliente_id, cliente_name') : Promise.resolve({ data: [] as any[] }),
     ]);
 
+    (predios || []).forEach((p: any) => { p.nome = String(p.nome || '').trim(); });
     const predioPor = new Map((predios || []).map((p: any) => [p.id, p]));
     const predioPorTela = new Map((predios || []).map((p: any) => [telaDe(p.id), p]));
     const ativo = (p: any) => p && String(p.status || '').toLowerCase() === 'ativo';
@@ -92,6 +93,7 @@ Deno.serve(async (req) => {
     const devsAtivos = (devices || []).filter((d: any) => d.building_id && ativo(predioPor.get(d.building_id)));
     const irmaoOnline = (d: any) => devsAtivos.some((o: any) => o.id !== d.id && o.building_id === d.building_id && String(o.status).toLowerCase() === 'online');
     let online = 0;
+    const antigos: string[] = [];
     for (const d of devsAtivos) {
       const p = predioPor.get(d.building_id);
       const on = String(d.status).toLowerCase() === 'online';
@@ -99,7 +101,10 @@ Deno.serve(async (req) => {
       if (on) online++;
       if (!on) {
         const desde = d.last_online_at ? new Date(d.last_online_at).getTime() : 0;
-        if (agora - desde >= 10 * MIN) {
+        if (desde && agora - desde > 30 * 24 * 60 * MIN) {
+          // parado há mais de 30 dias: provavelmente retirado/substituído — lista à parte, sem alerta
+          antigos.push(`${p.nome} (${d.name}, desde ${brt(d.last_online_at, 'd')})`);
+        } else if (agora - desde >= 10 * MIN) {
           achados.push({ chave: `offline:${d.id}`, sev: 'critico', predio: p.nome, lembrar_h: 12,
             texto: `*${p.nome}* (${d.name}) — tela OFFLINE há ${desde ? duracao(agora - desde) : 'muito tempo'}${desde ? ` (desde ${brt(d.last_online_at)})` : ''}${irmaoOnline(d) ? '. O outro aparelho do prédio está online' : ''}` });
         }
@@ -216,9 +221,10 @@ Deno.serve(async (req) => {
     if (modo === 'diario') {
       const L: string[] = [];
       L.push(`*Auditoria diária EXA — ${brt(new Date(agora), 'd')}*`);
-      L.push(`${online} de ${devsAtivos.length} telas online · ${crit.length} crítico(s) · ${aten.length} em atenção`);
+      L.push(`${online} de ${devsAtivos.length - antigos.length} aparelhos online · ${crit.length} crítico(s) · ${aten.length} em atenção`);
       if (crit.length) { L.push('', '*CRÍTICO*'); crit.forEach((a) => L.push(`• ${a.texto}`)); }
       if (aten.length) { L.push('', '*ATENÇÃO*'); aten.forEach((a) => L.push(`• ${a.texto}`)); }
+      if (antigos.length) { L.push('', '*Parados há mais de 30 dias* (confirmar se foram retirados e apagar do cadastro)'); L.push(`• ${antigos.join('; ')}`); }
       L.push('', '*Conteúdo*');
       L.push(syncOk ? (divergencias.length ? `• ${divergencias.length} diferença(s) sistema × telas (correção automática em andamento)` : '• Sistema e telas iguais em todos os prédios (principal, programação e arquivos)') : '• Não consegui conferir sistema × telas hoje');
       L.push('', '*Pedidos*');
