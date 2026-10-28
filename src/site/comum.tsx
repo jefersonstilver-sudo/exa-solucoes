@@ -52,8 +52,24 @@ const IconeWhats = () => (
 );
 export { IconeWhats };
 
-export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode }> = ({ claro, acao }) => (
+/** Promoção de novembro/2026: R$ 99 por prédio por mês. Só aparece de 1 a 30/11/2026 (horário de Brasília). */
+export const PROMO_PRECO = 99;
+export function promoNovembroAtiva(agora: Date = new Date()): boolean {
+  const sp = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  return sp.getFullYear() === 2026 && sp.getMonth() === 10;
+}
+export const TarjaPromo: React.FC = () => {
+  if (!promoNovembroAtiva()) return null;
+  return (
+    <a className="tarja-promo" href={waSofia('Oi Sofia! Vi a promoção de novembro de R$ 99 por prédio e quero saber mais.')} target="_blank" rel="noopener noreferrer">
+      <strong>Só em novembro:</strong> R$ {PROMO_PRECO} por prédio, por mês. <span>Falar com a Sofia →</span>
+    </a>
+  );
+};
+
+export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode; semPromo?: boolean }> = ({ claro, acao, semPromo }) => (
   <header className={`hdr ${claro ? 'hdr-claro' : ''}`} style={claro ? undefined : { backdropFilter: 'saturate(1.4) blur(14px)' }}>
+    {!semPromo && <TarjaPromo />}
     <div className="w in">
       <Link to="/" aria-label="EXA, início">
         <img src={claro ? '/site/exa-preto.svg' : '/site/exa-branco.svg'} alt="EXA" width={64} height={28} style={{ height: 26, width: 'auto', display: 'block' }} />

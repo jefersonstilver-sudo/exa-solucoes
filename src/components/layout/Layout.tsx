@@ -17,7 +17,7 @@ const Layout: React.FC<LayoutProps> = memo(({ children, className = '' }) => {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F4F3F0' }}>
       <div className="exa-site" style={{ minHeight: 0, background: 'transparent', position: 'sticky', top: 0, zIndex: 40, overflow: 'visible' }}>
-        <CabecalhoSite />
+        <CabecalhoSite semPromo />
       </div>
       <main className={`flex-1 relative pt-0 ${className}`}>
         {children}
