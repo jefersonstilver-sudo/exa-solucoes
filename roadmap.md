@@ -62,4 +62,7 @@
 - [ ] Não publicar sofia-agent, asaas-*, clicksign-* (regra permanente); manter os alertas críticos antigos abertos conforme autorização.
 
 # Site: commit db4d036 (28/10)
-- [ ] Puxar o commit db4d036 (loja com mapa do Google, lista flutuante para a Sofia, vídeos reais dos clientes), fazer deploy da função nova site-clientes-videos (verify_jwt = false) e publicar o site — bloqueado: o projeto ainda está no 7daacc3 (main local), sem os arquivos do commit; precisa de sincronização do GitHub. Sem alterar arquivos.
+- [x] Puxar o commit db4d036 (concluído — publicado com 3e6e8aa e 79bb851) (loja com mapa do Google, lista flutuante para a Sofia, vídeos reais dos clientes), fazer deploy da função nova site-clientes-videos (verify_jwt = false) e publicar o site — bloqueado: o projeto ainda está no 7daacc3 (main local), sem os arquivos do commit; precisa de sincronização do GitHub. Sem alterar arquivos.
+
+# Site: limpeza do topo da página inicial (28/10)
+- [x] Remover do hero de SiteHome: o link "Falar com a Sofia", a frase "Prédios residenciais de Foz do Iguaçu" e o botão "Ver prédios e preços". Sem publicar ainda.
