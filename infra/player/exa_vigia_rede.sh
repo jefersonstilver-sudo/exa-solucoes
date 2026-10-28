@@ -24,7 +24,11 @@ diario(){ echo "$(date '+%F %T') $*" >> "$DIA"; [ $TESTE = 1 ] && echo "diario: 
 BID=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)
 if [ -n "$BID" ] && [ "$(cat "$EST/boot_id" 2>/dev/null)" != "$BID" ]; then
   ant=$(cat "$EST/visto" 2>/dev/null)
-  diario "BOOT uptime=${up}s anterior_visto=$( [ -n "$ant" ] && date -d @"$ant" '+%F %T' || echo '?')"
+  if [ -f "$EST/boot_id" ]; then
+    diario "BOOT uptime=${up}s anterior_visto=$( [ -n "$ant" ] && date -d @"$ant" '+%F %T' || echo '?')"
+  else
+    diario "INICIO_DIARIO uptime=${up}s"   # primeira execução do vigia-v2 neste NUC (não é religamento)
+  fi
   echo "$BID" > "$EST/boot_id"; rm -f "$EST/estado" "$EST/falhas"
 fi
 

@@ -24,7 +24,7 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v7"
+VERSAO_COLETOR = "saude-v7.1"
 API_TELAS = "18.228.252.149"
 URL_VEL_S3 = "https://sistema-update.s3.sa-east-1.amazonaws.com/diag/velocidade_5mb.bin"
 URL_VEL_CF = "https://speed.cloudflare.com/__down?bytes=5000000"
@@ -188,7 +188,7 @@ def _baixar_medindo(url, limite_s):
 
 def velocidade_download(estado):
     """v7: mede do NOSSO S3 (de onde vêm os vídeos) e da Cloudflare (referência). No máx. 1x a cada 6 h; 15 s cada."""
-    if time.time() - estado.get("ultimo_speedtest", 0) < 6 * 3600:
+    if estado.get("velocidade") and time.time() - estado.get("ultimo_speedtest", 0) < 6 * 3600:
         return estado.get("velocidade")
     d = {}
     for nome, url in (("s3", URL_VEL_S3), ("cloudflare", URL_VEL_CF)):
