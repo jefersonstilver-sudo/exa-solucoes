@@ -24,7 +24,7 @@ import urllib.request
 APP = os.path.expanduser("~/Documentos/appUbuntu")
 CONF = os.path.expanduser("~/.exa_saude.json")      # {"cliente_id": "bc17"} gravado na instalação
 ESTADO = os.path.expanduser("~/.exa_saude_estado.json")
-VERSAO_COLETOR = "saude-v5"
+VERSAO_COLETOR = "saude-v6"
 API_TELAS = "18.228.252.149"
 
 
@@ -388,6 +388,11 @@ def main():
         except Exception as e:
             payload[nome] = {"erro": str(e)[:120]}
     payload["download_mbps"] = velocidade_download(estado)
+    try:  # v10: o que o próprio player garantiu (padrão EXA)
+        pd = json.loads(ler(os.path.expanduser("~/.exa_padrao.json"), "{}"))
+        payload["padrao"] = {k: pd.get(k) for k in ("versao", "quando", "ok", "itens", "erros")}
+    except Exception:
+        pass
     ok = enviar(payload, env_do_player())
     try:
         with open(ESTADO, "w") as f:
