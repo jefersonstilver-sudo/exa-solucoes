@@ -51,7 +51,7 @@ rm -rf "$APP/__pycache__/exa_saude"* 2>/dev/null || true
 # 3) agenda a cada 15 min, com prioridade mínima e limite de 90 s (nunca roda dois ao mesmo tempo)
 LINHA="*/15 * * * * cd $APP && flock -n /tmp/exa_saude.lock timeout 90 nice -n 19 ionice -c3 python3 $APP/exa_saude.py >/tmp/exa_saude.log 2>&1"
 ( crontab -l 2>/dev/null | grep -v 'exa_saude.py' ; echo "$LINHA" ) | crontab -
-echo "Agendado: $(crontab -l | grep exa_saude.py | cut -c1-40)..."
+if [ "$(crontab -l 2>/dev/null | grep -c exa_saude.py)" = "1" ]; then echo "Agendado a cada 15 min: OK"; else echo "ERRO: o agendamento NAO ficou gravado (crontab). Mande um print para a EXA."; fi
 
 # 4) primeira coleta agora, para conferir
 cd "$APP" && timeout 90 nice -n 19 python3 "$APP/exa_saude.py" --mostrar | tail -n 45
