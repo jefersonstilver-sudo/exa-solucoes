@@ -115,7 +115,7 @@ export const SofiaVoiceButton: React.FC<SofiaVoiceButtonProps> = ({ className })
   };
 
   return (
-    <div className={`fixed bottom-6 right-6 z-40 ${className}`}>
+    <div className={`fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6 z-40 ${className}`}>
       {/* Fluid gradient effects on sides when connected and speaking */}
       <AnimatePresence>
         {isConnected && (
