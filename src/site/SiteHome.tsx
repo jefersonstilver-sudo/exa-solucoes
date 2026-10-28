@@ -131,9 +131,6 @@ export default function SiteHome() {
             <p className="sub" style={{ color: '#C9C7C2', fontSize: 21 }}>
               Telas nos elevadores de prédios residenciais de Foz do Iguaçu. Você escolhe os prédios, vê o preço e a Sofia cria o seu vídeo. Ele entra no ar no mesmo dia.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 26px', alignItems: 'center' }}>
-              <Link className="b br" to="/loja">Ver prédios e preços</Link>
-            </div>
           </div>
           <figure className="monw" style={{ margin: '0 auto', width: '100%', maxWidth: 360, position: 'relative' }}>
             <div className="mon boot"><div className="scr">
