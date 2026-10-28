@@ -69,6 +69,14 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
 
   const isOrder = item.type === 'order';
   const statusConfig = getStatusConfig(item.status, item.type);
+  // Valor por mês (pago mensalmente), nunca o total acumulado do plano
+  const valorMensal = isOrder
+    ? (item.valor_mensal && item.valor_mensal > 0
+        ? item.valor_mensal
+        : item.plano_meses && item.plano_meses > 1
+          ? (item.valor_total || 0) / item.plano_meses
+          : (item.valor_total || 0))
+    : (item.valor_total || 0);
   const showVideoPreview = isOrder && ['ativo', 'video_aprovado'].includes(item.status);
   const { videoData } = useOrderCurrentVideoData(showVideoPreview ? item.id : '');
   const isVertical = (item as any).tipo_produto === 'vertical_premium';
@@ -159,7 +167,9 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
               )}
               {isOrder && <SofiaSoldBadge pedidoId={item.id} />}
             </div>
-            <span className="text-base font-bold text-foreground whitespace-nowrap">{formatCurrency(item.valor_total || 0)}</span>
+            <span className="text-base font-bold text-foreground whitespace-nowrap" title="Valor por mês">
+              {formatCurrency(valorMensal)}{isOrder ? '/mês' : ''}
+            </span>
           </div>
 
           {/* Linha 2: cliente + Conversar | plano e quando */}

@@ -27,9 +27,6 @@ interface AdvertiserOrderCardProps {
   companyName?: string;
 }
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString('pt-BR');
 
@@ -209,9 +206,8 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
           </div>
 
           {/* Números */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
             {[
-              { k: 'Valor', v: formatCurrency(item.valor_total || 0) },
               { k: 'Duração', v: item.type === 'order' ? `${item.plano_meses} meses` : '1 mês' },
               { k: 'Prédios', v: String(painelsList.length) },
               { k: 'Exibições/mês', v: impressions.toLocaleString('pt-BR') },
