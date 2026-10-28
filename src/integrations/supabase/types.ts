@@ -7410,6 +7410,39 @@ export type Database = {
         }
         Relationships: []
       }
+      exa2_monitor_estado: {
+        Row: {
+          chave: string
+          mensagem: string | null
+          notificado_em: string | null
+          predio: string | null
+          primeiro_em: string
+          resolvido_em: string | null
+          severidade: string
+          ultimo_em: string
+        }
+        Insert: {
+          chave: string
+          mensagem?: string | null
+          notificado_em?: string | null
+          predio?: string | null
+          primeiro_em?: string
+          resolvido_em?: string | null
+          severidade: string
+          ultimo_em?: string
+        }
+        Update: {
+          chave?: string
+          mensagem?: string | null
+          notificado_em?: string | null
+          predio?: string | null
+          primeiro_em?: string
+          resolvido_em?: string | null
+          severidade?: string
+          ultimo_em?: string
+        }
+        Relationships: []
+      }
       exa2_ofertas_politica: {
         Row: {
           ativa: boolean
@@ -18289,6 +18322,7 @@ export type Database = {
       emergency_financial_audit_and_fix: { Args: never; Returns: Json }
       ensure_ficha_padrao: { Args: { p_marca_id: string }; Returns: undefined }
       ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
+      exa2_avisar_sync: { Args: { p_pedido: string }; Returns: undefined }
       extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
       generate_contract_number: { Args: never; Returns: string }
       generate_coupon_code: { Args: { prefix?: string }; Returns: string }
