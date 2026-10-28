@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDynamicModulePermissions } from '@/hooks/useDynamicModulePermissions';
