@@ -27,9 +27,6 @@ interface AdvertiserOrderCardProps {
   companyName?: string;
 }
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString('pt-BR');
 
