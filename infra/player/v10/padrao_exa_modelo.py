@@ -18,7 +18,7 @@ import subprocess
 import threading
 import time
 
-VERSAO = "padrao-v4"
+VERSAO = "padrao-v5"
 APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOME = os.path.expanduser("~")
 ESTADO = os.path.join(HOME, ".exa_padrao.json")
@@ -31,6 +31,7 @@ COLETOR = __COLETOR__
 VIGIA = __VIGIA__
 
 _iniciado = False
+_CARREGADO_EM = time.time()  # v11.1: o sistema recarrega a peça quando o arquivo no disco é mais novo
 
 
 def _sh(args, entrada=None, timeout=30):

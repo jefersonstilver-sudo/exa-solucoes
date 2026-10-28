@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Monta o player v10 a partir do v9 (base_v9/) + padrão EXA. Uso: python3 build_v10.py  -> dist/ e exa2_player_v11.zip"""
+"""Monta o player v10 a partir do v9 (base_v9/) + padrão EXA. Uso: python3 build_v10.py  -> dist/ e exa2_player_v11_1.zip"""
 import os, sys, zipfile
 AQUI = os.path.dirname(os.path.abspath(__file__))
 P = os.path.dirname(AQUI)
@@ -11,7 +11,7 @@ def trocar(t, a, n, nome):
 pad = ler(os.path.join(AQUI, "padrao_exa_modelo.py"))
 pad = trocar(pad, "COLETOR = __COLETOR__", "COLETOR = " + repr(ler(os.path.join(P, "exa_saude.py"))), "coletor")
 pad = trocar(pad, "VIGIA = __VIGIA__", "VIGIA = " + repr(ler(os.path.join(P, "exa_vigia_rede.sh"))), "vigia")
-s = trocar(ler(os.path.join(AQUI, "base_v9/atualizadores/sistema.py")), 'APP_VERSAO = "exa2-v9"', 'APP_VERSAO = "exa2-v11"', "versao")
+s = trocar(ler(os.path.join(AQUI, "base_v9/atualizadores/sistema.py")), 'APP_VERSAO = "exa2-v9"', 'APP_VERSAO = "exa2-v11.1"', "versao")
 # v10.1: o atualizador antigo NÃO reinicia depois do OTA (recarrega o módulo sistema), então o gancho também fica no sistema
 s = trocar(s,
     "    global _VERSAO_APLICADA, _ULTIMO_SYNC_COMPLETO\n    _ULTIMO_SYNC_COMPLETO = _agora()\n",
@@ -26,6 +26,13 @@ s = trocar(s,
     "            from . import padrao_exa\n"
     "        except ImportError:\n"
     "            import padrao_exa\n"
+    "        try:\n"
+    "            import importlib\n"
+    "            # v11.1: se o OTA trouxe uma peça nova e o processo não reiniciou, recarrega a peça\n"
+    "            if os.path.getmtime(padrao_exa.__file__) > getattr(padrao_exa, '_CARREGADO_EM', 0):\n"
+    "                padrao_exa = importlib.reload(padrao_exa)\n"
+    "        except Exception as e2:\n"
+    "            print(f\"Padrao EXA: recarga falhou: {e2}\")\n"
     "        padrao_exa.iniciar(CLIENTE_ID, atraso=20)\n"
     "    except Exception as e:\n"
     "        print(f\"Padrao EXA nao iniciado: {e}\")\n\n\n"
@@ -58,7 +65,7 @@ for rel, txt in arqs.items():
     compile(txt, rel, "exec")
     d = os.path.join(AQUI, "dist", rel); os.makedirs(os.path.dirname(d), exist_ok=True)
     open(d, "w", encoding="utf-8").write(txt)
-z = os.path.join(AQUI, "exa2_player_v11.zip")
+z = os.path.join(AQUI, "exa2_player_v11_1.zip")
 with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
     zf.writestr("atualizadores/", "")
     for rel in arqs:
