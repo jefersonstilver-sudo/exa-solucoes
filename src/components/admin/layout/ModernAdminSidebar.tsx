@@ -64,6 +64,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ADMIN_MENU, PAGINAS_OCULTAS, PAGINAS_OCULTAS_ATE, paginasOcultasAtivas, ALWAYS, type AdminMenuItem, type MenuBadgeKey } from './adminMenu';
 
 import {
   Sidebar,
@@ -80,8 +81,6 @@ import {
 } from "@/components/ui/sidebar";
 
 // Hooks para badges dinâmicos
-import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount';
-import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
 
 // Novos hooks para badges dinâmicos
@@ -102,8 +101,6 @@ export function ModernAdminSidebar() {
   const { isMobile, isTablet } = useResponsiveLayout();
 
   // Badges dinâmicos existentes
-  const { unreadCount } = useUnreadCount();
-  const { pendentesCount: escalacoesPendentes } = useEscalacoesPendentes();
   const { offlineCount } = useOfflineAlerts();
   
   // Novos badges dinâmicos
@@ -128,357 +125,49 @@ export function ModernAdminSidebar() {
   // Dynamic module permissions hook
   const { hasModuleAccess, isMasterAccount, isLoading: permissionsLoading } = useDynamicModulePermissions();
 
-  // FASE 1: 6 SEÇÕES POR PROCESSO DE NEGÓCIO
-  const navigationGroups = [
-    // 1. MINHA MANHÃ - Painel inicial do dia
-    {
-      label: 'Minha Manhã',
-      icon: Sunrise,
-      items: [
-        {
-          title: 'Agenda',
-          href: buildPath('tarefas'),
-          icon: Sunrise,
-          moduleKey: MODULE_KEYS.minha_manha
-        },
-        {
-          title: 'Dashboard',
-          href: basePath,
-          icon: LayoutDashboard,
-          moduleKey: MODULE_KEYS.dashboard
-        },
-        {
-          title: 'EXA Alerts',
-          href: buildPath('exa-alerts'),
-          icon: Brain,
-          moduleKey: MODULE_KEYS.exa_alerts
-        },
-        {
-          title: 'Escalações',
-          href: buildPath('escalacoes'),
-          icon: AlertTriangle,
-          moduleKey: MODULE_KEYS.escalacoes,
-          badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Escalações pendentes de resolução'
-        },
-      ]
-    },
-    // 2. RELACIONAMENTO - Tudo sobre pessoas (CRM UNIFICADO)
-    {
-      label: 'Relacionamento',
-      icon: Users,
-      items: [
-        {
-          title: 'CRM Hub',
-          href: buildPath('crm-hub'),
-          icon: UsersRound,
-          moduleKey: MODULE_KEYS.crm_hub,
-          badge: unreadCount > 0 ? unreadCount : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Mensagens não lidas'
-        },
-        {
-          title: 'Contatos',
-          href: buildPath('contatos'),
-          icon: Contact,
-          moduleKey: MODULE_KEYS.contatos
-        },
-        {
-          title: 'Kanban',
-          href: buildPath('contatos-kanban'),
-          icon: LayoutGrid,
-          moduleKey: MODULE_KEYS.contatos_kanban
-        },
-        {
-          title: 'CRM Evolution',
-          href: buildPath('crm-evolution'),
-          icon: MessageCircle,
-          moduleKey: MODULE_KEYS.crm_evolution
-        }
-      ]
-    },
-    // 3. VENDAS - Funil comercial (FASE 2: Nova arquitetura)
-    {
-      label: 'Vendas',
-      icon: TrendingUp,
-      items: [
-        {
-          title: 'Vendas',
-          href: buildPath('vendas'),
-          icon: TrendingUp,
-          moduleKey: MODULE_KEYS.pedidos
-        },
-        {
-          title: 'Síndicos Interessados',
-          href: buildPath('sindicos-interessados'),
-          icon: Building2,
-          moduleKey: MODULE_KEYS.sindicos,
-          badge: sindicosNovos > 0 ? sindicosNovos : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Novos cadastros via /interessesindico'
-        },
-        {
-          title: 'Propostas',
-          href: buildPath('propostas'),
-          icon: FileText,
-          moduleKey: MODULE_KEYS.propostas,
-          badge: propostasAguardando > 0 ? propostasAguardando : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Propostas enviadas aguardando resposta'
-        },
-        {
-          title: 'PEDIDOS',
-          href: buildPath('pedidos'),
-          icon: ShoppingBag,
-          moduleKey: MODULE_KEYS.pedidos,
-          badge: pedidosSemVideo > 0 ? pedidosSemVideo : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Pedidos aguardando envio de vídeo'
-        },
-        {
-          title: 'Scans QR Code',
-          href: buildPath('qr-scans'),
-          icon: QrCode,
-          moduleKey: MODULE_KEYS.pedidos,
-          badgeTooltip: 'Todos os scans rastreados de QR Code'
-        },
-        {
-          title: 'Jurídico',
-          href: buildPath('juridico'),
-          icon: Scale,
-          moduleKey: MODULE_KEYS.juridico,
-          badge: contratosPendentes > 0 ? contratosPendentes : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Contratos aguardando assinatura'
-        },
-        {
-          title: 'Assinaturas',
-          href: buildPath('assinaturas'),
-          icon: CreditCard,
-          moduleKey: MODULE_KEYS.assinaturas
-        },
-        {
-          title: 'Posições',
-          href: buildPath('posicoes'),
-          icon: BarChart3,
-          moduleKey: MODULE_KEYS.posicoes
-        },
-        {
-          title: 'Produtos',
-          href: buildPath('produtos'),
-          icon: MonitorPlay,
-          moduleKey: MODULE_KEYS.produtos
-        },
-        {
-          title: 'Cupons',
-          href: buildPath('cupons'),
-          icon: Ticket,
-          moduleKey: MODULE_KEYS.cupons
-        }
-      ]
-    },
-    // 4. OPERAÇÃO - Execução diária
-    {
-      label: 'Operação',
-      icon: Cog,
-      items: [
-        {
-          title: 'Prédios',
-          href: buildPath('predios'),
-          icon: Building2,
-          moduleKey: MODULE_KEYS.predios
-        },
-        {
-          title: 'Formulários Síndicos',
-          href: buildPath('formularios-sindicos'),
-          icon: Building2,
-          moduleKey: MODULE_KEYS.formularios_sindicos
-        },
-        {
-          title: 'Painéis EXA',
-          href: buildPath('paineis-exa'),
-          icon: Tv,
-          moduleKey: MODULE_KEYS.paineis,
-          badge: offlineCount > 0 ? offlineCount : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Painéis offline'
-        },
-        {
-          title: 'Entrega nas telas',
-          href: buildPath('entrega-telas'),
-          icon: Tv,
-          moduleKey: MODULE_KEYS.paineis
-        },
-        {
-          title: 'Agenda Técnica',
-          href: buildPath('sync-notion'),
-          icon: Calendar,
-          moduleKey: MODULE_KEYS.sync_notion
-        },
-        {
-          title: 'Vídeos Anunciantes',
-          href: buildPath('videos'),
-          icon: Video,
-          moduleKey: MODULE_KEYS.videos_anunciantes
-        },
-        {
-          title: 'Aprovações',
-          href: buildPath('aprovacoes'),
-          icon: CheckSquare,
-          moduleKey: MODULE_KEYS.aprovacoes,
-          badge: videosParaAprovar > 0 ? videosParaAprovar : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgeTooltip: 'Vídeos aguardando aprovação'
-        },
-        {
-          title: 'Benefícios Prestadores',
-          href: buildPath('beneficio-prestadores'),
-          icon: Gift,
-          moduleKey: MODULE_KEYS.beneficios,
-          badge: beneficiosAcao > 0 ? beneficiosAcao : undefined,
-          badgeColor: 'bg-[#9C1E1E]',
-          badgePulse: beneficiosAcao > 0,
-          badgeTooltip: 'Benefícios com ação necessária'
-        },
-        {
-          title: 'Processos',
-          href: buildPath('processos'),
-          icon: Network,
-          moduleKey: MODULE_KEYS.processos
-        },
-        {
-          title: 'Gestão de Tempo',
-          href: buildPath('gestao-tempo'),
-          icon: Timer,
-          moduleKey: MODULE_KEYS.gestao_tempo
-        }
-      ]
-    },
-    // 5. COMUNICAÇÃO - Canais e conteúdo
-    {
-      label: 'Comunicação',
-      icon: MessageCircle,
-      items: [
-        {
-          title: 'Emails',
-          href: buildPath('comunicacoes'),
-          icon: Mail,
-          moduleKey: MODULE_KEYS.emails
-        },
-        {
-          title: 'Ticker',
-          href: buildPath('ticker'),
-          icon: Images,
-          moduleKey: MODULE_KEYS.ticker
-        },
-        {
-          title: 'Vídeos Site EXA',
-          href: buildPath('videos-site'),
-          icon: Film,
-          moduleKey: MODULE_KEYS.videos_site
-        },
-        {
-          title: 'Editor de Vídeos',
-          href: buildPath('editor-video-controle'),
-          icon: Clapperboard,
-          moduleKey: MODULE_KEYS.editor_videos
-        },
-        {
-          title: 'Agentes Sofia',
-          href: buildPath('agentes-sofia'),
-          icon: Bot,
-          moduleKey: MODULE_KEYS.agentes_sofia
-        }
-      ]
-    },
-    // 6. GOVERNANÇA - Sistema e controle
-    {
-      label: 'Governança',
-      icon: Shield,
-      items: [
-        {
-          title: 'Financeiro',
-          href: buildPath('financeiro'),
-          icon: Landmark,
-          moduleKey: MODULE_KEYS.financeiro
-        },
-        {
-          title: 'Relatórios',
-          href: buildPath('relatorios-financeiros'),
-          icon: FileBarChart,
-          moduleKey: MODULE_KEYS.relatorios
-        },
-        {
-          title: 'Usuários',
-          href: buildPath('usuarios'),
-          icon: Users,
-          moduleKey: MODULE_KEYS.usuarios
-        },
-        {
-          title: 'Consolidação',
-          href: buildPath('consolidacao'),
-          icon: UsersRound,
-          moduleKey: MODULE_KEYS.usuarios
-        },
-        {
-          title: 'Notificações',
-          href: buildPath('notificacoes'),
-          icon: Bell,
-          moduleKey: MODULE_KEYS.notificacoes
-        },
-        {
-          title: 'Segurança',
-          href: buildPath('seguranca'),
-          icon: Lock,
-          moduleKey: MODULE_KEYS.seguranca
-        },
-        {
-          title: 'Configurações',
-          href: buildPath('configuracoes'),
-          icon: Settings,
-          moduleKey: MODULE_KEYS.configuracoes
-        },
-        ...(isSuperAdmin ? [
-          {
-            title: 'Admin Master Vídeo',
-            href: '/super_admin/admin-master-video',
-            icon: ShieldCheck,
-            moduleKey: '__always_visible__'
-          },
-          {
-            title: 'Auditoria Impersonação',
-            href: '/super_admin/auditoria-impersonacao',
-            icon: FileBarChart,
-            moduleKey: '__always_visible__'
-          }
-        ] : [])
-      ]
-    },
-    // 7. CONTA - Sempre visível
-    {
-      label: 'Conta',
-      icon: UserIcon,
-      items: [
-        {
-          title: 'Meu Perfil',
-          href: buildPath('meu-perfil'),
-          icon: UserIcon,
-          moduleKey: '__always_visible__'
-        }
-      ]
-    }
-  ];
+  // Menu único (adminMenu.ts) — o mesmo do "Mais" no celular
+  const badgeValues: Record<MenuBadgeKey, number> = {
+    offline: offlineCount,
+    propostas: propostasAguardando,
+    pedidosSemVideo,
+    contratos: contratosPendentes,
+    beneficios: beneficiosAcao,
+    aprovacoes: videosParaAprovar,
+    sindicosNovos,
+  };
+
+  const toNavItem = (item: AdminMenuItem) => {
+    const value = item.badge ? badgeValues[item.badge] : 0;
+    return {
+      title: item.title,
+      href: item.absolute ? item.path : (item.path ? buildPath(item.path) : basePath),
+      icon: item.icon,
+      moduleKey: item.moduleKey,
+      badge: value > 0 ? value : undefined,
+      badgeTooltip: item.badgeTooltip,
+      badgePulse: item.badge === 'beneficios' && value > 0,
+      superAdminOnly: item.superAdminOnly,
+    };
+  };
+
+  const navigationGroups = ADMIN_MENU.map(group => ({
+    label: group.label,
+    icon: group.icon,
+    items: group.items.map(toNavItem),
+  }));
+
+  const [ocultasAbertas, setOcultasAbertas] = React.useState(false);
+  const mostrarOcultas = isMasterAccount && paginasOcultasAtivas();
+  const paginasOcultas = mostrarOcultas
+    ? PAGINAS_OCULTAS.filter(p => !p.superAdminOnly || isSuperAdmin).map(toNavItem)
+    : [];
 
   // Filter items based on DYNAMIC MODULE PERMISSIONS from database
   const filteredGroups = navigationGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
-      // Always visible items (like Meu Perfil)
-      if (item.moduleKey === '__always_visible__') return true;
-      // Master account always has access
+      if (item.moduleKey === ALWAYS) return true;
       if (isMasterAccount) return true;
-      // Check dynamic permission from database
       return hasModuleAccess(item.moduleKey);
     })
   })).filter(group => group.items.length > 0);
@@ -511,74 +200,13 @@ export function ModernAdminSidebar() {
 
   const collapsed = isMobile ? false : state === "collapsed";
 
-  return (
-    <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#7D1818] via-[#9C1E1E] to-[#5C1515] border-r border-white/10 shadow-2xl overscroll-contain backdrop-blur-xl"
-      collapsible={isMobile ? "offcanvas" : "icon"}
-      variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
-      style={{ 
-        height: '100dvh',
-        paddingTop: 'env(safe-area-inset-top)',
-        boxShadow: '4px 0 30px rgba(156, 30, 30, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
-      }}
-    >
-      {/* Header - Red Glass Elevado */}
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-white/5 backdrop-blur-sm`}>
-        <div className="flex items-center justify-center mb-3">
-          <UnifiedLogo 
-            size="custom" 
-            linkTo="/" 
-            variant="light"
-            className={collapsed ? "w-10 h-10" : "w-14 h-14 md:w-20 md:h-20"}
-          />
-        </div>
-        
-        {!collapsed && (
-          <div className="text-center">
-            <div className="text-white/90 font-semibold text-sm tracking-wide">
-              {userProfile?.departamento?.name ? `Painel ${userProfile.departamento.name}` : 'Painel Administrativo'}
-            </div>
-            <div className="flex items-center justify-center space-x-1 mt-1">
-              <Crown className="h-3 w-3 text-amber-300" />
-              <span className="text-[10px] font-medium text-amber-300/90">
-                {getAdminTitle()}
-              </span>
-            </div>
-          </div>
-        )}
-      </SidebarHeader>
-
-      <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-2 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
-        style={{ 
-          WebkitOverflowScrolling: 'touch',
-          scrollBehavior: 'smooth',
-          paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' /* EXA-MOBILE-FIX */
-        }}
-      >
-        {filteredGroups.map((group) => {
-          const GroupIcon = group.icon;
-          return (
-            <SidebarGroup key={group.label}>
-              {!collapsed && (
-                <SidebarGroupLabel className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
-                  <GroupIcon className="h-3 w-3" />
-                  {group.label}
-                </SidebarGroupLabel>
-              )}
-              
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-0.5">
-                  {group.items.map((item) => {
+  const renderItem = (item: ReturnType<typeof toNavItem>) => {
                     const isExactMatch = location.pathname === item.href;
                     const isSubRoute = item.href !== basePath && 
                       location.pathname.startsWith(item.href + '/');
                     const isActive = isExactMatch || isSubRoute;
                     const Icon = item.icon;
-                    const badge = (item as any).badge;
-                    const badgeColor = (item as any).badgeColor || 'bg-red-500';
-                    const badgePulse = (item as any).badgePulse || false;
-                    const badgeTooltip = (item as any).badgeTooltip;
+                    const { badge, badgePulse, badgeTooltip } = item;
 
                     const linkContent = (
                       <NavLink
@@ -657,12 +285,92 @@ export function ModernAdminSidebar() {
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );
-                  })}
+  };
+
+  return (
+    <Sidebar 
+      className="h-screen bg-gradient-to-b from-[#7D1818] via-[#9C1E1E] to-[#5C1515] border-r border-white/10 shadow-2xl overscroll-contain backdrop-blur-xl"
+      collapsible={isMobile ? "offcanvas" : "icon"}
+      variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
+      style={{ 
+        height: '100dvh',
+        paddingTop: 'env(safe-area-inset-top)',
+        boxShadow: '4px 0 30px rgba(156, 30, 30, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
+      }}
+    >
+      {/* Header - Red Glass Elevado */}
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-white/5 backdrop-blur-sm`}>
+        <div className="flex items-center justify-center mb-3">
+          <UnifiedLogo 
+            size="custom" 
+            linkTo="/" 
+            variant="light"
+            className={collapsed ? "w-10 h-10" : "w-14 h-14 md:w-20 md:h-20"}
+          />
+        </div>
+        
+        {!collapsed && (
+          <div className="text-center">
+            <div className="text-white/90 font-semibold text-sm tracking-wide">
+              {userProfile?.departamento?.name ? `Painel ${userProfile.departamento.name}` : 'Painel Administrativo'}
+            </div>
+            <div className="flex items-center justify-center space-x-1 mt-1">
+              <Crown className="h-3 w-3 text-amber-300" />
+              <span className="text-[10px] font-medium text-amber-300/90">
+                {getAdminTitle()}
+              </span>
+            </div>
+          </div>
+        )}
+      </SidebarHeader>
+
+      <SidebarContent 
+        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-2 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          scrollBehavior: 'smooth',
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' /* EXA-MOBILE-FIX */
+        }}
+      >
+        {filteredGroups.map((group) => {
+          const GroupIcon = group.icon;
+          return (
+            <SidebarGroup key={group.label}>
+              {!collapsed && (
+                <SidebarGroupLabel className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
+                  <GroupIcon className="h-3 w-3" />
+                  {group.label}
+                </SidebarGroupLabel>
+              )}
+              
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-0.5">
+                  {group.items.map(renderItem)}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           );
         })}
+        {paginasOcultas.length > 0 && !collapsed && (
+          <SidebarGroup>
+            <button
+              type="button"
+              onClick={() => setOcultasAbertas(v => !v)}
+              className="w-full text-left text-[10px] font-bold text-white/40 uppercase tracking-widest px-2 py-1 flex items-center justify-between hover:text-white/70"
+              aria-expanded={ocultasAbertas}
+            >
+              <span>Páginas antigas</span>
+              <span className="normal-case tracking-normal font-medium">{ocultasAbertas ? 'fechar' : `até ${PAGINAS_OCULTAS_ATE.split('-').reverse().slice(0, 2).join('/')}`}</span>
+            </button>
+            {ocultasAbertas && (
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-0.5 opacity-80">
+                  {paginasOcultas.map(renderItem)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
+          </SidebarGroup>
+        )}
       </SidebarContent>
       
       {/* Footer - Red Glass */}

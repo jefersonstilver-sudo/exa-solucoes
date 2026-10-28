@@ -1,9 +1,10 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
+import AdminMenuButton from './AdminMenuButton';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { SofiaVoiceButton } from '@/components/admin/sofia';
 import { SofiaProvider } from '@/contexts/SofiaContext';
@@ -12,73 +13,55 @@ import AdminMasterWelcomeDialog from '@/components/impersonation/AdminMasterWelc
 // Rotas que devem ocultar o header para modo fullscreen
 const FULLSCREEN_ROUTES = ['/admin/contatos-kanban', '/super_admin/contatos-kanban', '/tarefas/fullscreen'];
 
-const SidebarTriggerPositioned = ({ isTablet }: { isTablet: boolean }) => {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
-  
-  const expandedWidth = isTablet ? 220 : 260;
-  const collapsedWidth = 64;
-  const currentWidth = isCollapsed ? collapsedWidth : expandedWidth;
-  
-  return (
-    <SidebarTrigger 
-      className="absolute z-50 hidden md:flex transition-all duration-200 h-7 w-7 [&_svg]:h-3.5 [&_svg]:w-3.5"
-      style={{
-        left: `${currentWidth}px`,
-        top: '150px',
-        transform: 'translate(-50%, -50%)'
-      }}
-    />
-  );
-};
+/** Fundo claro "glass" do painel: off-white quente com um véu vermelho suave no topo. */
+export const ADMIN_FUNDO_CLASSE =
+  'bg-[#F4F1EC] bg-[radial-gradient(70%_40%_at_15%_0%,rgba(234,37,29,0.08),rgba(234,37,29,0)_70%)]';
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
   const location = useLocation();
-  
-  // Verifica se deve ocultar o header (modo fullscreen)
+
   const isFullscreenMode = FULLSCREEN_ROUTES.some(route => location.pathname.includes(route.split('/').pop() || ''));
-  
-  // Sidebar minimizada por padrão em modo fullscreen
   const sidebarDefaultOpen = isFullscreenMode ? false : !isMobile;
-  
+
   return (
     <SofiaProvider>
       <SidebarProvider
-        defaultOpen={sidebarDefaultOpen} 
+        defaultOpen={sidebarDefaultOpen}
         style={{
-          "--sidebar-width": isTablet ? "220px" : "260px",
+          "--sidebar-width": isTablet ? "220px" : "248px",
           "--sidebar-width-icon": "64px",
         } as React.CSSProperties}
       >
-        <div className="flex h-screen w-full bg-background overflow-hidden relative">
+        <div className={`flex h-screen w-full overflow-hidden relative ${ADMIN_FUNDO_CLASSE}`}>
           <ModernAdminSidebar />
-          
-          {!isMobile && <SidebarTriggerPositioned isTablet={isTablet} />}
-          
-          <SidebarInset className="flex flex-col w-full overflow-x-hidden">
-            {/* Header com logo EXA - oculto em modo fullscreen */}
+
+          <SidebarInset className="flex flex-col w-full overflow-x-hidden bg-transparent">
             {!isFullscreenMode && (
-              <header className={`sticky top-0 z-10 h-14 md:h-20 flex items-center border-b px-3 md:px-6 shadow-lg ${
-                isMobile 
-                  ? 'bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-white/20' 
-                  : 'bg-background border-border'
-              }`}>
-                {/* Trigger mobile dentro do header */}
-                <SidebarTrigger className="md:hidden mr-3" />
+              <header
+                className={`sticky top-0 z-10 flex items-center gap-2 px-2 md:px-5 ${
+                  isMobile
+                    ? 'h-14 bg-gradient-to-b from-[#A8261F] to-[#86190F] text-white shadow-md'
+                    : 'h-16 bg-white/70 backdrop-blur-xl backdrop-saturate-150 border-b border-black/5 text-[#17181A]'
+                }`}
+                style={isMobile ? { paddingTop: 'env(safe-area-inset-top)' } : undefined}
+              >
+                <AdminMenuButton className={isMobile ? 'hover:bg-white/10' : 'hover:bg-black/5'} />
                 <ModernAdminHeader />
               </header>
             )}
-            <main className={`flex-1 overflow-y-auto bg-gradient-to-b from-background to-muted/20 min-h-0 overflow-x-hidden ${
-              isFullscreenMode ? 'p-0' : 'p-2 md:p-6'
+            {isFullscreenMode && (
+              <AdminMenuButton className="absolute left-2 top-2 z-20 bg-white/80 backdrop-blur shadow hover:bg-white" />
+            )}
+            <main className={`flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
+              isFullscreenMode ? 'p-0' : isMobile ? 'p-2 pb-24' : 'p-6'
             }`}>
               {children || <Outlet />}
             </main>
+            {isMobile && !isFullscreenMode && <MobileBottomNav />}
           </SidebarInset>
-          
-          {/* Sofia Voice AI Button */}
+
           <SofiaVoiceButton />
-          {/* Onboarding for Admin Master de Vídeo (first login) */}
           <AdminMasterWelcomeDialog />
         </div>
       </SidebarProvider>
