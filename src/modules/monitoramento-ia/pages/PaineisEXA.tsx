@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Activity, ChevronDown, MoreHorizontal, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, Sparkles, ExternalLink, BellOff,
+  Activity, ChevronDown, MoreHorizontal, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, ExternalLink, BellOff,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generatePublicUrl } from '@/config/domain';
@@ -70,7 +70,6 @@ export default function PaineisEXA() {
   const [filtroElev, setFiltroElev] = useState<string>('todas');
   const [ordem, setOrdem] = useState<Ordem>('estado');
   const [modo, setModo] = useState<'cards' | 'tabela'>('cards');
-  const [iaAberta, setIaAberta] = useState(false);
   const [cardAberto, setCardAberto] = useState<string | null>(null);
   const [gruposFechados, setGruposFechados] = useState<Set<string>>(new Set());
   const [selecionado, setSelecionado] = useState<Device | null>(null);
@@ -176,7 +175,6 @@ export default function PaineisEXA() {
     };
   }, [daRede]);
 
-  const fora = useMemo(() => daRede.filter((p) => p.estado === 'sem_sinal' || p.estado === 'sem_imagem'), [daRede]);
 
   const abrir = (id: string) => { const d = devPorId.get(id); if (d) setSelecionado(d); else toast.error('Painel ainda carregando, tente de novo.'); };
   const copiar = async (p: FrotaPainel) => {
