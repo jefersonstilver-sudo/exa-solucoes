@@ -157,6 +157,11 @@ input, select, textarea {
 
 /* === Painel no celular: altura real, barra inferior e teclado (useTecladoCelular) === */
 .exa-app-altura { height: 100vh; height: var(--exa-app-h, 100dvh); }
+/* Celular: o painel é uma "tela de app" presa à área visível (nada de a página inteira rolar e esconder o campo) */
+@media (max-width: 767px) {
+  .exa-app-altura { position: fixed; left: 0; right: 0; top: var(--exa-app-top, 0px); }
+  html:has(.exa-app-altura), body:has(.exa-app-altura) { overflow: hidden; overscroll-behavior: none; }
+}
 .exa-main-nav { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
 .exa-main-conversa { padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
 /* Conversa aberta no celular = tela cheia (como no WhatsApp): sem barra inferior; voltar pela seta */

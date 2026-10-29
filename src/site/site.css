@@ -280,7 +280,7 @@
   .exa-login .el-treme{animation:el-treme .45s cubic-bezier(.36,.07,.19,.97) both}
 }
 @media (max-width:520px){
-  .exa-login{justify-content:flex-start;padding-top:max(40px,calc(env(safe-area-inset-top,0px) + 24px))}
+  .exa-login{justify-content:center;padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px)}
   .exa-login .el-cartao{padding:30px 22px 24px;border-radius:24px}
   .exa-login .el-t{font-size:30px}
 }
@@ -308,3 +308,16 @@
 .exa-site .vap-btns button{width:30px;height:30px;flex:none;display:flex!important;align-items:center;justify-content:center;border-radius:50%}
 .exa-site .vap-btns button:hover{background:rgba(255,255,255,.14)!important}
 .exa-site .vap-tempo{white-space:nowrap;overflow:hidden;min-width:0;font-size:10.5px;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.85);margin-left:2px}
+
+/* login: "Salvar este dispositivo" (chave estilo iPhone) */
+.exa-login .el-manter{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.exa-login .el-manter input{position:absolute;opacity:0;width:1px;height:1px;min-height:0;pointer-events:none}
+.exa-login .el-chave{position:relative;flex:none;width:46px;height:28px;border-radius:999px;background:rgba(255,255,255,.18);transition:background .2s}
+.exa-login .el-chave:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.exa-login .el-manter input:checked + .el-chave{background:#34C759}
+.exa-login .el-manter input:checked + .el-chave:after{transform:translateX(18px)}
+.exa-login .el-manter input:focus-visible + .el-chave{outline:2px solid #fff;outline-offset:3px}
+.exa-login .el-manter b{display:block;font-size:14px;font-weight:800;color:#fff}
+.exa-login .el-manter small{display:block;font-size:12.5px;color:rgba(255,255,255,.6)}
+/* o cartão e a marca entram suaves depois da animação de abertura */
+@media (prefers-reduced-motion:no-preference){.exa-login .el-marca{animation:el-sobe .5s cubic-bezier(.2,.8,.2,1) both}}

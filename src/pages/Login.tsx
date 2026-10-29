@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLoginForm } from '@/components/auth/hooks/useLoginForm';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
 import { useFonteSite, useTituloPagina, waSofia } from '@/site/comum';
-import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+import { TelaCarregando } from '@/components/loading/MarcaCarregando';
+import { lembrarEscolha, escolhaSalva } from '@/lib/sessaoAparelho';
 
 /**
  * Entrar (rota /login) — layout novo aprovado (Opção 2): fundo escuro com a tela EXA desfocada,
@@ -29,11 +30,13 @@ export default function Login() {
   const { email, setEmail, password, setPassword, isLoading: entrando, error, handleSubmit } = useLoginForm(redirectPath);
   const [vista, setVista] = useState<Vista>('entrar');
   const [verSenha, setVerSenha] = useState(false);
+  const [manter, setManter] = useState(() => escolhaSalva().manter);
+  // A abertura animada do app (marca EXA) fica no index.html (#exa-pre), que só sai depois de a marca se desenhar.
   const { sendReset, isLoading: enviando, cooldown } = usePasswordReset(email, { onSuccess: () => setVista('enviado') });
 
   // e-mail vindo do link (ex.: depois de criar a senha)
   useEffect(() => {
-    const e = new URLSearchParams(location.search).get('email');
+    const e = new URLSearchParams(location.search).get('email') || escolhaSalva().email;
     if (e) setEmail(e);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -54,7 +57,7 @@ export default function Login() {
 
   // Já logado (ou ainda conferindo a sessão): não monta o formulário. Sem campo de senha na tela,
   // o iPhone não abre o aviso "Iniciar sessão com a senha…" por cima do painel.
-  if (isLoading || (isLoggedIn && userProfile)) return <GlobalLoadingPage message="Abrindo o painel..." />;
+  if (isLoading || (isLoggedIn && userProfile)) return <TelaCarregando tema="escuro" />;
 
   return (
     <div className="exa-login">
@@ -63,7 +66,7 @@ export default function Login() {
       <Link className="el-marca" to="/" aria-label="EXA, início"><img src="/site/exa-branco.svg" alt="EXA" width={96} height={42} /></Link>
 
       {vista === 'entrar' && (
-        <form className="el-cartao" onSubmit={handleSubmit} aria-label="Entrar" noValidate>
+        <form className="el-cartao" onSubmit={(e) => { lembrarEscolha(manter, email); handleSubmit(e); }} aria-label="Entrar" noValidate>
           <h1 className="el-t">Entrar</h1>
           {error && <div className="el-msg" role="alert">{error === 'Email ou senha incorretos' ? 'E-mail ou senha não conferem. Tente de novo ou crie uma nova senha.' : error}</div>}
           <div className="el-campo">
@@ -77,6 +80,11 @@ export default function Login() {
               <button className="el-olho" type="button" onClick={() => setVerSenha((v) => !v)} aria-label={verSenha ? 'Esconder senha' : 'Mostrar senha'}><Olho aberto={verSenha} /></button>
             </div>
           </div>
+          <label className="el-manter">
+            <input type="checkbox" checked={manter} onChange={(e) => setManter(e.target.checked)} />
+            <span className="el-chave" aria-hidden="true" />
+            <span><b>Salvar este dispositivo</b><small>Continuar conectado neste aparelho</small></span>
+          </label>
           <button className="el-b" type="submit" disabled={entrando}>
             {entrando ? <><span className="el-gira" aria-hidden="true" />Entrando</> : 'Entrar'}
           </button>

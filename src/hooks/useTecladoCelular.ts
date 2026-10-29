@@ -14,6 +14,7 @@ export function useTecladoCelular(ativo: boolean) {
     const raiz = document.documentElement;
     if (!ativo || !vv) {
       raiz.style.removeProperty('--exa-app-h');
+      raiz.style.removeProperty('--exa-app-top');
       document.body.classList.remove('teclado-aberto');
       return;
     }
@@ -24,8 +25,9 @@ export function useTecladoCelular(ativo: boolean) {
         const altura = Math.round(vv.height);
         const aberto = window.innerHeight - altura > 120;
         raiz.style.setProperty('--exa-app-h', `${altura}px`);
+        // o painel fica preso à área visível: no iPhone o teclado "empurra" a tela; o topo acompanha esse deslocamento
+        raiz.style.setProperty('--exa-app-top', `${Math.max(0, Math.round(vv.offsetTop))}px`);
         document.body.classList.toggle('teclado-aberto', aberto);
-        if (aberto && (window.scrollY || vv.offsetTop)) window.scrollTo(0, 0);
       });
     };
     ajustar();
@@ -38,6 +40,7 @@ export function useTecladoCelular(ativo: boolean) {
       vv.removeEventListener('scroll', ajustar);
       window.removeEventListener('orientationchange', ajustar);
       raiz.style.removeProperty('--exa-app-h');
+      raiz.style.removeProperty('--exa-app-top');
       document.body.classList.remove('teclado-aberto');
     };
   }, [ativo]);

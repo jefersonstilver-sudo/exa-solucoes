@@ -1,3 +1,4 @@
+import './lib/sessaoAparelho' // precisa vir antes de tudo (antes do Supabase ler a sessão)
 import React, { useEffect, lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
@@ -45,6 +46,8 @@ renderTimeoutId = setTimeout(() => {
 function BootGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (window as any).__clearRenderTimeout?.();
+    // tira a abertura com a marca EXA (index.html): no app da tela de início espera a animação terminar
+    requestAnimationFrame(() => (window as any).__exaSplashFim?.());
     console.log(`✅ React app v${APP_VERSION} mounted successfully`);
   }, []);
   return <>{children}</>;
