@@ -198,7 +198,12 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
   useEffect(() => { setAgendadas([]); carregarAgendadas(); setAnexo(null); setMenu(null); }, [p.sel]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(carregarAgendadas, 30000); return () => clearInterval(t); }, [carregarAgendadas]);
 
-  useEffect(() => { fimRef.current?.scrollIntoView({ block: 'end' }); }, [p.msgs.length, p.sel, agendadas.length]);
+  // Rola só a caixa de mensagens (scrollIntoView no Safari do iPhone também arrastava a página e a conversa para o lado)
+  useEffect(() => {
+    const caixa = fimRef.current?.parentElement;
+    if (!caixa) return;
+    requestAnimationFrame(() => { caixa.scrollTop = caixa.scrollHeight; caixa.scrollLeft = 0; });
+  }, [p.msgs.length, p.sel, agendadas.length, celChat]);
 
   // auto-altura do campo
   useEffect(() => {

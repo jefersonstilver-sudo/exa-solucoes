@@ -26,12 +26,8 @@
   }
 }
 
-/* Botões 48px altura (iOS standard) */
-button,
-a[role="button"],
-.btn,
-[type="button"],
-[type="submit"] {
+/* Botões 48px altura (iOS standard) — só nas páginas antigas; o painel admin tem os próprios tamanhos */
+body:not(:has(.exa-admin)) :is(button, a[role="button"], .btn, [type="button"], [type="submit"]) {
   min-height: 48px;
   min-width: 48px;
 }

@@ -17,11 +17,8 @@
 
 /* Touch-friendly targets (Apple Human Interface Guidelines) */
 @media (max-width: 768px) {
-  button:not([data-checkbox]), 
-  a, 
-  [role="button"]:not([data-checkbox]),
-  input[type="button"],
-  input[type="submit"] {
+  /* só nas páginas antigas: no painel admin isso inflava ícones e links e empurrava a tela para fora */
+  body:not(:has(.exa-admin)) :is(button:not([data-checkbox]), a, [role="button"]:not([data-checkbox]), input[type="button"], input[type="submit"]) {
     min-height: 44px;
     min-width: 44px;
   }

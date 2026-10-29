@@ -12,73 +12,71 @@
   }
 
   /* Heading scales - Apple SF Pro inspired */
-  h1 {
+  body:not(:has(.exa-admin)) h1 {
     font-size: 1.75rem !important;
     line-height: 1.15 !important;
     letter-spacing: -0.025em !important;
   }
 
-  h2 {
+  body:not(:has(.exa-admin)) h2 {
     font-size: 1.375rem !important;
     line-height: 1.2 !important;
     letter-spacing: -0.02em !important;
   }
 
-  h3 {
+  body:not(:has(.exa-admin)) h3 {
     font-size: 1.125rem !important;
     line-height: 1.25 !important;
     letter-spacing: -0.015em !important;
   }
 
   /* Body text refinements */
-  p {
+  body:not(:has(.exa-admin)) p {
     font-size: 0.9375rem !important;
     line-height: 1.6 !important;
   }
 
   /* Reduced icon sizes for mobile - Apple Human Interface Guidelines */
-  .mobile-icon-sm {
+  body:not(:has(.exa-admin)) .mobile-icon-sm {
     width: 1.25rem !important;
     height: 1.25rem !important;
   }
 
-  .mobile-icon-md {
+  body:not(:has(.exa-admin)) .mobile-icon-md {
     width: 1.5rem !important;
     height: 1.5rem !important;
   }
 
-  .mobile-icon-lg {
+  body:not(:has(.exa-admin)) .mobile-icon-lg {
     width: 2rem !important;
     height: 2rem !important;
   }
 
   /* Card icon adjustments */
-  [class*="ExaCard"] svg,
-  .solution-icon,
-  .feature-icon {
+  body:not(:has(.exa-admin)) [class*="ExaCard"] svg, body:not(:has(.exa-admin)) .solution-icon, body:not(:has(.exa-admin)) .feature-icon {
     width: 2rem !important;
     height: 2rem !important;
   }
 
   /* Section padding - breathing room */
-  section {
+  body:not(:has(.exa-admin)) section {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
   }
 
   /* Card spacing */
-  .mobile-card-compact {
+  body:not(:has(.exa-admin)) .mobile-card-compact {
     padding: 1rem !important;
     border-radius: 1rem !important;
   }
 
   /* Grid adjustments */
-  .mobile-grid-1col {
+  body:not(:has(.exa-admin)) .mobile-grid-1col {
     grid-template-columns: 1fr !important;
     gap: 0.75rem !important;
   }
 
-  .mobile-grid-2col {
+  body:not(:has(.exa-admin)) .mobile-grid-2col {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.75rem !important;
   }
@@ -94,7 +92,7 @@
 
 @media (max-width: 767px) {
   /* Remove unnecessary gaps between sections */
-  .section-seamless + .section-seamless {
+  body:not(:has(.exa-admin)) .section-seamless + .section-seamless {
     padding-top: 0 !important;
   }
 }
@@ -123,23 +121,23 @@
 
 @media (max-width: 767px) {
   /* Force smaller icons on mobile */
-  .w-12.h-12 {
+  body:not(:has(.exa-admin)) .w-12.h-12 {
     width: 2rem !important;
     height: 2rem !important;
   }
 
-  .w-10.h-10 {
+  body:not(:has(.exa-admin)) .w-10.h-10 {
     width: 1.75rem !important;
     height: 1.75rem !important;
   }
 
-  .w-8.h-8 {
+  body:not(:has(.exa-admin)) .w-8.h-8 {
     width: 1.5rem !important;
     height: 1.5rem !important;
   }
 
   /* Icon in cards */
-  .text-exa-purple.mb-4 {
+  body:not(:has(.exa-admin)) .text-exa-purple.mb-4 {
     width: 2rem !important;
     height: 2rem !important;
     margin-bottom: 0.75rem !important;
@@ -150,35 +148,35 @@
 
 @media (max-width: 767px) {
   /* Tighter section spacing */
-  .py-16 {
+  body:not(:has(.exa-admin)) .py-16 {
     padding-top: 2.5rem !important;
     padding-bottom: 2.5rem !important;
   }
 
-  .py-20 {
+  body:not(:has(.exa-admin)) .py-20 {
     padding-top: 3rem !important;
     padding-bottom: 3rem !important;
   }
 
-  .py-24 {
+  body:not(:has(.exa-admin)) .py-24 {
     padding-top: 3.5rem !important;
     padding-bottom: 3.5rem !important;
   }
 
   /* Gap refinements */
-  .gap-8 {
+  body:not(:has(.exa-admin)) .gap-8 {
     gap: 1.25rem !important;
   }
 
-  .gap-6 {
+  body:not(:has(.exa-admin)) .gap-6 {
     gap: 1rem !important;
   }
 
-  .space-y-8 > * + * {
+  body:not(:has(.exa-admin)) .space-y-8 > * + * {
     margin-top: 1.25rem !important;
   }
 
-  .space-y-6 > * + * {
+  body:not(:has(.exa-admin)) .space-y-6 > * + * {
     margin-top: 1rem !important;
   }
 }
@@ -186,7 +184,7 @@
 /* === BUTTON REFINEMENTS === */
 
 @media (max-width: 767px) {
-  .btn-apple {
+  body:not(:has(.exa-admin)) .btn-apple {
     height: 2.75rem;
     padding-left: 1.25rem;
     padding-right: 1.25rem;
@@ -196,7 +194,7 @@
     transition: all 0.2s ease;
   }
 
-  .btn-apple:active {
+  body:not(:has(.exa-admin)) .btn-apple:active {
     transform: scale(0.98);
     opacity: 0.9;
   }
@@ -205,18 +203,18 @@
 /* === HERO SECTION MOBILE === */
 
 @media (max-width: 767px) {
-  .hero-mobile {
+  body:not(:has(.exa-admin)) .hero-mobile {
     padding-top: 4rem !important;
     padding-bottom: 2rem !important;
     min-height: auto !important;
   }
 
-  .hero-title-mobile {
+  body:not(:has(.exa-admin)) .hero-title-mobile {
     font-size: 1.875rem !important;
     line-height: 1.15 !important;
   }
 
-  .hero-subtitle-mobile {
+  body:not(:has(.exa-admin)) .hero-subtitle-mobile {
     font-size: 0.9375rem !important;
     line-height: 1.5 !important;
     opacity: 0.9;
@@ -226,17 +224,17 @@
 /* === QUEM SOMOS PAGE MOBILE === */
 
 @media (max-width: 767px) {
-  .quem-somos-hero {
+  body:not(:has(.exa-admin)) .quem-somos-hero {
     padding-top: 5rem !important;
     padding-bottom: 2.5rem !important;
   }
 
-  .quem-somos-hero h1 {
+  body:not(:has(.exa-admin)) .quem-somos-hero h1 {
     font-size: 2rem !important;
     margin-bottom: 0.75rem !important;
   }
 
-  .quem-somos-hero p {
+  body:not(:has(.exa-admin)) .quem-somos-hero p {
     font-size: 0.9375rem !important;
   }
 }
@@ -261,9 +259,7 @@
 
 @media (max-width: 767px) {
   /* Better touch targets */
-  button,
-  a,
-  [role="button"] {
+  body:not(:has(.exa-admin)) button, body:not(:has(.exa-admin)) a, body:not(:has(.exa-admin)) [role="button"] {
     min-height: 44px;
     min-width: 44px;
   }
@@ -274,8 +270,7 @@
   }
 
   /* Prevent text selection on interactive elements */
-  button,
-  a {
+  body:not(:has(.exa-admin)) button, body:not(:has(.exa-admin)) a {
     -webkit-user-select: none;
     user-select: none;
   }
