@@ -45,6 +45,9 @@ const CSS = `
 
 let idSeq = 0;
 
+/** true dentro dos painéis (menu e topo já na tela): o carregamento vira um bloco, sem cobrir a tela inteira. */
+export const DentroDoLayout = React.createContext(false);
+
 export type TemaCarregando = 'claro' | 'escuro';
 
 /** Só a marca animada (para usar dentro de qualquer área). */

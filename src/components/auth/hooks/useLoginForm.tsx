@@ -179,10 +179,7 @@ export const useLoginForm = (redirectPath: string = '/') => {
       const targetPath = getRedirectPath(userRole, redirectPath);
       console.log('🎯 [LOGIN] Redirecionando para:', targetPath);
 
-      // Toast de sucesso
-      toast.success('Login realizado com sucesso!', {
-        description: `Bem-vindo(a) de volta, ${data.user.email}`
-      });
+      // Sem aviso de "login realizado": a própria entrada no painel já confirma (os avisos se empilhavam no celular)
 
       // O redirecionamento será tratado automaticamente pelo Login.tsx
       // quando isLoggedIn mudar para true via AuthContext

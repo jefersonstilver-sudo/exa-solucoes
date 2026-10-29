@@ -47,7 +47,8 @@ function BootGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (window as any).__clearRenderTimeout?.();
     // tira a abertura com a marca EXA (index.html): no app da tela de início espera a animação terminar
-    requestAnimationFrame(() => (window as any).__exaSplashFim?.());
+    // na tela de entrar quem tira a abertura é o próprio Login, quando já sabe se mostra o formulário (sem 2ª animação por baixo)
+    if (!/^\/login/i.test(window.location.pathname)) requestAnimationFrame(() => (window as any).__exaSplashFim?.());
     console.log(`✅ React app v${APP_VERSION} mounted successfully`);
   }, []);
   return <>{children}</>;

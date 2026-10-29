@@ -19,12 +19,12 @@
 
   html {
     height: 100%;
-    overflow-x: hidden; /* EXA-MOBILE-FIX */
+    overflow-x: hidden; overflow-x: clip; /* clip: corta o que vaza sem virar área de rolagem (hidden quebrava os topos "sticky") */
     max-width: 100vw; /* EXA-MOBILE-FIX */
   }
 
   body {
-    overflow-x: hidden; /* EXA-MOBILE-FIX */
+    overflow-x: hidden; overflow-x: clip; /* clip: corta o que vaza sem virar área de rolagem (hidden quebrava os topos "sticky") */
   }
 
   #root {

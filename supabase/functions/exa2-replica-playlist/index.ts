@@ -51,14 +51,16 @@ Deno.serve(async (req) => {
       if (!v?.url) return null;
       const vertical = String(v.orientacao || '').startsWith('vert');
       const editorial = EDITORIAL.test(t);
+      const seu = meusIds.has(String(e.id_pedido));
       return {
-        titulo: String(e.titulo || v.nome || '').trim(),
+        // Nome de outro anunciante nunca sai daqui para um cliente (só o próprio, os editoriais, ou para a equipe)
+        titulo: seu || editorial || ehAdmin ? String(e.titulo || v.nome || '').trim() : '',
         url: v.url,
         vertical,
         tipo: editorial ? 'editorial' : vertical ? 'vertical' : 'anuncio',
         duracao: Number(v.duracao) || (editorial ? 50 : vertical ? 15 : 10),
         origem: e.origem || null,
-        seu: meusIds.has(String(e.id_pedido)),
+        seu,
       };
     }).filter(Boolean) as any[];
 

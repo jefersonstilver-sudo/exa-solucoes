@@ -1,4 +1,5 @@
 import React from 'react';
+import { DentroDoLayout } from '@/components/loading/MarcaCarregando';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
@@ -57,7 +58,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
             <main className={`${isMobile ? (isConversation ? 'exa-main-conversa' : 'exa-main-nav') : ''} flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
               isConversation ? 'p-0 overflow-hidden cx-sem-topo' : isFullscreenMode ? 'p-0' : isMobile ? 'p-3' : 'p-6'
             }`}>
-              {children || <Outlet />}
+              <DentroDoLayout.Provider value={true}>{children || <Outlet />}</DentroDoLayout.Provider>
             </main>
             {isMobile && !isFullscreenMode && <MobileBottomNav />}
           </SidebarInset>

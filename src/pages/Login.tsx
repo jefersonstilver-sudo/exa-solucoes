@@ -32,6 +32,20 @@ export default function Login() {
   const [verSenha, setVerSenha] = useState(false);
   const [manter, setManter] = useState(() => escolhaSalva().manter);
   // A abertura animada do app (marca EXA) fica no index.html (#exa-pre), que só sai depois de a marca se desenhar.
+  // Os campos só entram quando ela sai: com campo de senha na tela o iPhone já abre o aviso "Iniciar sessão…"
+  // por cima da animação — e a abertura parecia travada.
+  const [aberturaFeita, setAberturaFeita] = useState(() => typeof document === 'undefined' || !document.getElementById('exa-pre') || !!(window as any).__exaSplashAcabou);
+  // Sessão conferida: agora sim a abertura pode sair (antes disso só haveria outra tela de carregamento por baixo)
+  useEffect(() => {
+    if (!isLoading) requestAnimationFrame(() => (window as any).__exaSplashFim?.());
+  }, [isLoading]);
+  useEffect(() => {
+    if (aberturaFeita) return;
+    const pronto = () => setAberturaFeita(true);
+    window.addEventListener('exa-splash-fim', pronto);
+    const seguro = window.setTimeout(pronto, 4000);
+    return () => { window.removeEventListener('exa-splash-fim', pronto); window.clearTimeout(seguro); };
+  }, [aberturaFeita]);
   const { sendReset, isLoading: enviando, cooldown } = usePasswordReset(email, { onSuccess: () => setVista('enviado') });
 
   // e-mail vindo do link (ex.: depois de criar a senha)
@@ -65,7 +79,9 @@ export default function Login() {
       <span className="el-veu" aria-hidden="true" />
       <Link className="el-marca" to="/" aria-label="EXA, início"><img src="/site/exa-branco.svg" alt="EXA" width={96} height={42} /></Link>
 
-      {vista === 'entrar' && (
+      {!aberturaFeita && <div className="el-cartao el-espera" aria-hidden="true" />}
+
+      {aberturaFeita && vista === 'entrar' && (
         <form className="el-cartao" onSubmit={(e) => { lembrarEscolha(manter, email); handleSubmit(e); }} aria-label="Entrar" noValidate>
           <h1 className="el-t">Entrar</h1>
           {error && <div className="el-msg" role="alert">{error === 'Email ou senha incorretos' ? 'E-mail ou senha não conferem. Tente de novo ou crie uma nova senha.' : error}</div>}

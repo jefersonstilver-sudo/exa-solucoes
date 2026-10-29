@@ -246,11 +246,11 @@ export const EmpresaTab: React.FC<Props> = (p) => {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <div className={EYEBROW}>Suas empresas</div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-[#1b1719]">Empresas do pedido</h2>
-        <p className="mt-1 text-sm text-[#8b8285]">Um pedido pode divulgar mais de uma empresa sua. Tudo aqui é usado pela Sofia para criar seus vídeos.</p>
+    <div className="space-y-4 sm:space-y-5">
+      <div className="px-0.5">
+        <div className={`${EYEBROW} hidden sm:block`}>Suas empresas</div>
+        <h2 className="text-[22px] font-extrabold tracking-tight text-[#1b1719] sm:text-2xl">Empresa</h2>
+        <p className="mt-0.5 text-[13px] text-[#8b8285]">A Sofia usa estes dados para criar seus vídeos.</p>
       </div>
 
       {/* chips das empresas */}

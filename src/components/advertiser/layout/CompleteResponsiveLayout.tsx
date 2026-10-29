@@ -6,7 +6,9 @@ import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
-import UnifiedAdvertiserMobileHeader from './UnifiedAdvertiserMobileHeader';
+import { AnuncianteAppTopo, AnuncianteNavInferior } from './AnuncianteAppChrome';
+import { useTecladoCelular } from '@/hooks/useTecladoCelular';
+import { DentroDoLayout } from '@/components/loading/MarcaCarregando';
 import { ImpersonationProvider } from '@/contexts/ImpersonationContext';
 import ImpersonationTopBar from '@/components/impersonation/ImpersonationTopBar';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +23,8 @@ const CompleteResponsiveLayout = () => {
   // a partir do super_admin (ClientOrderViewSheet). Mantém a navegação do cliente
   // dentro do próprio painel, mas sem duplicar a barra vermelha global.
   const isEmbedded = new URLSearchParams(location.search).get('embedded') === '1';
+  const celular = isMobile || isTablet;
+  useTecladoCelular(celular);
 
   const getPageTitle = () => {
     if (location.pathname.includes('/pedido/')) return 'Detalhes do Pedido';
@@ -38,17 +42,19 @@ const CompleteResponsiveLayout = () => {
   return (
     <ImpersonationProvider fallbackUserId={(userProfile as any)?.user_id || (userProfile as any)?.id || null}>
       {!isEmbedded && <ImpersonationTopBar />}
-      <div className="min-h-screen bg-[#f3f1f2] flex w-full relative">
-        <ResponsiveAdvertiserSidebar
+      <div className="exa-admin exa-anunciante min-h-screen bg-[#f3f1f2] flex w-full relative">
+        {!celular && <ResponsiveAdvertiserSidebar
           isOpen={sidebarOpen}
           onClose={handleSidebarClose}
           isMobile={isMobile}
           isTablet={isTablet}
           isCollapsed={sidebarCollapsed}
-        />
+        />}
 
       <main className={cn(
-        "flex-1 w-full min-h-screen overflow-y-auto transition-all duration-300",
+        "flex-1 w-full min-h-screen transition-all duration-300",
+        // celular: quem rola é a página (topo e abas ficam presos com sticky); computador: rola a área principal
+        !celular && 'overflow-y-auto',
         !(isMobile || isTablet) && (sidebarCollapsed ? 'ml-[72px]' : 'ml-72')
       )}>
         <div className="h-full">
@@ -71,18 +77,16 @@ const CompleteResponsiveLayout = () => {
             </div>
           )}
 
-          {(isMobile || isTablet) && (
-            <UnifiedAdvertiserMobileHeader
-              title={getPageTitle()}
-              onMenuClick={handleSidebarOpen}
-            />
-          )}
+          {celular && <AnuncianteAppTopo />}
 
-          <div className="px-4 py-5 sm:px-6 sm:py-6">
-            <Outlet />
+          <div className={cn('px-4 sm:px-6', celular ? 'pt-1 pb-[calc(6rem+env(safe-area-inset-bottom))]' : 'py-5 sm:py-6')}>
+            <DentroDoLayout.Provider value={true}>
+              <Outlet />
+            </DentroDoLayout.Provider>
           </div>
         </div>
       </main>
+      {celular && <AnuncianteNavInferior />}
       </div>
     </ImpersonationProvider>
   );

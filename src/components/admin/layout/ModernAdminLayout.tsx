@@ -1,4 +1,5 @@
 import React from 'react';
+import { DentroDoLayout } from '@/components/loading/MarcaCarregando';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AdminMenuButton from './AdminMenuButton';
@@ -50,7 +51,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
           <main className={`${isMobile ? (isConversation ? 'exa-main-conversa' : 'exa-main-nav') : ''} flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
             isConversation ? 'p-0 overflow-hidden cx-sem-topo' : isMobile ? 'p-3' : 'p-6'
           }`}>
-            {children || <Outlet />}
+            <DentroDoLayout.Provider value={true}>{children || <Outlet />}</DentroDoLayout.Provider>
           </main>
           {isMobile && <MobileBottomNav />}
         </SidebarInset>

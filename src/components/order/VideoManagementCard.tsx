@@ -24,6 +24,8 @@ interface VideoManagementCardProps {
   onRefreshSlots?: () => Promise<void>;
   orderId: string;
   tipoProduto?: string;
+  /** A página já tem o título "Seus vídeos": esconde o cabeçalho "Gestão de Vídeos" (evita título duplicado). */
+  semCabecalho?: boolean;
 }
 
 export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
@@ -38,7 +40,8 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onSetBaseVideo,
   onRefreshSlots,
   orderId,
-  tipoProduto
+  tipoProduto,
+  semCabecalho
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -81,7 +84,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
 
   return <>
       <Card className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
-        <CardHeader className="p-3 sm:p-5 pb-2">
+        {!semCabecalho && <CardHeader className="p-3 sm:p-5 pb-2">
           <CardTitle className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <Video className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
@@ -104,7 +107,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               <span className="hidden xs:inline">Tutorial</span>
             </Button>
           </CardTitle>
-        </CardHeader>
+        </CardHeader>}
         
         {/* Instruções - Colapsável */}
         {uploadAllowed && (

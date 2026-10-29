@@ -29,6 +29,8 @@ interface Props {
   salvarProgramacao: (n: NovaProgramacao) => Promise<void>;
   removerProgramacao: (id: string) => Promise<void>;
   onIrParaVideos: () => void;
+  /** Equipe EXA: mostra os detalhes do envio aos painéis (quantos, falhas, reenviar). */
+  visaoInterna?: boolean;
 }
 
 export const AgendaTab: React.FC<Props> = (p) => {
@@ -52,33 +54,34 @@ export const AgendaTab: React.FC<Props> = (p) => {
 
   return (
     <div className="space-y-5">
-      {/* Os 3 jeitos de programar */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { icon: Star, t: 'Principal', d: 'Toca sempre que nada estiver programado. O pedido nunca fica sem vídeo.' },
-          { icon: Repeat, t: 'Toda semana', d: 'Ex.: happy hour toda quarta e sexta, das 18h às 21h.' },
-          { icon: CalendarDays, t: 'Em datas', d: 'Ex.: promoção de 20 a 22/11, o dia todo. Pode programar meses à frente.' },
-        ].map(({ icon: I, t, d }) => (
-          <div key={t} className={`${CARD} p-4`}>
-            <div className="flex items-center gap-2 font-bold text-gray-900">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f8e9ec] text-[#9e1b34]"><I className="h-4 w-4" /></span>
-              {t}
-            </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{d}</p>
-          </div>
-        ))}
-      </div>
-      {p.entrega && <EntregaBanner e={p.entrega} onReenviar={p.onReenviar} />}
-
-      <p className="rounded-xl border border-[#f8e9ec] bg-[#fdf6f7] px-4 py-2.5 text-xs text-[#554e50]">
-        Regra de ouro: <b>nunca passam dois vídeos ao mesmo tempo</b>. O mesmo vídeo toca em <b>todos os prédios</b> deste pedido.
-      </p>
+      {/* Como funciona — fechado por padrão (antes eram 3 cartões + "regra de ouro" ocupando a tela toda no celular) */}
+      <details className={`${CARD} group overflow-hidden`}>
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <span className="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#f8e9ec] text-[#9e1b34]"><CalendarDays className="h-4 w-4" /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-bold text-[#1b1719]">Como funciona a agenda</span>
+            <span className="block truncate text-[12px] text-[#8b8285]">Principal, toda semana ou em datas</span>
+          </span>
+          <ChevronRight className="h-4 w-4 flex-none text-[#b3aaad] transition-transform group-open:rotate-90" />
+        </summary>
+        <div className="space-y-2.5 border-t border-[#f1edee] px-4 py-3 text-[12.5px] leading-relaxed text-[#554e50]">
+          {[
+            { icon: Star, t: 'Principal', d: 'toca sempre que nada estiver programado — o pedido nunca fica sem vídeo.' },
+            { icon: Repeat, t: 'Toda semana', d: 'ex.: happy hour toda quarta e sexta, das 18h às 21h.' },
+            { icon: CalendarDays, t: 'Em datas', d: 'ex.: promoção de 20 a 22/11, o dia todo. Pode programar meses à frente.' },
+          ].map(({ icon: I, t, d }) => (
+            <p key={t} className="flex gap-2"><I className="mt-0.5 h-3.5 w-3.5 flex-none text-[#9e1b34]" /><span><b className="text-[#1b1719]">{t}:</b> {d}</span></p>
+          ))}
+          <p className="rounded-lg bg-[#fdf6f7] px-3 py-2 text-[12px]">Nunca passam dois vídeos ao mesmo tempo, e o mesmo vídeo toca em todos os prédios do pedido.</p>
+        </div>
+      </details>
+      {p.entrega && <EntregaBanner e={p.entrega} onReenviar={p.visaoInterna ? p.onReenviar : undefined} simples={!p.visaoInterna} />}
 
       {/* Prévia dos vídeos */}
       <section>
         <div className="mb-2 flex items-end justify-between">
           <h3 className="text-base font-extrabold text-gray-900">Seus vídeos</h3>
-          <span className="text-xs font-semibold text-gray-400">passe o mouse para assistir · a cor de cada um aparece na agenda</span>
+          <span className="hidden text-xs font-semibold text-gray-400 sm:inline">passe o mouse para assistir · a cor de cada um aparece na agenda</span>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {slots.map((s) => (
@@ -97,41 +100,42 @@ export const AgendaTab: React.FC<Props> = (p) => {
         </div>
       </section>
 
-      {/* Visão */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-xl bg-[#f7f5f6] p-1">
-          {(['semana', 'mes'] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => { setView(v); setOffset(0); }}
-              className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${view === v ? 'bg-[#9C1E1E] text-white shadow-sm' : 'text-[#8b8285] hover:text-[#1b1719]'}`}
-            >
-              {v === 'semana' ? 'Semana' : 'Mês'}
-            </button>
-          ))}
+      {/* Visão: Semana/Mês + nova programação numa linha; navegação centralizada na de baixo */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="inline-flex rounded-xl bg-white p-1 shadow-[0_1px_2px_rgba(30,15,18,.06)] ring-1 ring-black/[0.04]">
+            {(['semana', 'mes'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => { setView(v); setOffset(0); }}
+                className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${view === v ? 'bg-[#1b1719] text-white shadow-sm' : 'text-[#8b8285] hover:text-[#1b1719]'}`}
+              >
+                {v === 'semana' ? 'Semana' : 'Mês'}
+              </button>
+            ))}
+          </div>
+          <button
+            disabled={p.disabled || !aprovados.length}
+            onClick={() => setNovaOpen(true)}
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-4 text-sm font-bold text-white shadow-[0_6px_16px_-8px_rgba(156,30,30,.8)] hover:opacity-90 disabled:opacity-40"
+          >
+            <Plus className="h-4 w-4" /> Programar
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setOffset((o) => Math.max(0, o - 1))} disabled={offset === 0} className="rounded-lg border border-gray-200 bg-white p-1.5 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
-          <span className="min-w-[150px] text-center text-sm font-bold text-gray-700">
+        <div className="flex items-center justify-between gap-2">
+          <button onClick={() => setOffset((o) => Math.max(0, o - 1))} disabled={offset === 0} className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-[0_1px_2px_rgba(30,15,18,.08)] disabled:opacity-40" aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></button>
+          <span className="flex-1 text-center text-sm font-bold text-[#1b1719] first-letter:uppercase">
             {view === 'semana'
               ? offset === 0 ? 'Próximos 7 dias' : `${semana[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} – ${semana[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`
               : new Date(hoje.getFullYear(), hoje.getMonth() + offset, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
           </span>
-          <button onClick={() => setOffset((o) => Math.min(view === 'semana' ? 17 : 4, o + 1))} className="rounded-lg border border-gray-200 bg-white p-1.5"><ChevronRight className="h-4 w-4" /></button>
+          <button onClick={() => setOffset((o) => Math.min(view === 'semana' ? 17 : 4, o + 1))} className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-[0_1px_2px_rgba(30,15,18,.08)]" aria-label="Próximo"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <button
-          disabled={p.disabled || !aprovados.length}
-          onClick={() => setNovaOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
-        >
-          <Plus className="h-4 w-4" /> Nova programação
-        </button>
       </div>
 
       {view === 'semana' ? (
         <div className={`${CARD} p-4`}>
-          <div className="mb-3 flex items-baseline justify-between gap-2">
-            <h3 className="text-base font-extrabold text-gray-900">{offset === 0 ? 'Próximos 7 dias' : 'Semana'}</h3>
+          <div className="mb-3 flex items-baseline justify-end gap-2">
             <span className="text-[11px] font-semibold text-gray-400"><span className="hidden sm:inline">passe o mouse</span><span className="sm:hidden">toque</span> num bloco para ver o vídeo</span>
           </div>
           <div className="mb-2 ml-[78px] flex justify-between text-[10px] font-bold text-gray-400">
@@ -451,7 +455,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
 };
 
 /** Situação do envio da agenda aos painéis — "enviado" não é "no ar": a confirmação vem do elevador. */
-const EntregaBanner: React.FC<{ e: EntregaAgenda; onReenviar?: () => void }> = ({ e, onReenviar }) => {
+const EntregaBanner: React.FC<{ e: EntregaAgenda; onReenviar?: () => void; simples?: boolean }> = ({ e, onReenviar, simples }) => {
   const hora = new Date(e.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const cfg = {
     enviando: { cls: 'border-blue-200 bg-blue-50 text-blue-800', txt: 'Enviando a programação para os painéis…' },
@@ -459,6 +463,15 @@ const EntregaBanner: React.FC<{ e: EntregaAgenda; onReenviar?: () => void }> = (
     parcial: { cls: 'border-amber-200 bg-amber-50 text-amber-800', txt: `Enviada, mas ${e.falhas} painel(is) não respondeu(ram). Vamos reenviar automaticamente.` },
     erro: { cls: 'border-amber-200 bg-amber-50 text-amber-800', txt: 'Sua programação foi salva, mas o envio aos painéis não completou agora. Vamos reenviar automaticamente.' },
   }[e.estado];
+  // Cliente: só o essencial (salvou e quando entra nas telas); o reenvio é automático
+  if (simples) {
+    const txt = e.estado === 'enviando' ? 'Salvando sua programação…' : 'Programação salva — entra nas telas em até 5 minutos.';
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800">
+        {e.estado === 'enviando' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{txt}
+      </div>
+    );
+  }
   return (
     <div className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-xs font-semibold ${cfg.cls}`}>
       <span className="flex items-center gap-2">{e.estado === 'enviando' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{cfg.txt}</span>

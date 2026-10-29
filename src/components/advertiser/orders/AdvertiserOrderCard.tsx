@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Loader2, Monitor, Smartphone, Clock, Crown } from 'lucide-react';
+import { Loader2, Monitor, Smartphone, Clock, Crown, ChevronRight } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
@@ -137,6 +137,56 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   })();
   const vertical = item.tipo_produto === 'vertical_premium';
   const abrir = () => item.type === 'order' && onNavigate(`/anunciante/pedido/${item.id}`);
+
+  // Celular: linha compacta (como lista de app) — miniatura do que está no ar, nome, prédios e situação.
+  // Nada de vídeo grande tocando na lista: abre o pedido para ver tudo.
+  if (isMobile) {
+    const restante = displayTimeProgress && !displayTimeProgress.isExpired ? `${displayTimeProgress.daysRemaining} dias restantes` : displayTimeProgress?.isExpired ? 'Encerrado' : null;
+    const noAr = !!videoData?.videoUrl && ['ativo', 'video_aprovado'].includes(item.status);
+    return (
+      <div
+        ref={elementRef as React.RefObject<HTMLDivElement>}
+        className={cn('overflow-hidden rounded-[20px] bg-white shadow-[0_1px_2px_rgba(27,23,25,0.04),0_6px_18px_-12px_rgba(27,23,25,0.14)] ring-1 ring-[#1b1719]/[0.05]', item.type === 'attempt' && 'ring-amber-300')}
+      >
+        <button type="button" onClick={item.type === 'order' ? abrir : handleAction} className="flex w-full items-center gap-3 p-3 text-left active:bg-[#1b1719]/[0.03]">
+          <span className="relative flex h-[60px] w-[72px] flex-none items-center justify-center overflow-hidden rounded-[14px] bg-[#1b1719]">
+            {videoData?.videoUrl ? (
+              <video src={`${videoData.videoUrl}#t=1`} className="h-full w-full object-cover" muted playsInline preload="metadata" aria-hidden="true" />
+            ) : vertical ? <Smartphone className="h-5 w-5 text-white/55" /> : <Monitor className="h-5 w-5 text-white/55" />}
+            {noAr && <span className="absolute left-1.5 top-1.5 h-2 w-2 rounded-full bg-[#34d27b] shadow-[0_0_0_2px_rgba(0,0,0,.35)]" />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5">
+              <span className="truncate text-[15.5px] font-bold tracking-tight text-[#1b1719]">{titulo}</span>
+              {item.type === 'order' && item.is_master && <Crown className="h-3.5 w-3.5 flex-none text-amber-500" />}
+            </span>
+            <span className="mt-0.5 block truncate text-[12.5px] text-[#8b8285]">
+              {painelsList.length} {painelsList.length === 1 ? 'prédio' : 'prédios'}
+              {item.type === 'order' && item.plano_meses ? ` · ${item.plano_meses} ${item.plano_meses === 1 ? 'mês' : 'meses'}` : ''}
+              {restante ? ` · ${restante}` : ''}
+            </span>
+            <span className={cn('mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold', tom)}>{String(statusInfo.label || '').charAt(0).toUpperCase() + String(statusInfo.label || '').slice(1).toLowerCase()}</span>
+          </span>
+          <ChevronRight className="h-5 w-5 flex-none text-[#c9c1c3]" />
+        </button>
+        {(statusInfo.action || canDelete) && (
+          <div className="flex gap-2 border-t border-[#f1edee] px-3 py-2.5">
+            {statusInfo.action && (
+              <button type="button" onClick={handleAction} disabled={isProcessingAttempt || isGeneratingPix}
+                className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#9C1E1E] px-4 text-[13.5px] font-bold text-white disabled:opacity-60">
+                {isGeneratingPix && item.status === 'pendente' ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Gerando...</>) : statusInfo.action.label}
+              </button>
+            )}
+            {canDelete && (
+              <button type="button" onClick={() => onDelete(item.id, item.type)} className="inline-flex min-h-[40px] items-center justify-center rounded-xl px-4 text-[13.5px] font-semibold text-[#b42318] active:bg-[#b42318]/[0.07]">
+                Excluir
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

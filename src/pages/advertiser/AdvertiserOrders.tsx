@@ -22,6 +22,7 @@ import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
+import { BlocoCarregando } from '@/components/loading/MarcaCarregando';
 
 import { AdvertiserDashboardHeader } from '@/components/advertiser/orders/AdvertiserDashboardHeader';
 import { AdvertiserOrderStats } from '@/components/advertiser/orders/AdvertiserOrderStats';
@@ -264,24 +265,31 @@ const AdvertiserOrders = () => {
   });
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="ml-3 text-base text-muted-foreground">Carregando pedidos...</p>
-      </div>);
-
+    // mesma marca EXA do resto do app (sem rodinha genérica)
+    return <div className="flex min-h-[60vh] items-center justify-center"><BlocoCarregando largura={110} /></div>;
   }
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
-      {/* Section 1: Company Header */}
+      {/* Section 1: Company Header — no celular: título de app ("Seus pedidos"); o selo da empresa já está no topo */}
+      {isMobile ? (
+        <div className="px-0.5 pt-1">
+          <p className="truncate text-[12.5px] font-semibold text-[#8b8285]">{companyData?.empresa_nome || userProfile?.nome || 'Sua empresa'}</p>
+          <h1 className="text-[30px] font-extrabold leading-tight tracking-[-0.03em] text-[#1b1719]">Seus pedidos</h1>
+          {stats.pedidosAtivos > 0 && (
+            <p className="mt-0.5 flex items-center gap-1.5 text-[13px] font-semibold text-[#0f7a39]">
+              <span className="h-2 w-2 rounded-full bg-[#13a24a]" />{stats.pedidosAtivos} {stats.pedidosAtivos === 1 ? 'pedido no ar' : 'pedidos no ar'}
+            </p>
+          )}
+        </div>
+      ) : (
       <AdvertiserDashboardHeader
         logoUrl={finalLogoUrl}
         companyName={companyData?.empresa_nome}
         cnpj={companyData?.empresa_documento}
         ownerName={userProfile?.nome}
         logoScale={logoScale} />
-      
+      )}
 
       {/* Section 2: Metrics */}
       
@@ -291,11 +299,11 @@ const AdvertiserOrders = () => {
       
 
       {/* Section 5: Search + Filter */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      {(!isMobile || userOrdersAndAttempts.length > 3) && <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Buscar por ID ou valor..."
+            placeholder={isMobile ? 'Buscar pedido' : 'Buscar por ID ou valor...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="h-11 rounded-2xl border-0 bg-white pl-10 text-[14px] shadow-[0_1px_2px_rgba(27,23,25,0.05)] ring-1 ring-[#1b1719]/[0.06] focus-visible:ring-2 focus-visible:ring-[#9C1E1E]/30" />
@@ -317,7 +325,7 @@ const AdvertiserOrders = () => {
             </SelectContent>
           </Select>
         }
-        <Button
+        {!isMobile && <Button
           variant={showGrouped ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setShowGrouped(!showGrouped)}
@@ -325,8 +333,8 @@ const AdvertiserOrders = () => {
         >
           <FolderOpen className="h-4 w-4" />
           {!isMobile && 'Agrupar'}
-        </Button>
-        {showGrouped && (
+        </Button>}
+        {!isMobile && showGrouped && (
           <Button
             variant="outline"
             size="sm"
@@ -337,7 +345,7 @@ const AdvertiserOrders = () => {
             {!isMobile && 'Novo grupo'}
           </Button>
         )}
-      </div>
+      </div>}
 
       {/* Section 3: Campaign List */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCardReorder}>
@@ -464,7 +472,7 @@ const AdvertiserOrders = () => {
         </div>
       ) : (
         /* Flat view */
-        <div className="space-y-4">
+        <div className={isMobile ? 'space-y-2.5' : 'space-y-4'}>
           {filteredItems.slice(0, visibleCount).map((item) =>
         <SortableOrderCard key={`${item.type}-${item.id}`} id={item.id}>
         <AdvertiserOrderCard

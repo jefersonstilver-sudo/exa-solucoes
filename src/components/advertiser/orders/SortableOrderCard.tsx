@@ -17,7 +17,7 @@ export function SortableOrderCard({ id, children }: { id: string; children: Reac
         ref={setActivatorNodeRef}
         variant="ghost"
         size="icon"
-        className="absolute right-1 bottom-1 z-10 h-11 w-11 touch-none cursor-grab active:cursor-grabbing text-muted-foreground"
+        className="absolute right-1 bottom-1 z-10 hidden h-11 w-11 md:inline-flex touch-none cursor-grab active:cursor-grabbing text-muted-foreground"
         aria-label="Reorganizar pedido"
         title="Reorganizar pedido"
         {...attributes}

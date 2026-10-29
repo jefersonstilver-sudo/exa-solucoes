@@ -81,8 +81,8 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
           </span>
         </div>
 
-        <div className="flex min-w-0 flex-col justify-center gap-2.5 p-5 lg:p-7">
-          <span className="inline-flex items-center gap-2 text-xs font-extrabold tracking-wide text-[#13a24a]">
+        <div className="flex min-w-0 flex-col justify-center gap-2 p-4 sm:gap-2.5 sm:p-5 lg:p-7">
+          <span className="hidden items-center gap-2 text-xs font-extrabold tracking-wide text-[#13a24a] sm:inline-flex">
             <span className="relative h-2 w-2 rounded-full bg-[#13a24a]">
               <span className="absolute -inset-1 animate-ping rounded-full border-2 border-[#13a24a]" />
             </span>
@@ -102,17 +102,17 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
             </div>
           )}
           {/* Palco: ações principais do pedido */}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={onAgendar} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[14px] bg-[#9C1E1E] px-4 text-sm font-bold text-white shadow-[0_8px_18px_-10px_rgba(156,30,30,.9)] hover:bg-[#7c1428]">
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:flex sm:flex-wrap">
+            <button type="button" onClick={onAgendar} className="col-span-2 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[14px] bg-[#9C1E1E] px-4 text-sm font-bold text-white shadow-[0_8px_18px_-10px_rgba(156,30,30,.9)] hover:bg-[#7c1428]">
               <Sparkles className="h-4 w-4" /> Programar vídeos
             </button>
             {onVerTela && (
-              <button type="button" onClick={onVerTela} className="inline-flex min-h-[44px] items-center rounded-[14px] border border-[#e6dfe1] bg-white px-4 text-sm font-semibold text-[#1b1719] hover:bg-[#f7f5f6]">
-                Ver a tela {totalPredios === 1 ? 'do prédio' : 'dos prédios'}
+              <button type="button" onClick={onVerTela} className="inline-flex min-h-[44px] items-center justify-center rounded-[14px] border border-[#e6dfe1] bg-white px-4 text-sm font-semibold text-[#1b1719] hover:bg-[#f7f5f6]">
+                <span className="sm:hidden">Ver as telas</span><span className="hidden sm:inline">Ver a tela {totalPredios === 1 ? 'do prédio' : 'dos prédios'}</span>
               </button>
             )}
             {onEnviar && (
-              <button type="button" onClick={onEnviar} className="inline-flex min-h-[44px] items-center rounded-[14px] border border-[#e6dfe1] bg-white px-4 text-sm font-semibold text-[#1b1719] hover:bg-[#f7f5f6]">
+              <button type="button" onClick={onEnviar} className="inline-flex min-h-[44px] items-center justify-center rounded-[14px] border border-[#e6dfe1] bg-white px-4 text-sm font-semibold text-[#1b1719] hover:bg-[#f7f5f6]">
                 Enviar vídeo
               </button>
             )}
@@ -161,7 +161,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
         )}
       </div>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-[#f1edee] px-5 py-2.5 text-[11.5px] text-[#8b8285]">
+      <div className="hidden flex-wrap gap-x-4 gap-y-1.5 border-t border-[#f1edee] px-5 py-2.5 text-[11.5px] text-[#8b8285] sm:flex">
         {[
           ['#13a24a', 'No ar'],
           ['#9e1b34', 'Principal'],

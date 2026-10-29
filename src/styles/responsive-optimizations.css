@@ -165,7 +165,7 @@
   
   /* Prevent horizontal overflow */
   html, body {
-    overflow-x: hidden;
+    overflow-x: hidden; overflow-x: clip; /* clip: corta o que vaza sem virar área de rolagem (hidden quebrava os topos "sticky") */
   }
 }
 

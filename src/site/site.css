@@ -321,3 +321,9 @@
 .exa-login .el-manter small{display:block;font-size:12.5px;color:rgba(255,255,255,.6)}
 /* o cartão e a marca entram suaves depois da animação de abertura */
 @media (prefers-reduced-motion:no-preference){.exa-login .el-marca{animation:el-sobe .5s cubic-bezier(.2,.8,.2,1) both}}
+
+/* Entrar: o cartão entra suave quando a abertura (marca EXA) sai — e só então existem os campos */
+.exa-login .el-cartao{animation:elEntra .6s cubic-bezier(.2,.8,.2,1) both}
+.exa-login .el-espera{min-height:440px;opacity:0;animation:none;box-shadow:none;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+@keyframes elEntra{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.exa-login .el-cartao{animation:none}}

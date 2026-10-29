@@ -1,5 +1,5 @@
 import React from 'react';
-import { TelaCarregando, temaDaRota } from './MarcaCarregando';
+import { BlocoCarregando, DentroDoLayout, TelaCarregando, temaDaRota } from './MarcaCarregando';
 
 interface GlobalLoadingPageProps {
   message?: string;
@@ -15,8 +15,11 @@ interface GlobalLoadingPageProps {
 const GENERICAS = /^\s*carregando\s*(\.\.\.|…)?\s*$/i;
 
 const GlobalLoadingPage: React.FC<GlobalLoadingPageProps> = ({ message, showProgress = false, progress = 0 }) => {
+  const dentro = React.useContext(DentroDoLayout);
   const tema = typeof window !== 'undefined' ? temaDaRota(window.location.pathname) : 'claro';
   const msg = message && !GENERICAS.test(message) ? message : undefined;
+  // Dentro do painel: só a marca no meio da área (menu inferior e topo continuam), sem tela branca por cima
+  if (dentro) return <div className="flex min-h-[55vh] items-center justify-center"><BlocoCarregando largura={110} /></div>;
   return <TelaCarregando tema={tema} mensagem={msg} progresso={showProgress ? progress : null} />;
 };
 
