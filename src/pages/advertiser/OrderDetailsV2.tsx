@@ -42,6 +42,7 @@ import { CARD, EYEBROW } from '@/components/pedido-v2/ui';
 import { useVisaoInterna } from '@/hooks/exa2/useVisaoInterna';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import { BlocoCarregando } from '@/components/loading/MarcaCarregando';
+import { AvisoCobranca, FaturasPedido, useParcelas } from '@/components/cobranca/FaturasPedido';
 
 type Aba = 'videos' | 'agenda' | 'predios' | 'empresa' | 'contrato';
 const ABAS: { id: Aba; label: string; icon: React.ElementType }[] = [
@@ -89,6 +90,7 @@ const ContratoResumo: React.FC<{ order: any; orient: string; predios: number }> 
     ['Prédios', String(predios)],
     ...(order.valor_mensal ? ([['Mensalidade', brl(order.valor_mensal)]] as [string, React.ReactNode][]) : []),
     ['Valor total', brl(order.valor_total)],
+    ['Pagamento', order.forma_cobranca === 'boleto' ? `Boleto · todo dia ${order.dia_vencimento || 10}` : order.tipo_pagamento === 'pix_automatico' ? 'Pix Automático' : 'Pix'],
   ];
   return (
     <section className={`${CARD} overflow-hidden`}>
@@ -170,6 +172,7 @@ const OrderDetailsV2 = () => {
   const slotNoArId = useMemo(() => winnerAt(agenda.slots, agenda.rules, new Date())?.slot.id || null, [agenda.slots, agenda.rules, minutoAgenda]); // eslint-disable-line react-hooks/exhaustive-deps
   const videoSlotsComNoAr = useMemo(() => videoSlots.map((s: any) => (s?.id && s.approval_status === 'approved' ? { ...s, _noArAgora: s.id === slotNoArId } : s)), [videoSlots, slotNoArId]);
   const empresas = usePedidoEmpresas(id || '', order?.client_id);
+  const { parcelas } = useParcelas(id || null);
 
   // ---- carregar pedido + tempo real (igual à página original) ----
   const loadOrder = async () => {
@@ -330,7 +333,8 @@ const OrderDetailsV2 = () => {
             </div>
           </header>
 
-          {order.blocked_reason && <BlockedOrderAlert reason={order.blocked_reason} blockedAt={order.blocked_at} />}
+          {order.blocked_reason && !/falta de pagamento|pagamento não identificado/i.test(order.blocked_reason) && <BlockedOrderAlert reason={order.blocked_reason} blockedAt={order.blocked_at} />}
+          <AvisoCobranca pedido={order} parcelas={parcelas} />
 
           {/* Abas — celular: controle segmentado (ícone + nome), 5 colunas iguais, preso logo abaixo do topo do app */}
           {celular ? (
@@ -499,6 +503,7 @@ const OrderDetailsV2 = () => {
           {aba === 'contrato' && (
             <div className="space-y-3">
               <ContratoResumo order={order} orient={orient} predios={buildings.length} />
+              <FaturasPedido pedido={order} parcelas={parcelas} />
               <div className="px-0.5 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#a39a9d]">Mais detalhes</div>
               <CollapsibleContractStatus orderId={order.id} orderDetails={order} />
               {order.is_fidelidade && order.total_parcelas && (

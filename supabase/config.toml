@@ -648,3 +648,6 @@ verify_jwt = false
 
 [functions.exa2-crm-chat]
 verify_jwt = false
+
+[functions.exa2-cobranca]
+verify_jwt = false

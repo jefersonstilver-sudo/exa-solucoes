@@ -17,6 +17,7 @@ import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
 import { pedidoStatusInfo } from '@/lib/pedidoStatus';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+import CobrancaPedidoAdmin from '@/components/admin/orders/CobrancaPedidoAdmin';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -123,6 +124,7 @@ const OrderDetails = () => {
           <div className="mb-3 text-[13px]"><OrderCRM360Fields userId={orderDetails.client_id} email={orderDetails.email} whatsapp={orderDetails.whatsapp} /></div>
           <TabsList className="w-full sm:w-auto mb-1 rounded-full bg-black/[0.05] p-1 [&>button]:flex-1 [&>button]:rounded-full sm:[&>button]:flex-none">
             <TabsTrigger value="pedido">Pedido</TabsTrigger>
+            <TabsTrigger value="cobranca">Cobrança</TabsTrigger>
             {orderDetails?.client_id && <TabsTrigger value="perfil">Perfil do cliente</TabsTrigger>}
           </TabsList>
           <TabsContent value="pedido">
@@ -133,6 +135,9 @@ const OrderDetails = () => {
               videos={orderVideos}
               onBuildingChanged={refetch}
             />
+          </TabsContent>
+          <TabsContent value="cobranca">
+            <CobrancaPedidoAdmin pedidoId={orderDetails.id} clientId={orderDetails.client_id} onChanged={refetch} />
           </TabsContent>
           {orderDetails?.client_id && (
             <TabsContent value="perfil">

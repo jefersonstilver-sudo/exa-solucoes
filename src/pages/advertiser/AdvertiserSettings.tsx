@@ -14,6 +14,7 @@ import { resolveDisplayName, saveClientIdentity } from '@/services/clientProfile
 import { WhatsAppVerificationModal } from '@/components/settings/WhatsAppVerificationModal';
 import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
 import LogoSelo from '@/components/exa2/LogoSelo';
+import FinanceiroCard from '@/components/cobranca/FinanceiroCard';
 
 const CARD = 'rounded-[22px] bg-white shadow-[0_1px_2px_rgba(30,15,18,.06),0_12px_32px_-22px_rgba(30,15,18,.35)]';
 const EYEBROW = 'text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#8a1a1e]';
@@ -222,6 +223,9 @@ const AdvertiserSettings = () => {
           {documento || <span className="text-[#8b8285]">ainda não informado</span>}
         </Linha>
       </section>
+
+      {/* Financeiro (boletos, lembretes e confirmações também vão para ele) */}
+      <FinanceiroCard userId={uid} />
 
       {/* Segurança */}
       <section className={`${CARD} p-5 sm:p-6`}>
