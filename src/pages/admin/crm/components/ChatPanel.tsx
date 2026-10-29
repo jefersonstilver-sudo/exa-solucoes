@@ -441,9 +441,10 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                    <p className="crm-row-name truncate">
-                      {c.name}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="crm-row-name truncate">{c.name}</p>
+                      <p className="crm-row-preview truncate">{c.lastMessageText}</p>
+                    </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       <span className="text-[10px] text-muted-foreground">
                         {formatChatTime(c.lastMessageTime)}

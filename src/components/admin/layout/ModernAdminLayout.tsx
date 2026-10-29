@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AdminMenuButton from './AdminMenuButton';
 import { ADMIN_FUNDO_CLASSE } from './ModernSuperAdminLayout';
@@ -15,6 +15,8 @@ interface ModernAdminLayoutProps {
 
 const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
+  const location = useLocation();
+  const isConversation = /\/crm-evolution\/conversas\//.test(location.pathname);
   
   useRealtimePanelAlerts();
   
@@ -42,7 +44,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
             <ModernAdminHeader />
           </header>
           <main className={`flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
-            isMobile ? 'p-2 pb-24' : 'p-6'
+            isConversation ? 'p-0 pb-20 md:pb-0 overflow-hidden' : isMobile ? 'p-2 pb-24' : 'p-6'
           }`}>
             {children || <Outlet />}
           </main>

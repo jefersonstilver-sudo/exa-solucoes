@@ -48,8 +48,14 @@ const CRMConversationsPage: React.FC = () => {
         </title>
       </Helmet>
 
-      <div className="crm-conversations">
-        <div className="h-full min-h-0">
+      <div className="crm-conversations flex flex-col">
+        <div className="flex items-center px-3 border-b border-border">
+          <Button variant="ghost" size="sm" onClick={goBack} className="text-muted-foreground gap-2">
+            <ArrowLeft className="h-4 w-4" />CRM Evolution
+          </Button>
+          {collaborator && <span className="ml-auto text-xs text-muted-foreground truncate">{collaborator.collaborator_phone || collaborator.profile_name}</span>}
+        </div>
+        <div className="flex-1 min-h-0">
           {loading ? (
             <div className="flex items-center justify-center h-[520px] rounded-2xl border border-gray-200 bg-white">
               <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
