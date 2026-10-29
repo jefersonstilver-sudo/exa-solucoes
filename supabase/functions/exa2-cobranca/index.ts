@@ -213,6 +213,7 @@ async function clienteAsaas(ped: any): Promise<string | null> {
 }
 async function completarDados(pc: any, payId: string, pay?: any) {
   const up: any = { asaas_payment_id: payId, forma: "boleto" };
+  if (!pc.boleto_gerado_em) up.boleto_gerado_em = new Date().toISOString();
   if (pay) { up.boleto_url = pay.bankSlipUrl || null; up.asaas_invoice_url = pay.invoiceUrl || null; up.asaas_status = pay.status || null; if (pay.dueDate) up.data_vencimento = pay.dueDate; }
   const lin = await asaas("GET", "/payments/" + payId + "/identificationField");
   if (lin.ok) up.boleto_barcode = lin.j?.identificationField || null;
@@ -351,8 +352,20 @@ async function conciliar(out: any) {
     if (!r.ok) continue;
     const st = String(r.j?.status || "");
     if (st !== pc.asaas_status) await sb.from("parcelas").update({ asaas_status: st }).eq("id", pc.id);
+    const { data: ped } = await sb.from("pedidos").select("*").eq("id", pc.pedido_id).maybeSingle();
+    // pedido cancelado/refeito (ex.: cliente aplicou cupom depois do 1º boleto): o boleto aberto não pode continuar valendo
+    if (ped && INATIVOS.includes(ped.status)) {
+      if (PAGO_ASAAS.includes(st)) {
+        const { data: up } = await sb.from("parcelas").update({ status: "pago", data_pagamento: new Date().toISOString() }).eq("id", pc.id).neq("status", "pago").select("id");
+        if (up?.length) await avisarCeo(`ATENÇÃO cobrança: o cliente PAGOU ${brl(r.j?.value || pc.valor_final)} do boleto ${pc.asaas_payment_id} (parcela ${pc.numero_parcela}) de um pedido CANCELADO (${nomePedido(ped)}, ${String(ped.id).slice(0, 8)}). Decida: devolver ou abater no pedido novo.`);
+      } else if (!r.j?.deleted && ["PENDING", "OVERDUE"].includes(st)) {
+        const del = await asaas("DELETE", "/payments/" + pc.asaas_payment_id);
+        if (del.ok || del.status === 404) { await sb.from("parcelas").update({ status: "cancelado", asaas_status: "DELETED" }).eq("id", pc.id); out.canceladas = (out.canceladas || 0) + 1; }
+        else await avisarCeo(`ALERTA cobrança: não consegui cancelar no Asaas o boleto ${pc.asaas_payment_id} do pedido cancelado ${nomePedido(ped)} (HTTP ${del.status}). Cancele manualmente.`);
+      } else await sb.from("parcelas").update({ status: "cancelado" }).eq("id", pc.id).neq("status", "pago");
+      continue;
+    }
     if (PAGO_ASAAS.includes(st)) {
-      const { data: ped } = await sb.from("pedidos").select("*").eq("id", pc.pedido_id).maybeSingle();
       if (ped && await marcarPaga(pc, ped, "asaas", { valor: Number(r.j?.value || pc.valor_final), data: r.j?.paymentDate || r.j?.clientPaymentDate })) out.pagas++;
     } else if (r.j?.deleted || st === "REFUNDED") {
       await avisarCeo(`ALERTA cobrança: o boleto ${pc.asaas_payment_id} (parcela ${pc.numero_parcela}) aparece como ${r.j?.deleted ? "removido" : st} no Asaas. Confira o pedido ${String(pc.pedido_id).slice(0, 8)}.`);
