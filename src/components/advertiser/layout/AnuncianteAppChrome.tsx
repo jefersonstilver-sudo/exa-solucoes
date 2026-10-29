@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
 import LogoSelo from '@/components/exa2/LogoSelo';
+import { useCorNavegador } from '@/lib/corNavegador';
 import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ const Selo: React.FC<{ logo: string | null; inicial: string; className?: string 
   );
 
 export const AnuncianteAppTopo: React.FC = () => {
+  useCorNavegador({ topo: '#FFFFFF' }); // no navegador do celular, a faixa de cima acompanha o topo branco
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const preservar = usePreservar();
@@ -82,7 +84,8 @@ export const AnuncianteAppTopo: React.FC = () => {
           <img src="/site/exa-preto.svg" alt="" aria-hidden="true" className="pointer-events-none absolute left-1/2 h-[18px] w-auto -translate-x-1/2 opacity-90" />
         )}
 
-        <div className="flex items-center gap-1">
+        {/* gap maior: o número de notificações ("50") ficava em cima do selo da empresa */}
+        <div className="flex items-center gap-2.5">
           <span className="[&_button]:h-10 [&_button]:w-10 [&_button]:rounded-full">
             <NotificationCenter />
           </span>

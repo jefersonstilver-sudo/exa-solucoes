@@ -6,6 +6,7 @@
  * A aba atual fica na URL (?aba=agenda) para a Sofia poder mandar link direto.
  */
 import React, { useEffect, useMemo, useState } from 'react';
+import { AgendarNaAgenda } from '@/components/video-management/agendarNaAgenda';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, Building2, CalendarDays, Check, ChevronRight, Crown, Film, Loader2, Pencil, Receipt, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -128,11 +129,14 @@ const OrderDetailsV2 = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const aba = (ABAS.find((a) => a.id === params.get('aba'))?.id || 'videos') as Aba;
+  // botão de calendário de um vídeo → abre a Agenda nova já com esse vídeo (antes abria a janela antiga "Agendar Vídeo")
+  const [programarSlot, setProgramarSlot] = useState<string | null>(null);
   const setAba = (a: Aba) => {
     const p = new URLSearchParams(params);
     if (a === 'videos') p.delete('aba'); else p.set('aba', a);
+    // volta ao topo NA HORA (antes era suave: a aba nova aparecia no meio da rolagem e o título pulava)
+    window.scrollTo({ top: 0 });
     setParams(p, { replace: true });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const { userProfile } = useAuth();
@@ -408,6 +412,7 @@ const OrderDetailsV2 = () => {
                     </div>
                     {/* Gestão de vídeos (componente legado: upload, aprovação, principal) */}
                     <div className="exa2-gestao-videos [&>div]:border-0 [&>div]:shadow-none">
+                      <AgendarNaAgenda.Provider value={(pvId) => { setProgramarSlot(pvId); setAba('agenda'); }}>
                       <VideoManagementCard
                         orderStatus={order.status}
                         videoSlots={videoSlotsComNoAr}
@@ -423,6 +428,7 @@ const OrderDetailsV2 = () => {
                         tipoProduto={tipoProduto}
                         semCabecalho
                       />
+                      </AgendarNaAgenda.Provider>
                     </div>
                   </section>
                 )}
@@ -475,6 +481,8 @@ const OrderDetailsV2 = () => {
                 salvarProgramacao={agenda.salvarProgramacao}
                 removerProgramacao={agenda.removerProgramacao}
                 onIrParaVideos={() => setAba('videos')}
+                programarSlotId={programarSlot}
+                onProgramarAberto={() => setProgramarSlot(null)}
               />
             </>
           )}

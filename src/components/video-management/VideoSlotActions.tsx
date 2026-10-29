@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { AgendarNaAgenda } from './agendarNaAgenda';
 import { Button } from '@/components/ui/button';
 import { useDebugContext } from '@/contexts/DebugContext';
 import { 
@@ -73,6 +74,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showSlotScheduleModal, setShowSlotScheduleModal] = useState(false);
   const { forceCleanupEnabled } = useDebugContext();
+  const irParaAgenda = useContext(AgendarNaAgenda);
 
   if (!slot.video_data) return null;
 
@@ -120,7 +122,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowSlotScheduleModal(true)}
+            onClick={() => (irParaAgenda && slot.id ? irParaAgenda(slot.id) : setShowSlotScheduleModal(true))}
             className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white p-2.5 sm:p-2 h-10 w-10 sm:h-8 sm:w-auto rounded-xl sm:rounded-md"
             title="Agendar horários de exibição"
           >

@@ -1,3 +1,4 @@
+import { useCorNavegador } from '@/lib/corNavegador';
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './site.css';
@@ -76,7 +77,10 @@ export const TarjaPromo: React.FC = () => {
   );
 };
 
-export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode; semPromo?: boolean }> = ({ claro, acao, semPromo }) => (
+export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode; semPromo?: boolean }> = ({ claro, acao, semPromo }) => {
+  // faixa atrás do relógio no celular = mesma cor do cabeçalho (antes ficava vermelha)
+  useCorNavegador({ topo: claro ? '#FFFFFF' : '#0B0B0D' });
+  return (
   <header className={`hdr ${claro ? 'hdr-claro' : ''}`} style={claro ? undefined : { backdropFilter: 'saturate(1.4) blur(14px)' }}>
     {!semPromo && <TarjaPromo />}
     <div className="w in">
@@ -95,7 +99,8 @@ export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode; 
       </nav>
     </div>
   </header>
-);
+  );
+};
 
 export const RodapeSite: React.FC = () => (
   <footer style={{ background: '#0B0B0D', color: '#9C9A96', paddingBlock: '64px 32px' }}>
@@ -134,11 +139,15 @@ export const RodapeSite: React.FC = () => (
 );
 
 /** Barra fixa no celular com a ação principal da página. */
-export const BarraCelular: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const BarraCelular: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // atrás da barra do Safari (quando ela recolhe) aparece o fundo do <html>: escuro, como esta barra (antes ficava branco)
+  useCorNavegador({ fundo: '#0B0B0D' });
+  return (
   <div className="mbar" style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40, background: 'rgba(11,11,13,.96)', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))' }}>
     {children}
   </div>
-);
+  );
+};
 
 /** Título da aba e descrição (sem biblioteca extra). */
 export function useTituloPagina(titulo: string, descricao?: string) {

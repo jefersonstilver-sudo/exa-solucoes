@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { RodapeSite, BarraCelular, IconeWhats, waNando, useFonteSite, useTituloPagina, videoSite } from './comum';
 import { usePrediosPublicos } from './usePrediosPublicos';
+import { useCorNavegador } from '@/lib/corNavegador';
 
 /** Sou síndico (rota /sou-sindico) — Opção 2. Ação principal: conversar com o Nando no WhatsApp. */
 
@@ -20,6 +21,7 @@ const FAQ = [
 
 export default function SiteSindico() {
   useFonteSite();
+  useCorNavegador({ topo: '#FFFFFF' }); // cabeçalho claro
   useTituloPagina('Sou síndico · Tela no elevador sem custo · EXA Mídia', 'A EXA instala, mantém e paga a internet da tela no elevador do seu prédio. Os avisos você manda pelo WhatsApp, com o Nando.');
   const { predios } = usePrediosPublicos();
   const nomes = predios.map((p) => p.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'));

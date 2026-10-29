@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, Plus, Repeat, Star, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -31,6 +31,9 @@ interface Props {
   onIrParaVideos: () => void;
   /** Equipe EXA: mostra os detalhes do envio aos painéis (quantos, falhas, reenviar). */
   visaoInterna?: boolean;
+  /** Veio do botão de calendário de um vídeo: abre "Nova programação" com esse vídeo já escolhido. */
+  programarSlotId?: string | null;
+  onProgramarAberto?: () => void;
 }
 
 export const AgendaTab: React.FC<Props> = (p) => {
@@ -38,6 +41,10 @@ export const AgendaTab: React.FC<Props> = (p) => {
   const [view, setView] = useState<'semana' | 'mes'>('semana');
   const [offset, setOffset] = useState(0); // semanas (view semana) ou meses (view mes)
   const [novaOpen, setNovaOpen] = useState(false);
+  const [slotInicial, setSlotInicial] = useState<string | null>(null);
+  useEffect(() => {
+    if (p.programarSlotId && !p.disabled) { setSlotInicial(p.programarSlotId); setNovaOpen(true); p.onProgramarAberto?.(); }
+  }, [p.programarSlotId]); // eslint-disable-line react-hooks/exhaustive-deps
   const aprovados = slots.filter((s) => s.approved);
   const principal = slots.find((s) => s.is_base_video && s.approved);
   const slotById = useMemo(() => new Map(slots.map((s) => [s.id, s])), [slots]);
@@ -239,7 +246,8 @@ export const AgendaTab: React.FC<Props> = (p) => {
 
       <NovaProgramacaoDialog
         open={novaOpen}
-        onOpenChange={setNovaOpen}
+        onOpenChange={(o) => { setNovaOpen(o); if (!o) setSlotInicial(null); }}
+        slotInicial={slotInicial}
         slots={aprovados}
         slotById={slotById}
         saving={p.saving}
@@ -297,9 +305,10 @@ interface DialogProps {
   dataFim?: string | null;
   checarConflitos: (n: NovaProgramacao) => AgendaRule[];
   salvar: (n: NovaProgramacao) => Promise<void>;
+  slotInicial?: string | null;
 }
 
-const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slots, slotById, saving, dataInicio, dataFim, checarConflitos, salvar }) => {
+const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slots, slotById, saving, dataInicio, dataFim, checarConflitos, salvar, slotInicial }) => {
   const hojeStr = new Date().toISOString().slice(0, 10);
   const minData = dataInicio && dataInicio > hojeStr ? dataInicio : hojeStr;
   const maxData = dataFim || undefined;
@@ -313,6 +322,7 @@ const NovaProgramacaoDialog: React.FC<DialogProps> = ({ open, onOpenChange, slot
   const [hIni, setHIni] = useState('18:00');
   const [hFim, setHFim] = useState('21:00');
   const [conflitos, setConflitos] = useState<AgendaRule[] | null>(null);
+  useEffect(() => { if (open && slotInicial) setSlotId(slotInicial); }, [open, slotInicial]);
 
   const reset = () => { setConflitos(null); };
   const montar = (override = false): NovaProgramacao => ({

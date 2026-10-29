@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BlocoCarregando } from '@/components/loading/MarcaCarregando';
 import { Loader2, ShieldCheck, AlertTriangle, Pencil, Check, X, Lock, KeyRound, FileText, Smartphone, Mail, UserRound, MessageCircle } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { resolveDisplayName, saveClientIdentity } from '@/services/clientProfileService';
@@ -36,11 +37,12 @@ const Linha: React.FC<{ icon: React.ElementType; rotulo: string; children: React
     <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#f6f2f3]">
       <I className="h-[18px] w-[18px] text-[#554e50]" />
     </div>
-    <div className="min-w-0 flex-1">
+    {/* base mínima: no celular estreito a ação desce para a linha de baixo em vez de espremer o texto (uma palavra por linha) */}
+    <div className="min-w-0 flex-1 basis-[10.5rem]">
       <div className="text-xs font-semibold text-[#8b8285]">{rotulo}</div>
       <div className="mt-0.5 text-[15px] font-semibold text-[#1b1719]">{children}</div>
     </div>
-    {acao}
+    {acao && <div className="ml-auto flex-none">{acao}</div>}
   </div>
 );
 
@@ -133,7 +135,8 @@ const AdvertiserSettings = () => {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#8a1a1e]" />
+        {/* carregamento com a marca (padrão do app), não a rodinha genérica */}
+        <BlocoCarregando largura={110} />
       </div>
     );
   }
