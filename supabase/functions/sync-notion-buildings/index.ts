@@ -97,12 +97,10 @@ function mapNotionTipo(notionTipo: string | null): string {
 function extractBairro(endereco: string | null): string {
   if (!endereco) return '';
   
-  // Try to extract bairro from address (usually after comma or dash)
-  const parts = endereco.split(/[,\-]/);
-  if (parts.length >= 2) {
-    return parts[1].trim();
-  }
-  
+  // Formato do Google: "R. Rui Barbosa, 475 - Centro, Foz do Iguaçu - PR, 85851-170" → bairro = "Centro".
+  // (Antes cortava na 1ª vírgula/traço e gravava o NÚMERO da rua como bairro: "475", "293", "1210".)
+  const m = endereco.match(/,\s*\d+[^,-]*\s-\s([^,]+),/) || endereco.match(/\s-\s([^,]+),/);
+  if (m && !/^\s*\d/.test(m[1])) return m[1].trim();
   return '';
 }
 
@@ -180,7 +178,7 @@ function mapNotionToBuilding(page: NotionPage): Record<string, any> {
     // Core building fields
     nome: nome || 'Sem nome',
     endereco: endereco || '',
-    bairro: bairro,
+    ...(bairro ? { bairro } : {}), // sem bairro reconhecível: não apaga o que já está no cadastro
     numero_andares: numeroAndares,
     numero_blocos: numeroBlocos,
     numero_unidades: numeroUnidades,
