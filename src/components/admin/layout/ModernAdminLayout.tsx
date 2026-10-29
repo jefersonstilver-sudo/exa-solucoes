@@ -7,6 +7,7 @@ import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { useTecladoCelular } from '@/hooks/useTecladoCelular';
 import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
 
 interface ModernAdminLayoutProps {
@@ -15,6 +16,7 @@ interface ModernAdminLayoutProps {
 
 const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
+  useTecladoCelular(isMobile);
   const location = useLocation();
   const isConversation = /\/crm-evolution\/conversas\//.test(location.pathname);
   
@@ -28,7 +30,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
         "--sidebar-width-icon": "64px",
       } as React.CSSProperties}
     >
-      <div className={`exa-admin flex h-[100dvh] w-full overflow-hidden relative ${ADMIN_FUNDO_CLASSE}`}>
+      <div className={`exa-admin exa-app-altura flex w-full overflow-hidden relative ${ADMIN_FUNDO_CLASSE}`}>
         <ModernAdminSidebar />
         
         <SidebarInset className="flex flex-col w-full overflow-x-hidden bg-transparent">
@@ -45,7 +47,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
             <ModernAdminHeader />
           </header>
           )}
-          <main style={isMobile ? { paddingBottom: isConversation ? 'calc(4rem + env(safe-area-inset-bottom, 0px))' : 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' } : undefined} className={`flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
+          <main className={`${isMobile ? (isConversation ? 'exa-main-conversa' : 'exa-main-nav') : ''} flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
             isConversation ? 'p-0 overflow-hidden cx-sem-topo' : isMobile ? 'p-3' : 'p-6'
           }`}>
             {children || <Outlet />}

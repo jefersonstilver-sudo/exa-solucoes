@@ -291,3 +291,20 @@
 .exa-login .el-b-wa{background:#1F9D55;color:#fff;text-decoration:none}
 .exa-login .el-b-wa:hover{background:#188246}
 .exa-login a.el-lnk{text-decoration:none}
+/* vídeo de apresentação do topo (VideoApresentacao.tsx) */
+.exa-site .vap{position:relative;width:100%;height:100%;background:#000;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.exa-site .vap video{display:block;width:100%;height:100%;object-fit:cover;cursor:pointer}
+.exa-site .vap:fullscreen video,.exa-site .vap:-webkit-full-screen video{object-fit:contain}
+.exa-site .vap button{background:none;border:0;color:#fff;cursor:pointer;padding:0;min-width:0;min-height:0;font:inherit}
+.exa-site .vap-som{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:inline-flex!important;align-items:center;gap:8px;height:36px;padding:0 14px!important;border-radius:999px;background:rgba(11,11,13,.62)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:13px!important;font-weight:700;white-space:nowrap;box-shadow:0 0 0 1px rgba(255,255,255,.14);animation:vap-pulso 2.4s ease-in-out infinite}
+@keyframes vap-pulso{0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.14)}50%{box-shadow:0 0 0 1px rgba(255,255,255,.14),0 0 0 6px rgba(234,37,29,.35)}}
+.exa-site .vap-barra{position:absolute;left:0;right:0;bottom:0;padding:28px 10px 8px;background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,0));transition:opacity .25s;opacity:0;pointer-events:none}
+.exa-site .vap[data-mostrar=true] .vap-barra{opacity:1;pointer-events:auto}
+@media (hover:none){.exa-site .vap .vap-barra{opacity:1;pointer-events:auto}}
+.exa-site .vap-prog{position:relative;height:16px;display:flex;align-items:center;cursor:pointer;touch-action:none}
+.exa-site .vap-prog:before{content:"";position:absolute;left:0;right:0;height:3px;border-radius:2px;background:rgba(255,255,255,.28)}
+.exa-site .vap-prog i{position:relative;display:block;height:3px;border-radius:2px;background:#EA251D}
+.exa-site .vap-btns{display:flex;align-items:center;gap:4px}
+.exa-site .vap-btns button{width:34px;height:34px;display:flex!important;align-items:center;justify-content:center;border-radius:50%}
+.exa-site .vap-btns button:hover{background:rgba(255,255,255,.14)!important}
+.exa-site .vap-tempo{font-size:11px;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.85);margin-left:2px}

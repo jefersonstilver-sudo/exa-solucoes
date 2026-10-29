@@ -136,25 +136,25 @@ const CRMEvolutionPage: React.FC = () => {
         />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50">
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 px-4 md:px-6 py-4">
+      <div className="min-h-full bg-gradient-to-br from-gray-50 via-white to-gray-50/50 rounded-2xl md:rounded-none">
+        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9C1E1E] to-[#7D1818] flex items-center justify-center shadow-sm flex-shrink-0">
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight truncate">
+                <h1 className="text-xl md:text-3xl font-bold text-gray-900 tracking-tight truncate">
                   CRM Evolution
                 </h1>
-                <p className="text-sm text-gray-500 mt-0.5 truncate">
+                <p className="text-xs md:text-sm text-gray-500 mt-0.5 truncate">
                   Conversas dos colaboradores via Evolution API
                 </p>
               </div>
             </div>
             <Button
               onClick={() => setAddOpen(true)}
-              className="bg-[#9C1E1E] hover:bg-[#7D1818] text-white flex-shrink-0"
+              className="bg-[#9C1E1E] hover:bg-[#7D1818] text-white flex-shrink-0 rounded-full md:rounded-md h-10 px-4"
             >
               <UserPlus className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Adicionar colaborador</span>
@@ -200,7 +200,21 @@ const CRMEvolutionPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1 snap-x snap-mandatory [scrollbar-width:thin]">
+            <>
+            {/* Celular: lista em linhas, como contatos do WhatsApp */}
+            <div className="md:hidden flex flex-col gap-2">
+              {collaborators.map((c) => (
+                <div key={c.id} className="rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden">
+                  <CollaboratorCard
+                    variante="linha"
+                    collaborator={c}
+                    onUpdated={load}
+                    onSelect={() => navigate(`${basePath}/crm-evolution/conversas/${c.id}`)}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:flex gap-3 overflow-x-auto pb-3 -mx-1 px-1 snap-x snap-mandatory [scrollbar-width:thin]">
               {collaborators.map((c) => (
                 <div key={c.id} className="snap-start">
                   <CollaboratorCard
@@ -213,6 +227,7 @@ const CRMEvolutionPage: React.FC = () => {
                 </div>
               ))}
             </div>
+            </>
           )}
         </div>
       </div>

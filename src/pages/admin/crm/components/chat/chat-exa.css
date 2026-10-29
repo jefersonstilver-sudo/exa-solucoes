@@ -132,6 +132,8 @@
   .cx-msgs{padding:14px 12px}
   .cx-bub{max-width:86%}
   .cx-comp{padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px))}
+  body.teclado-aberto .cx-comp{padding-bottom:8px}
+  .cx-chat{min-height:0;height:100%}
   .cx-comp textarea{font-size:16px}
   .cx-fx,.cx-fx.largo{width:100%}
   .cx-pop{left:10px !important;right:10px !important;width:auto !important}

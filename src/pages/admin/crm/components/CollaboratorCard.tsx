@@ -41,6 +41,8 @@ interface Props {
   onUpdated: () => void;
   selected?: boolean;
   onSelect?: () => void;
+  /** 'linha' = formato de lista do celular (avatar redondo, nome, telefone, menu sempre visível) */
+  variante?: 'cartao' | 'linha';
 }
 
 const statusColor: Record<string, string> = {
@@ -54,6 +56,7 @@ export const CollaboratorCard: React.FC<Props> = ({
   onUpdated,
   selected,
   onSelect,
+  variante = 'cartao',
 }) => {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -128,8 +131,86 @@ export const CollaboratorCard: React.FC<Props> = ({
     }
   };
 
+  const statusTexto = collaborator.status === 'connected' ? 'Conectado' : collaborator.status === 'pending' ? 'Aguardando QR' : 'Desconectado';
+  const cartaoLinha = (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(); } }}
+      className="flex items-center gap-3 w-full px-3 py-3 bg-white active:bg-gray-50 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9C1E1E] rounded-2xl"
+    >
+      <span className="relative flex-shrink-0">
+        <span className="block w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center ring-1 ring-black/5">
+          {collaborator.profile_picture_url ? (
+            <img src={collaborator.profile_picture_url} alt={collaborator.collaborator_name} className="w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          ) : (
+            <span className="text-lg font-semibold text-gray-400">{initials}</span>
+          )}
+        </span>
+        <span className={cn('absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full ring-2 ring-white', statusColor[collaborator.status] ?? 'bg-gray-400')} title={statusTexto} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 min-w-0">
+          <span className="text-[15px] font-bold text-gray-900 truncate">{collaborator.collaborator_name}</span>
+          {isNotif && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#7D1818] text-white text-[10px] font-semibold flex-shrink-0">
+              <Bell className="w-2.5 h-2.5" /> Notif.
+            </span>
+          )}
+        </span>
+        <span className="block text-[13px] text-gray-500 truncate">
+          {collaborator.collaborator_phone || collaborator.profile_name || '—'} · {statusTexto}
+        </span>
+      </span>
+      <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Ações da instância"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 active:bg-gray-100"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                  <Pencil className="w-3.5 h-3.5 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setQrOpen(true)}
+                  disabled={!collaborator.instance_name}
+                >
+                  <QrCode className="w-3.5 h-3.5 mr-2" />
+                  Reconectar (QR)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={busy || !collaborator.instance_name}
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-2" />
+                  Desconectar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setDeleteOpen(true)}
+                  className="text-red-600 focus:text-red-700"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Apagar instância
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+      </span>
+    </div>
+  );
+
   return (
     <>
+      {variante === 'linha' ? cartaoLinha : (
       <div
         role="button"
         tabIndex={0}
@@ -236,6 +317,7 @@ export const CollaboratorCard: React.FC<Props> = ({
           </p>
         </div>
       </div>
+      )}
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-sm">

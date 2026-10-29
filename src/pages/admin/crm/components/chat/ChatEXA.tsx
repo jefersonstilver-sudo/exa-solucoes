@@ -190,6 +190,15 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
 
   const atual = p.conversas.find((c) => c.id === p.sel) || null;
 
+  // Conversa aberta no celular ocupa a tela toda: o layout esconde a barra inferior (body.cx-chat-aberto)
+  useEffect(() => {
+    const cel = window.matchMedia('(max-width: 767px)');
+    const aplicar = () => document.body.classList.toggle('cx-chat-aberto', celChat && cel.matches);
+    aplicar();
+    cel.addEventListener?.('change', aplicar);
+    return () => { cel.removeEventListener?.('change', aplicar); document.body.classList.remove('cx-chat-aberto'); };
+  }, [celChat]);
+
   // programadas da conversa aberta
   const carregarAgendadas = useCallback(async () => {
     if (!p.sel) { setAgendadas([]); return; }

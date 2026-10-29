@@ -154,3 +154,14 @@ input, select, textarea {
     top: calc(12px + env(safe-area-inset-top, 0px)) !important;
   }
 }
+
+/* === Painel no celular: altura real, barra inferior e teclado (useTecladoCelular) === */
+.exa-app-altura { height: 100vh; height: var(--exa-app-h, 100dvh); }
+.exa-main-nav { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+.exa-main-conversa { padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
+/* Conversa aberta no celular = tela cheia (como no WhatsApp): sem barra inferior; voltar pela seta */
+body.cx-chat-aberto .exa-bottom-nav,
+body.teclado-aberto .exa-bottom-nav { display: none !important; }
+body.cx-chat-aberto .exa-main-conversa,
+body.teclado-aberto .exa-main-conversa,
+body.teclado-aberto .exa-main-nav { padding-bottom: 0; }

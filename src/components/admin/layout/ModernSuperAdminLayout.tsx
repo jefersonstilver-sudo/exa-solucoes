@@ -6,6 +6,7 @@ import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import AdminMenuButton from './AdminMenuButton';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { useTecladoCelular } from '@/hooks/useTecladoCelular';
 import AdminMasterWelcomeDialog from '@/components/impersonation/AdminMasterWelcomeDialog';
 
 // Rotas que devem ocultar o header para modo fullscreen
@@ -17,6 +18,7 @@ export const ADMIN_FUNDO_CLASSE =
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
+  useTecladoCelular(isMobile);
   const location = useLocation();
   const isConversation = /\/crm-evolution\/conversas\//.test(location.pathname);
 
@@ -32,7 +34,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
           "--sidebar-width-icon": "64px",
         } as React.CSSProperties}
       >
-        <div className={`exa-admin flex h-[100dvh] w-full overflow-hidden relative ${ADMIN_FUNDO_CLASSE}`}>
+        <div className={`exa-admin exa-app-altura flex w-full overflow-hidden relative ${ADMIN_FUNDO_CLASSE}`}>
           <ModernAdminSidebar />
 
           <SidebarInset className="flex flex-col w-full overflow-x-hidden bg-transparent">
@@ -52,7 +54,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
             {isFullscreenMode && (
               <AdminMenuButton className="absolute left-2 top-2 z-20 bg-white/80 backdrop-blur shadow hover:bg-white" />
             )}
-            <main style={isMobile ? { paddingBottom: isConversation ? 'calc(4rem + env(safe-area-inset-bottom, 0px))' : 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' } : undefined} className={`flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
+            <main className={`${isMobile ? (isConversation ? 'exa-main-conversa' : 'exa-main-nav') : ''} flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
               isConversation ? 'p-0 overflow-hidden cx-sem-topo' : isFullscreenMode ? 'p-0' : isMobile ? 'p-3' : 'p-6'
             }`}>
               {children || <Outlet />}

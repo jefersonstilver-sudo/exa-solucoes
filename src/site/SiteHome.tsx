@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { VideoApresentacao } from './VideoApresentacao';
 import { CabecalhoSite, RodapeSite, BarraCelular, VideoLeve, IconeWhats, waSofia, useFonteSite, useTituloPagina } from './comum';
 import { usePrediosPublicos } from './usePrediosPublicos';
 import { supabase } from '@/integrations/supabase/client';
@@ -134,10 +135,10 @@ export default function SiteHome() {
           </div>
           <figure className="monw" style={{ margin: '0 auto', width: '100%', maxWidth: 360, position: 'relative' }}>
             <div className="mon boot"><div className="scr">
-              <video src="/site/tela-real.mp4" poster="/site/tela-real.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="Gravação real de uma tela EXA" />
+              <VideoApresentacao src="/site/exa-apresentacao.mp4" poster="/site/exa-apresentacao.jpg" rotulo="Apresentação da nova EXA" />
             </div></div>
             <span className="corner c1" aria-hidden="true" /><span className="corner c2" aria-hidden="true" />
-            <figcaption style={{ marginTop: 30, fontSize: 13, color: '#77756F', textAlign: 'center' }}>Gravação real de uma tela EXA</figcaption>
+            <figcaption style={{ marginTop: 30, fontSize: 13, color: '#77756F', textAlign: 'center' }}>Conheça a nova EXA · toque para ouvir</figcaption>
           </figure>
         </div>
       </section>

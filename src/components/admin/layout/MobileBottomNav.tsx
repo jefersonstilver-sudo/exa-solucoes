@@ -57,7 +57,7 @@ const MobileBottomNav = () => {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-[var(--z-bottom-nav)] bg-white/85 backdrop-blur-xl backdrop-saturate-150 border-t border-black/5 shadow-[0_-10px_30px_-20px_rgba(70,20,20,0.35)]" 
+      className="exa-bottom-nav fixed bottom-0 left-0 right-0 z-[var(--z-bottom-nav)] bg-white/85 backdrop-blur-xl backdrop-saturate-150 border-t border-black/5 shadow-[0_-10px_30px_-20px_rgba(70,20,20,0.35)]" 
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto px-1">
