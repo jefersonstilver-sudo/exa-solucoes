@@ -135,7 +135,7 @@ export const FaturasPedido: React.FC<{ pedido: any; parcelas: ParcelaCobranca[] 
             <span className="text-base font-extrabold text-[#1b1719]">{brl(proxima.valor_final)}</span>
           </div>
           <AcoesPagamento p={proxima} />
-          <p className="text-xs text-[#8b8285]">Pelo Pix do boleto a confirmação é imediata; pelo código de barras leva até 3 dias úteis. Após o vencimento: multa de 2% e juros de 1% ao mês.</p>
+          <p className="text-xs text-[#8b8285]">Pelo Pix do boleto a confirmação é imediata; pelo código de barras leva até 3 dias úteis.</p>
         </div>
       )}
       <ul className="divide-y divide-[#f1edee] border-t border-[#f1edee]">
