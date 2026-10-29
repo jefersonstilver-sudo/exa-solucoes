@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OrderCRM360Fields from '@/components/admin/crm/OrderCRM360Fields';
 import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
 import { pedidoStatusInfo } from '@/lib/pedidoStatus';
+import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -40,15 +41,7 @@ const OrderDetails = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center bg-white rounded-lg p-8 shadow-lg">
-          <Loader2 className="h-12 w-12 animate-spin text-indexa-purple mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900">Carregando detalhes do pedido...</h2>
-          <p className="text-gray-600 mt-2">Aguarde enquanto buscamos as informações</p>
-        </div>
-      </div>
-    );
+    return <GlobalLoadingPage message="Abrindo o pedido..." />;
   }
 
   if (!orderDetails) {
@@ -63,7 +56,7 @@ const OrderDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-4 pb-28 sm:py-8 px-3 sm:px-4">
+    <div className="md:min-h-screen md:bg-gradient-to-br md:from-gray-50 md:to-gray-100 pt-1 sm:py-8 sm:px-4">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Cabeçalho + ações (pensado primeiro para o celular) */}
         <div className="space-y-3">
@@ -87,7 +80,8 @@ const OrderDetails = () => {
           </div>
           <SofiaSoldBadge pedidoId={id} className="text-xs px-3 py-1" />
 
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          {/* Celular: ação principal em largura total e as demais numa fileira que rola para o lado */}
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end [&_button]:text-[13px] max-sm:[&_button]:h-10">
             {orderDetails?.client_id && (
               <AccessAsClientButton
                 targetUserId={orderDetails.client_id}
@@ -126,8 +120,8 @@ const OrderDetails = () => {
         </div>
 
         <Tabs defaultValue="pedido" className="w-full">
-          <div className="mb-4"><OrderCRM360Fields userId={orderDetails.client_id} email={orderDetails.email} whatsapp={orderDetails.whatsapp} /></div>
-          <TabsList>
+          <div className="mb-3 text-[13px]"><OrderCRM360Fields userId={orderDetails.client_id} email={orderDetails.email} whatsapp={orderDetails.whatsapp} /></div>
+          <TabsList className="w-full sm:w-auto mb-1 rounded-full bg-black/[0.05] p-1 [&>button]:flex-1 [&>button]:rounded-full sm:[&>button]:flex-none">
             <TabsTrigger value="pedido">Pedido</TabsTrigger>
             {orderDetails?.client_id && <TabsTrigger value="perfil">Perfil do cliente</TabsTrigger>}
           </TabsList>

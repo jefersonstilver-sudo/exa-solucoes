@@ -9,6 +9,6 @@
   "theme_color": "#C7141A",
   "background_color": "#C7141A",
   "display": "standalone",
-  "start_url": "/",
+  "start_url": "/login?app=1",
   "scope": "/"
 }

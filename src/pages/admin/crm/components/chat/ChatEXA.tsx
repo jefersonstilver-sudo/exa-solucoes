@@ -138,6 +138,39 @@ function lerMidia(m: CxMsg): { tipo: string | null; texto: string; nota: string 
   return { tipo, texto: resto.trim(), nota };
 }
 
+// ---------------------------------------------------------------- fotos de perfil do WhatsApp (cache 12 h no aparelho)
+const FOTO_TTL = 12 * 3600e3;
+function useFotosWhatsApp(agente: CxAgente, conversas: CxConversa[]) {
+  const chave = `cx-fotos-${agente}`;
+  const [fotos, setFotos] = useState<Record<string, string | null>>(() => {
+    try {
+      const bruto = JSON.parse(localStorage.getItem(chave) || '{}') as Record<string, { u: string | null; t: number }>;
+      const out: Record<string, string | null> = {};
+      Object.entries(bruto).forEach(([k, v]) => { if (Date.now() - v.t < FOTO_TTL) out[k] = v.u; });
+      return out;
+    } catch { return {}; }
+  });
+  const pedidos = useRef(new Set<string>());
+  useEffect(() => {
+    const faltam = conversas.filter((c) => !c.foto && !(c.id in fotos) && !pedidos.current.has(c.id)).map((c) => c.id).slice(0, 40);
+    if (!faltam.length) return;
+    faltam.forEach((id) => pedidos.current.add(id));
+    chamarChat('fotos', { agente, alvos: faltam }).then((r) => {
+      const novas = (r?.fotos || {}) as Record<string, string | null>;
+      setFotos((f) => {
+        const m = { ...f, ...novas };
+        try {
+          const bruto = JSON.parse(localStorage.getItem(chave) || '{}');
+          Object.entries(novas).forEach(([k, u]) => { bruto[k] = { u, t: Date.now() }; });
+          localStorage.setItem(chave, JSON.stringify(bruto));
+        } catch { /* sem armazenamento */ }
+        return m;
+      });
+    }).catch(() => { /* função ainda não publicada: segue sem foto */ });
+  }, [agente, conversas, fotos, chave]);
+  return fotos;
+}
+
 // ---------------------------------------------------------------- componente
 export type ChatEXAProps = {
   agente: CxAgente;
@@ -188,7 +221,10 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
   const inputDoc = useRef<HTMLInputElement>(null);
   const areaTexto = useRef<HTMLTextAreaElement>(null);
 
+  const fotosWa = useFotosWhatsApp(agente, p.conversas);
+  const fotoDe = (c: CxConversa) => c.foto || fotosWa[c.id] || null;
   const atual = p.conversas.find((c) => c.id === p.sel) || null;
+  const [agendarPara, setAgendarPara] = useState<Date | null>(null);
 
   // Conversa aberta no celular ocupa a tela toda: o layout esconde a barra inferior (body.cx-chat-aberto)
   useEffect(() => {
@@ -204,7 +240,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
     if (!p.sel) { setAgendadas([]); return; }
     try { const r = await chamarChat('agendadas', { agente, alvo: p.sel }); setAgendadas(r.agendadas || []); } catch { /* tabela pode não existir ainda */ }
   }, [agente, p.sel]);
-  useEffect(() => { setAgendadas([]); carregarAgendadas(); setAnexo(null); setMenu(null); }, [p.sel]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setAgendadas([]); carregarAgendadas(); setAnexo(null); setMenu(null); setAgendarPara(null); }, [p.sel]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(carregarAgendadas, 30000); return () => clearInterval(t); }, [carregarAgendadas]);
 
   // Rola só a caixa de mensagens (scrollIntoView no Safari do iPhone também arrastava a página e a conversa para o lado)
@@ -246,6 +282,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
   const enviar = async () => {
     const t = texto.trim();
     if (!p.sel || ocupado || (!t && !anexo)) return;
+    if (agendarPara) { await programar(agendarPara); return; }
     setOcupado(true);
     try {
       if (anexo) {
@@ -261,16 +298,24 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
     } finally { setOcupado(false); }
   };
 
+  const escolherHorario = (quando: Date) => {
+    if (quando.getTime() < Date.now() + 30e3) { toast.error('Escolha um horário no futuro.'); return; }
+    if (texto.trim() || anexo) { programar(quando); return; }
+    // sem texto ainda: guarda o horário e deixa escrever; o botão de enviar passa a programar
+    setAgendarPara(quando); setMenu(null); setEscolhendoHora(false);
+    setTimeout(() => areaTexto.current?.focus(), 50);
+  };
+
   const programar = async (quando: Date) => {
     const t = texto.trim();
-    if (!p.sel || (!t && !anexo)) { toast.error('Escreva a mensagem (ou anexe um arquivo) antes de programar.'); return; }
+    if (!p.sel || (!t && !anexo)) { setAgendarPara(quando); return; }
     if (quando.getTime() < Date.now() + 30e3) { toast.error('Escolha um horário no futuro.'); return; }
     setOcupado(true);
     try {
       const arquivo = await prepararArquivo(anexo);
       await chamarChat('agendar', { agente, alvo: p.sel, texto: t, arquivo, enviar_em: quando.toISOString() });
       toast.success(`Mensagem programada para ${quandoCurto(quando.toISOString())}.`);
-      setTexto(''); setAnexo(null); setMenu(null); setEscolhendoHora(false);
+      setTexto(''); setAnexo(null); setMenu(null); setEscolhendoHora(false); setAgendarPara(null);
       carregarAgendadas();
     } catch (e: any) {
       toast.error('Não foi possível programar: ' + e.message);
@@ -382,7 +427,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
             return (
               <div key={c.id} className="cx-rowwrap">
                 <button className={`cx-row${on ? ' on' : ''}`} onClick={() => { p.onSel(c.id); setCelChat(true); }} aria-current={on}>
-                  <CxFoto url={c.foto} tamanho={50} />
+                  <CxFoto url={fotoDe(c)} tamanho={50} />
                   <span className="txt">
                     <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
                       <b style={{ fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.titulo}</b>
@@ -410,10 +455,10 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
           <>
             <header className="cx-head">
               <button className="cx-voltar" onClick={() => setCelChat(false)} aria-label="Voltar às conversas" data-so-cel>{I.voltar}</button>
-              <CxFoto url={atual.foto} tamanho={42} />
+              <CxFoto url={fotoDe(atual)} tamanho={42} />
               <div className="cx-head-txt">
                 <div className="cx-head-nome">{atual.titulo}</div>
-                <div className="cx-head-sub"><span style={{ color: '#5A5852' }}>{atual.sub}</span> <span style={{ color: '#C9C6C0' }}>·</span> <span style={{ color: atual.humano ? '#EA251D' : '#77756F' }}>{estado}</span></div>
+                <div className="cx-head-sub"><span style={{ color: '#5A5852' }}>{atual.sub}</span> <span className="cx-estado"><span style={{ color: '#C9C6C0' }}>·</span> <span style={{ color: atual.humano ? '#EA251D' : '#77756F' }}>{estado}</span></span></div>
               </div>
               <button className="cx-btn cx-fb" onClick={p.onFicha}>{I.ficha}<span>{p.fichaRotulo}</span></button>
               {atual.humano
@@ -454,22 +499,29 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
                   {!escolhendoHora ? (
                     <>
                       {sugestoes().map((o) => (
-                        <button key={o.rotulo} className="cx-opt" role="menuitem" disabled={!temTexto || ocupado} onClick={() => programar(o.quando)}>
+                        <button key={o.rotulo} className="cx-opt" role="menuitem" disabled={ocupado} onClick={() => escolherHorario(o.quando)}>
                           {I.relogio}<span style={{ flex: 1 }}>{o.rotulo}</span><span style={{ color: '#9C9A96', fontSize: 12 }}>{o.sub}</span>
                         </button>
                       ))}
-                      <button className="cx-opt" style={{ color: '#9E1014', fontWeight: 800 }} disabled={!temTexto} onClick={() => { setEscolhendoHora(true); setHoraLivre(paraInputLocal(new Date(Date.now() + 3600e3))); }}>Escolher data e hora…</button>
-                      {!temTexto && <p style={{ margin: '6px 10px 2px', fontSize: 12, color: '#9C9A96' }}>Escreva a mensagem antes de programar.</p>}
+                      <button className="cx-opt" style={{ color: '#9E1014', fontWeight: 800 }} onClick={() => { setEscolhendoHora(true); setHoraLivre(paraInputLocal(new Date(Date.now() + 3600e3))); }}>Escolher data e hora…</button>
+                      <p style={{ margin: '6px 10px 2px', fontSize: 12, color: '#9C9A96' }}>{temTexto ? 'A mensagem escrita sai no horário escolhido.' : 'Escolha o horário e depois escreva a mensagem.'}</p>
                     </>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '2px 10px 8px' }}>
                       <input type="datetime-local" value={horaLivre} min={paraInputLocal(new Date())} onChange={(e) => setHoraLivre(e.target.value)} aria-label="Data e hora do envio" />
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="cx-btn cx-fb" onClick={() => setEscolhendoHora(false)}>Voltar</button>
-                        <button className="cx-btn cx-red" style={{ flex: 1, justifyContent: 'center' }} disabled={!horaLivre || ocupado} onClick={() => programar(new Date(horaLivre))}>Programar</button>
+                        <button className="cx-btn cx-red" style={{ flex: 1, justifyContent: 'center' }} disabled={!horaLivre || ocupado} onClick={() => escolherHorario(new Date(horaLivre))}>{temTexto ? 'Programar' : 'Escolher'}</button>
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+              {agendarPara && (
+                <div className="cx-anexo cx-agendar">
+                  <span className="cx-oi" style={{ background: '#EA251D' }}>{I.relogio}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}><b>Envio programado</b><br /><span style={{ color: '#77756F', fontSize: 12 }}>{quandoCurto(agendarPara.toISOString())} · escreva e toque em enviar</span></span>
+                  <button className="cx-ib" style={{ width: 32, height: 32 }} onClick={() => setAgendarPara(null)} aria-label="Tirar programação">{I.x}</button>
                 </div>
               )}
               {anexo && (
@@ -486,7 +538,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
               {gravando ? (
                 <div className="cx-comp" style={{ alignItems: 'center' }}>
                   <button className="cx-ib" onClick={() => pararGravacao(false)} aria-label="Descartar áudio">{I.lixo}</button>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, height: 44, padding: '0 18px', borderRadius: 999, background: '#FDECEB' }}>
+                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 10, height: 44, padding: '0 14px', borderRadius: 999, background: '#FDECEB' }}>
                     <span className="cx-dot cx-rec" style={{ background: '#EA251D' }} /><b style={{ fontVariantNumeric: 'tabular-nums', color: '#9E1014' }}>{min}:{seg}</b>
                     <span className="cx-wave" aria-hidden="true">{Array.from({ length: 40 }, (_, i) => <i key={i} style={{ height: 6 + ((i * 7) % 19), animationDelay: `${(i % 8) * 0.09}s` }} />)}</span>
                   </div>
@@ -495,11 +547,11 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
               ) : (
                 <form className="cx-comp" onSubmit={(e) => { e.preventDefault(); enviar(); }}>
                   <button type="button" className={`cx-ib${menu === 'anexo' ? ' on' : ''}`} onClick={() => { setMenu(menu === 'anexo' ? null : 'anexo'); setEscolhendoHora(false); }} aria-label="Enviar arquivo" title="Enviar arquivo">{I.clip}</button>
-                  <textarea ref={areaTexto} rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={anexo ? 'Legenda (opcional)' : 'Responder como EXA'} aria-label="Mensagem"
+                  <textarea ref={areaTexto} rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={agendarPara ? 'Mensagem programada' : anexo ? 'Legenda (opcional)' : 'Responder como EXA'} aria-label="Mensagem"
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } }} />
                   <button type="button" className={`cx-ib${menu === 'agenda' ? ' on' : ''}`} onClick={() => { setMenu(menu === 'agenda' ? null : 'agenda'); setEscolhendoHora(false); }} aria-label="Programar mensagem" title="Programar mensagem">{I.relogio}</button>
-                  {temTexto
-                    ? <button type="submit" className="cx-redondo" disabled={ocupado} aria-label="Enviar">{ocupado ? <span className="cx-rec">•••</span> : I.enviar}</button>
+                  {temTexto || agendarPara
+                    ? <button type="submit" className="cx-redondo" disabled={ocupado || !temTexto} aria-label={agendarPara ? 'Programar mensagem' : 'Enviar'}>{ocupado ? <span className="cx-rec">•••</span> : agendarPara ? I.relogio : I.enviar}</button>
                     : <button type="button" className="cx-redondo" disabled={ocupado} onClick={iniciarGravacao} aria-label="Gravar áudio" title="Gravar áudio">{I.mic}</button>}
                 </form>
               )}
@@ -525,6 +577,7 @@ export const CxGaveta: React.FC<{
       <aside className={`cx-fx${largo ? ' largo' : ''}`} role="dialog" aria-label={titulo} onClick={(e) => e.stopPropagation()}>
         <div className="cx-fx-topo">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button onClick={onFechar} className="cx-fx-voltar" aria-label="Voltar à conversa">{I.voltar}<span>Voltar</span></button>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', opacity: .8, textTransform: 'uppercase' }}>{titulo}</span>
             <button onClick={onFechar} aria-label="Fechar" style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>{I.x}</button>
           </div>

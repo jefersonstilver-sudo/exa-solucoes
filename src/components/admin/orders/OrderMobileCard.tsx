@@ -9,7 +9,6 @@ import { CouponBadge } from '@/components/admin/orders/CouponBadge';
 import { InstallmentProgress } from '@/components/admin/shared/InstallmentProgress';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useLongPress } from '@/hooks/useLongPress';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -82,17 +81,11 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const longPressHandlers = useLongPress({
-    onLongPress: () => {
-      if (onLongPress) onLongPress();
-    },
-    onClick: () => {
-      if (isSelectionMode && onToggleSelect) {
-        onToggleSelect();
-      }
-    },
-    threshold: 500,
-  });
+  // Segurar ~0,5 s seleciona; tocar abre. Rolar a lista não abre nada (o clique do navegador já ignora arrasto).
+  const timer = React.useRef<number>();
+  const segurou = React.useRef(false);
+  const comecar = () => { segurou.current = false; window.clearTimeout(timer.current); timer.current = window.setTimeout(() => { segurou.current = true; if ('vibrate' in navigator) navigator.vibrate(40); onLongPress?.(); }, 500); };
+  const soltar = () => window.clearTimeout(timer.current);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -180,248 +173,57 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
 
   const contractBadge = getContractBadge();
 
-  const preview = (
-    <>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 flex-wrap min-w-0">
-          {order.nome_pedido && (
-            <span className="text-xs font-semibold text-foreground">{order.nome_pedido}</span>
-          )}
-          <span className="text-xs text-muted-foreground">#{order.id.substring(0, 8)}</span>
-          <CouponBadge couponCode={order.coupon_code} couponCategory={order.coupon_category} size="sm" />
-          {order.is_master && (
-            <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 border-amber-600 text-amber-950 text-[10px] px-1.5 py-0 font-bold border-0">
-              <Crown className="h-2.5 w-2.5 mr-0.5" />
-              MASTER
-            </Badge>
-          )}
-          {isCustomPayment && (
-            <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 border-0">
-              <CreditCard className="h-2.5 w-2.5 mr-0.5" />
-              {installments.length}x
-            </Badge>
-          )}
-          {/* Contract status badge */}
-          {contractBadge && (
-            <Badge className={cn("text-[10px] px-1.5 py-0 border-0", contractBadge.className)}>
-              <contractBadge.icon className="h-2.5 w-2.5 mr-0.5" />
-              {contractBadge.label}
-            </Badge>
-          )}
-        </div>
-        <Badge className={`${pedidoStatusInfo(order.status).cls} border-0 shrink-0 whitespace-nowrap font-semibold`}>
-          {pedidoStatusInfo(order.status).label}
-        </Badge>
-      </div>
-      <div className="flex items-center gap-2">
-        <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <span className="font-medium text-foreground truncate">
-          {order.client_name || 'Cliente não informado'}
-        </span>
-      </div>
+  // Valor por mês (pago mensalmente), nunca o total acumulado do plano
+  const valorMensal = order.valor_mensal && order.valor_mensal > 0
+    ? order.valor_mensal
+    : order.plano_meses && order.plano_meses > 1 ? (order.valor_total || 0) / order.plano_meses : (order.valor_total || 0);
+  const st = pedidoStatusInfo(order.status);
+  const nPredios = (order.lista_predios?.length || order.lista_paineis?.length || 0) as number;
+  const nome = order.client_name || order.nome_pedido || order.client_email || order.email || 'Pedido';
+  const quando = new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
-      {/* Custom installments progress */}
-      {isCustomPayment && hasCustomInstallments ? (
-        <div className="space-y-1.5">
-          {/* Progress bar */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className={cn(
-                  "h-full rounded-full transition-all duration-500",
-                  progressPercent === 100 ? "bg-emerald-500" : "bg-[#9C1E1E]"
-                )}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">
-              {progressPercent}%
-            </span>
-          </div>
-
-          {/* Next and last paid */}
-          <div className="flex items-center justify-between text-[10px]">
-            {lastPaid ? (
-              <div className="flex items-center gap-1 text-emerald-600">
-                <Check className="h-3 w-3" />
-                <span>Pago: {formatCurrency(lastPaid.amount)}</span>
-              </div>
-            ) : (
-              <span className="text-muted-foreground">Aguardando 1ª</span>
-            )}
-            {nextInstallment && (
-              <div className="flex items-center gap-1 text-amber-600">
-                <Clock className="h-3 w-3" />
-                <span>
-                  Próx: {formatCurrency(nextInstallment.amount)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Total */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">
-              Total: <span className="font-semibold text-foreground">{formatCurrency(totalAmount)}</span>
-            </span>
-            <span className="text-muted-foreground">{timeAgo}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-green-600 flex-shrink-0" />
-            <span className="font-semibold text-foreground">
-              {formatCurrency(order.valor_total)}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-muted-foreground">{timeAgo}</span>
-          </div>
-        </div>
-      )}
-    </>
-  );
-
-  const expandedContent = (
-    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-      {/* Client Information */}
-      <div className="space-y-2">
-        <div className="flex items-start gap-2">
-          <User className="h-5 w-5 text-[#9C1E1E] flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Cliente</p>
-            <p className="font-medium text-foreground">{order.client_name}</p>
-            {order.client_email && (
-              <div className="flex items-center gap-1 mt-1">
-                <Mail className="h-3 w-3 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">{order.client_email}</p>
-              </div>
-            )}
-            {order.client_phone && (
-              <div className="flex items-center gap-1 mt-1">
-                <Phone className="h-3 w-3 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">{order.client_phone}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Order Details */}
-      <OrderCRM360Fields userId={order.client_id} email={order.email} whatsapp={order.whatsapp} />
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <p className="text-xs text-muted-foreground">Valor Total</p>
-          <p className="font-semibold text-foreground">{formatCurrency(order.valor_total)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Plano</p>
-          <p className="font-semibold text-foreground">{order.plano_meses} meses</p>
-        </div>
-      </div>
-
-      {order.lista_paineis && order.lista_paineis.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-[#9C1E1E] flex-shrink-0" />
-          <div>
-            <p className="text-xs text-muted-foreground">Painéis</p>
-            <p className="font-medium text-foreground">{order.lista_paineis.length} selecionados</p>
-          </div>
-        </div>
-      )}
-
-      <div>
-        <p className="text-xs text-muted-foreground">Criado</p>
-        <p className="text-sm text-foreground">{timeAgo}</p>
-      </div>
-
-      {/* Custom installments full details */}
-      {isCustomPayment && hasCustomInstallments && (
-        <div className="pt-3 border-t">
-          <InstallmentProgress 
-            installments={installments}
-            totalValue={totalAmount}
-            showDetails={true}
-          />
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="pt-3 border-t space-y-2">
-        <SofiaSoldBadge pedidoId={order.id} className="self-start" />
-        <OrderPixActions className="[&>button]:flex-1" order={{ id: order.id, status: order.status, valor_total: order.valor_total, client_name: order.client_name, email: order.email || order.client_email, client_id: order.client_id }} />
-        {order.lista_predios?.length > 0 && (
-          <SyncApiButtonMobile orderId={order.id} buildingIds={order.lista_predios} />
-        )}
-        <Button
-          onClick={() => onViewDetails(order.id)}
-          className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white h-9 text-sm font-medium"
-        >
-          Ver Detalhes
-        </Button>
-        {order.client_id && (
-          <AccessAsClientButton
-            targetUserId={order.client_id}
-            pedidoId={order.id}
-            variant="outline"
-            size="sm"
-            className="w-full h-9 text-sm border-[#C7141A]/40 text-[#C7141A] hover:bg-[#C7141A]/10"
-            label="Acessar como cliente"
-          />
-        )}
-      </div>
-    </div>
-  );
-
-  // Selection mode - render simple selectable card
-  if (isSelectionMode) {
-    return (
-      <div
-        {...longPressHandlers}
-        className={cn(
-          "relative p-3 rounded-xl border-2 transition-all duration-200 select-none",
-          "bg-white/80 backdrop-blur-sm shadow-md",
-          isSelected 
-            ? "border-[#9C1E1E] bg-red-50/50" 
-            : "border-transparent"
-        )}
-      >
-        {/* Selection checkbox */}
-        <div 
-          className={cn(
-            "absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-            isSelected 
-              ? "bg-[#9C1E1E] border-[#9C1E1E]" 
-              : "border-gray-300 bg-white"
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onToggleSelect) onToggleSelect();
-          }}
-        >
-          {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
-        </div>
-        
-        {/* Card content */}
-        <div className="pr-8 space-y-2">
-          {preview}
-        </div>
-      </div>
-    );
-  }
-
-  // Normal mode - render collapsible card with long press
+  // Celular: uma linha limpa por pedido. Tocar abre o detalhe; segurar entra no modo de seleção.
   return (
-    <div {...longPressHandlers}>
-      <CollapsibleCard
-        preview={preview}
-        borderColor="border-[#9C1E1E]"
-        className="shadow-md hover:shadow-lg transition-shadow"
-      >
-        {expandedContent}
-      </CollapsibleCard>
+    <div
+      onPointerDown={comecar}
+      onPointerUp={soltar}
+      onPointerLeave={soltar}
+      onPointerCancel={soltar}
+      onContextMenu={(e) => e.preventDefault()}
+      onClick={() => {
+        if (segurou.current) { segurou.current = false; return; }
+        if (isSelectionMode) onToggleSelect?.(); else onViewDetails(order.id);
+      }}
+      role="button"
+      tabIndex={0}
+      className={cn(
+        'flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.06] active:bg-gray-50 transition-colors select-none',
+        isSelected && 'ring-2 ring-[#9C1E1E] bg-red-50/40',
+      )}
+    >
+      {isSelectionMode ? (
+        <span className={cn('flex h-6 w-6 flex-none items-center justify-center rounded-full border-2', isSelected ? 'border-[#9C1E1E] bg-[#9C1E1E] text-white' : 'border-gray-300')}>
+          {isSelected && <Check className="h-3.5 w-3.5" />}
+        </span>
+      ) : (
+        <span className={cn('h-10 w-1 flex-none rounded-full', st.dot)} aria-hidden="true" />
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 min-w-0">
+          <span className="truncate text-[15px] font-bold text-gray-900">{nome}</span>
+          {order.is_master && <Crown className="h-3.5 w-3.5 flex-none text-amber-500" aria-label="Pedido master" />}
+        </span>
+        <span className="mt-0.5 block truncate text-[12.5px] text-gray-500">
+          {order.plano_meses ? `${order.plano_meses} ${order.plano_meses > 1 ? 'meses' : 'mês'}` : 'Plano'}
+          {nPredios ? ` · ${nPredios} ${nPredios > 1 ? 'prédios' : 'prédio'}` : ''}
+          {` · ${quando}`}
+          {contractBadge ? ` · ${contractBadge.label}` : ''}
+        </span>
+      </span>
+      <span className="flex flex-none flex-col items-end gap-1">
+        <span className="text-[14px] font-bold tabular-nums text-gray-900">{formatCurrency(valorMensal)}<span className="text-[11px] font-semibold text-gray-400">/mês</span></span>
+        <span className={cn('rounded-full px-2 py-0.5 text-[10.5px] font-bold', st.cls)}>{st.label}</span>
+      </span>
     </div>
   );
 };

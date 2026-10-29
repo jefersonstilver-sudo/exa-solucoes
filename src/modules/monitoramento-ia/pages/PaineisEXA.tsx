@@ -70,6 +70,8 @@ export default function PaineisEXA() {
   const [filtroElev, setFiltroElev] = useState<string>('todas');
   const [ordem, setOrdem] = useState<Ordem>('estado');
   const [modo, setModo] = useState<'cards' | 'tabela'>('cards');
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const nFiltros = [filtroEstado !== 'todos', filtroOp !== 'todas', filtroElev !== 'todas', ordem !== 'estado'].filter(Boolean).length;
   const [cardAberto, setCardAberto] = useState<string | null>(null);
   const [gruposFechados, setGruposFechados] = useState<Set<string>>(new Set());
   const [selecionado, setSelecionado] = useState<Device | null>(null);
@@ -279,6 +281,13 @@ export default function PaineisEXA() {
               <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar prédio, endereço ou ID AnyDesk"
                 className="h-10 w-full rounded-xl border border-black/10 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#B4231C]" />
             </label>
+            {/* celular: filtros recolhidos atrás de um botão (a tela fica limpa; só a busca aparece) */}
+            <button type="button" onClick={() => setFiltrosAbertos((v) => !v)} aria-expanded={filtrosAbertos}
+              className="inline-flex h-10 items-center justify-between rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold md:hidden">
+              <span>Filtros{nFiltros ? ` · ${nFiltros} ativo${nFiltros > 1 ? 's' : ''}` : ''}</span>
+              <span aria-hidden="true" className={`transition-transform ${filtrosAbertos ? 'rotate-180' : ''}`}>▾</span>
+            </button>
+            <div className={`${filtrosAbertos ? 'flex' : 'hidden'} flex-col gap-2 md:contents`}>
             <div className="grid grid-cols-2 gap-2 md:flex">
               <select aria-label="Situação" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as FiltroEstado)} className="h-10 rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold">
                 <option value="todos">Situação: todas</option>
@@ -300,7 +309,8 @@ export default function PaineisEXA() {
               </select>
             </div>
             <PeriodSelector value={periodo} onChange={(p, a, b) => { setPeriodo(p); if (a) setIni(a); if (b) setFim(b); }} customStartDate={ini} customEndDate={fim} />
-            <div className="inline-flex self-start rounded-xl bg-black/[0.05] p-1 md:ml-auto">
+            </div>
+            <div className="hidden self-start rounded-xl bg-black/[0.05] p-1 md:ml-auto md:inline-flex">
               {(['cards', 'tabela'] as const).map((m) => (
                 <button key={m} type="button" onClick={() => setModo(m)} aria-pressed={modo === m}
                   className={`h-8 rounded-lg px-3 text-sm font-bold ${modo === m ? 'bg-white shadow-sm' : 'text-[#5E5F63]'}`}>{m === 'cards' ? 'Cards' : 'Tabela'}</button>

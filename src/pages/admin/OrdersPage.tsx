@@ -266,94 +266,56 @@ const OrdersPage = () => {
     const countAtivos = ordersOnly.filter(o => ['ativo', 'video_aprovado'].includes(o.status)).length;
     
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-20">
-        {/* Mobile Header - Clean glassmorphism */}
-        <div className="sticky top-0 z-10 mobile-header-clean">
+      <div className="-m-3 min-h-full pb-4">
+        {/* Cabeçalho do celular */}
+        <div className="sticky top-0 z-10 bg-[#F4F1EC]/90 backdrop-blur-xl">
           <div className="px-3 py-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
-                  <ShoppingCart className="w-4 h-4 text-foreground" />
-                </div>
                 <div>
-                  <h1 className="text-base font-semibold text-foreground">Pedidos</h1>
-                  <p className="text-[10px] text-muted-foreground">
+                  <h1 className="text-[22px] font-extrabold tracking-[-0.02em] text-[#17181A]">Pedidos</h1>
+                  <p className="text-[12px] text-gray-500">
                     {quickFilteredOrders.length} resultados
                   </p>
                 </div>
               </div>
-              <MobileActionMenu items={mobileMenuItems} />
+              <div className="flex items-center gap-2">
+                <div className="w-[148px]"><OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} /></div>
+                <MobileActionMenu items={mobileMenuItems} />
+              </div>
             </div>
           </div>
           
-          {/* Period Filter in header */}
-          <div className="px-3 pb-1.5">
-            <OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} />
-          </div>
-          
-          {/* Quick Filters - Pill style with better spacing */}
-          <div className="px-3 pb-2.5 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 whitespace-nowrap pb-0.5">
-              <button
-                onClick={() => setQuickFilter('all')}
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
-                  quickFilter === 'all' 
-                    ? 'bg-[#9C1E1E] text-white shadow-sm' 
-                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                Todos {ordersOnly.length}
-              </button>
-              <button
-                onClick={() => setQuickFilter('pagos')}
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
-                  quickFilter === 'pagos' 
-                    ? 'bg-emerald-600 text-white shadow-sm' 
-                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                ✓ Pagos {countPagos}
-              </button>
-              <button
-                onClick={() => setQuickFilter('aguardando')}
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
-                  quickFilter === 'aguardando' 
-                    ? 'bg-amber-500 text-white shadow-sm' 
-                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                📹 Aguard. {countAguardando}
-              </button>
-              <button
-                onClick={() => setQuickFilter('ativos')}
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
-                  quickFilter === 'ativos' 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                🎬 Ativos {countAtivos}
-              </button>
+          {/* Filtros rápidos: pílulas simples (preto = ativo) */}
+          <div className="px-3 pb-3 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 whitespace-nowrap">
+              {([
+                ['all', 'Todos', ordersOnly.length],
+                ['pagos', 'Pagos', countPagos],
+                ['aguardando', 'Aguardando vídeo', countAguardando],
+                ['ativos', 'Ativos', countAtivos],
+              ] as const).map(([v, l, n]) => (
+                <button
+                  key={v}
+                  onClick={() => setQuickFilter(v as any)}
+                  className={`h-8 px-3.5 rounded-full text-[13px] font-semibold transition-colors ${
+                    quickFilter === v ? 'bg-[#17181A] text-white' : 'bg-black/[0.05] text-[#55565B] active:bg-black/10'
+                  }`}
+                >
+                  {l} <span className="opacity-60">{n}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Mobile Stats - Glassmorphism cards */}
-        <div className="grid grid-cols-3 gap-2 px-3 py-2">
-          <div className="glass-card-mobile-subtle p-2 text-center">
-            <p className="text-[9px] text-muted-foreground font-medium uppercase">Pedidos</p>
-            <p className="text-base font-bold text-foreground">{filteredStats.total_orders}</p>
-          </div>
-          <div className="glass-card-mobile-subtle p-2 text-center">
-            <p className="text-[9px] text-muted-foreground font-medium uppercase">Receita</p>
-            <p className="text-base font-bold text-emerald-600">
-              R$ {(filteredStats.total_revenue / 1000).toFixed(1)}k
-            </p>
-          </div>
-          <div className="glass-card-mobile-subtle p-2 text-center">
-            <p className="text-[9px] text-muted-foreground font-medium uppercase">Conversão</p>
-            <p className="text-base font-bold text-blue-600">{filteredStats.conversion_rate}%</p>
-          </div>
+        {/* Resumo em uma linha */}
+        <div className="mx-3 mt-1 mb-2 flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-black/[0.06]">
+          <div><p className="text-[11px] font-semibold text-gray-500">Pedidos</p><p className="text-lg font-extrabold tabular-nums text-gray-900">{filteredStats.total_orders}</p></div>
+          <div className="h-8 w-px bg-black/[0.07]" />
+          <div><p className="text-[11px] font-semibold text-gray-500">Receita</p><p className="text-lg font-extrabold tabular-nums text-emerald-700">R$ {(filteredStats.total_revenue / 1000).toFixed(1).replace('.', ',')} mil</p></div>
+          <div className="h-8 w-px bg-black/[0.07]" />
+          <div><p className="text-[11px] font-semibold text-gray-500">Conversão</p><p className="text-lg font-extrabold tabular-nums text-gray-900">{filteredStats.conversion_rate}%</p></div>
         </div>
 
         {/* Filter Chips */}

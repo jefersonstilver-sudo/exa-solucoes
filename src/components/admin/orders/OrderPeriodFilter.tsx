@@ -17,7 +17,7 @@ interface OrderPeriodFilterProps {
 export const OrderPeriodFilter: React.FC<OrderPeriodFilterProps> = ({ value, onChange }) => {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[160px] h-9 border-border/50 hover:border-[#9C1E1E]/30 transition-colors bg-background/50">
+      <SelectTrigger className="w-full max-w-[160px] h-9 rounded-full border-black/10 bg-white text-[13px] font-semibold transition-colors">
         <SelectValue placeholder="Período" />
       </SelectTrigger>
       <SelectContent align="end" className="bg-background/95 backdrop-blur-md border-border/50">

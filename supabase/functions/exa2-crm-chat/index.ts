@@ -259,6 +259,25 @@ Deno.serve(async (req) => {
 
     if (action === "midia") return json(200, await abrirMidia(sb, agente, String(body.id || "")));
 
+    // fotos de perfil do WhatsApp das conversas (lista): { alvos: string[] } → { fotos: { [alvo]: url | null } }
+    if (action === "fotos") {
+      const alvos = (Array.isArray(body.alvos) ? body.alvos : []).map(String).filter(Boolean).slice(0, 60);
+      const fotos: Record<string, string | null> = {};
+      const fila = [...alvos];
+      const trabalhar = async () => {
+        while (fila.length) {
+          const a = fila.shift()!;
+          try {
+            const d = await destino(sb, agente, a);
+            const j = await evoPost(`/chat/fetchProfilePictureUrl/${encodeURIComponent(d.instancia)}`, { number: d.numero });
+            fotos[a] = (j?.profilePictureUrl as string) || null;
+          } catch { fotos[a] = null; }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, alvos.length) }, trabalhar));
+      return json(200, { fotos });
+    }
+
     if (action === "upload_url") {
       const mime = String(body.mime || "application/octet-stream").split(";")[0];
       const caminho = `envios/${crypto.randomUUID()}.${extDe(mime)}`;

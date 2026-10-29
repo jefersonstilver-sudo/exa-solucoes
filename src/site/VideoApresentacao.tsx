@@ -81,7 +81,7 @@ export const VideoApresentacao: React.FC<{ src: string; poster?: string; rotulo:
 
   const pct = dur ? (t / dur) * 100 : 0;
   return (
-    <div className="vap" data-mostrar={mostrar || !tocando} onMouseMove={acordar} onTouchStart={acordar}>
+    <div className="vap" data-mostrar={mostrar || !tocando} onMouseMove={acordar}>
       <video
         ref={v}
         src={videoSite(src)}
@@ -92,7 +92,7 @@ export const VideoApresentacao: React.FC<{ src: string; poster?: string; rotulo:
         playsInline
         preload="metadata"
         aria-label={rotulo}
-        onClick={alternarPlay}
+        onClick={() => { if (!mostrar && tocando) { acordar(); return; } alternarPlay(); }}
         onPlay={() => setTocando(true)}
         onPause={() => setTocando(false)}
         onVolumeChange={() => setMudo(!!v.current?.muted)}

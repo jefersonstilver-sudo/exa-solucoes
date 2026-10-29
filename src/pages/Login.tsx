@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLoginForm } from '@/components/auth/hooks/useLoginForm';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
 import { useFonteSite, useTituloPagina, waSofia } from '@/site/comum';
+import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 
 /**
  * Entrar (rota /login) — layout novo aprovado (Opção 2): fundo escuro com a tela EXA desfocada,
@@ -50,6 +51,10 @@ export default function Login() {
     if (!email.trim() || cooldown > 0) return;
     await sendReset();
   };
+
+  // Já logado (ou ainda conferindo a sessão): não monta o formulário. Sem campo de senha na tela,
+  // o iPhone não abre o aviso "Iniciar sessão com a senha…" por cima do painel.
+  if (isLoading || (isLoggedIn && userProfile)) return <GlobalLoadingPage message="Abrindo o painel..." />;
 
   return (
     <div className="exa-login">

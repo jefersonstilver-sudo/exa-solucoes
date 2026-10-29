@@ -138,3 +138,19 @@
   .cx-fx,.cx-fx.largo{width:100%}
   .cx-pop{left:10px !important;right:10px !important;width:auto !important}
 }
+/* ficha: botão voltar (aparece no celular) e topo respeitando a barra de status */
+.cx-fx-voltar{display:none;align-items:center;gap:4px;color:#fff;font-weight:800;font-size:14px;height:32px;padding:0 10px 0 4px;border-radius:999px;background:rgba(255,255,255,.16)}
+.cx-fx-topo{padding-top:calc(20px + env(safe-area-inset-top,0px))}
+.cx-agendar{box-shadow:0 0 0 1.5px #EA251D}
+.cx-wave{min-width:0}
+@media (max-width:767px){
+  .cx-fundo{position:fixed;z-index:80}
+  .cx-fx{box-shadow:none;animation:cx-sobe-cel .22s cubic-bezier(.2,.8,.2,1)}
+  .cx-fx-voltar{display:inline-flex}
+  .cx-fx-voltar + span{display:none}
+  .cx-fx-topo{padding-left:16px;padding-right:16px}
+  .cx-fx-corpo{padding:16px 16px calc(28px + env(safe-area-inset-bottom,0px))}
+  .cx-estado{display:none}
+  .cx-pop{bottom:calc(100% + 8px)}
+}
+@keyframes cx-sobe-cel{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
