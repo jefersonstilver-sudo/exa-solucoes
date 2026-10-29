@@ -66,3 +66,7 @@
 
 # Site: limpeza do topo da página inicial (28/10)
 - [x] Remover do hero de SiteHome: o link "Falar com a Sofia", a frase "Prédios residenciais de Foz do Iguaçu" e o botão "Ver prédios e preços". Sem publicar ainda.
+
+# CRM Evolution: visual de conversas aprovado
+- [ ] Aplicar o modelo minimalista aos chats Nando, Sofia e Evolution, preservando envio, histórico, fichas e permissões.
+- [ ] Conferir apresentação e navegação; validação autenticada depende de sessão indisponível no Supabase externo.
