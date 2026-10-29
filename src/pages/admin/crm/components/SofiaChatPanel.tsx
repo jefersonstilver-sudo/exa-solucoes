@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Loader2, Send, UserCheck, Bot, RefreshCw, X, Info, Trash2, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Send, UserCheck, Bot, RefreshCw, X, Info, Trash2, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import CRM360Panel from '@/components/admin/crm/CRM360Panel';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ConversationDay } from './ConversationVisuals';
 import { useAuth } from '@/hooks/useAuth';
 import { canDeleteSofiaContact } from '@/lib/deleteContactRules';
 import DeleteContactDialog, { type DeleteContactTarget } from './DeleteContactDialog';
@@ -48,7 +49,7 @@ const Avatar: React.FC<{ url: string | null; name: string; size?: number }> = ({
   const ini = (name || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   return (
     <div
-      className="rounded-full bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden flex items-center justify-center font-semibold text-gray-600 flex-shrink-0"
+      className="crm-avatar"
       style={{ width: size, height: size, fontSize: size / 3 }}
     >
       {url && !bad ? (
@@ -105,6 +106,8 @@ export const SofiaChatPanel: React.FC = () => {
   const [extraConv, setExtraConv] = useState<Conv | null>(null);
   const [semConversa, setSemConversa] = useState<string | null>(null);
   const [soSindicos, setSoSindicos] = useState(false);
+  const [busca, setBusca] = useState('');
+  const [mobileChat, setMobileChat] = useState(false);
   const alvoResolvido = useRef(false);
 
   const openDelete = async (c: Conv) => {
@@ -239,8 +242,8 @@ export const SofiaChatPanel: React.FC = () => {
   // conversa antiga achada pelo telefone entra no topo da lista (a lista so traz as 60 mais recentes)
   const listaTodas = extraConv && !convs.some((c) => c.id === extraConv.id) ? [extraConv, ...convs] : convs;
   const totalSindicos = listaTodas.filter((c) => c.role === 'sindico').length;
-  const lista = soSindicos ? listaTodas.filter((c) => c.role === 'sindico') : listaTodas;
-  const sel = lista.find((c) => c.id === selId) || null;
+  const lista = listaTodas.filter(c => (!soSindicos || c.role === 'sindico') && [c.name, c.phone, c.preview].some(value => (value || '').toLowerCase().includes(busca.toLowerCase())));
+  const sel = listaTodas.find((c) => c.id === selId) || null;
 
   const setMode = async (mode: 'auto' | 'humano') => {
     if (!selId) return;
@@ -280,18 +283,19 @@ export const SofiaChatPanel: React.FC = () => {
   return (
     <><DeleteContactDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={handleDeleted} />
     <Sheet open={Boolean(fichaConversationId)} onOpenChange={open => { if (!open) setFichaConversationId(null); }}><SheetContent side="right" className="w-full sm:max-w-5xl overflow-y-auto h-dvh"><SheetHeader className="mb-6 flex-row items-center justify-between gap-3 space-y-0 pr-8"><SheetTitle>Ficha 360</SheetTitle>{canDelete && fichaConversationId && (() => { const fc = lista.find(x => x.id === fichaConversationId); return fc ? <Button variant="ghost" size="sm" onClick={() => openDelete(fc)} className="text-destructive hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4 mr-1.5" />Apagar contato</Button> : null; })()}</SheetHeader>{contactError ? <p role="alert">{contactError}</p> : contact?.id && fichaConversationId === contactConversationId ? <CRM360Panel lookup={{ contact: contact.id }} /> : <div className="flex items-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" />Carregando contato...</div>}</SheetContent></Sheet>
-    <div className={`grid grid-cols-1 ${showInfo ? "md:grid-cols-[320px_1fr_320px]" : "md:grid-cols-[320px_1fr]"} h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden`}>
-      <div className="border-r border-gray-200 overflow-y-auto">
-        <div className="px-4 py-3 flex items-center justify-between border-b bg-gray-50">
-          <span className="text-sm font-semibold text-gray-800">Conversas da Sofia</span>
-          <Button variant="ghost" size="sm" onClick={loadConvs}>
+    <div className={`crm-grid ${showInfo ? "crm-with-info" : ""}`} data-mobile-chat={mobileChat}>
+      <div className="crm-list">
+        <div className="crm-list-heading flex items-center justify-between">
+          <span className="crm-list-title">Sofia</span>
+          <Button variant="ghost" size="icon" title="Atualizar conversas" onClick={loadConvs}>
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
+        <div className="px-4 pb-3 relative"><Search className="absolute left-7 top-3 h-4 w-4 text-muted-foreground" /><input className="crm-search" placeholder="Buscar contato ou telefone" aria-label="Buscar conversa" value={busca} onChange={e => setBusca(e.target.value)} /></div>
         {totalSindicos > 0 && (
-          <div className="px-3 py-2 border-b flex items-center gap-1.5">
-            <button type="button" onClick={() => setSoSindicos(false)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${!soSindicos ? 'border-red-700 bg-red-700 text-white' : 'border-gray-200 text-gray-600'}`}>Todas</button>
-            <button type="button" onClick={() => setSoSindicos(true)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${soSindicos ? 'border-red-700 bg-red-700 text-white' : 'border-gray-200 text-gray-600'}`}>Síndicos {totalSindicos}</button>
+          <div className="crm-filters">
+            <Button variant="ghost" onClick={() => setSoSindicos(false)} aria-pressed={!soSindicos} className="crm-filter">Todas</Button>
+            <Button variant="ghost" onClick={() => setSoSindicos(true)} aria-pressed={soSindicos} className="crm-filter">Síndicos {totalSindicos}</Button>
           </div>
         )}
         {semConversa && (
@@ -300,18 +304,18 @@ export const SofiaChatPanel: React.FC = () => {
             <button type="button" className="ml-1 underline" onClick={() => setSemConversa(null)}>Fechar</button>
           </div>
         )}
-        {lista.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa ainda.</p>}
+        <div className="flex-1 min-h-0 overflow-y-auto">{lista.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa ainda.</p>}
         {lista.map((c) => (
           <div key={c.id} className="relative group">
-          <button
-            onClick={() => { setSelId(c.id); setFichaConversationId(c.id); }}
-            className={`w-full text-left px-4 py-3 ${canDelete ? 'pr-10' : ''} border-b hover:bg-gray-50 ${c.id === selId ? 'bg-red-50' : ''}`}
+          <Button variant="ghost"
+            onClick={() => { setSelId(c.id); setMobileChat(true); }} aria-current={c.id === selId}
+            className={`crm-row ${canDelete ? "pr-10" : ""}`}
           >
             <div className="flex items-start gap-3">
             <Avatar url={c.avatar_url} name={c.name} size={40} />
             <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-medium text-sm text-gray-900 truncate">{c.name}</span>
+              <span className="crm-row-name truncate">{c.name}</span>
               <span className="text-[11px] text-gray-400 flex-shrink-0">{hhmm(c.last_message_at)}</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -323,7 +327,7 @@ export const SofiaChatPanel: React.FC = () => {
             </div>
             </div>
             </div>
-          </button>
+          </Button>
           {canDelete && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -339,16 +343,16 @@ export const SofiaChatPanel: React.FC = () => {
             </DropdownMenu>
           )}
           </div>
-        ))}
+        ))}</div>
       </div>
 
-      <div className="flex flex-col min-h-0">
+      <div className="crm-chat">
         {!sel ? (
           <div className="flex-1 flex items-center justify-center text-sm text-gray-500">Selecione uma conversa</div>
         ) : (
           <>
-            <div className="px-4 py-3 border-b flex items-center justify-between gap-3">
-              <Button variant="ghost" className="flex items-center gap-3 min-w-0 text-left h-auto p-0 justify-start" onClick={() => setFichaConversationId(sel.id)}>
+            <div className="crm-chat-header">
+              <div className="flex items-center gap-2 min-w-0"><Button variant="ghost" size="icon" className="crm-mobile-back" aria-label="Voltar às conversas" onClick={() => setMobileChat(false)}><ArrowLeft className="h-4 w-4" /></Button><Button variant="ghost" className="flex items-center gap-3 min-w-0 text-left h-auto p-0 justify-start" onClick={() => setFichaConversationId(sel.id)}>
               <Avatar url={contact?.avatar_url ?? sel.avatar_url} name={sel.name} size={40} />
               <div className="min-w-0">
                 <div className="font-semibold text-gray-900 truncate">{sel.name} {sel.role && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 align-middle">{roleLabel(sel.role)}</span>}</div>
@@ -358,14 +362,14 @@ export const SofiaChatPanel: React.FC = () => {
                     : 'Sofia atendendo'}
                 </div>
               </div>
-              </Button>
+              </Button></div>
               <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => setFichaConversationId(sel.id)}>Ficha 360</Button>
               <Button size="sm" variant="ghost" onClick={() => setShowInfo((v) => !v)} title="Detalhes do contato">
                 <Info className="w-4 h-4" />
               </Button>
               {sel.mode === 'auto' ? (
-                <Button size="sm" onClick={() => setMode('humano')} className="bg-red-700 hover:bg-red-800 text-white">
+                <Button size="sm" onClick={() => setMode('humano')} className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <UserCheck className="w-4 h-4 mr-1.5" /> Assumir atendimento
                 </Button>
               ) : (
@@ -381,31 +385,29 @@ export const SofiaChatPanel: React.FC = () => {
                 <b>Síndico:</b> assuntos do prédio (avisos, telas, problemas) são do <b>Nando</b> (WhatsApp 45 9113-2351). A Sofia só deve encaminhar.
               </div>
             )}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#faf8f5]">
-              {msgs.map((m) => {
+            <div className="crm-messages space-y-2">
+              {msgs.map((m, index) => {
                 const mine = m.direction !== 'in';
                 return (
-                  <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                  <React.Fragment key={m.id}><ConversationDay date={m.created_at} previous={msgs[index - 1]?.created_at} /><div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words shadow-sm ${
-                        mine ? (m.direction === 'out_bot' ? 'bg-red-50 text-gray-900' : 'bg-emerald-100 text-gray-900') : 'bg-white text-gray-900'
-                      }`}
+                      className={`crm-bubble ${mine ? (m.direction === "out_bot" ? "crm-bubble-bot" : "crm-bubble-human") : ""}`}
                     >
                       {mine && (
-                        <div className="text-[10px] font-semibold text-gray-500 mb-0.5">
+                        <div className="crm-author">
                           {m.direction === 'out_bot' ? 'Sofia' : 'Voce'}
                         </div>
                       )}
                       {m.body}
-                      <div className="text-[10px] text-gray-400 text-right mt-0.5">{hhmm(m.created_at)}</div>
+                      <div className="crm-time">{hhmm(m.created_at)}</div>
                     </div>
-                  </div>
+                  </div></React.Fragment>
                 );
               })}
               <div ref={bottomRef} />
             </div>
 
-            <div className="p-3 border-t flex items-end gap-2">
+            <div className="crm-composer">
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -415,11 +417,11 @@ export const SofiaChatPanel: React.FC = () => {
                     send();
                   }
                 }}
-                rows={2}
-                placeholder="Digite uma mensagem (ao enviar, a Sofia fica pausada)"
-                className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                rows={1}
+                placeholder="Escreva uma mensagem…" aria-label="Mensagem"
+                className="flex-1"
               />
-              <Button onClick={send} disabled={sending || !text.trim()} className="bg-red-700 hover:bg-red-800 text-white">
+              <Button onClick={send} aria-label="Enviar mensagem" title="Enviar mensagem" disabled={sending || !text.trim()} className="crm-send">
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
@@ -428,7 +430,7 @@ export const SofiaChatPanel: React.FC = () => {
       </div>
 
       {showInfo && sel && (
-        <div className="border-l border-gray-200 overflow-y-auto p-4 space-y-3">
+        <div className="crm-contact-info border-l border-border overflow-y-auto p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-800">Detalhes do contato</span>
             <Button variant="ghost" size="sm" onClick={() => setShowInfo(false)}>

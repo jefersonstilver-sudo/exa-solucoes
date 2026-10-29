@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Building2, Loader2, MonitorPlay, RefreshCw, Search, Send, Trash2, UserCheck, AlertCircle, Phone } from 'lucide-react';
+import { ArrowLeft, Bot, Building2, Loader2, MonitorPlay, RefreshCw, Search, Send, Trash2, UserCheck, AlertCircle, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { ConversationAvatar, ConversationDay } from './ConversationVisuals';
 import { useAuth } from '@/hooks/useAuth';
 import { canDeleteSofiaContact } from '@/lib/deleteContactRules';
 
@@ -90,6 +91,7 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
   const [enviando, setEnviando] = useState(false);
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]['v']>('todos');
   const [busca, setBusca] = useState('');
+  const [mobileChat, setMobileChat] = useState(false);
   const [fichaAberta, setFichaAberta] = useState(false);
   const [ficha, setFicha] = useState<Ficha | null>(null);
   const [apagar, setApagar] = useState<Conversa | null>(null);
@@ -264,25 +266,24 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
         </SheetContent>
       </Sheet>
 
-      <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden">
+      <div className="crm-grid" data-mobile-chat={mobileChat}>
         {/* Lista */}
-        <div className="border-r border-gray-200 flex flex-col min-h-0">
-          <div className="px-4 py-3 border-b bg-gray-50 space-y-2.5">
+        <div className="crm-list">
+          <div className="crm-list-heading space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">Conversas do Nando · síndicos</span>
-              <Button variant="ghost" size="sm" onClick={carregar}><RefreshCw className="w-4 h-4" /></Button>
+              <span className="crm-list-title">Nando · síndicos</span>
+              <Button variant="ghost" size="icon" title="Atualizar conversas" onClick={carregar}><RefreshCw className="w-4 h-4" /></Button>
             </div>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
               <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome, telefone ou prédio"
-                className="w-full rounded-lg border border-gray-300 bg-white py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300" />
+                className="crm-search" />
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="crm-filters !p-0">
               {FILTROS.map((f) => (
-                <button key={f.v} onClick={() => setFiltro(f.v)}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${filtro === f.v ? 'border-red-700 bg-red-700 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-100'}`}>
+                <Button variant="ghost" key={f.v} onClick={() => setFiltro(f.v)} aria-pressed={filtro === f.v} className="crm-filter">
                   {f.l} <span className="opacity-70">{contagem(f.v)}</span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -290,10 +291,9 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
             {lista.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa neste filtro.</p>}
             {lista.map((c) => (
               <div key={c.telefone} className="relative group">
-                <button onClick={() => setSel(c.telefone)}
-                  className={`w-full text-left px-4 py-3 ${podeApagar ? 'pr-10' : ''} border-b hover:bg-gray-50 ${c.telefone === sel ? 'bg-red-50' : ''}`}>
+                <Button variant="ghost" onClick={() => { setSel(c.telefone); setMobileChat(true); }} aria-current={c.telefone === sel} className={`crm-row ${podeApagar ? "pr-10" : ""}`}><ConversationAvatar name={c.nome} /><div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-sm text-gray-900 truncate">{c.nome}</span>
+                    <span className="crm-row-name truncate">{c.nome}</span>
                     <span className="text-[11px] text-gray-400 flex-shrink-0">{quando(c.ultima_em)}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -306,7 +306,7 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
                     {c.predios.length > 2 && <span className="text-[10px] text-gray-500">+{c.predios.length - 2}</span>}
                   </div>
                   <div className="mt-1 text-xs text-gray-500 truncate">{c.ultima_papel === 'sindico' ? '' : c.ultima_papel === 'humano' ? 'Você: ' : 'Nando: '}{c.preview}</div>
-                </button>
+                </div></Button>
                 {podeApagar && (
                   <Button variant="ghost" size="icon" className="absolute right-1 bottom-2 h-7 w-7 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-700"
                     aria-label="Apagar conversa" onClick={() => setApagar(c)}>
@@ -319,24 +319,24 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
         </div>
 
         {/* Conversa */}
-        <div className="flex flex-col min-h-0">
+        <div className="crm-chat">
           {!atual ? (
             <div className="flex-1 flex items-center justify-center text-sm text-gray-500">Selecione uma conversa</div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-3">
-                <button className="min-w-0 text-left" onClick={() => setFichaAberta(true)}>
+              <div className="crm-chat-header">
+                <div className="flex items-center gap-3 min-w-0"><Button variant="ghost" size="icon" className="crm-mobile-back" aria-label="Voltar às conversas" onClick={() => setMobileChat(false)}><ArrowLeft className="h-4 w-4" /></Button><ConversationAvatar name={atual.nome} /><Button variant="ghost" className="min-w-0 h-auto text-left block p-0" onClick={() => setFichaAberta(true)}>
                   <div className="font-semibold text-gray-900 truncate">{atual.nome}</div>
                   <div className="text-xs text-gray-500">
                     {fone(atual.telefone)} · {atual.modo === 'humano'
                       ? `Atendimento humano${atual.assumido_por ? ` (${atual.assumido_por})` : ''} até ${quando(atual.humano_ate)} — Nando pausado`
                       : 'Nando atendendo'}
                   </div>
-                </button>
+                </Button></div>
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="outline" onClick={() => setFichaAberta(true)}><Building2 className="w-4 h-4 mr-1.5" />Ficha do síndico</Button>
                   {atual.modo === 'auto' ? (
-                    <Button size="sm" onClick={() => setModo('humano')} className="bg-red-700 hover:bg-red-800 text-white"><UserCheck className="w-4 h-4 mr-1.5" />Assumir</Button>
+                    <Button size="sm" onClick={() => setModo('humano')} className="bg-primary text-primary-foreground hover:bg-primary/90"><UserCheck className="w-4 h-4 mr-1.5" />Assumir</Button>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => setModo('auto')}><Bot className="w-4 h-4 mr-1.5" />Devolver ao Nando</Button>
                   )}
@@ -357,35 +357,35 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#faf8f5]">
-                {msgs.map((m) => {
+              <div className="crm-messages space-y-2">
+                {msgs.map((m, index) => {
                   if (m.papel === 'sistema') {
                     return (
                       <div key={m.id} className="flex justify-center">
-                        <div className="max-w-[85%] rounded-lg bg-gray-100 px-3 py-1.5 text-[11px] text-gray-500 whitespace-pre-wrap">{m.texto.slice(0, 400)}</div>
+                        <div className="crm-system max-w-[85%] whitespace-pre-wrap">{m.texto.slice(0, 400)}</div>
                       </div>
                     );
                   }
                   const minha = m.papel !== 'sindico';
                   return (
-                    <div key={m.id} className={`flex ${minha ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words shadow-sm ${minha ? (m.papel === 'nando' ? 'bg-red-50' : 'bg-emerald-100') : 'bg-white'} text-gray-900`}>
-                        {minha && <div className="text-[10px] font-semibold text-gray-500 mb-0.5">{m.papel === 'nando' ? 'Nando' : m.autor || 'Equipe EXA'}</div>}
+                    <React.Fragment key={m.id}><ConversationDay date={m.created_at} previous={msgs[index - 1]?.created_at} /><div className={`flex ${minha ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`crm-bubble ${minha ? (m.papel === "nando" ? "crm-bubble-bot" : "crm-bubble-human") : ""}`}>
+                        {minha && <div className="crm-author">{m.papel === 'nando' ? 'Nando' : m.autor || 'Equipe EXA'}</div>}
                         {m.texto}
-                        <div className="text-[10px] text-gray-400 text-right mt-0.5">{quando(m.created_at)}</div>
+                        <div className="crm-time">{quando(m.created_at)}</div>
                       </div>
-                    </div>
+                    </div></React.Fragment>
                   );
                 })}
                 <div ref={bottomRef} />
               </div>
 
-              <div className="p-3 border-t flex items-end gap-2">
-                <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2}
+              <div className="crm-composer">
+                <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={1}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } }}
-                  placeholder="Escreva como EXA (ao enviar, o Nando fica pausado nesta conversa)"
-                  className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300" />
-                <Button onClick={enviar} disabled={enviando || !texto.trim()} className="bg-red-700 hover:bg-red-800 text-white">
+                  placeholder="Escreva uma mensagem…" aria-label="Mensagem"
+                  className="flex-1" />
+                <Button onClick={enviar} aria-label="Enviar mensagem" title="Enviar mensagem" disabled={enviando || !texto.trim()} className="crm-send">
                   {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </div>
