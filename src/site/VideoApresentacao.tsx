@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { videoSite } from './comum';
 
 /**
  * Vídeo de apresentação do topo do site: começa sozinho e sem som (regra dos navegadores),
@@ -83,7 +84,7 @@ export const VideoApresentacao: React.FC<{ src: string; poster?: string; rotulo:
     <div className="vap" data-mostrar={mostrar || !tocando} onMouseMove={acordar} onTouchStart={acordar}>
       <video
         ref={v}
-        src={src}
+        src={videoSite(src)}
         poster={poster}
         autoPlay
         muted

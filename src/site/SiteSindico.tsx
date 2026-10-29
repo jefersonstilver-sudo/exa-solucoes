@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { RodapeSite, BarraCelular, IconeWhats, waNando, useFonteSite, useTituloPagina } from './comum';
+import { RodapeSite, BarraCelular, IconeWhats, waNando, useFonteSite, useTituloPagina, videoSite } from './comum';
 import { usePrediosPublicos } from './usePrediosPublicos';
 
 /** Sou síndico (rota /sou-sindico) — Opção 2. Ação principal: conversar com o Nando no WhatsApp. */
@@ -50,7 +50,7 @@ export default function SiteSindico() {
           </div>
           <figure className="monw" style={{ margin: '0 auto', width: '100%', maxWidth: 320 }}>
             <div style={{ aspectRatio: '9/16', borderRadius: 22, background: '#000', padding: 9, boxShadow: '0 50px 90px -50px rgba(11,11,13,.6)' }}>
-              <video src="/site/tela-real.mp4" poster="/site/tela-real.jpg" autoPlay muted loop playsInline preload="metadata" style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 14 }} aria-label="Tela EXA real mostrando avisos do condomínio" />
+              <video src={videoSite('/site/tela-real.mp4')} poster="/site/tela-real.jpg" autoPlay muted loop playsInline preload="metadata" style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 14 }} aria-label="Tela EXA real mostrando avisos do condomínio" />
             </div>
             <figcaption style={{ marginTop: 14, fontSize: 13, color: '#8E8C87', textAlign: 'center' }}>Tela real, com os avisos do prédio embaixo</figcaption>
           </figure>
@@ -78,7 +78,7 @@ export default function SiteSindico() {
           </div>
           <figure style={{ margin: '0 auto', width: '100%', maxWidth: 340 }}>
             <div style={{ borderRadius: 26, background: '#0B0B0D', padding: 8, boxShadow: '0 50px 90px -50px rgba(11,11,13,.6)' }}>
-              <video src="/site/nando-explica.mp4" poster="/site/nando-explica.jpg" controls playsInline preload="none" style={{ display: 'block', width: '100%', aspectRatio: '9/16', borderRadius: 19, background: '#000' }} aria-label="Vídeo: o Nando, assistente dos síndicos, explica a nova EXA" />
+              <video src={videoSite('/site/nando-explica.mp4')} poster="/site/nando-explica.jpg" controls playsInline preload="none" style={{ display: 'block', width: '100%', aspectRatio: '9/16', borderRadius: 19, background: '#000' }} aria-label="Vídeo: o Nando, assistente dos síndicos, explica a nova EXA" />
             </div>
             <figcaption style={{ marginTop: 12, fontSize: 14, color: '#8E8C87', textAlign: 'center' }}>3 min 48 s · com som</figcaption>
           </figure>

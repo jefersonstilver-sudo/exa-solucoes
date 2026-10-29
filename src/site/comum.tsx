@@ -24,6 +24,15 @@ export function useFonteSite() {
  * Vídeo leve: sem som, só baixa e toca quando aparece na tela (e pausa quando sai).
  * Com "reduzir movimento" ativado no aparelho, mostra só a imagem.
  */
+/**
+ * Vídeos do site saem pelo jsDelivr (cópia do GitHub em um commit fixo).
+ * A hospedagem do site responde 200 com o arquivo inteiro a pedidos de trecho (Range), e o Safari do iPhone
+ * não toca vídeo assim (fica a tela preta). O jsDelivr responde 206 com trechos e é CDN rápida.
+ * Vídeo novo em public/site/: depois do push, trocar o commit abaixo pelo commit que contém o arquivo.
+ */
+export const CDN_SITE = 'https://cdn.jsdelivr.net/gh/jefersonstilver-sudo/exa-solucoes@8d9bb2f/public';
+export const videoSite = (src: string) => (src.startsWith('/site/') && src.endsWith('.mp4') ? CDN_SITE + src : src);
+
 export const VideoLeve: React.FC<React.VideoHTMLAttributes<HTMLVideoElement> & { src: string; poster?: string }> = ({ src, poster, ...rest }) => {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -34,7 +43,7 @@ export const VideoLeve: React.FC<React.VideoHTMLAttributes<HTMLVideoElement> & {
     if (reduz || typeof IntersectionObserver === 'undefined') return;
     const io = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        if (!v.getAttribute('src')) v.setAttribute('src', src);
+        if (!v.getAttribute('src')) v.setAttribute('src', videoSite(src));
         v.muted = true;
         v.play().catch(() => {});
       } else if (!v.paused) v.pause();
