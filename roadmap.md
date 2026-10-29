@@ -68,5 +68,6 @@
 - [x] Remover do hero de SiteHome: o link "Falar com a Sofia", a frase "Prédios residenciais de Foz do Iguaçu" e o botão "Ver prédios e preços". Sem publicar ainda.
 
 # CRM Evolution: visual de conversas aprovado
-- [ ] Aplicar o modelo minimalista aos chats Nando, Sofia e Evolution, preservando envio, histórico, fichas e permissões.
-- [ ] Conferir apresentação e navegação; validação autenticada depende de sessão indisponível no Supabase externo.
+- [x] Aplicar o modelo minimalista aos chats Nando, Sofia e Evolution, preservando envio, histórico, fichas e permissões; nenhum deploy ou mudança no banco.
+- [x] Verificar compilação e importação dos três chats no navegador, sem erros; 16 testes existentes passaram.
+- [ ] Conferir visual, envio e histórico com sessão real — bloqueado: Supabase externo sem sessão de teste; navegador redireciona para login.
