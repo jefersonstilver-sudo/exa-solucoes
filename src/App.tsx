@@ -27,15 +27,6 @@ const ComingSoonPage = lazy(() => import('@/pages/ComingSoonPage'));
 import { useState } from 'react';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTracker';
-import { useDebugContext } from '@/contexts/DebugContext';
-const FloatingDebugButton = lazy(() => import('@/components/debug/FloatingDebugButton').then(m => ({ default: m.FloatingDebugButton })));
-
-/** O painel de debug (pesado) só é baixado para quem tem permissão de debug. */
-const DebugSoParaAutorizados = () => {
-  const { isDebugAuthorized } = useDebugContext();
-  if (!isDebugAuthorized) return null;
-  return <Suspense fallback={null}><FloatingDebugButton /></Suspense>;
-};
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { GlobalNotificationProvider } from '@/providers/GlobalNotificationProvider';
 const ZAPIDisconnectAlert = lazy(() => import('@/components/notifications/ZAPIDisconnectAlert').then(m => ({ default: m.ZAPIDisconnectAlert })));
@@ -243,7 +234,7 @@ const AppContent = () => {
         <GlobalActivityTracker />
         
         {/* Floating Debug Button - appears on all pages when Debug AI is enabled */}
-        <DebugSoParaAutorizados />
+        {/* Botão flutuante vermelho de debug removido em 28/10/2026 (pedido do CEO). */}
         
         {/* Z-API Disconnect Alert - global alert for agent disconnections */}
         <Suspense fallback={null}><ZAPIDisconnectAlert /></Suspense>

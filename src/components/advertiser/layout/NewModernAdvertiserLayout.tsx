@@ -3,8 +3,6 @@ import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import NewModernAdvertiserSidebar from './NewModernAdvertiserSidebar';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
-import { SofiaClientProvider } from '@/contexts/SofiaClientContext';
-import { SofiaClientVoiceButton, SofiaNavigationPopup, SofiaQRCodePopup } from '@/components/client/sofia';
 
 interface NewModernAdvertiserLayoutProps {
   children?: React.ReactNode;
@@ -14,7 +12,7 @@ const NewModernAdvertiserLayout: React.FC<NewModernAdvertiserLayoutProps> = ({ c
   const { isMobile, isTablet } = useAdvancedResponsive();
   
   return (
-    <SofiaClientProvider>
+    <>
       <SidebarProvider 
         defaultOpen={!isMobile} 
         style={{
@@ -52,12 +50,9 @@ const NewModernAdvertiserLayout: React.FC<NewModernAdvertiserLayoutProps> = ({ c
           </SidebarInset>
         </div>
         
-        {/* Sofia Client Components */}
-        <SofiaClientVoiceButton />
-        <SofiaNavigationPopup />
-        <SofiaQRCodePopup />
+        {/* Voz da Sofia desativada em 28/10/2026 (decisão do CEO): sem botão flutuante na área do anunciante. */}
       </SidebarProvider>
-    </SofiaClientProvider>
+    </>
   );
 };
 

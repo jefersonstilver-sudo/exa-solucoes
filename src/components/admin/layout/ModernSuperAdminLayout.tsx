@@ -6,7 +6,6 @@ import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import AdminMenuButton from './AdminMenuButton';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
-import { SofiaLauncher } from '@/components/admin/sofia/SofiaLauncher';
 import AdminMasterWelcomeDialog from '@/components/impersonation/AdminMasterWelcomeDialog';
 
 // Rotas que devem ocultar o header para modo fullscreen
@@ -61,7 +60,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
             {isMobile && !isFullscreenMode && <MobileBottomNav />}
           </SidebarInset>
 
-          <SofiaLauncher />
+          {/* Voz da Sofia desativada em 28/10/2026 (decisão do CEO): sem botão flutuante no painel. */}
           <AdminMasterWelcomeDialog />
         </div>
       </SidebarProvider>

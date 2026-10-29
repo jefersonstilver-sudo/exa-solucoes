@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
       const mensagens = (data || []).map((m: any) => ({
         id: m.id, papel: m.papel, texto: textoDe(m), autor: m.conteudo?.autor || null, created_at: m.created_at,
+        midia: m.conteudo?.midia || null, // o chat do CRM abre o arquivo pela exa2-crm-chat (action midia)
       }));
       return json(200, { mensagens });
     }
