@@ -21,6 +21,7 @@ import { ContractDataModal } from '@/components/public/ContractDataModal';
 import { ContractFullPreview } from '@/components/public/ContractFullPreview';
 import { ContractLoadingScreen } from '@/components/public/ContractLoadingScreen';
 import { ProductShowcaseCard } from '@/components/public/proposal/ProductShowcaseCard';
+import { PropostaSofia } from '@/components/public/proposal/PropostaSofia';
 import { TechnicalSpecsGrid } from '@/components/public/proposal/TechnicalSpecsGrid';
 import { ProposalSummaryText } from '@/components/public/proposal/ProposalSummaryText';
 import { ExclusivityChoiceCard } from '@/components/public/proposal/ExclusivityChoiceCard';
@@ -1473,6 +1474,18 @@ const PropostaPublicaPage = () => {
   // EXA 2.0: proposta enviada pela Sofia = só RESUMO. O aceite é pelo código do e-mail (no WhatsApp),
   // o pagamento é o Pix Automático que a Sofia envia e o contrato vai para assinatura digital. Sem botões aqui.
   const isSofia = (proposal.metadata as any)?.origem === 'sofia';
+  // Layout 2026-10: proposta da Sofia é um resumo enxuto e oficial (página + PDF em A4)
+  if (isSofia && !isCortesia) {
+    return (
+      <>
+        <Helmet>
+          <title>{`${proposal.client_company_name || proposal.client_name} | Proposta EXA`}</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <PropostaSofia proposal={proposal} buildings={buildings} isExpired={isExpired} />
+      </>
+    );
+  }
   
   // Número de prédios para exibição (contratados se venda futura, senão os selecionados)
   const displayBuildingsCount = isVendaFutura 
