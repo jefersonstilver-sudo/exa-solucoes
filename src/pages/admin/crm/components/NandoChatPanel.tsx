@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Building2, Loader2, MonitorPlay, RefreshCw, Search, Send, Trash2, UserCheck, AlertCircle, Phone } from 'lucide-react';
+import { ArrowLeft, Bot, Building2, Loader2, MonitorPlay, RefreshCw, Search, Send, Trash2, UserCheck, AlertCircle, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { ConversationAvatar, ConversationDay } from './ConversationVisuals';
 import { useAuth } from '@/hooks/useAuth';
 import { canDeleteSofiaContact } from '@/lib/deleteContactRules';
 
@@ -74,9 +75,9 @@ const fone = (t: string) => {
   return d.length === 13 ? `+${d.slice(0, 2)} (${d.slice(2, 4)}) ${d.slice(4, 9)}-${d.slice(9)}` : `+${d}`;
 };
 const PAPEL_COR: Record<string, string> = {
-  'síndico': 'bg-red-50 text-red-800 border-red-200',
+  'síndico': 'bg-primary/10 text-primary border-primary/20',
   'vice-síndico': 'bg-orange-50 text-orange-800 border-orange-200',
-  'contato do prédio': 'bg-gray-50 text-gray-700 border-gray-200',
+  'contato do prédio': 'bg-muted text-foreground border-border',
 };
 
 export interface NandoAbrirConversa { telefone: string; nome?: string; predio?: string; papel?: string }
@@ -90,6 +91,7 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
   const [enviando, setEnviando] = useState(false);
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]['v']>('todos');
   const [busca, setBusca] = useState('');
+  const [mobileChat, setMobileChat] = useState(false);
   const [fichaAberta, setFichaAberta] = useState(false);
   const [ficha, setFicha] = useState<Ficha | null>(null);
   const [apagar, setApagar] = useState<Conversa | null>(null);
@@ -231,8 +233,8 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[520px] rounded-2xl border border-gray-200 bg-white">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div className="flex items-center justify-center h-[520px] rounded-2xl border border-border bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -250,7 +252,7 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={apagando}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmarApagar(); }} disabled={apagando} className="bg-red-700 hover:bg-red-800">
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmarApagar(); }} disabled={apagando} className="bg-primary hover:bg-primary">
               {apagando ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apagar conversa'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -260,55 +262,53 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
       <Sheet open={fichaAberta} onOpenChange={setFichaAberta}>
         <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto h-dvh">
           <SheetHeader className="mb-4"><SheetTitle>Ficha do síndico</SheetTitle></SheetHeader>
-          {!ficha ? <div className="flex items-center gap-2 py-10 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" />Carregando ficha…</div> : <FichaSindico f={ficha} />}
+          {!ficha ? <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Carregando ficha…</div> : <FichaSindico f={ficha} />}
         </SheetContent>
       </Sheet>
 
-      <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] h-[calc(100vh-140px)] min-h-[520px] rounded-2xl border border-gray-200 bg-white overflow-hidden">
+      <div className="crm-grid" data-mobile-chat={mobileChat}>
         {/* Lista */}
-        <div className="border-r border-gray-200 flex flex-col min-h-0">
-          <div className="px-4 py-3 border-b bg-gray-50 space-y-2.5">
+        <div className="crm-list">
+          <div className="crm-list-heading space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-800">Conversas do Nando · síndicos</span>
-              <Button variant="ghost" size="sm" onClick={carregar}><RefreshCw className="w-4 h-4" /></Button>
+              <span className="crm-list-title">Nando · síndicos</span>
+              <Button variant="ghost" size="icon" title="Atualizar conversas" onClick={carregar}><RefreshCw className="w-4 h-4" /></Button>
             </div>
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome, telefone ou prédio"
-                className="w-full rounded-lg border border-gray-300 bg-white py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300" />
+                className="crm-search" />
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="crm-filters !p-0">
               {FILTROS.map((f) => (
-                <button key={f.v} onClick={() => setFiltro(f.v)}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${filtro === f.v ? 'border-red-700 bg-red-700 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-100'}`}>
+                <Button variant="ghost" key={f.v} onClick={() => setFiltro(f.v)} aria-pressed={filtro === f.v} className="crm-filter">
                   {f.l} <span className="opacity-70">{contagem(f.v)}</span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {lista.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa neste filtro.</p>}
+            {lista.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nenhuma conversa neste filtro.</p>}
             {lista.map((c) => (
               <div key={c.telefone} className="relative group">
-                <button onClick={() => setSel(c.telefone)}
-                  className={`w-full text-left px-4 py-3 ${podeApagar ? 'pr-10' : ''} border-b hover:bg-gray-50 ${c.telefone === sel ? 'bg-red-50' : ''}`}>
+                <Button variant="ghost" onClick={() => { setSel(c.telefone); setMobileChat(true); }} aria-current={c.telefone === sel} className={`crm-row ${podeApagar ? "pr-10" : ""}`}><ConversationAvatar name={c.nome} /><div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-sm text-gray-900 truncate">{c.nome}</span>
-                    <span className="text-[11px] text-gray-400 flex-shrink-0">{quando(c.ultima_em)}</span>
+                    <span className="crm-row-name truncate">{c.nome}</span>
+                    <span className="text-[11px] text-muted-foreground flex-shrink-0">{quando(c.ultima_em)}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1">
                     {c.modo === 'humano' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">Humano</span>}
                     {c.aguardando > 0 && c.modo !== 'humano' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">{c.aguardando} sem resposta</span>}
-                    {c.tipo === 'sem_cadastro' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">Sem cadastro</span>}
+                    {c.tipo === 'sem_cadastro' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Sem cadastro</span>}
                     {c.predios.slice(0, 2).map((p) => (
                       <span key={p.id} className={`text-[10px] px-1.5 py-0.5 rounded border ${PAPEL_COR[p.papel] || PAPEL_COR['contato do prédio']}`}>{p.nome}</span>
                     ))}
-                    {c.predios.length > 2 && <span className="text-[10px] text-gray-500">+{c.predios.length - 2}</span>}
+                    {c.predios.length > 2 && <span className="text-[10px] text-muted-foreground">+{c.predios.length - 2}</span>}
                   </div>
-                  <div className="mt-1 text-xs text-gray-500 truncate">{c.ultima_papel === 'sindico' ? '' : c.ultima_papel === 'humano' ? 'Você: ' : 'Nando: '}{c.preview}</div>
-                </button>
+                  <div className="mt-1 text-xs text-muted-foreground truncate">{c.ultima_papel === 'sindico' ? '' : c.ultima_papel === 'humano' ? 'Você: ' : 'Nando: '}{c.preview}</div>
+                </div></Button>
                 {podeApagar && (
-                  <Button variant="ghost" size="icon" className="absolute right-1 bottom-2 h-7 w-7 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-700"
+                  <Button variant="ghost" size="icon" className="absolute right-1 bottom-2 h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary"
                     aria-label="Apagar conversa" onClick={() => setApagar(c)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -319,73 +319,73 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
         </div>
 
         {/* Conversa */}
-        <div className="flex flex-col min-h-0">
+        <div className="crm-chat">
           {!atual ? (
-            <div className="flex-1 flex items-center justify-center text-sm text-gray-500">Selecione uma conversa</div>
+            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Selecione uma conversa</div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-3">
-                <button className="min-w-0 text-left" onClick={() => setFichaAberta(true)}>
-                  <div className="font-semibold text-gray-900 truncate">{atual.nome}</div>
-                  <div className="text-xs text-gray-500">
+              <div className="crm-chat-header">
+                <div className="flex items-center gap-3 min-w-0"><Button variant="ghost" size="icon" className="crm-mobile-back" aria-label="Voltar às conversas" onClick={() => setMobileChat(false)}><ArrowLeft className="h-4 w-4" /></Button><ConversationAvatar name={atual.nome} /><Button variant="ghost" className="min-w-0 h-auto text-left block p-0" onClick={() => setFichaAberta(true)}>
+                  <div className="font-semibold text-foreground truncate">{atual.nome}</div>
+                  <div className="text-xs text-muted-foreground">
                     {fone(atual.telefone)} · {atual.modo === 'humano'
                       ? `Atendimento humano${atual.assumido_por ? ` (${atual.assumido_por})` : ''} até ${quando(atual.humano_ate)} — Nando pausado`
                       : 'Nando atendendo'}
                   </div>
-                </button>
+                </Button></div>
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="outline" onClick={() => setFichaAberta(true)}><Building2 className="w-4 h-4 mr-1.5" />Ficha do síndico</Button>
                   {atual.modo === 'auto' ? (
-                    <Button size="sm" onClick={() => setModo('humano')} className="bg-red-700 hover:bg-red-800 text-white"><UserCheck className="w-4 h-4 mr-1.5" />Assumir</Button>
+                    <Button size="sm" onClick={() => setModo('humano')} className="bg-primary text-primary-foreground hover:bg-primary/90"><UserCheck className="w-4 h-4 mr-1.5" />Assumir</Button>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => setModo('auto')}><Bot className="w-4 h-4 mr-1.5" />Devolver ao Nando</Button>
                   )}
                   {podeApagar && (
-                    <Button size="sm" variant="ghost" className="text-red-700 hover:bg-red-50" onClick={() => setApagar(atual)} aria-label="Apagar conversa"><Trash2 className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10" onClick={() => setApagar(atual)} aria-label="Apagar conversa"><Trash2 className="w-4 h-4" /></Button>
                   )}
                 </div>
               </div>
 
               {atual.predios.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 border-b bg-gray-50/60 px-4 py-2">
+                <div className="flex flex-wrap gap-1.5 border-b bg-muted px-4 py-2">
                   {atual.predios.map((p) => (
                     <span key={p.id} className={`text-[11px] px-2 py-0.5 rounded-full border ${PAPEL_COR[p.papel] || PAPEL_COR['contato do prédio']}`}>
                       {p.papel} · {p.nome}
                     </span>
                   ))}
-                  {atual.predio_atual && <span className="text-[11px] text-gray-500 py-0.5">conversando sobre: <b>{atual.predio_atual}</b></span>}
+                  {atual.predio_atual && <span className="text-[11px] text-muted-foreground py-0.5">conversando sobre: <b>{atual.predio_atual}</b></span>}
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#faf8f5]">
-                {msgs.map((m) => {
+              <div className="crm-messages space-y-2">
+                {msgs.map((m, index) => {
                   if (m.papel === 'sistema') {
                     return (
                       <div key={m.id} className="flex justify-center">
-                        <div className="max-w-[85%] rounded-lg bg-gray-100 px-3 py-1.5 text-[11px] text-gray-500 whitespace-pre-wrap">{m.texto.slice(0, 400)}</div>
+                        <div className="crm-system max-w-[85%] whitespace-pre-wrap">{m.texto.slice(0, 400)}</div>
                       </div>
                     );
                   }
                   const minha = m.papel !== 'sindico';
                   return (
-                    <div key={m.id} className={`flex ${minha ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words shadow-sm ${minha ? (m.papel === 'nando' ? 'bg-red-50' : 'bg-emerald-100') : 'bg-white'} text-gray-900`}>
-                        {minha && <div className="text-[10px] font-semibold text-gray-500 mb-0.5">{m.papel === 'nando' ? 'Nando' : m.autor || 'Equipe EXA'}</div>}
+                    <React.Fragment key={m.id}><ConversationDay date={m.created_at} previous={msgs[index - 1]?.created_at} /><div className={`flex ${minha ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`crm-bubble ${minha ? (m.papel === "nando" ? "crm-bubble-bot" : "crm-bubble-human") : ""}`}>
+                        {minha && <div className="crm-author">{m.papel === 'nando' ? 'Nando' : m.autor || 'Equipe EXA'}</div>}
                         {m.texto}
-                        <div className="text-[10px] text-gray-400 text-right mt-0.5">{quando(m.created_at)}</div>
+                        <div className="crm-time">{quando(m.created_at)}</div>
                       </div>
-                    </div>
+                    </div></React.Fragment>
                   );
                 })}
                 <div ref={bottomRef} />
               </div>
 
-              <div className="p-3 border-t flex items-end gap-2">
-                <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2}
+              <div className="crm-composer">
+                <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={1}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } }}
-                  placeholder="Escreva como EXA (ao enviar, o Nando fica pausado nesta conversa)"
-                  className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300" />
-                <Button onClick={enviar} disabled={enviando || !texto.trim()} className="bg-red-700 hover:bg-red-800 text-white">
+                  placeholder="Escreva uma mensagem…" aria-label="Mensagem"
+                  className="flex-1" />
+                <Button onClick={enviar} aria-label="Enviar mensagem" title="Enviar mensagem" disabled={enviando || !texto.trim()} className="crm-send">
                   {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </div>
@@ -399,15 +399,15 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null }> = (
 
 const FichaSindico: React.FC<{ f: Ficha }> = ({ f }) => (
   <div className="space-y-5">
-    <div className="rounded-2xl border border-gray-200 p-4">
-      <div className="text-lg font-bold text-gray-900">{f.nome || 'Nome não cadastrado'}</div>
-      <div className="mt-1 flex items-center gap-1.5 text-sm text-gray-600"><Phone className="h-3.5 w-3.5" />{fone(f.telefone)}</div>
+    <div className="rounded-2xl border border-border p-4">
+      <div className="text-lg font-bold text-foreground">{f.nome || 'Nome não cadastrado'}</div>
+      <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Phone className="h-3.5 w-3.5" />{fone(f.telefone)}</div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-gray-50 p-2"><div className="text-xl font-extrabold">{f.predios.length}</div><div className="text-[11px] text-gray-500">prédios</div></div>
-        <div className="rounded-xl bg-gray-50 p-2"><div className="text-xl font-extrabold">{f.predios.reduce((n, p) => n + p.telas_online, 0)}/{f.predios.reduce((n, p) => n + p.telas, 0)}</div><div className="text-[11px] text-gray-500">telas online</div></div>
-        <div className="rounded-xl bg-gray-50 p-2"><div className="text-xl font-extrabold">{f.predios.reduce((n, p) => n + p.avisos_ativos, 0)}</div><div className="text-[11px] text-gray-500">avisos no ar</div></div>
+        <div className="rounded-xl bg-muted p-2"><div className="text-xl font-extrabold">{f.predios.length}</div><div className="text-[11px] text-muted-foreground">prédios</div></div>
+        <div className="rounded-xl bg-muted p-2"><div className="text-xl font-extrabold">{f.predios.reduce((n, p) => n + p.telas_online, 0)}/{f.predios.reduce((n, p) => n + p.telas, 0)}</div><div className="text-[11px] text-muted-foreground">telas online</div></div>
+        <div className="rounded-xl bg-muted p-2"><div className="text-xl font-extrabold">{f.predios.reduce((n, p) => n + p.avisos_ativos, 0)}</div><div className="text-[11px] text-muted-foreground">avisos no ar</div></div>
       </div>
-      <div className="mt-3 space-y-1 text-xs text-gray-500">
+      <div className="mt-3 space-y-1 text-xs text-muted-foreground">
         {f.primeira_conversa && <div>Fala com o Nando desde {new Date(f.primeira_conversa).toLocaleDateString('pt-BR')}</div>}
         {f.sofia && <div className="flex items-center gap-1 text-amber-700"><AlertCircle className="h-3.5 w-3.5" />Também tem conversa com a Sofia (marcado como {f.sofia.role || 'sem papel'})</div>}
         {f.interessado && <div>Cadastro de interesse: {f.interessado.nome_predio || '—'} · {f.interessado.status || '—'}{f.interessado.protocolo ? ` · protocolo ${f.interessado.protocolo}` : ''}</div>}
@@ -415,32 +415,32 @@ const FichaSindico: React.FC<{ f: Ficha }> = ({ f }) => (
     </div>
 
     {f.predios.length === 0 ? (
-      <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+      <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
         Este número não está cadastrado como síndico, vice ou contato de nenhum prédio ativo. Para vincular, cadastre o telefone no prédio (Prédios → contato do síndico).
       </div>
     ) : f.predios.map((p) => (
-      <div key={p.id} className="rounded-2xl border border-gray-200 p-4">
+      <div key={p.id} className="rounded-2xl border border-border p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <div className="font-bold text-gray-900">{p.nome}</div>
-            <div className="text-xs text-gray-500">{p.endereco || 'Endereço não cadastrado'} · tela {p.tela_id}{p.codigo ? ` · cód. ${p.codigo}` : ''}</div>
+            <div className="font-bold text-foreground">{p.nome}</div>
+            <div className="text-xs text-muted-foreground">{p.endereco || 'Endereço não cadastrado'} · tela {p.tela_id}{p.codigo ? ` · cód. ${p.codigo}` : ''}</div>
           </div>
           <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full border ${PAPEL_COR[p.papel] || PAPEL_COR['contato do prédio']}`}>{p.papel}</span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="flex items-center gap-1 rounded-lg bg-gray-50 px-2 py-1"><MonitorPlay className="h-3.5 w-3.5" />{p.telas_online}/{p.telas} telas online</span>
-          <span className="rounded-lg bg-gray-50 px-2 py-1">{p.avisos_ativos} aviso(s) no ar</span>
+          <span className="flex items-center gap-1 rounded-lg bg-muted px-2 py-1"><MonitorPlay className="h-3.5 w-3.5" />{p.telas_online}/{p.telas} telas online</span>
+          <span className="rounded-lg bg-muted px-2 py-1">{p.avisos_ativos} aviso(s) no ar</span>
           {f.predio_atual === p.id && <span className="rounded-lg bg-blue-50 px-2 py-1 text-blue-800">prédio da conversa atual</span>}
           {p.pausado && <span className="rounded-lg bg-amber-50 px-2 py-1 text-amber-800">Nando pausado neste prédio</span>}
         </div>
         {p.avisos_recentes.length > 0 && (
           <div className="mt-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Avisos recentes</div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Avisos recentes</div>
             <ul className="mt-1 space-y-1">
               {p.avisos_recentes.map((a, i) => (
                 <li key={i} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate text-gray-700">{a.titulo || 'Aviso'}</span>
-                  <span className={`shrink-0 ${a.status === 'no_ar' ? 'text-emerald-700 font-semibold' : 'text-gray-400'}`}>{a.status === 'no_ar' ? 'no ar' : a.status}</span>
+                  <span className="truncate text-foreground">{a.titulo || 'Aviso'}</span>
+                  <span className={`shrink-0 ${a.status === 'no_ar' ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{a.status === 'no_ar' ? 'no ar' : a.status}</span>
                 </li>
               ))}
             </ul>

@@ -37,12 +37,10 @@ const CRMConversationsPage: React.FC = () => {
 
   const goBack = () => navigate(-1);
 
-  const initials = (name: string) =>
-    name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-
   return (
     <>
       <Helmet>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" />
         <title>
           {collaborator
             ? `${collaborator.collaborator_name} — Conversas | EXA Admin`
@@ -50,51 +48,14 @@ const CRMConversationsPage: React.FC = () => {
         </title>
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50">
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 px-4 md:px-6 py-3">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={goBack}
-              className="text-gray-700 hover:bg-gray-100 -ml-2"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1.5" />
-              Voltar
-            </Button>
-
-            {collaborator && (
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0">
-                  {collaborator.profile_picture_url ? (
-                    <img
-                      src={collaborator.profile_picture_url}
-                      alt={collaborator.collaborator_name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    initials(collaborator.collaborator_name)
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base md:text-lg font-bold text-gray-900 truncate leading-tight">
-                    {collaborator.collaborator_name}
-                  </h1>
-                  <p className="text-xs text-gray-500 truncate">
-                    {collaborator.collaborator_phone ||
-                      collaborator.profile_name ||
-                      'Sem telefone vinculado'}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+      <div className="crm-conversations flex flex-col">
+        <div className="flex items-center px-3 border-b border-border">
+          <Button variant="ghost" size="sm" onClick={goBack} className="text-muted-foreground gap-2">
+            <ArrowLeft className="h-4 w-4" />CRM Evolution
+          </Button>
+          {collaborator && <span className="ml-auto text-xs text-muted-foreground truncate">{collaborator.collaborator_phone || collaborator.profile_name}</span>}
         </div>
-
-        <div className="p-4 md:p-6">
+        <div className="flex-1 min-h-0">
           {loading ? (
             <div className="flex items-center justify-center h-[520px] rounded-2xl border border-gray-200 bg-white">
               <Loader2 className="w-6 h-6 animate-spin text-gray-400" />

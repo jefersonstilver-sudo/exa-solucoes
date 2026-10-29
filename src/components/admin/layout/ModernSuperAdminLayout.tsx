@@ -19,6 +19,7 @@ export const ADMIN_FUNDO_CLASSE =
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
   const location = useLocation();
+  const isConversation = /\/crm-evolution\/conversas\//.test(location.pathname);
 
   const isFullscreenMode = FULLSCREEN_ROUTES.some(route => location.pathname.includes(route.split('/').pop() || ''));
   const sidebarDefaultOpen = isFullscreenMode ? false : !isMobile;
@@ -53,7 +54,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
               <AdminMenuButton className="absolute left-2 top-2 z-20 bg-white/80 backdrop-blur shadow hover:bg-white" />
             )}
             <main className={`flex-1 overflow-y-auto min-h-0 overflow-x-hidden ${
-              isFullscreenMode ? 'p-0' : isMobile ? 'p-2 pb-24' : 'p-6'
+              isConversation ? 'p-0 pb-20 md:pb-0 overflow-hidden' : isFullscreenMode ? 'p-0' : isMobile ? 'p-2 pb-24' : 'p-6'
             }`}>
               {children || <Outlet />}
             </main>
