@@ -137,7 +137,7 @@ export const PropostaSofia: React.FC<Props> = ({ proposal, buildings, isExpired 
                   : <span className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-[#f6f2f3] print:h-9 print:w-9"><Building2 className="h-5 w-5 text-[#8b8285]" /></span>}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[15px] font-bold print:text-[12px]">{b.nome || b.building_name}</div>
-                  <div className="truncate text-[12.5px] text-[#8b8285] print:text-[10px]">{[b.endereco, b.bairro].filter(Boolean).join(' · ') || 'Foz do Iguaçu'}</div>
+                  <div className="truncate text-[12.5px] text-[#8b8285] print:text-[10px]">{(b.endereco ? (b.bairro && !String(b.endereco).toLowerCase().includes(String(b.bairro).toLowerCase()) ? `${b.endereco} · ${b.bairro}` : b.endereco) : b.bairro) || 'Foz do Iguaçu'}</div>
                 </div>
                 <span className="flex-none rounded-full bg-[#f6f2f3] px-2.5 py-1 text-[12px] font-semibold text-[#554e50] print:text-[10px]">{Number(b.quantidade_telas || 1)} {Number(b.quantidade_telas || 1) === 1 ? 'tela' : 'telas'}</span>
               </li>
