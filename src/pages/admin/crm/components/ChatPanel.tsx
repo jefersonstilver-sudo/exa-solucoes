@@ -332,7 +332,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
     <div className="crm-workspace">
       {/* Owner bar */}
       <div className="crm-owner flex items-center gap-3 px-4 py-2.5">
-        <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-semibold overflow-hidden">
+        <div className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-xs font-semibold overflow-hidden">
           {collaborator.profile_picture_url ? (
             <img
               src={collaborator.profile_picture_url}
@@ -351,7 +351,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
             onClick={handleExportAll}
             disabled={exporting || chats.length === 0}
             title="Baixar todo o histórico como TXT para análise por IA"
-            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed rounded-full px-2.5 py-1 transition"
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-background hover:bg-background disabled:opacity-40 disabled:cursor-not-allowed rounded-full px-2.5 py-1 transition"
           >
             {exporting ? (
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -367,7 +367,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
               loadChats();
               if (active) loadMessages(active);
             }}
-            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-white/10 hover:bg-white/20 rounded-full px-2.5 py-1 transition"
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider opacity-90 hover:opacity-100 bg-background hover:bg-background rounded-full px-2.5 py-1 transition"
           >
             <RefreshCw className={cn('w-3 h-3', chatsLoading && 'animate-spin')} />
             Atualizar
@@ -378,9 +378,9 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
       <div className="crm-grid" data-mobile-chat={mobileChat}>
         {/* Conversations list */}
         <aside className="crm-list">
-          <div className="p-3 border-b border-gray-200 bg-white">
+          <div className="p-3 border-b border-border bg-background">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 value={search}
@@ -393,14 +393,14 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
           <div className="flex-1 overflow-y-auto">
             {chatsLoading && chats.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : chatsError ? (
               <div className="p-4 text-center">
-                <p className="text-xs text-red-600">{chatsError}</p>
+                <p className="text-xs text-primary">{chatsError}</p>
                 <Button variant="ghost"
                   onClick={() => loadChats()}
-                  className="mt-2 text-xs text-[#9C1E1E] hover:underline"
+                  className="mt-2 text-xs text-primary hover:underline"
                 >
                   Tentar novamente
                 </Button>
@@ -408,7 +408,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
             ) : filteredChats.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                 <Inbox className="w-8 h-8 text-gray-300 mb-2" />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {search ? 'Nenhuma conversa encontrada.' : 'Nenhuma conversa ainda.'}
                 </p>
               </div>
@@ -434,7 +434,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                           }
                         />
                       ) : c.isGroup ? (
-                        <UsersIcon className="w-4 h-4 text-gray-500" />
+                        <UsersIcon className="w-4 h-4 text-muted-foreground" />
                       ) : (
                         initials(c.name)
                       )}
@@ -445,11 +445,11 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                       {c.name}
                     </p>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-[10px] text-muted-foreground">
                         {formatChatTime(c.lastMessageTime)}
                       </span>
                       {c.unreadCount > 0 && (
-                        <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#9C1E1E] text-white text-[10px] font-semibold flex items-center justify-center">
+                        <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold flex items-center justify-center">
                           {c.unreadCount}
                         </span>
                       )}
@@ -464,14 +464,14 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
         {/* Chat area */}
         <section className="crm-chat">
           {!active ? (
-            <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
+            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
               Selecione uma conversa
             </div>
           ) : (
             <>
               {/* Chat header */}
               <header className="crm-chat-header"><Button variant="ghost" size="icon" className="crm-mobile-back" aria-label="Voltar às conversas" onClick={() => setMobileChat(false)}><ArrowLeft className="h-4 w-4" /></Button>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-xs font-semibold text-gray-600 overflow-hidden">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-muted to-muted flex items-center justify-center text-xs font-semibold text-muted-foreground overflow-hidden">
                   {active.profilePicUrl ? (
                     <img
                       src={active.profilePicUrl}
@@ -479,7 +479,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                       className="w-full h-full object-cover"
                     />
                   ) : active.isGroup ? (
-                    <UsersIcon className="w-4 h-4 text-gray-500" />
+                    <UsersIcon className="w-4 h-4 text-muted-foreground" />
                   ) : (
                     initials(active.name)
                   )}
@@ -488,7 +488,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                   <p className="crm-row-name truncate">
                     {active.name}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {active.isGroup ? 'Grupo' : jidToNumber(active.remoteJid)}
                   </p>
                 </div>
@@ -501,10 +501,10 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
               >
                 {msgsLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-xs text-gray-400">
+                  <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
                     Sem mensagens nesta conversa.
                   </div>
                 ) : (
@@ -514,7 +514,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                         <Button variant="ghost"
                           onClick={loadOlder}
                           disabled={loadingMore}
-                          className="text-[11px] px-3 py-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm border border-gray-200 disabled:opacity-50 flex items-center gap-1.5"
+                          className="text-[11px] px-3 py-1.5 rounded-full bg-background hover:bg-background text-foreground shadow-sm border border-border disabled:opacity-50 flex items-center gap-1.5"
                         >
                           {loadingMore ? (
                             <><Loader2 className="w-3 h-3 animate-spin" /> Carregando...</>
@@ -523,7 +523,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                           )}
                         </Button>
                       ) : (
-                        <span className="text-[10px] text-gray-400 italic">
+                        <span className="text-[10px] text-muted-foreground italic">
                           Início do histórico disponível
                         </span>
                       )}
@@ -561,7 +561,7 @@ export const ChatPanel: React.FC<Props> = ({ collaborator }) => {
                           </span>
                           {m.fromMe &&
                             (m.status === 'READ' ? (
-                              <CheckCheck className="w-3 h-3 text-sky-300" />
+                              <CheckCheck className="w-3 h-3 text-inherit" />
                             ) : m.status === 'DELIVERY_ACK' ||
                               m.status === 'SERVER_ACK' ? (
                               <CheckCheck className="w-3 h-3" />

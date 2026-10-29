@@ -274,8 +274,8 @@ export const SofiaChatPanel: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[520px] rounded-2xl border border-gray-200 bg-white">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div className="flex items-center justify-center h-[520px] rounded-2xl border border-border bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -304,7 +304,7 @@ export const SofiaChatPanel: React.FC = () => {
             <button type="button" className="ml-1 underline" onClick={() => setSemConversa(null)}>Fechar</button>
           </div>
         )}
-        <div className="flex-1 min-h-0 overflow-y-auto">{lista.length === 0 && <p className="p-4 text-sm text-gray-500">Nenhuma conversa ainda.</p>}
+        <div className="flex-1 min-h-0 overflow-y-auto">{lista.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nenhuma conversa ainda.</p>}
         {lista.map((c) => (
           <div key={c.id} className="relative group">
           <Button variant="ghost"
@@ -316,14 +316,14 @@ export const SofiaChatPanel: React.FC = () => {
             <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <span className="crm-row-name truncate">{c.name}</span>
-              <span className="text-[11px] text-gray-400 flex-shrink-0">{hhmm(c.last_message_at)}</span>
+              <span className="text-[11px] text-muted-foreground flex-shrink-0">{hhmm(c.last_message_at)}</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               {c.mode === 'humano' && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Humano</span>
               )}
-              {c.role && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{roleLabel(c.role)}</span>}
-              <span className="text-xs text-gray-500 truncate">{c.preview}</span>
+              {c.role && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{roleLabel(c.role)}</span>}
+              <span className="text-xs text-muted-foreground truncate">{c.preview}</span>
             </div>
             </div>
             </div>
@@ -348,15 +348,15 @@ export const SofiaChatPanel: React.FC = () => {
 
       <div className="crm-chat">
         {!sel ? (
-          <div className="flex-1 flex items-center justify-center text-sm text-gray-500">Selecione uma conversa</div>
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Selecione uma conversa</div>
         ) : (
           <>
             <div className="crm-chat-header">
               <div className="flex items-center gap-2 min-w-0"><Button variant="ghost" size="icon" className="crm-mobile-back" aria-label="Voltar às conversas" onClick={() => setMobileChat(false)}><ArrowLeft className="h-4 w-4" /></Button><Button variant="ghost" className="flex items-center gap-3 min-w-0 text-left h-auto p-0 justify-start" onClick={() => setFichaConversationId(sel.id)}>
               <Avatar url={contact?.avatar_url ?? sel.avatar_url} name={sel.name} size={40} />
               <div className="min-w-0">
-                <div className="font-semibold text-gray-900 truncate">{sel.name} {sel.role && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 align-middle">{roleLabel(sel.role)}</span>}</div>
-                <div className="text-xs text-gray-500">
+                <div className="font-semibold text-foreground truncate">{sel.name} {sel.role && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground align-middle">{roleLabel(sel.role)}</span>}</div>
+                <div className="text-xs text-muted-foreground">
                   {sel.mode === 'humano'
                     ? `Atendimento humano ate ${hhmm(sel.human_until)} (Sofia pausada)`
                     : 'Sofia atendendo'}
@@ -432,28 +432,28 @@ export const SofiaChatPanel: React.FC = () => {
       {showInfo && sel && (
         <div className="crm-contact-info border-l border-border overflow-y-auto p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-800">Detalhes do contato</span>
+            <span className="text-sm font-semibold text-foreground">Detalhes do contato</span>
             <Button variant="ghost" size="sm" onClick={() => setShowInfo(false)}>
               <X className="w-4 h-4" />
             </Button>
           </div>
           {!contact ? (
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           ) : (
             <>
               <div className="flex flex-col items-center gap-2">
                 <Avatar url={contact.avatar_url} name={contact.name || sel.name} size={96} />
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-muted-foreground">
                   {contact.phone ? `+${contact.phone}` : 'Telefone nao identificado'}
                 </div>
-                {contact.lid && <div className="text-[10px] text-gray-400">LID {contact.lid}</div>}
+                {contact.lid && <div className="text-[10px] text-muted-foreground">LID {contact.lid}</div>}
               </div>
-              <label className="block text-xs font-medium text-gray-600">
+              <label className="block text-xs font-medium text-muted-foreground">
                 Quem e este contato
                 <select
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-2 py-2 text-sm"
                 >
                   {ROLES.map((r) => (
                     <option key={r.v} value={r.v}>
@@ -462,32 +462,32 @@ export const SofiaChatPanel: React.FC = () => {
                   ))}
                 </select>
               </label>
-              <label className="block text-xs font-medium text-gray-600">
+              <label className="block text-xs font-medium text-muted-foreground">
                 Nome
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-2 py-2 text-sm"
                 />
               </label>
-              <label className="block text-xs font-medium text-gray-600">
+              <label className="block text-xs font-medium text-muted-foreground">
                 Empresa / predio
                 <input
                   value={form.company}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-2 py-2 text-sm"
                 />
               </label>
-              <label className="block text-xs font-medium text-gray-600">
+              <label className="block text-xs font-medium text-muted-foreground">
                 Observacoes
                 <textarea
                   value={form.manual}
                   onChange={(e) => setForm({ ...form, manual: e.target.value })}
                   rows={3}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-2 text-sm resize-none"
+                  className="mt-1 w-full rounded-lg border border-border px-2 py-2 text-sm resize-none"
                 />
               </label>
-              <Button onClick={saveContact} disabled={saving} className="w-full bg-red-700 hover:bg-red-800 text-white">
+              <Button onClick={saveContact} disabled={saving} className="w-full bg-primary hover:bg-primary text-primary-foreground">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
               </Button>
               {canDelete && (
@@ -497,8 +497,8 @@ export const SofiaChatPanel: React.FC = () => {
               )}
               {Object.keys(contact.extra || {}).length > 0 && (
                 <div>
-                  <div className="text-xs font-medium text-gray-600 mb-1">Dados coletados pela Sofia</div>
-                  <pre className="text-[11px] bg-gray-50 border rounded-lg p-2 whitespace-pre-wrap break-words">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Dados coletados pela Sofia</div>
+                  <pre className="text-[11px] bg-muted border rounded-lg p-2 whitespace-pre-wrap break-words">
                     {JSON.stringify(contact.extra, null, 2)}
                   </pre>
                 </div>
