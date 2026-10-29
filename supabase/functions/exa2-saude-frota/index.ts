@@ -43,11 +43,21 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   const main = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   try {
-    const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-    const { data: u } = await main.auth.getUser(jwt);
-    if (!u?.user) return json({ success: false, error: 'unauthorized' }, 401);
-    const { data: papeis } = await main.from('user_roles').select('role').eq('user_id', u.user.id);
-    if (!(papeis || []).some((r: any) => ['admin', 'super_admin'].includes(String(r.role)))) return json({ success: false, error: 'forbidden' }, 403);
+    // Sistema (Sofia lendo os painéis para o CEO): token interno de exa2_config; só leitura, como para o admin
+    const cronTok = req.headers.get('x-exa2-cron');
+    let sistemaOk = false;
+    if (cronTok) {
+      const { data: cfg } = await main.from('exa2_config').select('valor').eq('chave', 'cron_token').maybeSingle();
+      if (!cfg?.valor || cfg.valor !== cronTok) return json({ success: false, error: 'unauthorized' }, 401);
+      sistemaOk = true;
+    }
+    if (!sistemaOk) {
+      const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+      const { data: u } = await main.auth.getUser(jwt);
+      if (!u?.user) return json({ success: false, error: 'unauthorized' }, 401);
+      const { data: papeis } = await main.from('user_roles').select('role').eq('user_id', u.user.id);
+      if (!(papeis || []).some((r: any) => ['admin', 'super_admin'].includes(String(r.role)))) return json({ success: false, error: 'forbidden' }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const agora = Date.now();
