@@ -12,7 +12,7 @@ const UnifiedAdvertiserMobileHeader = ({
   onMenuClick 
 }: UnifiedAdvertiserMobileHeaderProps) => {
   return (
-    <header className="sticky top-0 z-40 border-b border-[#ebe6e7] bg-white/90 backdrop-blur">
+    <header className="pwa-topo sticky top-0 z-40 border-b border-[#ebe6e7] bg-white/90 backdrop-blur">
       <div className="flex items-center justify-between px-3 py-2.5">
         {/* Menu Button */}
         <button

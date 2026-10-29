@@ -28,7 +28,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
         "--sidebar-width-icon": "64px",
       } as React.CSSProperties}
     >
-      <div className={`flex h-screen w-full overflow-hidden relative ${ADMIN_FUNDO_CLASSE}`}>
+      <div className={`flex h-[100dvh] w-full overflow-hidden relative ${ADMIN_FUNDO_CLASSE}`}>
         <ModernAdminSidebar />
         
         <SidebarInset className="flex flex-col w-full overflow-x-hidden bg-transparent">
@@ -38,7 +38,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
                 ? 'h-14 bg-gradient-to-b from-[#A8261F] to-[#86190F] text-white shadow-md'
                 : 'h-16 bg-white/70 backdrop-blur-xl backdrop-saturate-150 border-b border-black/5 text-[#17181A]'
             }`}
-            style={isMobile ? { paddingTop: 'env(safe-area-inset-top)' } : undefined}
+            style={isMobile ? { paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' } : undefined}
           >
             <AdminMenuButton className={isMobile ? 'hover:bg-white/10' : 'hover:bg-black/5'} />
             <ModernAdminHeader />

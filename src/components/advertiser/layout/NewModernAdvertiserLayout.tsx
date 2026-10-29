@@ -20,7 +20,7 @@ const NewModernAdvertiserLayout: React.FC<NewModernAdvertiserLayoutProps> = ({ c
           "--sidebar-width-icon": "64px",
         } as React.CSSProperties}
       >
-        <div className="flex h-screen w-full bg-background overflow-hidden">
+        <div className="flex h-[100dvh] w-full bg-background overflow-hidden">
           <div className="relative z-30">
             <NewModernAdvertiserSidebar />
           </div>
@@ -29,7 +29,7 @@ const NewModernAdvertiserLayout: React.FC<NewModernAdvertiserLayoutProps> = ({ c
               isMobile 
                 ? 'h-11 bg-gradient-to-r from-[#7A3838] to-[#9C1E1E] border-white/10' 
                 : 'h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border'
-            }`}>
+            }`} style={isMobile ? { paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(2.75rem + env(safe-area-inset-top, 0px))' } : undefined}>
               <SidebarTrigger className={`mr-2 md:mr-4 h-8 w-8 rounded-md transition-colors ${
                 isMobile ? 'hover:bg-white/20 text-white' : 'hover:bg-accent hover:text-accent-foreground'
               }`} />

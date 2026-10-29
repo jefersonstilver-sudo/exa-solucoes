@@ -18,8 +18,9 @@
 .exa-site .ico{width:20px;height:20px;flex:none}
 
 /* cabeçalho */
-.exa-site .hdr{position:sticky;top:0;z-index:30;background:rgba(11,11,13,.92)}
+.exa-site .hdr{position:sticky;top:0;z-index:30;background:rgba(11,11,13,.92);padding-top:env(safe-area-inset-top,0px)}
 .exa-site .hdr .in{display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
+.exa-site .hdr .in > a:first-child{display:flex;align-items:center}
 .exa-site .nav{display:flex;align-items:center;gap:28px}
 .exa-site .nl{color:#C9C7C2;text-decoration:none;font-weight:500;font-size:15px}.exa-site .nl:hover{color:#fff}
 .exa-site .hdr-claro{background:#fff;border-bottom:1px solid #ECEBE7}

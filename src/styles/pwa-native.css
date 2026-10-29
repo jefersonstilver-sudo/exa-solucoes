@@ -11,20 +11,18 @@
   }
 }
 
-/* Fullscreen em standalone (sem barra Safari) */
+/* PWA na tela de início (iPhone): a barra de status fica por cima do app (black-translucent).
+   Quem desconta a área do relógio/notch é SÓ o cabeçalho do topo de cada layout (classe .pwa-topo ou
+   padding próprio). Nada de padding no html/body nem regra genérica em <header>: isso somava 3 vezes a
+   mesma área (faixa branca + faixa creme + cabeçalho deslocado) e afetava cabeçalhos de cards. 28/10/2026 */
 @media all and (display-mode: standalone) {
   body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
     -webkit-user-select: none;
     user-select: none;
   }
-  
-  /* Header fixo com safe area */
-  header {
-    padding-top: env(safe-area-inset-top);
+  input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 
@@ -129,23 +127,9 @@ input, select, textarea {
   padding-right: env(safe-area-inset-right);
 }
 
-/* === PWA STANDALONE SAFE AREAS === */
-@media all and (display-mode: standalone) {
-  /* Header fixo DEVE começar abaixo da safe area */
-  header,
-  .fixed-header {
-    top: env(safe-area-inset-top) !important;
-  }
-  
-  /* Para headers que usam top-0, adicionar padding-top */
-  .pwa-safe-header {
-    padding-top: env(safe-area-inset-top);
-  }
-  
-  /* Sidebar deve começar abaixo da safe area */
-  aside.fixed {
-    top: env(safe-area-inset-top) !important;
-  }
+/* Cabeçalho do topo de um layout: desconta a barra de status do iPhone (no navegador vale 0). */
+.pwa-topo {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Classe utilitária para safe area top */
@@ -164,8 +148,13 @@ input, select, textarea {
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-@media all and (display-mode: standalone) {
-  html {
-    padding-top: env(safe-area-inset-top);
+
+/* Avisos (toast) no celular ficam acima da barra inferior do painel, não por cima dela. */
+@media (max-width: 767px) {
+  [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  [data-sonner-toaster][data-y-position="top"] {
+    top: calc(12px + env(safe-area-inset-top, 0px)) !important;
   }
 }
