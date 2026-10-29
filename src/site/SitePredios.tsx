@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useCorNavegador } from '@/lib/corNavegador';
 import { CabecalhoSite, RodapeSite, VideoLeve, IconeWhats, waSofia, useFonteSite, useTituloPagina, promoNovembroAtiva, PROMO_PRECO } from './comum';
 import { usePrediosPublicos } from './usePrediosPublicos';
 import { useCart } from '@/contexts/SimpleCartContext';
@@ -34,6 +35,7 @@ const IcoMapa = () => (
 
 export default function SitePredios() {
   useFonteSite();
+  useCorNavegador({ fundo: '#0B0B0D' }); // topo e rodapé escuros: o "puxar além" e a área atrás da barra do Safari também
   useTituloPagina('Prédios e preços · EXA Mídia', 'Veja os prédios de Foz do Iguaçu com tela EXA no elevador e o preço por mês de cada um. Monte a sua lista e a Sofia fecha com você pelo WhatsApp.');
   const { predios, carregando } = usePrediosPublicos();
   const { cartItems, addToCart, removeFromCart, isItemInCart } = useCart() as any;

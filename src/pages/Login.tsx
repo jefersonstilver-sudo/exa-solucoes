@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLoginForm } from '@/components/auth/hooks/useLoginForm';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
+import { useCorNavegador } from '@/lib/corNavegador';
 import { useFonteSite, useTituloPagina, waSofia } from '@/site/comum';
 import { TelaCarregando } from '@/components/loading/MarcaCarregando';
 import { lembrarEscolha, escolhaSalva } from '@/lib/sessaoAparelho';
@@ -22,6 +23,7 @@ const Olho = ({ aberto }: { aberto: boolean }) => aberto ? (
 
 export default function Login() {
   useFonteSite();
+  useCorNavegador({ topo: '#0B0B0D', fundo: '#0B0B0D' }); // tela escura: faixa de cima e de baixo do Safari/Chrome também escuras
   useTituloPagina('Entrar · EXA Mídia', 'Entre na sua área de anunciante da EXA Mídia.');
   const navigate = useNavigate();
   const location = useLocation();

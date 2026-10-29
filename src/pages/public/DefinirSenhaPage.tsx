@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useCorNavegador } from '@/lib/corNavegador';
 import { useFonteSite, useTituloPagina, waSofia } from '@/site/comum';
 
 /**
@@ -63,6 +64,7 @@ function forca(s: string) {
 
 export default function DefinirSenhaPage() {
   useFonteSite();
+  useCorNavegador({ topo: '#0B0B0D', fundo: '#0B0B0D' }); // tela escura: faixa de cima e de baixo do Safari/Chrome também escuras
   useTituloPagina('Criar sua senha · EXA Mídia', 'Crie a senha da sua conta de anunciante da EXA Mídia.');
   const navigate = useNavigate();
   const [params] = useSearchParams();

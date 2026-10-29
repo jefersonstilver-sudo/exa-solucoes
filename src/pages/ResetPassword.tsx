@@ -9,8 +9,10 @@ import { toast } from 'sonner';
 import { Loader2, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
+import { useCorNavegador } from '@/lib/corNavegador';
 
 const ResetPassword = () => {
+  useCorNavegador({ fundo: '#F4F3F0' }); // fundo claro da página também atrás da barra do Safari (o topo escuro vem do cabeçalho)
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

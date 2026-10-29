@@ -42,7 +42,7 @@ const Selo: React.FC<{ logo: string | null; inicial: string; className?: string 
   );
 
 export const AnuncianteAppTopo: React.FC = () => {
-  useCorNavegador({ topo: '#FFFFFF' }); // no navegador do celular, a faixa de cima acompanha o topo branco
+  useCorNavegador({ topo: '#F3F1F2' }); // no navegador do celular, a faixa de cima tem a cor do topo do app (#f3f1f2)
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const preservar = usePreservar();
@@ -99,6 +99,8 @@ export const AnuncianteAppTopo: React.FC = () => {
 };
 
 export const AnuncianteNavInferior: React.FC = () => {
+  // Fundo da página = branco da barra de baixo: no Safari, atrás da barra que recolhe não aparece faixa escura/de outra cor
+  useCorNavegador({ fundo: '#FFFFFF' });
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const preservar = usePreservar();

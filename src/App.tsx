@@ -20,6 +20,7 @@ import { AuthProvider } from '@/hooks/useAuth';
 import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import { ResponsiveProvider } from '@/contexts/ResponsiveContext';
 import { DebugProvider } from '@/contexts/DebugContext';
+import { EsqueletoListaPedidos, EsqueletoPedido, EsqueletoPerfil } from './components/pedido-v2/Esqueletos';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { hasLaunchTimePassed, MAINTENANCE_MODE } from '@/config/comingSoonConfig';
@@ -541,12 +542,12 @@ const AppContent = () => {
             <Route index element={<Navigate to="pedidos" replace />} />
             <Route path="meus-pedidos" element={<Navigate to="/anunciante/pedidos" replace />} />
             <Route path="pedidos" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando pedidos..." />}>
+              <Suspense fallback={<EsqueletoListaPedidos />}>
                 <AdvertiserOrders />
               </Suspense>
             } />
             <Route path="pedido/:id" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando detalhes do pedido..." />}>
+              <Suspense fallback={<EsqueletoPedido />}>
                 <PedidoRouteSwitch />
               </Suspense>
             } />
@@ -579,7 +580,7 @@ const AppContent = () => {
             <Route path="editor-video" element={<Suspense fallback={<GlobalLoadingPage />}><VideoEditorDashboard /></Suspense>} />
             <Route path="editor-video/:projectId" element={<Suspense fallback={<GlobalLoadingPage />}><VideoEditorPage /></Suspense>} />
             <Route path="perfil" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
+              <Suspense fallback={<EsqueletoPerfil />}>
                 <AdvertiserSettings />
               </Suspense>
             } />

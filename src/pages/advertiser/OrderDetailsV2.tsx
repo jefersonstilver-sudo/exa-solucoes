@@ -27,9 +27,6 @@ import { VideoActivationSuccessPopup } from '@/components/video-management/Video
 import { VideoConflictModal } from '@/components/video-management/VideoConflictModal';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
 import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
-import { CollapsibleContractStatus } from '@/components/order/CollapsibleContractStatus';
-import { CollapsibleOrderSummary } from '@/components/order/CollapsibleOrderSummary';
-import { CollapsiblePurchaseInfo } from '@/components/order/CollapsiblePurchaseInfo';
 import { OrderInstallmentsSection } from '@/components/order/OrderInstallmentsSection';
 import { usePedidoAgenda } from '@/hooks/exa2/usePedidoAgenda';
 import { winnerAt } from '@/lib/agenda/agendaEngine';
@@ -42,7 +39,7 @@ import { EmpresaTab } from '@/components/pedido-v2/EmpresaTab';
 import { CARD, EYEBROW } from '@/components/pedido-v2/ui';
 import { useVisaoInterna } from '@/hooks/exa2/useVisaoInterna';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
-import { BlocoCarregando } from '@/components/loading/MarcaCarregando';
+import { EsqueletoPedido } from '@/components/pedido-v2/Esqueletos';
 import { AvisoCobranca, FaturasPedido, useParcelas } from '@/components/cobranca/FaturasPedido';
 
 type Aba = 'videos' | 'agenda' | 'predios' | 'empresa' | 'contrato';
@@ -124,6 +121,58 @@ const ContratoResumo: React.FC<{ order: any; orient: string; predios: number }> 
   );
 };
 
+/**
+ * Aba Contrato · "Mais detalhes": no mesmo visual do cartão do contrato, só o que ele ainda não mostra
+ * (data da compra, telas, público, cupom, confirmação do pagamento). Substitui os 3 blocos antigos
+ * (emojis, título repetido e estimativas inventadas de "exibições").
+ */
+const MaisDetalhes: React.FC<{ order: any; telas: number; pessoas: number }> = ({ order, telas, pessoas }) => {
+  const [aberto, setAberto] = useState(false);
+  const [cupom, setCupom] = useState<{ codigo: string; desconto_percentual?: number | null } | null>(null);
+  useEffect(() => {
+    if (!aberto || !order.cupom_id || cupom) return;
+    (supabase as any).from('cupons').select('codigo,desconto_percentual').eq('id', order.cupom_id).maybeSingle()
+      .then(({ data }: any) => data && setCupom(data));
+  }, [aberto, order.cupom_id, cupom]);
+  const lp = order.log_pagamento || {};
+  const cortesia = lp.tipo === 'CORTESIA' || order.metodo_pagamento === 'cortesia';
+  const pagoEm: string | null = lp.pix_data?.pago_em || lp.paid_at || null;
+  const transacao: string | null = lp.asaas_payment_id || lp.pix_data?.asaas_id || null;
+  const dataHora = (s: string) => new Date(s).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const linhas = ([
+    ['Número do pedido', `#${String(order.id).slice(0, 8).toUpperCase()}`],
+    order.created_at ? ['Data da compra', dataHora(order.created_at)] : null,
+    telas > 0 ? ['Telas', `${telas} ${telas === 1 ? 'tela' : 'telas'}`] : null,
+    pessoas > 0 ? ['Público estimado', `${pessoas.toLocaleString('pt-BR')} pessoas`] : null,
+    order.cupom_id ? ['Cupom', cupom ? `${cupom.codigo}${cupom.desconto_percentual ? ` · ${cupom.desconto_percentual}% off` : ''}` : 'Aplicado'] : null,
+    cortesia ? ['Cobrança', 'Cortesia · sem custo'] : null,
+    !cortesia && order.forma_cobranca !== 'boleto' && pagoEm ? ['1º pagamento', `Confirmado em ${dataHora(pagoEm)}`] : null,
+    transacao ? ['Código do pagamento', <span key="t" className="break-all font-mono text-[12px]">{transacao}</span>] : null,
+  ].filter(Boolean)) as [string, React.ReactNode][];
+  return (
+    <section className={`${CARD} overflow-hidden`}>
+      <button type="button" onClick={() => setAberto((v) => !v)} aria-expanded={aberto} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left sm:px-5">
+        <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#f3f1f2] text-[#554e50]"><Receipt className="h-4 w-4" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-extrabold tracking-tight text-[#1b1719]">Mais detalhes</span>
+          <span className="block text-[12.5px] text-[#8b8285]">Compra, telas e pagamento</span>
+        </span>
+        <ChevronRight className={`h-4 w-4 flex-none text-[#b3aaad] transition-transform ${aberto ? 'rotate-90' : ''}`} />
+      </button>
+      {aberto && (
+        <dl className="divide-y divide-[#f1edee] border-t border-[#f1edee]">
+          {linhas.map(([k, v]) => (
+            <div key={k} className="flex items-start justify-between gap-3 px-4 py-2.5 text-[14px] sm:px-5">
+              <dt className="flex-none text-[#8b8285]">{k}</dt>
+              <dd className="min-w-0 text-right font-semibold text-[#1b1719]">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </section>
+  );
+};
+
 const OrderDetailsV2 = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -163,7 +212,7 @@ const OrderDetailsV2 = () => {
   const predioIdsAtivos = useMemo(() => buildings.map((b) => b.id), [buildings]);
 
   const {
-    videoSlots, uploading, uploadProgress, activateVideo, removeVideo, uploadVideo, refreshSlots,
+    videoSlots, uploading, uploadProgress, activateVideo, removeVideo, uploadVideo, refreshSlots, loading: videosCarregando,
     isSuccessOpen, videoName, isMasterApproved, isBaseActivated, hideSuccess, conflictModal, tipoProduto,
   } = useOrderVideoManagement(id || '');
 
@@ -256,7 +305,7 @@ const OrderDetailsV2 = () => {
 
   // ---- estados de carregamento / erro ----
   if (authLoading || !isAuthenticated || loading || enhancedLoading) {
-    return <div className="flex min-h-[60vh] items-center justify-center"><BlocoCarregando largura={110} /></div>;
+    return <EsqueletoPedido />;
   }
   if (!order) {
     return (
@@ -389,6 +438,7 @@ const OrderDetailsV2 = () => {
                       )}
                     </div>
                     <OnAirCard
+                      carregando={agenda.loading || videosCarregando}
                       slots={agenda.slots}
                       rules={agenda.rules}
                       totalPredios={buildings.length}
@@ -512,13 +562,10 @@ const OrderDetailsV2 = () => {
             <div className="space-y-3">
               <ContratoResumo order={order} orient={orient} predios={buildings.length} />
               <FaturasPedido pedido={order} parcelas={parcelas} />
-              <div className="px-0.5 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#a39a9d]">Mais detalhes</div>
-              <CollapsibleContractStatus orderId={order.id} orderDetails={order} />
-              {order.is_fidelidade && order.total_parcelas && (
+              {order.is_fidelidade && order.total_parcelas && order.forma_cobranca !== 'boleto' && (
                 <OrderInstallmentsSection orderId={order.id} tipoPagamento={order.tipo_pagamento || 'pix_fidelidade'} totalParcelas={order.total_parcelas} />
               )}
-              <CollapsibleOrderSummary orderDetails={order} displayPanels={displayPanels} isRecovered={enhancedData?.isRecovered} totalScreens={totalScreens} totalAudience={totalAudience} />
-              <CollapsiblePurchaseInfo orderDetails={order} />
+              <MaisDetalhes order={order} telas={totalScreens} pessoas={totalAudience} />
             </div>
           )}
         </div>

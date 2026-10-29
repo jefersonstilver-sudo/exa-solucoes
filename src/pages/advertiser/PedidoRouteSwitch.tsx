@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+import { EsqueletoPedido } from '@/components/pedido-v2/Esqueletos';
 
 const OrderDetails = lazy(() => import('./OrderDetails'));
 const OrderDetailsV2 = lazy(() => import('./OrderDetailsV2'));
@@ -38,9 +38,9 @@ export default function PedidoRouteSwitch() {
     };
   }, []);
 
-  if (usarV2 === null) return <GlobalLoadingPage message="Carregando detalhes do pedido..." />;
+  if (usarV2 === null) return <EsqueletoPedido />;
   return (
-    <Suspense fallback={<GlobalLoadingPage message="Carregando detalhes do pedido..." />}>
+    <Suspense fallback={<EsqueletoPedido />}>
       {usarV2 ? <OrderDetailsV2 /> : <OrderDetails />}
     </Suspense>
   );

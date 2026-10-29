@@ -129,7 +129,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 text-[10px] sm:text-xs text-muted-foreground">
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>
-                  <span>{videoSlots.filter(s => s.video_id).length} / {videoSlots.length} slots utilizados</span>
+                  <span>{videoSlots.filter(s => s.video_id).length} de {videoSlots.length} vídeos usados neste pedido</span>
                 </p>
                 <p className="flex items-start gap-1.5">
                   <span className="text-blue-600 mt-0.5 font-semibold">•</span>

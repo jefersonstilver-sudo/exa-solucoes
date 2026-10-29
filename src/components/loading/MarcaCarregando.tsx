@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCorNavegador } from '@/lib/corNavegador';
 
 /**
  * Carregamento com a marca EXA (layout novo, aprovado no canvas "V2_Carregando").
@@ -78,12 +79,17 @@ export const MarcaCarregando: React.FC<{ largura?: number; progresso?: number | 
 };
 
 /** Tela inteira de carregamento (aparece só depois de 200 ms, para não "piscar"). */
-export const TelaCarregando: React.FC<{ tema?: TemaCarregando; mensagem?: string; progresso?: number | null }> = ({ tema = 'claro', mensagem, progresso = null }) => (
+export const TelaCarregando: React.FC<{ tema?: TemaCarregando; mensagem?: string; progresso?: number | null }> = ({ tema = 'claro', mensagem, progresso = null }) => {
+  // faixas do navegador (em cima e embaixo) na mesma cor da tela de carregamento
+  const cor = tema === 'escuro' ? '#0B0B0D' : '#F4F1EC';
+  useCorNavegador({ topo: cor, fundo: cor });
+  return (
   <div className={`exa-ld-tela exa-ld-${tema}`} role="status" aria-live="polite" aria-label={mensagem || 'Carregando'}>
     <span className="exa-ld-glow" aria-hidden="true" />
     <MarcaCarregando largura={200} mensagem={mensagem} progresso={progresso} />
   </div>
-);
+  );
+};
 
 /** Carregamento dentro de uma área (menu e cabeçalho continuam na tela). */
 export const BlocoCarregando: React.FC<{ tema?: TemaCarregando; mensagem?: string; largura?: number }> = ({ tema = 'claro', mensagem, largura = 120 }) => (

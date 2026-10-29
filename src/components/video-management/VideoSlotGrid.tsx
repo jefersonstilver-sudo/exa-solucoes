@@ -6,7 +6,7 @@ import { VideoSlotCard } from './VideoSlotCard';
 import { VideoSlotStatus } from './VideoSlotStatus';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Lock } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveAuth } from '@/hooks/useEffectiveAuth';
 
@@ -70,6 +70,16 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   const { userProfile } = useEffectiveAuth();
   const { currentVideo, refreshCurrentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
   const [companyInfoComplete, setCompanyInfoComplete] = useState<boolean | null>(null);
+
+  // Só aparecem os vídeos que existem + UM formulário de envio (aberto quando não há vídeo nenhum
+  // ou quando o cliente toca em "Adicionar vídeo"). Antes eram 10 formulários "Slot 1..10" empilhados.
+  const ocupado = (s: VideoSlot) => !!(s.video_data || s.id || uploadProgress[s.slot_position] !== undefined);
+  const ocupados = videoSlots.filter(ocupado);
+  const proximoLivre = videoSlots.find((s) => !ocupado(s));
+  const [adicionando, setAdicionando] = useState(false);
+  useEffect(() => { setAdicionando(false); }, [ocupados.length]);
+  const formAberto = !!proximoLivre && (ocupados.length === 0 || adicionando);
+  const visiveis = videoSlots.filter((s) => ocupado(s) || (formAberto && s === proximoLivre));
 
   // Verificar cadastro de empresa
   useEffect(() => {
@@ -143,7 +153,9 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   if (companyInfoComplete === null) {
     return <div className="space-y-2 sm:space-y-3">
       <VideoSlotStatus videoSlots={videoSlots} />
-      <div className="text-center py-8 text-muted-foreground">Verificando informações...</div>
+      <div className="space-y-3" aria-label="Carregando vídeos">
+        {[0, 1].map((i) => <div key={i} className="h-[92px] animate-pulse rounded-2xl bg-[#f3eff0]" />)}
+      </div>
     </div>;
   }
 
@@ -156,19 +168,6 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
         {/* Aviso Centralizado */}
         <TermoAceiteInline userId={(userProfile as any)?.id} onAccepted={() => setCompanyInfoComplete(true)} />
 
-        {/* Slots Bloqueados - Visual Apenas */}
-        <div className={`grid ${isVertical ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-1 sm:grid-cols-2'} gap-3 sm:gap-3 opacity-40 pointer-events-none`}>
-          {videoSlots.map((slot) => (
-            <div 
-              key={slot.slot_position}
-              className="bg-gray-100 border border-gray-300 rounded-lg p-4 sm:p-6 text-center"
-            >
-              <Lock className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-gray-400 mb-2" />
-              <span className="text-xs sm:text-sm text-gray-500 font-medium">Slot {slot.slot_position}</span>
-              <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Bloqueado</p>
-            </div>
-          ))}
-        </div>
       </div>
     );
   }
@@ -179,7 +178,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
       <VideoSlotStatus videoSlots={videoSlots} />
 
       <div className={`grid ${isVertical ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-1 sm:grid-cols-2'} gap-3 sm:gap-3`}>
-        {videoSlots.map((slot) => (
+        {visiveis.map((slot) => (
           <VideoSlotCard
             key={slot.slot_position}
             slot={slot}
@@ -200,6 +199,22 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
           />
         ))}
       </div>
+
+      {proximoLivre && !formAberto && (
+        <button
+          type="button"
+          onClick={() => setAdicionando(true)}
+          className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#e3d9dc] bg-white text-sm font-bold text-[#9C1E1E] transition-colors hover:border-[#9C1E1E]/40 hover:bg-[#fdf6f7] active:scale-[.99]"
+        >
+          <Plus className="h-4 w-4" /> Adicionar vídeo
+          <span className="font-semibold text-[#8b8285]">· {ocupados.length} de {videoSlots.length}</span>
+        </button>
+      )}
+      {formAberto && ocupados.length > 0 && !uploading && (
+        <button type="button" onClick={() => setAdicionando(false)} className="mx-auto block min-h-[40px] px-4 text-sm font-semibold text-[#8b8285]">
+          Cancelar
+        </button>
+      )}
     </div>
   );
 };

@@ -196,7 +196,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   };
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const isPendingWithVideo = slot.video_data && slot.approval_status === 'pending';
-  const cardClasses = `transition-all duration-200 rounded-xl animate-fade-in ${slot.is_base_video ? 'border-2 border-yellow-500 bg-yellow-50/50 shadow-lg' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-green-500 bg-green-50/50 shadow-md' : hasActiveSchedule ? 'border border-blue-400 bg-blue-50/50 shadow-sm' : isPendingWithVideo ? 'border-2 border-amber-400 bg-amber-50/60 shadow-md' : isBlocked ? 'border border-gray-300 bg-gray-50 opacity-75' : 'bg-[#F2ECE9]/60 backdrop-blur-sm border border-[#F2ECE9] shadow-sm hover:shadow-md'}`;
+  // Card limpo (fundo branco, sem vídeo desfocado atrás): só a borda indica o estado
+  const cardClasses = `transition-all duration-200 rounded-2xl bg-white shadow-[0_1px_2px_rgba(30,15,18,.04)] ${slot.is_base_video ? 'border-2 border-amber-300' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-emerald-300' : hasActiveSchedule ? 'border border-sky-200' : isPendingWithVideo ? 'border-2 border-amber-200 bg-amber-50/30' : isBlocked ? 'border border-red-200' : 'border border-[#ece6e8]'}`;
   const getScheduleTooltipContent = () => {
     if (!hasActiveSchedule || !slot.schedule_rules) return null;
     return <div className="p-2 space-y-2">
@@ -208,30 +209,16 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       </div>;
   };
   const cardElement = <Card className={`${cardClasses} overflow-hidden relative`}>
-      {/* Blurred background video - decorative ambient effect */}
-      {slot.video_data?.url && (
-        <video
-          src={slot.video_data.url}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover blur-sm opacity-30 scale-110 pointer-events-none z-0"
-        />
-      )}
-      <CardContent className="p-3 sm:p-3 md:p-4 max-w-full overflow-hidden relative z-10">
+      <CardContent className="p-3.5 sm:p-4 max-w-full overflow-hidden">
         {/* Header do Slot */}
         <div className="mb-2 sm:mb-2 space-y-1.5">
           {/* Linha 1: Título do Slot + Status */}
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-base sm:text-base text-foreground">Slot {slot.slot_position}</h3>
+            <h3 className="text-[15px] font-extrabold tracking-tight text-[#1b1719]">{slot.video_data || slot.id ? `Vídeo ${slot.slot_position}` : 'Novo vídeo'}</h3>
             <div className="flex items-center gap-1.5">
               {slot.video_data && getStatusIcon(slot.approval_status)}
               {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-xs py-0.5 px-2">Rejeitado</Badge>}
               {slot.approval_status === 'pending' && slot.video_data && <Badge className="text-xs py-0.5 px-2 bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-100">Enviado</Badge>}
-              {slot.approval_status === 'pending' && !slot.video_data && <Badge variant="secondary" className="text-xs py-0.5 px-2">Aguardando</Badge>}
             </div>
           </div>
           
@@ -388,30 +375,22 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           <div className="space-y-2 sm:space-y-4">
             {/* Mobile: Layout Limpo */}
             <div className="lg:hidden">
-              <div className="flex items-center justify-between gap-2 bg-muted/30 rounded-xl p-3">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-sm truncate text-foreground" title={slot.video_data.nome}>
-                    🎬 {slot.video_data.nome}
-                  </h4>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                    <span>{formatDuration(slot.video_data.duracao)}</span>
-                    <span>•</span>
-                    <span className="truncate">{slot.video_data.orientacao}</span>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0 h-9 px-3 text-sm rounded-lg"
-                  onClick={() => window.open(slot.video_data!.url, '_blank')}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Ver
-                </Button>
-              </div>
+              <button
+                type="button"
+                onClick={() => window.open(slot.video_data!.url, '_blank')}
+                className="flex w-full items-center gap-3 rounded-xl bg-[#f7f4f5] p-2 text-left active:scale-[.99]"
+              >
+                <span className={`relative flex-none overflow-hidden rounded-lg bg-[#1b1719] ${isVertical ? 'h-16 w-9' : 'h-12 w-[76px]'}`}>
+                  <video src={`${slot.video_data.url}#t=0.5`} preload="metadata" muted playsInline aria-hidden="true" className="h-full w-full object-cover" />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/15">
+                    <svg className="h-5 w-5 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>
+                  </span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-[#1b1719]" title={slot.video_data.nome}>{slot.video_data.nome}</span>
+                  <span className="mt-0.5 block text-xs text-[#8b8285]">{formatDuration(slot.video_data.duracao)} · {slot.video_data.orientacao} · toque para ver</span>
+                </span>
+              </button>
 
               {/* Motivo de Rejeição - Mobile Compacto */}
               {slot.approval_status === 'rejected' && slot.rejection_reason && (

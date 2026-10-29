@@ -39,9 +39,11 @@ interface Props {
   /** Palco: atalhos para ver a tela do prédio e enviar vídeo */
   onVerTela?: () => void;
   onEnviar?: () => void;
+  /** Agenda ainda chegando: mostra o esqueleto em vez de "Nenhum vídeo no ar" (que piscava errado). */
+  carregando?: boolean;
 }
 
-export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar, onVerTela, onEnviar }) => {
+export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar, onVerTela, onEnviar, carregando }) => {
   const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId);
 
   // Progresso da janela atual (do início do trecho de hoje até a próxima troca).
@@ -52,6 +54,16 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
     const seg = segs.find((s) => min >= s.startMin && min < s.endMin);
     return seg ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() + seg.startMin * 60000 : now.getTime();
   }, [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!atual && carregando) {
+    return (
+      <div className={`${CARD} space-y-3 p-4`} role="status" aria-label="Carregando o que está no ar">
+        <span className="block aspect-[16/9] w-full animate-pulse rounded-2xl bg-[#e9e4e6]" />
+        <span className="block h-4 w-1/2 animate-pulse rounded-lg bg-[#e9e4e6]" />
+        <span className="block h-3 w-3/4 animate-pulse rounded-lg bg-[#e9e4e6]" />
+      </div>
+    );
+  }
 
   if (!atual) {
     return (

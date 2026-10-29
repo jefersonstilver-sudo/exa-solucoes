@@ -255,17 +255,17 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const qrIncomplete = !!qrConfig?.enabled && (!qrConfig?.redirect_url?.trim() || !qrConfig?.position);
   const canUpload = !!selectedFile && !!videoTitle.trim() && !uploading && !isUploading && !qrIncomplete;
   if (checkingCompanyInfo) {
-    return <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+    return <div className="rounded-xl bg-[#faf8f8] p-6 text-center">
         <div className="flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-exa-red mr-3" />
-          <p className="text-gray-600">Verificando informações...</p>
+          <Loader2 className="h-5 w-5 animate-spin text-[#9C1E1E] mr-2" />
+          <p className="text-sm text-[#8b8285]">Carregando…</p>
         </div>
       </div>;
   }
   if (!companyInfoComplete) {
     return <TermoAceiteInline compact userId={(userProfile as any)?.id} onAccepted={() => setCompanyInfoComplete(true)} />;
   }
-  return <div className={`rounded-xl p-3 sm:p-4 text-center transition-all duration-300 ${selectedFile ? 'border-2 border-green-400 bg-green-50/60 shadow-md' : 'border border-border bg-background/50'}`}>
+  return <div className={`rounded-xl p-3 sm:p-4 text-center transition-all duration-300 ${selectedFile ? 'border-2 border-green-400 bg-green-50/60 shadow-md' : 'bg-[#faf8f8]'}`}>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
       
       <div className="space-y-3 sm:space-y-3">
@@ -299,7 +299,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       </div>
 
       {/* Botão principal - Upload direto */}
-      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-3 sm:mt-3 h-11 sm:h-9 text-sm sm:text-sm rounded-xl sm:rounded-md">
+      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-3 h-11 sm:h-10 text-sm font-bold rounded-xl bg-[#9C1E1E] text-white hover:bg-[#861919] disabled:bg-[#d9cfd2] disabled:text-white">
         {uploading || isUploading ? <>
             <Loader2 className="h-4 w-4 sm:h-4 sm:w-4 animate-spin mr-1.5" />
             Enviando...

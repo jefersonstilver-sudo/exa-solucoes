@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { BlocoCarregando } from '@/components/loading/MarcaCarregando';
+import { EsqueletoPerfil } from '@/components/pedido-v2/Esqueletos';
 import { Loader2, ShieldCheck, AlertTriangle, Pencil, Check, X, Lock, KeyRound, FileText, Smartphone, Mail, UserRound, MessageCircle } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { resolveDisplayName, saveClientIdentity } from '@/services/clientProfileService';
@@ -133,12 +133,7 @@ const AdvertiserSettings = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        {/* carregamento com a marca (padrão do app), não a rodinha genérica */}
-        <BlocoCarregando largura={110} />
-      </div>
-    );
+    return <EsqueletoPerfil />;
   }
 
   const documento = u?.tipo_documento === 'documento_estrangeiro'

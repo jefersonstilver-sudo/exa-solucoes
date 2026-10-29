@@ -22,7 +22,7 @@ import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLogoImageUrl } from '@/hooks/useLogoImageUrl';
-import { BlocoCarregando } from '@/components/loading/MarcaCarregando';
+import { EsqueletoListaPedidos } from '@/components/pedido-v2/Esqueletos';
 
 import { AdvertiserDashboardHeader } from '@/components/advertiser/orders/AdvertiserDashboardHeader';
 import { AdvertiserOrderStats } from '@/components/advertiser/orders/AdvertiserOrderStats';
@@ -266,7 +266,7 @@ const AdvertiserOrders = () => {
 
   if (loading) {
     // mesma marca EXA do resto do app (sem rodinha genérica)
-    return <div className="flex min-h-[60vh] items-center justify-center"><BlocoCarregando largura={110} /></div>;
+    return <EsqueletoListaPedidos />;
   }
 
   return (
