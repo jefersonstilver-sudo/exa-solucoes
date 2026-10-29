@@ -9,7 +9,7 @@
 //   - disparar         → (cron a cada minuto, x-exa2-cron) envia as programadas que venceram
 // Só admin / super_admin (ou o cron). Não mexe na sofia-agent, nem apaga mensagens.
 // =====================================================================
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { instanciaNando, telefoneCanonico } from "../_shared/nando-core.ts";
 
 const cors = {
