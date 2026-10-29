@@ -74,4 +74,4 @@
 
 # CRM: correção do build e deploy solicitado (29/10)
 - [x] Identificar TS2345 nas linhas 59 e 178 da exa2-crm-chat e alinhar apenas o import Supabase à versão 2.49.4 do código compartilhado; chats e visual preservados.
-- [ ] Confirmar compilação automática e implantar somente exa2-crm-chat e nando-crm; não executar migration 20261029010000_exa2_crm_chat.sql, publicar site nem tocar em funções protegidas.
+- [x] Compilação automática confirmada (build OK, 29/10 00:38:49 UTC); exa2-crm-chat e nando-crm implantadas e ambas respondem 401 "não autenticado" ao token inválido. Migration 20261029010000_exa2_crm_chat.sql não executada; site não publicado e funções protegidas intactas.
