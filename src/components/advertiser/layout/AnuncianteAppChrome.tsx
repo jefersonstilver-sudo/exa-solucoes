@@ -76,7 +76,8 @@ export const AnuncianteAppTopo: React.FC = () => {
           </button>
         ) : (
           <Link to={`/anunciante/pedidos${preservar}`} className="flex items-center pl-1" aria-label="EXA, meus pedidos">
-            <img src="/site/exa-preto.svg" alt="EXA" className="h-[22px] w-auto" />
+            {/* data-exa-marca: a marca da abertura do app voa até aqui (index.html #exa-pre) */}
+            <img src="/site/exa-preto.svg" alt="EXA" className="h-[22px] w-auto" data-exa-marca="" data-exa-cor="#EA251D" />
           </Link>
         )}
 

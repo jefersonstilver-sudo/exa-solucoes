@@ -85,7 +85,7 @@ export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode; 
     {!semPromo && <TarjaPromo />}
     <div className="w in">
       <Link to="/" aria-label="EXA, início">
-        <img src={claro ? '/site/exa-preto.svg' : '/site/exa-branco.svg'} alt="EXA" width={64} height={28} style={{ height: 26, width: 'auto', display: 'block' }} />
+        <img src={claro ? '/site/exa-preto.svg' : '/site/exa-branco.svg'} alt="EXA" width={64} height={28} style={{ height: 26, width: 'auto', display: 'block' }} data-exa-marca="" data-exa-cor={claro ? '#EA251D' : undefined} />
       </Link>
       <nav className="nav" aria-label="Principal">
         <Link className="nl" to="/#como">Como funciona</Link>

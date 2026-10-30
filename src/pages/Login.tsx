@@ -79,7 +79,7 @@ export default function Login() {
     <div className="exa-login">
       <img className="el-amb" src="/site/tela-real.jpg" alt="" aria-hidden="true" />
       <span className="el-veu" aria-hidden="true" />
-      <Link className="el-marca" to="/" aria-label="EXA, início"><img src="/site/exa-branco.svg" alt="EXA" width={96} height={42} /></Link>
+      <Link className="el-marca" to="/" aria-label="EXA, início"><img src="/site/exa-branco.svg" alt="EXA" width={96} height={42} data-exa-marca="" /></Link>
 
       {!aberturaFeita && <div className="el-cartao el-espera" aria-hidden="true" />}
 

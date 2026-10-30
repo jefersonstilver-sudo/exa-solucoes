@@ -25,10 +25,17 @@ export function useCorNavegador({ topo, fundo }: { topo?: string; fundo?: string
       metas.forEach((m) => { m.content = topo; });
     }
     const fundoAntes = html.style.backgroundColor;
+    const corpoAntes = document.body.style.backgroundColor;
+    // Telas de uma cor só (topo = fundo: login, senha, carregando): o <body> também. Quando o teclado fecha
+    // (ou o app da tela de início reajusta a altura) o iPhone mostra o fundo do body por um instante embaixo
+    // da página — era a faixa branca no login escuro. Páginas com topo e fundo diferentes não mexem no body.
+    const corpo = !!fundo && topo === fundo;
     if (fundo) html.style.backgroundColor = fundo;
+    if (corpo) document.body.style.backgroundColor = fundo!;
     return () => {
       metas.forEach((m, i) => { m.content = antes[i] || ''; });
       if (fundo) html.style.backgroundColor = fundoAntes;
+      if (corpo) document.body.style.backgroundColor = corpoAntes;
     };
   }, [topo, fundo]);
 }
