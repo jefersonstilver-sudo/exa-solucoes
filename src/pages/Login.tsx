@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLoginForm } from '@/components/auth/hooks/useLoginForm';
@@ -7,6 +7,7 @@ import { useCorNavegador } from '@/lib/corNavegador';
 import { useFonteSite, useTituloPagina, waSofia } from '@/site/comum';
 import { TelaCarregando } from '@/components/loading/MarcaCarregando';
 import { lembrarEscolha, escolhaSalva } from '@/lib/sessaoAparelho';
+import { voarMarca } from '@/lib/vooMarca';
 
 /**
  * Entrar (rota /login) — layout novo aprovado (Opção 2): fundo escuro com a tela EXA desfocada,
@@ -33,6 +34,8 @@ export default function Login() {
   const [vista, setVista] = useState<Vista>('entrar');
   const [verSenha, setVerSenha] = useState(false);
   const [manter, setManter] = useState(() => escolhaSalva().manter);
+  // entrou agora pelo formulário: a tela fica de pé até a navegação e a marca voa até o topo do painel (sem corte seco)
+  const enviou = useRef(false);
   // A abertura animada do app (marca EXA) fica no index.html (#exa-pre), que só sai depois de a marca se desenhar.
   // Os campos só entram quando ela sai: com campo de senha na tela o iPhone já abre o aviso "Iniciar sessão…"
   // por cima da animação — e a abertura parecia travada.
@@ -62,6 +65,7 @@ export default function Login() {
     let destino = redirectPath;
     if (userProfile.role === 'super_admin') destino = redirectPath.startsWith('/super_admin') ? redirectPath : '/super_admin';
     else if (['admin', 'admin_marketing', 'admin_financeiro'].includes(userProfile.role)) destino = redirectPath.startsWith('/admin') ? redirectPath : '/admin';
+    if (enviou.current) voarMarca(document.querySelector('.exa-login [data-exa-marca]'));
     navigate(destino, { replace: true });
   }, [isLoggedIn, userProfile, isLoading, navigate, redirectPath]);
 
@@ -73,7 +77,7 @@ export default function Login() {
 
   // Já logado (ou ainda conferindo a sessão): não monta o formulário. Sem campo de senha na tela,
   // o iPhone não abre o aviso "Iniciar sessão com a senha…" por cima do painel.
-  if (isLoading || (isLoggedIn && userProfile)) return <TelaCarregando tema="escuro" />;
+  if (isLoading || (isLoggedIn && userProfile && !enviou.current)) return <TelaCarregando tema="escuro" />;
 
   return (
     <div className="exa-login">
@@ -84,7 +88,7 @@ export default function Login() {
       {!aberturaFeita && <div className="el-cartao el-espera" aria-hidden="true" />}
 
       {aberturaFeita && vista === 'entrar' && (
-        <form className="el-cartao" onSubmit={(e) => { lembrarEscolha(manter, email); handleSubmit(e); }} aria-label="Entrar" noValidate>
+        <form className="el-cartao" onSubmit={(e) => { enviou.current = true; lembrarEscolha(manter, email); handleSubmit(e); }} aria-label="Entrar" noValidate>
           <h1 className="el-t">Entrar</h1>
           {error && <div className="el-msg" role="alert">{error === 'Email ou senha incorretos' ? 'E-mail ou senha não conferem. Tente de novo ou crie uma nova senha.' : error}</div>}
           <div className="el-campo">

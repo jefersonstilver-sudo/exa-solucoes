@@ -13,9 +13,21 @@ interface UseOrderCurrentVideoDataReturn {
   error: string | null;
 }
 
+// Último vídeo no ar de cada pedido, guardado no aparelho: a lista abre já com as miniaturas
+// e depois confere no banco (se mudou, troca).
+const CHAVE = 'exa-pedido-video:';
+const lerGuardado = (orderId: string): VideoData | null => {
+  if (!orderId) return null;
+  try { const v = localStorage.getItem(CHAVE + orderId); return v ? JSON.parse(v) : null; } catch { return null; }
+};
+const guardar = (orderId: string, v: VideoData | null) => {
+  if (!orderId) return;
+  try { if (v) localStorage.setItem(CHAVE + orderId, JSON.stringify(v)); else localStorage.removeItem(CHAVE + orderId); } catch { /* nada */ }
+};
+
 export const useOrderCurrentVideoData = (orderId: string): UseOrderCurrentVideoDataReturn => {
-  const [videoData, setVideoData] = useState<VideoData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [videoData, setVideoData] = useState<VideoData | null>(() => lerGuardado(orderId));
+  const [loading, setLoading] = useState(() => !lerGuardado(orderId));
   const [error, setError] = useState<string | null>(null);
 
   const { currentVideo, loading: currentVideoLoading } = useCurrentVideoDisplay({ 
@@ -25,8 +37,10 @@ export const useOrderCurrentVideoData = (orderId: string): UseOrderCurrentVideoD
 
   useEffect(() => {
     const fetchVideoData = async () => {
-      if (currentVideoLoading || !currentVideo?.video_id) {
+      if (currentVideoLoading) return; // ainda conferindo: mantém o que estava guardado
+      if (!currentVideo?.video_id) {
         setVideoData(null);
+        guardar(orderId, null);
         setLoading(false);
         return;
       }
@@ -49,10 +63,9 @@ export const useOrderCurrentVideoData = (orderId: string): UseOrderCurrentVideoD
 
         if (data) {
           console.log('✅ [VIDEO_DATA] Dados do vídeo carregados:', data);
-          setVideoData({
-            videoName: data.nome,
-            videoUrl: data.url
-          });
+          const novo = { videoName: data.nome, videoUrl: data.url };
+          setVideoData(novo);
+          guardar(orderId, novo);
           setError(null);
         }
       } catch (err) {
@@ -65,7 +78,7 @@ export const useOrderCurrentVideoData = (orderId: string): UseOrderCurrentVideoD
     };
 
     fetchVideoData();
-  }, [currentVideo, currentVideoLoading]);
+  }, [currentVideo, currentVideoLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     videoData,

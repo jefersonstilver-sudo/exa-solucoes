@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Loader2, Monitor, Smartphone, Clock, Crown, ChevronRight } from 'lucide-react';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
+import { MiniaturaPedido } from './MiniaturaPedido';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { MoveToGroupMenu } from '@/components/orders/MoveToGroupMenu';
 import { OrderGroup } from '@/hooks/useOrderGroups';
@@ -151,7 +152,7 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
         <button type="button" onClick={item.type === 'order' ? abrir : handleAction} className="flex w-full items-center gap-3 p-3 text-left active:bg-[#1b1719]/[0.03]">
           <span className="relative flex h-[60px] w-[72px] flex-none items-center justify-center overflow-hidden rounded-[14px] bg-[#1b1719]">
             {videoData?.videoUrl ? (
-              <video src={`${videoData.videoUrl}#t=1`} className="h-full w-full object-cover" muted playsInline preload="metadata" aria-hidden="true" />
+              <MiniaturaPedido url={videoData.videoUrl} visivel={isVisible} />
             ) : vertical ? <Smartphone className="h-5 w-5 text-white/55" /> : <Monitor className="h-5 w-5 text-white/55" />}
             {noAr && <span className="absolute left-1.5 top-1.5 h-2 w-2 rounded-full bg-[#34d27b] shadow-[0_0_0_2px_rgba(0,0,0,.35)]" />}
           </span>
