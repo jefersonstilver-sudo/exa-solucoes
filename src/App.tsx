@@ -52,6 +52,7 @@ const LazyPaymentCanceled = lazy(() => import('./pages/PaymentCanceled'));
 const LazyPropostaPublicaPage = lazy(() => import('./pages/public/PropostaPublicaPage'));
 const LazyAssinaturaConfirmadaPage = lazy(() => import('./pages/public/AssinaturaConfirmadaPage'));
 const LazyDefinirSenhaPage = lazy(() => import('./pages/public/DefinirSenhaPage'));
+const LazyVideoCurto = lazy(() => import('./pages/public/VideoCurto'));
 
 const SitePredios = lazy(() => import('./site/SitePredios'));
 const SiteSindico = lazy(() => import('./site/SiteSindico'));
@@ -524,6 +525,13 @@ const AppContent = () => {
             </Suspense>
           } />
           
+          {/* Link curto dos vídeos da Sofia (alertas no WhatsApp): /v/<id> */}
+          <Route path="/v/:id" element={
+            <Suspense fallback={null}>
+              <LazyVideoCurto />
+            </Suspense>
+          } />
+
           {/* DEFINIR SENHA - Para novos clientes via proposta */}
           <Route path="/definir-senha" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
