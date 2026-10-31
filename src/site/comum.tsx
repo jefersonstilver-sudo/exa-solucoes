@@ -77,9 +77,15 @@ export const TarjaPromo: React.FC = () => {
   );
 };
 
+/** Já está logado neste aparelho? (só para o rótulo do topo: "Meus pedidos" em vez de "Entrar") */
+const estaLogado = () => {
+  try { return Object.keys(localStorage).some((k) => /^sb-.*-auth-token$/.test(k) && !!localStorage.getItem(k)); } catch { return false; }
+};
+
 export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode; semPromo?: boolean }> = ({ claro, acao, semPromo }) => {
   // faixa atrás do relógio no celular = mesma cor do cabeçalho (antes ficava vermelha)
   useCorNavegador({ topo: claro ? '#FFFFFF' : '#0B0B0D' });
+  const [logado] = React.useState(estaLogado);
   return (
   <header className={`hdr ${claro ? 'hdr-claro' : ''}`} style={claro ? undefined : { backdropFilter: 'saturate(1.4) blur(14px)' }}>
     {!semPromo && <TarjaPromo />}
@@ -91,9 +97,9 @@ export const CabecalhoSite: React.FC<{ claro?: boolean; acao?: React.ReactNode; 
         <Link className="nl" to="/#como">Como funciona</Link>
         <Link className="nl" to="/loja">Prédios</Link>
         <Link className="nl" to="/sou-sindico">Sou síndico</Link>
-        <Link className="nl sempre" to="/login" style={{ alignItems: 'center', gap: 6 }}>
+        <Link className="nl sempre" to={logado ? '/anunciante/pedidos' : '/login'} style={{ alignItems: 'center', gap: 6 }}>
           <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
-          Entrar
+          {logado ? 'Meus pedidos' : 'Entrar'}
         </Link>
         {acao ?? <a className="b br" href={waSofia()} style={{ minHeight: 42, padding: '0 18px', fontSize: 15 }}>Falar com a Sofia</a>}
       </nav>

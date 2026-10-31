@@ -50,6 +50,7 @@ export default function SitePredios() {
   const [aberto, setAberto] = useState<BuildingStore | null>(null);
   const [gaveta, setGaveta] = useState(false);
   const [mapa, setMapa] = useState(false);
+  const [foco, setFoco] = useState<string | null>(null);
 
   // Esc fecha a janela de cima; trava a rolagem do fundo quando há janela aberta
   useEffect(() => {
@@ -215,22 +216,41 @@ export default function SitePredios() {
         </div>
       )}
 
-      {/* mapa: só abre quando o cliente pede */}
+      {/* mapa: só abre quando o cliente pede. Celular: tela cheia, topo abaixo do relógio, prédios num carrossel embaixo */}
       {mapa && (
         <div role="dialog" aria-modal="true" aria-label="Mapa dos prédios" className="mapa-fundo">
           <button type="button" className="gaveta-fora" onClick={() => setMapa(false)} aria-label="Fechar o mapa" />
           <div className="mapa-janela">
             <div className="mapa-topo">
-              <strong>Toque no preço para ver o prédio</strong>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                {!!naLista.length && <button type="button" className="mapa-lista" onClick={() => { setMapa(false); setGaveta(true); }}>Minha lista · {naLista.length}</button>}
-                <button type="button" onClick={() => setMapa(false)} aria-label="Fechar o mapa" className="x">×</button>
+              <div style={{ minWidth: 0 }}>
+                <strong style={{ display: 'block', fontSize: 17, letterSpacing: '-.01em' }}>{predios.length} prédios em Foz</strong>
+                <span style={{ fontSize: 13, color: '#5A5852' }}>Toque num prédio para ver fotos e preço</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 'none' }}>
+                {!!naLista.length && <button type="button" className="mapa-lista" onClick={() => { setMapa(false); setGaveta(true); }}>Lista · {naLista.length}</button>}
+                <button type="button" onClick={() => setMapa(false)} aria-label="Fechar o mapa" className="x x-mapa">×</button>
               </div>
             </div>
-            <div style={{ flex: 1, minHeight: 0 }}>
+            <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
               <Suspense fallback={<div style={{ height: '100%', borderRadius: 18, background: '#E2E0DA' }} />}>
-                <MapaPredios predios={predios} naLista={idsLista} selecionado={aberto?.id} onAbrir={abrir} meuLocal={meuLocal} altura="100%" />
+                <MapaPredios predios={predios} naLista={idsLista} selecionado={aberto?.id || foco} onAbrir={abrir} meuLocal={meuLocal} altura="100%" foco={foco} />
               </Suspense>
+              {/* carrossel: todos os prédios com foto, nome e preço; tocar centraliza no mapa e abre */}
+              <div className="mapa-carrossel" role="list" aria-label="Prédios">
+                {lista.map(({ p }) => {
+                  const on = idsLista.has(p.id);
+                  return (
+                    <button key={p.id} type="button" role="listitem" className={`mc-card${foco === p.id ? ' sel' : ''}`} onClick={() => { setFoco(p.id); abrir(p); }}>
+                      <span className="mc-foto">{p.imagem_principal && <img src={getImageUrl(p.imagem_principal) || ''} alt="" loading="lazy" />}{on && <span className="mc-ok">✓</span>}</span>
+                      <span className="mc-txt">
+                        <strong>{p.nome}</strong>
+                        <span>{p.bairro}{p.publico_estimado ? ` · ${num(p.publico_estimado)} moradores` : ''}</span>
+                        <em>{promo ? reais(PROMO_PRECO) : reais(p.preco_base || 0)}<small>/mês</small></em>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

@@ -31,6 +31,7 @@ import { SortableOrderCard } from '@/components/advertiser/orders/SortableOrderC
 import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { applyCardOrder, moveCard } from '@/lib/orderCardOrdering';
+import AumenteAlcance from '@/components/advertiser/AumenteAlcance';
 
 const AdvertiserOrders = () => {
   const { userProfile } = useAuth();
@@ -511,6 +512,9 @@ const AdvertiserOrders = () => {
         </div>
       )
       }
+
+      {/* porta discreta para a loja: ver outros prédios e aumentar o alcance */}
+      {userOrdersAndAttempts.length > 0 && <div className={isMobile ? 'pt-2' : 'pt-4 max-w-xl'}><AumenteAlcance /></div>}
 
       {/* Dialogs & Modals */}
       </SortableContext>

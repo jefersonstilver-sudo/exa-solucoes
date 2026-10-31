@@ -327,3 +327,41 @@
 .exa-login .el-espera{min-height:440px;opacity:0;animation:none;box-shadow:none;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 @keyframes elEntra{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.exa-login .el-cartao{animation:none}}
+
+/* ---------- Mapa: pinos com foto + nome (31/10) ---------- */
+.exa-site .mp-pin{position:absolute;transform:translate(-50%,calc(-100% - 7px));display:flex;align-items:center;gap:6px;max-width:170px;min-width:0;min-height:0;padding:3px 11px 3px 3px;border:0;border-radius:999px;background:#fff;color:#0B0B0D;font:800 12.5px/1.1 Manrope,system-ui,sans-serif;white-space:nowrap;cursor:pointer;box-shadow:0 8px 18px -8px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.06);transition:transform .15s ease,background .15s ease;-webkit-tap-highlight-color:transparent}
+.exa-site .mp-pin::after{content:"";position:absolute;left:50%;bottom:-6px;width:12px;height:12px;background:inherit;transform:translateX(-50%) rotate(45deg);border-radius:2px;box-shadow:3px 3px 6px -3px rgba(0,0,0,.35);z-index:-1}
+.exa-site .mp-foto{position:relative;flex:none;width:30px;height:30px;border-radius:50%;overflow:hidden;background:#E2E0DA}
+.exa-site .mp-foto img{width:100%;height:100%;object-fit:cover;display:block}
+.exa-site .mp-ok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,11,13,.55);color:#fff;font-size:15px}
+.exa-site .mp-nome{overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.exa-site .mp-pin.on{background:#0B0B0D;color:#fff}
+.exa-site .mp-pin.sel{background:#EA251D;color:#fff;transform:translate(-50%,calc(-100% - 7px)) scale(1.08);z-index:2000 !important}
+.exa-site .mp-pin.compacto{padding:3px}
+.exa-site .mp-pin.compacto .mp-nome{display:none}
+.exa-site .mp-pin:active{transform:translate(-50%,calc(-100% - 7px)) scale(.96)}
+/* carrossel de prédios sobre o mapa */
+.exa-site .mapa-carrossel{position:absolute;left:0;right:0;bottom:26px;display:flex;gap:10px;overflow-x:auto;padding:4px 12px 6px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;z-index:3}
+.exa-site .mapa-carrossel::-webkit-scrollbar{display:none}
+.exa-site .mc-card{flex:none;scroll-snap-align:start;display:flex;gap:10px;align-items:center;width:min(300px,78vw);min-height:0;padding:8px;border:0;border-radius:18px;background:#fff;color:#0B0B0D;text-align:left;cursor:pointer;font-family:inherit;box-shadow:0 16px 34px -18px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.05)}
+.exa-site .mc-card.sel{box-shadow:0 0 0 2px #EA251D,0 16px 34px -18px rgba(0,0,0,.55)}
+.exa-site .mc-foto{position:relative;flex:none;width:64px;height:64px;border-radius:12px;overflow:hidden;background:#E2E0DA}
+.exa-site .mc-foto img{width:100%;height:100%;object-fit:cover;display:block}
+.exa-site .mc-ok{position:absolute;right:4px;top:4px;width:22px;height:22px;border-radius:50%;background:#0B0B0D;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+.exa-site .mc-txt{min-width:0;display:flex;flex-direction:column;gap:2px}
+.exa-site .mc-txt strong{font-size:15px;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exa-site .mc-txt span{font-size:12px;color:#5A5852;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exa-site .mc-txt em{font-style:normal;font-weight:800;font-size:15px;color:#EA251D}
+.exa-site .mc-txt em small{font-size:11px;color:#5A5852;font-weight:600}
+.exa-site .x-mapa{width:44px;height:44px;background:#0B0B0D;color:#fff;font-size:26px}
+
+/* ---------- Celular: nada embaixo do relógio; janelas sobem de baixo ---------- */
+@media (max-width:620px){
+  .exa-site .mapa-janela{padding-top:max(10px,calc(env(safe-area-inset-top,0px) + 6px));padding-bottom:0;gap:8px}
+  .exa-site .mapa-topo{padding:2px 2px 0 6px}
+  .exa-site .mapa-carrossel{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+  .exa-site .gaveta-fundo{flex-direction:column;justify-content:flex-end}
+  .exa-site .gaveta{width:100vw;height:auto;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 14px);border-radius:24px 24px 0 0;padding-bottom:max(22px,env(safe-area-inset-bottom,0px));box-shadow:0 -24px 60px -24px rgba(0,0,0,.5);animation:exa-sobe-cel .28s cubic-bezier(.2,.8,.2,1)}
+  .exa-site .gaveta-lista{padding-bottom:0}
+  .exa-site .gaveta .x{width:44px;height:44px}
+}

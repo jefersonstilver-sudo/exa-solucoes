@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, FileText, LogOut, MessageCircle, MoreHorizontal, ShieldCheck, ShoppingBag, User } from 'lucide-react';
+import { Building2, ChevronLeft, FileText, LogOut, MessageCircle, MoreHorizontal, ShieldCheck, ShoppingBag, User } from 'lucide-react';
+import AumenteAlcance from '@/components/advertiser/AumenteAlcance';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -137,6 +138,11 @@ export const AnuncianteNavInferior: React.FC = () => {
             <ShoppingBag className="h-[22px] w-[22px]" strokeWidth={pedidosAtivo ? 2.3 : 1.9} />
             Pedidos
           </NavLink>
+          {/* loja: ver outros prédios e preços (aumentar o alcance) */}
+          <Link to="/loja" className={cn(item, cor(false))}>
+            <Building2 className="h-[22px] w-[22px]" strokeWidth={1.9} />
+            Prédios
+          </Link>
           <a href={SOFIA_WA} target="_blank" rel="noopener noreferrer" className={cn(item, cor(false))}>
             <span className="relative">
               <MessageCircle className="h-[22px] w-[22px]" strokeWidth={1.9} />
@@ -167,6 +173,7 @@ export const AnuncianteNavInferior: React.FC = () => {
               <div className="truncate text-[12.5px] text-[#8b8285]">{conta.email}</div>
             </div>
           </div>
+          <div className="mb-3" onClick={() => setMais(false)}><AumenteAlcance compacto /></div>
           <div className="divide-y divide-black/[0.05] overflow-hidden rounded-2xl bg-[#f7f5f6]">
             {[
               { i: FileText, t: 'Termos de uso', to: '/termos-uso' },
