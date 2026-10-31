@@ -6,7 +6,8 @@
 /tela  /tela/index.html  200
 /tela/  /tela/index.html  200
 /tela-instalar/*  /tela-instalar/:splat  200
-/baixar-tela  https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk  302
+/baixar-tela  /baixar-tela/index.html  200
+/baixar-tela/  /baixar-tela/index.html  200
 
 # SPA catch-all (must be LAST)
 /*  /index.html  200

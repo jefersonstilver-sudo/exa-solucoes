@@ -77,6 +77,34 @@ const EmailEnviado = lazy(() => import('./pages/EmailEnviado'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const PainelKiosk = lazy(() => import('./pages/PainelKiosk'));
 
+/** Sai do app e abre uma página estática (player /tela, download do APK), mantendo a query (?plataforma=…). */
+function IrParaEstatico({ destino }: { destino: string }) {
+  const [parado, setParado] = useState(false);
+  React.useEffect(() => {
+    const externo = /^https?:/.test(destino);
+    // evita laço de recarga se a hospedagem ainda servir a publicação antiga
+    try {
+      const k = 'exa-ir-estatico';
+      const ult = Number(sessionStorage.getItem(k) || 0);
+      if (!externo && Date.now() - ult < 20000) { setParado(true); return; }
+      sessionStorage.setItem(k, String(Date.now()));
+    } catch { /* */ }
+    try { document.cookie = '__dpl=; Max-Age=0; path=/'; } catch { /* */ }
+    const q = new URLSearchParams(window.location.search);
+    if (!externo) q.set('r', String(Date.now()));
+    window.location.replace(externo ? destino : `${destino}?${q.toString()}`);
+  }, [destino]);
+  if (!parado) return null;
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0c0610', color: '#fff', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: 24 }}>
+      <div>
+        <p style={{ fontSize: 20 }}>A versão nova ainda está chegando neste aparelho.</p>
+        <a href={`${destino}?r=${Date.now()}`} style={{ display: 'inline-block', marginTop: 12, padding: '14px 24px', borderRadius: 12, background: '#EA251D', color: '#fff', fontWeight: 700, textDecoration: 'none' }}>Tentar de novo</a>
+      </div>
+    </div>
+  );
+}
+
 const PaineisPublicitarios = lazy(() => import('./pages/PaineisPublicitarios'));
 const AIReportsPage = lazy(() => import('./pages/admin/monitoramento-ia/AIReportsPage'));
 const AdvertiserInvoices = lazy(() => import('./pages/advertiser/AdvertiserInvoices'));
@@ -430,6 +458,11 @@ const AppContent = () => {
           } />
           
           {/* PAINEL KIOSK - VINCULAÇÃO DE DISPOSITIVOS */}
+          {/* páginas estáticas: se o aparelho cair no app (cookie de publicação velha), vai para o arquivo certo */}
+          <Route path="/tela/*" element={<IrParaEstatico destino="/tela/index.html" />} />
+          <Route path="/tela" element={<IrParaEstatico destino="/tela/index.html" />} />
+          <Route path="/baixar-tela/*" element={<IrParaEstatico destino="https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk" />} />
+          <Route path="/baixar-tela" element={<IrParaEstatico destino="https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk" />} />
           <Route path="/painel-kiosk/:token" element={<Suspense fallback={<GlobalLoadingPage />}><PainelKiosk /></Suspense>} />
           
           {/* PAINEL AGUARDANDO VÍNCULO */}
