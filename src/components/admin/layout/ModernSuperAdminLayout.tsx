@@ -10,6 +10,7 @@ import AdminMenuButton from './AdminMenuButton';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
 import AdminMasterWelcomeDialog from '@/components/impersonation/AdminMasterWelcomeDialog';
+import { useFimAbertura } from '@/lib/fimAbertura';
 
 // Rotas que devem ocultar o header para modo fullscreen
 const FULLSCREEN_ROUTES = ['/admin/contatos-kanban', '/super_admin/contatos-kanban', '/tarefas/fullscreen'];
@@ -19,6 +20,7 @@ export const ADMIN_FUNDO_CLASSE =
   'bg-[#F4F1EC] bg-[radial-gradient(70%_40%_at_15%_0%,rgba(234,37,29,0.08),rgba(234,37,29,0)_70%)]';
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
+  useFimAbertura();
   const { isMobile, isTablet } = useAdvancedResponsive();
   useTecladoCelular(isMobile);
   const location = useLocation();

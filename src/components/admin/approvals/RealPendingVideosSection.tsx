@@ -96,7 +96,8 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           pedidos (
             id,
             valor_total,
-            client_id
+            client_id,
+            nome_pedido
           ),
           videos (
             id,
@@ -121,7 +122,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       const clientIds = [...new Set(pendingData.map(pv => pv.pedidos.client_id))];
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('id, email')
+        .select('id, email, nome')
         .in('id', clientIds);
 
       if (usersError) {
@@ -138,7 +139,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           slot_position: pv.slot_position,
           created_at: pv.created_at,
           client_email: userData?.email || 'Email não encontrado',
-          client_name: userData?.email?.split('@')[0] || 'Nome não disponível',
+          client_name: (pv.pedidos as any)?.nome_pedido || (userData as any)?.nome || userData?.email?.split('@')[0] || 'Cliente sem nome',
           pedido_valor: pv.pedidos.valor_total,
           video_nome: pv.videos.nome,
           video_url: pv.videos.url,
@@ -440,127 +441,89 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
   // Mobile Layout
   if (isMobile) {
+    if (pendingVideos.length === 0) {
+      return (
+        <div className="rounded-[22px] border border-black/[0.06] bg-white/75 px-6 py-10 text-center backdrop-blur-xl">
+          <CheckCircle className="mx-auto mb-3 h-10 w-10 text-[#2E9B62]" />
+          <div className="text-[15px] font-bold">Nada para aprovar</div>
+          <p className="mt-1 text-[13px] text-[#6A6B70]">Todos os vídeos enviados já foram analisados.</p>
+        </div>
+      );
+    }
     return (
       <div className="space-y-3">
-        {pendingVideos.length === 0 ? (
-          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center shadow-sm">
-            <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-            <h3 className="text-sm font-medium text-foreground mb-1">
-              Nenhum vídeo para aprovação
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Todos os vídeos foram processados
-            </p>
-          </div>
-        ) : (
-          pendingVideos.map((video) => (
-            <div 
-              key={video.id} 
-              className={`relative bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-3 shadow-sm space-y-3 transition-all duration-500 overflow-hidden ${
-                actionResult[video.id] ? 'pointer-events-none' : ''
-              }`}
+        {pendingVideos.map((video) => {
+          const vertical = /vertical|retrato|portrait/i.test(video.video_orientacao || '');
+          const motivo = rejectionReason[video.id] || '';
+          return (
+            <div
+              key={video.id}
+              className={`relative overflow-hidden rounded-[22px] border border-black/[0.06] bg-white/80 backdrop-blur-xl shadow-[0_14px_30px_-22px_rgba(70,20,20,0.3)] ${actionResult[video.id] ? 'pointer-events-none' : ''}`}
             >
-              {/* Overlay de feedback */}
               {actionResult[video.id] && (
-                <ActionFeedbackOverlay
-                  result={actionResult[video.id]}
-                  onDone={() => handleAnimationDone(video.id)}
-                />
+                <ActionFeedbackOverlay result={actionResult[video.id]} onDone={() => handleAnimationDone(video.id)} />
               )}
-
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <Badge className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 font-medium">
-                  Aguardando
-                </Badge>
-                <span className="text-[10px] text-muted-foreground">{formatDate(video.created_at)}</span>
+              <div className="flex items-start justify-between gap-2 px-4 pb-2 pt-3.5">
+                <div className="min-w-0">
+                  <div className="truncate text-[16px] font-extrabold">{video.client_name}</div>
+                  <div className="truncate text-[12.5px] text-[#6A6B70]">{video.client_email}</div>
+                </div>
+                <span className="shrink-0 rounded-full bg-[#FCF1DF] px-2.5 py-1 text-[11.5px] font-bold text-[#9A5300]">{formatDate(video.created_at)}</span>
               </div>
-
-              {/* Client Info */}
-              <div className="flex items-center gap-2">
-                <User className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-sm font-medium truncate">{video.client_name}</span>
-              </div>
-
-              {/* Video Preview */}
-              <div className="aspect-video rounded-lg overflow-hidden bg-black/5">
+              <div className={`mx-auto bg-black ${vertical ? 'aspect-[9/16] max-h-[60vh]' : 'aspect-video'} w-full`}>
                 <VideoPlayer
                   src={video.video_url}
                   title={video.video_nome}
-                  className="w-full h-full"
+                  className="h-full w-full"
                   muted={true}
                   controls={true}
                   onDownload={() => handleDownload(video.video_url, video.video_nome)}
                 />
               </div>
-
-              {/* Video Info */}
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-emerald-600 font-semibold">{formatCurrency(video.pedido_valor)}</span>
-                <span className="text-muted-foreground">{video.video_duracao}s • {video.video_orientacao}</span>
-              </div>
-
-              {/* CONAR Checklist - Compact */}
-              <div className="bg-muted/30 rounded-lg p-2">
-                <p className="text-[10px] font-medium text-foreground mb-1">Verificar CONAR:</p>
-                <p className="text-[9px] text-muted-foreground leading-relaxed">
-                  Conteúdo familiar • Linguagem apropriada • Sem violência
+              <div className="space-y-3 px-4 pb-4 pt-3">
+                <div className="flex items-center justify-between gap-2 text-[12.5px] font-semibold text-[#6A6B70]">
+                  <span className="min-w-0 truncate">{video.video_nome}</span>
+                  <span className="shrink-0">{video.video_duracao ? `${video.video_duracao}s` : ''}{video.pedido_valor ? ` · ${formatCurrency(video.pedido_valor)}` : ''}</span>
+                </div>
+                <p className="rounded-xl bg-black/[0.035] px-3 py-2 text-[12px] leading-snug text-[#5E5F63]">
+                  CONAR: conteúdo familiar, linguagem adequada, sem violência, sem bebida/cigarro, sem propaganda enganosa.
                 </p>
-              </div>
-
-              {/* Rejection Reason Selector */}
-              <select
-                value={rejectionReason[video.id] || ''}
-                onChange={(e) => setRejectionReason(prev => ({
-                  ...prev,
-                  [video.id]: e.target.value
-                }))}
-                className="w-full p-2 border border-gray-200 rounded-lg text-xs bg-white text-foreground"
-              >
-                <option value="">Motivo rejeição (se aplicável)...</option>
-                {conarViolations.map((violation) => (
-                  <option key={violation} value={violation}>
-                    {violation}
-                  </option>
-                ))}
-              </select>
-
-              {rejectionReason[video.id] === 'Outro motivo (especificar)' && (
-                <Textarea
-                  placeholder="Especifique o motivo..."
-                  className="text-xs h-16"
-                  onChange={(e) => setRejectionReason(prev => ({
-                    ...prev,
-                    [video.id]: `Outro motivo: ${e.target.value}`
-                  }))}
-                />
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => approveVideo(video.id, video.client_name)}
-                  disabled={actionLoading}
-                  size="sm"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-9"
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => approveVideo(video.id, video.client_name)}
+                    disabled={actionLoading}
+                    className="h-12 rounded-2xl bg-[#1E8A55] text-[15px] font-bold text-white hover:bg-[#1A7A4B]"
+                  >
+                    <CheckCircle className="mr-1.5 h-5 w-5" /> Aprovar
+                  </Button>
+                  <Button
+                    onClick={() => rejectVideo(video.id, video.client_name)}
+                    variant="outline"
+                    disabled={!motivo || actionLoading}
+                    className="h-12 rounded-2xl border-[#F3C9C4] text-[15px] font-bold text-[#B0261D] hover:bg-[#FCE9E7]"
+                  >
+                    <XCircle className="mr-1.5 h-5 w-5" /> Rejeitar
+                  </Button>
+                </div>
+                <select
+                  value={motivo.startsWith('Outro motivo:') ? 'Outro motivo (especificar)' : motivo}
+                  onChange={(e) => setRejectionReason(prev => ({ ...prev, [video.id]: e.target.value }))}
+                  className="h-11 w-full rounded-2xl border border-black/[0.08] bg-white px-3 text-[15px] text-[#17181A]"
                 >
-                  <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                  Aprovar
-                </Button>
-                <Button
-                  onClick={() => rejectVideo(video.id, video.client_name)}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 border-red-200 text-red-600 hover:bg-red-50 h-9"
-                  disabled={!rejectionReason[video.id] || actionLoading}
-                >
-                  <XCircle className="w-3.5 h-3.5 mr-1" />
-                  Rejeitar
-                </Button>
+                  <option value="">Para rejeitar, escolha o motivo…</option>
+                  {conarViolations.map((v) => <option key={v} value={v}>{v}</option>)}
+                </select>
+                {(motivo === 'Outro motivo (especificar)' || motivo.startsWith('Outro motivo:')) && (
+                  <Textarea
+                    placeholder="Explique o motivo para o cliente…"
+                    className="min-h-[72px] rounded-2xl text-[15px]"
+                    onChange={(e) => setRejectionReason(prev => ({ ...prev, [video.id]: e.target.value ? `Outro motivo: ${e.target.value}` : 'Outro motivo (especificar)' }))}
+                  />
+                )}
               </div>
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
     );
   }

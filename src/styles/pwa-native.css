@@ -170,3 +170,14 @@ body.teclado-aberto .exa-bottom-nav { display: none !important; }
 body.cx-chat-aberto .exa-main-conversa,
 body.teclado-aberto .exa-main-conversa,
 body.teclado-aberto .exa-main-nav { padding-bottom: 0; }
+
+/* Botões flutuantes (+) no celular: ficam ACIMA da barra de abas, nunca em cima dela */
+@media (max-width: 767px) {
+  .exa-admin .fixed.bottom-6.right-6,
+  .exa-admin .fixed.bottom-4.right-4,
+  .exa-admin .fixed.bottom-6.right-4,
+  .exa-admin .fixed.bottom-8.right-6 {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px !important;
+  }
+}

@@ -131,17 +131,17 @@ export default function ConfiguracoesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-1 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configurações do Sistema</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-[26px] md:text-3xl font-bold tracking-tight">Configurações</h1>
           <p className="text-muted-foreground mt-1">
             Gerenciamento completo da plataforma EXA Soluções Digitais
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleRefreshAll} variant="outline" size="sm">
+          <Button onClick={handleRefreshAll} variant="outline" size="sm" className="max-sm:h-10 max-sm:w-full">
             <RefreshCw className="w-4 h-4 mr-2" />
             Recarregar Tudo
           </Button>

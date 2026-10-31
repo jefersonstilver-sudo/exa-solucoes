@@ -9,6 +9,7 @@ import { ThemeProvider } from './components/ui/theme-provider'
 import './utils/debugHelpers'
 import { APP_VERSION } from './config/version'
 import { HelmetProvider } from 'react-helmet-async'
+import { ROTA_COM_LAYOUT } from '@/lib/fimAbertura';
 // Páginas avulsas (fora do App): carregadas só quando o endereço pede, para não pesar o site inteiro
 const VideoStylesPage = lazy(() => import('./pages/public/VideoStylesPage'))
 const NandoPrevia = lazy(() => import('./pages/public/NandoPrevia'))
@@ -48,7 +49,8 @@ function BootGuard({ children }: { children: React.ReactNode }) {
     (window as any).__clearRenderTimeout?.();
     // tira a abertura com a marca EXA (index.html): no app da tela de início espera a animação terminar
     // na tela de entrar quem tira a abertura é o próprio Login, quando já sabe se mostra o formulário (sem 2ª animação por baixo)
-    if (!/^\/login/i.test(window.location.pathname)) requestAnimationFrame(() => (window as any).__exaSplashFim?.());
+    // painéis (admin/anunciante): quem tira é o layout, quando o topo com o logo já está na tela (useFimAbertura)
+    if (!/^\/login/i.test(window.location.pathname) && !ROTA_COM_LAYOUT.test(window.location.pathname)) requestAnimationFrame(() => (window as any).__exaSplashFim?.());
     console.log(`✅ React app v${APP_VERSION} mounted successfully`);
   }, []);
   return <>{children}</>;

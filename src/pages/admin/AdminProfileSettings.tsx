@@ -138,9 +138,10 @@ const AdminProfileSettings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AdminHeader title="Meu Perfil" />
+      {/* no celular o topo vermelho do app já existe: sem segunda faixa repetindo "Meu Perfil" */}
+      <div className="hidden md:block"><AdminHeader title="Meu Perfil" /></div>
       
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="max-w-3xl mx-auto px-1 sm:px-6 lg:px-8 py-3 md:py-8 space-y-6">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

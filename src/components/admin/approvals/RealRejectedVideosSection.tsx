@@ -218,21 +218,21 @@ const RealRejectedVideosSection: React.FC<RealRejectedVideosSectionProps> = ({ l
           rejectedVideos.map((video) => (
             <div 
               key={video.id} 
-              className="bg-white/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-3 shadow-sm space-y-2"
+              className="bg-white/80 backdrop-blur-sm border border-red-200/50 rounded-[22px] p-4 shadow-sm space-y-2.5"
             >
               {/* Header */}
               <div className="flex items-center justify-between">
                 <Badge variant="destructive" className="text-[10px] px-2 py-0.5">
                   Rejeitado
                 </Badge>
-                <span className="text-[10px] text-muted-foreground">{formatDate(video.approved_at)}</span>
+                <span className="text-[12.5px] text-muted-foreground">{formatDate(video.approved_at)}</span>
               </div>
 
               {/* Video Name */}
-              <h3 className="font-medium text-sm text-foreground truncate">{video.video_nome}</h3>
+              <h3 className="truncate text-[15.5px] font-extrabold text-foreground">{video.video_nome}</h3>
 
               {/* Client Info */}
-              <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-4 text-[12.5px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <User className="h-3 w-3" />
                   {video.client_name?.split('@')[0] || video.client_email?.split('@')[0]}
@@ -245,8 +245,8 @@ const RealRejectedVideosSection: React.FC<RealRejectedVideosSectionProps> = ({ l
 
               {/* Rejection Reason */}
               <div className="bg-red-50 border border-red-100 rounded-lg p-2">
-                <p className="text-[10px] font-medium text-red-800 mb-0.5">Motivo:</p>
-                <p className="text-[10px] text-red-700 leading-relaxed">{video.rejection_reason}</p>
+                <p className="text-[12px] font-bold text-red-800 mb-0.5">Motivo:</p>
+                <p className="text-[13px] text-red-700 leading-snug">{video.rejection_reason}</p>
               </div>
 
               {/* Actions */}
@@ -255,7 +255,7 @@ const RealRejectedVideosSection: React.FC<RealRejectedVideosSectionProps> = ({ l
                   variant="outline"
                   size="sm"
                   onClick={() => window.open(video.video_url, '_blank')}
-                  className="flex-1 h-8 text-[10px]"
+                  className="flex-1 h-11 rounded-2xl text-[14px] font-bold"
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Ver
@@ -266,7 +266,7 @@ const RealRejectedVideosSection: React.FC<RealRejectedVideosSectionProps> = ({ l
                   size="sm"
                   onClick={() => handleRevertRejection(video.id)}
                   disabled={actionLoading}
-                  className="flex-1 h-8 text-[10px] text-amber-600 border-amber-200 hover:bg-amber-50"
+                  className="flex-1 h-11 rounded-2xl text-[14px] font-bold text-amber-600 border-amber-200 hover:bg-amber-50"
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
                   Reverter
@@ -278,7 +278,7 @@ const RealRejectedVideosSection: React.FC<RealRejectedVideosSectionProps> = ({ l
                       variant="outline"
                       size="sm"
                       disabled={actionLoading}
-                      className="h-8 px-2 text-red-600 border-red-200 hover:bg-red-50"
+                      className="h-11 w-11 rounded-2xl px-0 text-red-600 border-red-200 hover:bg-red-50"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>

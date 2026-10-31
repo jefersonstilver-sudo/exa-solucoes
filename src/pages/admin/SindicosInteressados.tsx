@@ -46,6 +46,13 @@ import { useSindicosStats } from '@/hooks/useSindicosStats';
 import { SindicoStatusBadge, STATUS_OPTIONS } from '@/components/admin/sindicos-interessados/SindicoStatusBadge';
 import { SindicoDialog } from '@/components/admin/sindicos-interessados/SindicoDialog';
 import { getSignedUrl } from '@/utils/storageSignedUrl';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { PaginaCelular, TopoCelular, BotaoRedondo, Kpis, BuscaCelular, Pilulas, CartaoCelular, Selo, SELO, Vazio, Carregando } from '@/components/admin/celular/kit';
+
+const SELO_SINDICO: Record<string, keyof typeof SELO> = {
+  novo: 'azul', em_contato: 'ambar', contatado: 'ambar', interessado: 'ambar', visita_agendada: 'ambar',
+  aprovado: 'verde', instalado: 'verde', recusado: 'vermelho', nao_interessado: 'vermelho', arquivado: 'cinza',
+};
 
 const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '');
 
@@ -90,6 +97,7 @@ const SindicosInteressados: React.FC = () => {
   const [selected, setSelected] = useState<SindicoRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const celular = useIsMobile();
 
   const openDetails = (s: SindicoRow) => {
     setSelected(s);
@@ -128,6 +136,75 @@ const SindicosInteressados: React.FC = () => {
     filters.status !== 'all' ||
     !!filters.startDate ||
     !!filters.endDate;
+
+  if (celular) {
+    const rotuloStatus = (v: string) => STATUS_OPTIONS.find((o) => o.value === v)?.label || v;
+    return (
+      <PaginaCelular>
+        <TopoCelular
+          titulo="Síndicos"
+          sub="Cadastros de /interessesindico"
+          acoes={<BotaoRedondo rotulo="Atualizar" onClick={refetch} disabled={loading}><RefreshCcw className={`h-[18px] w-[18px] ${loading ? 'animate-spin' : ''}`} /></BotaoRedondo>}
+        />
+        <Kpis
+          colunas={4}
+          itens={[
+            { rotulo: 'Total', valor: stats.total, onClick: () => setFilters({ status: 'all' }), ativo: filters.status === 'all' },
+            { rotulo: 'Novos', valor: stats.novos, cor: '#2B4C8C', onClick: () => setFilters({ status: 'novo' }), ativo: filters.status === 'novo' },
+            { rotulo: 'Contato', valor: stats.emContato, cor: '#9A5300' },
+            { rotulo: 'Aprovados', valor: stats.aprovados, cor: '#1E6B47' },
+          ]}
+        />
+        <BuscaCelular valor={filters.search} onChange={(v) => setFilters({ search: v })} placeholder="Prédio, síndico ou protocolo" />
+        <Pilulas
+          valor={filters.status}
+          onChange={(v) => setFilters({ status: v })}
+          opcoes={[{ valor: 'all', rotulo: 'Todos' }, ...STATUS_OPTIONS.map((o) => ({ valor: o.value, rotulo: o.label }))]}
+        />
+        {loading ? <Carregando /> : rows.length === 0 ? (
+          <Vazio icone={<Building2 className="h-6 w-6" />} titulo={totalCount === 0 ? 'Nenhum cadastro ainda' : 'Nada com esses filtros'} />
+        ) : (
+          <CartaoCelular className="divide-y divide-black/[0.05] overflow-hidden">
+            {rows.map((r) => {
+              const wpp = onlyDigits(r.sindico_whatsapp ?? r.celular);
+              const cor = SELO[SELO_SINDICO[r.status] || 'cinza'];
+              const unid = r.quantidade_unidades_total ?? r.numero_unidades;
+              return (
+                <div key={r.id} className="flex items-center gap-2 pr-2">
+                  <button type="button" onClick={() => openDetails(r)} className="min-w-0 flex-1 px-4 py-3 text-left active:bg-black/[0.03]">
+                    <span className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-[15.5px] font-extrabold">{r.nome_predio || 'Prédio sem nome'}</span>
+                      <Selo fundo={cor.fundo} cor={cor.cor}>{rotuloStatus(r.status)}</Selo>
+                    </span>
+                    <span className="mt-0.5 block truncate text-[13px] text-[#5E5F63]">
+                      {r.sindico_nome ?? r.nome_completo ?? 'Síndico não informado'}{unid ? ` · ${unid} unid.` : ''}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[12px] font-semibold text-[#8A8B90]">
+                      {format(new Date(r.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}{r.endereco_cidade ? ` · ${r.endereco_cidade}` : ''}{r.protocolo ? ` · ${r.protocolo}` : ''}
+                    </span>
+                  </button>
+                  {wpp && (
+                    <a href={`https://wa.me/${wpp}`} target="_blank" rel="noopener noreferrer" aria-label="Abrir WhatsApp do síndico"
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EAF5EF] text-[#1E6B47] active:scale-95">
+                      <MessageCircle className="h-5 w-5" />
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </CartaoCelular>
+        )}
+        {totalCount > pageSize && (
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="h-11 flex-1 rounded-2xl border border-black/[0.08] bg-white text-[14px] font-bold disabled:opacity-40">Anterior</button>
+            <span className="px-2 text-[13px] font-bold text-[#6A6B70]">{page}/{totalPages}</span>
+            <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="h-11 flex-1 rounded-2xl border border-black/[0.08] bg-white text-[14px] font-bold disabled:opacity-40">Próxima</button>
+          </div>
+        )}
+        <SindicoDialog sindico={selected} open={dialogOpen} onOpenChange={setDialogOpen} onUpdated={refetch} />
+      </PaginaCelular>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

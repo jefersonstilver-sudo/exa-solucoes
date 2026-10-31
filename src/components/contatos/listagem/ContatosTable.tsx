@@ -19,6 +19,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ContatosTableProps {
   contacts: Contact[];
@@ -28,6 +29,7 @@ interface ContatosTableProps {
 export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading }) => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
+  const celular = useIsMobile();
 
   const handleWhatsApp = (e: React.MouseEvent, contact: Contact) => {
     e.stopPropagation();
@@ -87,6 +89,42 @@ export const ContatosTable: React.FC<ContatosTableProps> = ({ contacts, loading 
 
   // Manter a ordenação do banco de dados (não reordenar localmente)
   const sortedContacts = contacts;
+
+  // Celular: lista em linhas (a tabela larga não cabia na tela)
+  if (celular) {
+    return (
+      <div className="divide-y divide-black/[0.05] overflow-hidden rounded-[22px] border border-black/[0.06] bg-white/80 backdrop-blur-xl">
+        {sortedContacts.map((contact) => {
+          const titulo = contact.empresa || `${contact.nome} ${contact.sobrenome || ''}`.trim();
+          const sub = contact.empresa ? `${contact.nome} ${contact.sobrenome || ''}`.trim() : (contact.email || '');
+          const quando = contact.last_interaction_at || contact.updated_at;
+          return (
+            <div key={contact.id} className={cn('flex items-center gap-2 pr-2', contact.is_potential_duplicate && 'bg-orange-50')}>
+              <button type="button" onClick={() => handleView(contact)} className="min-w-0 flex-1 px-4 py-3 text-left active:bg-black/[0.03]">
+                <span className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-[15.5px] font-extrabold">{titulo || 'Sem nome'}</span>
+                  {quando && <span className="shrink-0 text-[11.5px] font-semibold text-[#8A8B90]">{formatDistanceToNow(new Date(quando), { locale: ptBR })}</span>}
+                </span>
+                {sub && <span className="mt-0.5 block truncate text-[13px] text-[#5E5F63]">{sub}</span>}
+                <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <CategoriaBadge categoria={contact.categoria} size="sm" />
+                  <TemperaturaBadge temperatura={contact.temperatura} size="sm" />
+                  {contact.bloqueado && <Badge variant="destructive" className="h-5 text-[10.5px]">Bloqueado</Badge>}
+                  {contact.is_potential_duplicate && <Badge className="h-5 bg-orange-500 text-[10.5px]">Duplicado?</Badge>}
+                </span>
+              </button>
+              {contact.telefone && !contact.bloqueado && (
+                <button type="button" aria-label="WhatsApp" onClick={(e) => handleWhatsApp(e, contact)}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EAF5EF] text-[#1E6B47] active:scale-95">
+                  <MessageCircle className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">

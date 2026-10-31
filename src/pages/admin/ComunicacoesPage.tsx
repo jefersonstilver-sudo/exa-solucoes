@@ -185,9 +185,9 @@ const ComunicacoesPage = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Comunicações</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-[26px] md:text-3xl font-bold tracking-tight">Comunicações</h1>
           <p className="text-muted-foreground mt-1">
             Gerenciamento de templates e envio de emails
           </p>

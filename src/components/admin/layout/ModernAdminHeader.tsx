@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import exaLogo from '@/assets/exa-logo.png';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useAuth } from '@/hooks/useAuth';
@@ -60,7 +59,8 @@ const ModernAdminHeader = () => {
       {/* EXA Logo - Only on Mobile */}
       {isMobile && (
         <div className="flex items-center gap-2">
-          <img src={exaLogo} alt="EXA" className="h-7 w-auto" />
+          {/* data-exa-marca: a marca da abertura do app voa até aqui (index.html #exa-pre) */}
+          <img src="/site/exa-branco.svg" alt="EXA" className="h-[22px] w-auto" data-exa-marca="" data-exa-cor="#FFFFFF" />
           <div className="h-4 w-px bg-border/50" />
           <span className="text-[10px] font-medium text-primary-foreground">
             {getRoleLabel()}

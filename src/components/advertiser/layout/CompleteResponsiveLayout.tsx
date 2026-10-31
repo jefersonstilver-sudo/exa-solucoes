@@ -13,8 +13,10 @@ import { DentroDoLayout } from '@/components/loading/MarcaCarregando';
 import { ImpersonationProvider } from '@/contexts/ImpersonationContext';
 import ImpersonationTopBar from '@/components/impersonation/ImpersonationTopBar';
 import { useAuth } from '@/hooks/useAuth';
+import { useFimAbertura } from '@/lib/fimAbertura';
 
 const CompleteResponsiveLayout = () => {
+  useFimAbertura();
   const { userProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

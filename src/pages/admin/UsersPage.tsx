@@ -13,7 +13,7 @@ import { UserConsoleDialog } from '@/components/admin/users/console/UserConsoleD
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { PaginaCelular, TopoCelular, BotaoRedondo, BotaoPrincipal, Kpis, BuscaCelular, CartaoCelular, Selo, SELO, Vazio, Carregando } from '@/components/admin/celular/kit';
 
 interface User {
   id: string;
@@ -174,219 +174,83 @@ const UsersPage = () => {
     );
   }
 
-  // Mobile View - Apple-style Glassmorphism
+  // Mobile View
   if (isMobile) {
+    const PAPEL: Record<string, { r: string; c: keyof typeof SELO }> = {
+      super_admin: { r: 'Super admin', c: 'ambar' }, admin: { r: 'Coordenação', c: 'azul' },
+      admin_marketing: { r: 'Marketing', c: 'roxo' }, admin_financeiro: { r: 'Financeiro', c: 'verde' },
+      comercial: { r: 'Comercial', c: 'azul' }, client: { r: 'Cliente', c: 'cinza' },
+    };
+    const lista = activeTab === 'team' ? filteredTeam : filteredClients;
+    const quando = (iso?: string) => {
+      if (!iso) return 'Nunca acessou';
+      const d = new Date(iso); const dias = Math.floor((Date.now() - d.getTime()) / 86400000);
+      if (dias <= 0) return `Acessou hoje ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      if (dias === 1) return 'Acessou ontem';
+      if (dias < 30) return `Acessou há ${dias} dias`;
+      return `Último acesso ${d.toLocaleDateString('pt-BR')}`;
+    };
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
-        {/* Mobile Header - Glassmorphism */}
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-          <div className="px-4 py-3 safe-area-top">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-[hsl(var(--exa-red))]/10 rounded-xl">
-                  <Users className="h-5 w-5 text-[hsl(var(--exa-red))]" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-foreground">Usuários</h1>
-                  <p className="text-[11px] text-muted-foreground">{users.length} no sistema</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  onClick={handleRefresh}
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  disabled={loading}
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
-                <Button
-                  onClick={() => setIsCreateDialogOpen(true)}
-                  size="sm"
-                  className="h-8 bg-[hsl(var(--exa-red))] hover:bg-[hsl(var(--exa-red))]/90 px-3"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Grid Compacto */}
-        <div className="p-3">
-          <UserStatsCards stats={stats} loading={loadingStats} />
-        </div>
-
-        {/* Botões de Ação - Padronizados */}
-        <div className="px-3 pb-2 flex gap-2">
-          <Button
-            onClick={() => navigate('/super_admin/tipos-conta')}
-            size="sm"
-            variant="outline"
-            className="flex-1 h-9 text-xs border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
-          >
-            <Settings className="w-3.5 h-3.5 mr-1.5" />
-            Tipos de Conta
-          </Button>
-          <Button
-            onClick={handleSyncOrphanUsers}
-            disabled={syncingOrphans}
-            size="sm"
-            variant="outline"
-            className="flex-1 h-9 text-xs border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
-          >
-            <UserCog className={`w-3.5 h-3.5 mr-1.5 ${syncingOrphans ? 'animate-spin' : ''}`} />
-            Sincronizar
-          </Button>
-        </div>
-
-        {/* Filter Pills - Grid Layout for Better Mobile Display */}
-        <div className="px-3 pb-2">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('team')}
-              className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'team'
-                  ? 'bg-[#9C1E1E] text-white shadow-lg shadow-red-500/25'
-                  : 'bg-white text-gray-800 border border-gray-200 shadow-sm hover:shadow-md'
-              }`}
-            >
-              <Crown className="h-3.5 w-3.5" />
-              Equipe
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === 'team' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {filteredTeam.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('clients')}
-              className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'clients'
-                  ? 'bg-[#9C1E1E] text-white shadow-lg shadow-red-500/25'
-                  : 'bg-white text-gray-800 border border-gray-200 shadow-sm hover:shadow-md'
-              }`}
-            >
-              <UserCheck className="h-3.5 w-3.5" />
-              Clientes
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === 'clients' ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {filteredClients.length}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="px-3 pb-3">
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-9 text-sm bg-white/80"
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          </div>
-        </div>
-
-        {/* Lista de Usuários */}
-        <div className="px-3 pb-20">
-          {activeTab === 'team' && (
+      <PaginaCelular>
+        <TopoCelular
+          titulo="Usuários"
+          sub={`${users.length} no sistema`}
+          acoes={
             <>
-              {loading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white/80 rounded-xl p-3 animate-pulse">
-                      <div className="h-12 bg-gray-200 rounded" />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredTeam.length === 0 ? (
-                <Card className="p-6 text-center bg-white/80 backdrop-blur-sm">
-                  <Shield className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    {searchTerm ? 'Nenhum membro encontrado' : 'Nenhum membro cadastrado'}
-                  </p>
-                </Card>
-              ) : (
-                <div className="space-y-2">
-                  {filteredTeam.map((user) => (
-                    <EnhancedUserMobileCard
-                      key={user.id}
-                      user={user}
-                      onViewDetails={handleViewDetails}
-                    />
-                  ))}
-                </div>
-              )}
+              <BotaoRedondo rotulo="Atualizar" onClick={handleRefresh} disabled={loading}><RefreshCw className={`h-[18px] w-[18px] ${loading ? 'animate-spin' : ''}`} /></BotaoRedondo>
+              <BotaoPrincipal onClick={() => setIsCreateDialogOpen(true)}><Plus className="h-[18px] w-[18px]" strokeWidth={2.6} /> Novo</BotaoPrincipal>
             </>
-          )}
-
-          {activeTab === 'clients' && (
-            <>
-              {loading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white/80 rounded-xl p-3 animate-pulse">
-                      <div className="h-12 bg-gray-200 rounded" />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredClients.length === 0 ? (
-                <Card className="p-6 text-center bg-white/80 backdrop-blur-sm">
-                  <UserCheck className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
-                  </p>
-                </Card>
-              ) : (
-                <div className="space-y-2">
-                  {filteredClients.map((user) => (
-                    <EnhancedUserMobileCard
-                      key={user.id}
-                      user={user}
-                      onViewDetails={handleViewDetails}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Floating Action Button - Elegant EXA Red */}
-        <motion.button
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[#9C1E1E] text-white shadow-xl shadow-red-900/40 flex items-center justify-center z-50"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.3 }}
-          whileTap={{ scale: 0.9 }}
-          whileHover={{ scale: 1.05 }}
-        >
-          <Plus className="h-6 w-6" />
-        </motion.button>
-
-        {/* Dialogs */}
-        <CreateUserDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-          onSuccess={handleRefresh}
+          }
         />
-
-        {selectedUser && (
-          <UserConsoleDialog 
-            open={true}
-            onOpenChange={(open) => !open && setSelectedUser(null)}
-            user={selectedUser as any} 
-            onUserUpdated={handleRefresh}
-          />
+        <Kpis
+          colunas={2}
+          itens={[
+            { rotulo: 'Equipe EXA', valor: indexaTeam.length, cor: '#9C1E1E', ativo: activeTab === 'team', onClick: () => setActiveTab('team') },
+            { rotulo: 'Clientes', valor: clients.length, cor: '#2B4C8C', ativo: activeTab === 'clients', onClick: () => setActiveTab('clients') },
+          ]}
+        />
+        <BuscaCelular valor={searchTerm} onChange={setSearchTerm} placeholder={activeTab === 'team' ? 'Buscar na equipe' : 'Buscar cliente por nome ou e-mail'} />
+        {loading ? <Carregando /> : lista.length === 0 ? (
+          <Vazio icone={<Users className="h-6 w-6" />} titulo={searchTerm ? 'Ninguém encontrado' : 'Nenhum cadastro'} />
+        ) : (
+          <CartaoCelular className="divide-y divide-black/[0.05] overflow-hidden">
+            {lista.map((u) => {
+              const papel = PAPEL[u.role] || { r: u.role, c: 'cinza' as const };
+              const cor = SELO[papel.c];
+              const nome = u.nome || u.email.split('@')[0];
+              return (
+                <button key={u.id} type="button" onClick={() => handleViewDetails(u)} className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-black/[0.03]">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#9C1E1E]/10 text-[15px] font-extrabold text-[#9C1E1E]">
+                    {u.avatar_url ? <img src={u.avatar_url} alt="" className="h-full w-full object-cover" /> : nome.trim().charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-[15.5px] font-extrabold">{nome}</span>
+                      <Selo fundo={cor.fundo} cor={cor.cor}>{papel.r}</Selo>
+                    </span>
+                    <span className="mt-0.5 block truncate text-[13px] text-[#5E5F63]">{u.email}</span>
+                    <span className="mt-0.5 block truncate text-[12px] font-semibold text-[#8A8B90]">
+                      {quando(u.last_sign_in_at)}{!u.email_confirmed_at && !u.email_verified_at ? ' · e-mail não confirmado' : ''}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </CartaoCelular>
         )}
-      </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => navigate('/super_admin/tipos-conta')} className="flex h-11 items-center justify-center gap-1.5 rounded-2xl border border-black/[0.08] bg-white/80 text-[13.5px] font-bold text-[#45464A]">
+            <Settings className="h-4 w-4" /> Tipos de conta
+          </button>
+          <button type="button" onClick={handleSyncOrphanUsers} disabled={syncingOrphans} className="flex h-11 items-center justify-center gap-1.5 rounded-2xl border border-black/[0.08] bg-white/80 text-[13.5px] font-bold text-[#45464A] disabled:opacity-60">
+            <UserCog className={`h-4 w-4 ${syncingOrphans ? 'animate-spin' : ''}`} /> Sincronizar
+          </button>
+        </div>
+        <CreateUserDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleRefresh} />
+        {selectedUser && (
+          <UserConsoleDialog open={true} onOpenChange={(open) => !open && setSelectedUser(null)} user={selectedUser as any} onUserUpdated={handleRefresh} />
+        )}
+      </PaginaCelular>
     );
   }
 

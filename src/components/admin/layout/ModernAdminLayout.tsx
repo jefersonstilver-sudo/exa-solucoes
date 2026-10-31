@@ -11,12 +11,14 @@ import ConviteAvisos from '@/components/avisos/ConviteAvisos';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
 import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
+import { useFimAbertura } from '@/lib/fimAbertura';
 
 interface ModernAdminLayoutProps {
   children?: React.ReactNode;
 }
 
 const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
+  useFimAbertura();
   const { isMobile, isTablet } = useAdvancedResponsive();
   useTecladoCelular(isMobile);
   const location = useLocation();

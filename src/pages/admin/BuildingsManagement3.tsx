@@ -14,12 +14,16 @@ import BuildingsList3 from '@/components/admin/buildings/v3/BuildingsList3';
 import BuildingFormDialog3 from '@/components/admin/buildings/v3/BuildingFormDialog3';
 import BuildingDetailsDialog from '@/components/admin/buildings/BuildingDetailsDialog';
 import BuildingImageManager from '@/components/admin/buildings/BuildingImageManager';
+import PrediosCelular from '@/components/admin/buildings/v3/PrediosCelular';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Carregando, PaginaCelular } from '@/components/admin/celular/kit';
 
 const BuildingsManagement3 = () => {
   const { buildings, stats, loading, refetch, deleteBuilding } = useAdminBuildingsData();
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<BuildingsFiltersState>(DEFAULT_BUILDINGS_FILTERS);
   const [sortBy, setSortBy] = useState<SortKey>('updated_desc');
+  const celular = useIsMobile();
 
   const {
     selectedBuilding,
@@ -109,6 +113,7 @@ const BuildingsManagement3 = () => {
     return sorted;
   }, [buildings, searchTerm, filters, sortBy]);
 
+  if (loading && celular) return <PaginaCelular><div className="mb-3 h-9 w-40 animate-pulse rounded-xl bg-black/[0.06]" /><Carregando linhas={7} /></PaginaCelular>;
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -125,8 +130,27 @@ const BuildingsManagement3 = () => {
       }}
     >
       <LoadingOverlay isLoading={operationLoading} message="Processando...">
-        <div className="space-y-4 pb-8">
-          <BuildingsHeader3
+        <div className={celular ? '' : 'space-y-4 pb-8'}>
+          {celular ? (
+            <PrediosCelular
+              todos={buildings}
+              lista={filteredAndSorted}
+              stats={stats}
+              busca={searchTerm}
+              setBusca={setSearchTerm}
+              filtros={filters}
+              setFiltros={setFilters}
+              ordem={sortBy}
+              setOrdem={setSortBy}
+              atualizar={refetch}
+              onNovo={handleNewBuilding}
+              onVer={handleViewBuilding}
+              onEditar={handleEditBuilding}
+              onFotos={handleImageManager}
+              onExcluir={handleDeleteBuilding}
+            />
+          ) : (<>
+            <BuildingsHeader3
             stats={stats}
             loading={loading}
             onRefresh={refetch}
@@ -151,6 +175,8 @@ const BuildingsManagement3 = () => {
             onDelete={handleDeleteBuilding}
             onViewCampaigns={handleViewCampaigns}
           />
+
+          </>)}
 
           {/* Form Dialog */}
           <BuildingFormDialog3

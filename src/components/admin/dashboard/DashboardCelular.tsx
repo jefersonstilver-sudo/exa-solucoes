@@ -73,7 +73,7 @@ export default function DashboardCelular() {
   const h = new Date().getHours();
 
   return (
-    <div className="min-h-screen bg-[#F4F1EC] px-4 pb-28 pt-3 text-[#17181A]" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
+    <div className="-m-3 min-h-full bg-[#F4F1EC] px-4 pb-6 pt-3 text-[#17181A]" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
       <div className="mb-3">
         <div className="text-[13px] font-semibold text-[#6A6B70]">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <div role="heading" aria-level={1} className="text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}{nome ? `, ${nome}` : ''}</div>

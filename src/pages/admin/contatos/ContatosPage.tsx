@@ -159,7 +159,7 @@ const ContatosPage = () => {
               Central única de relacionamento EXA
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 md:flex md:items-center [&>button]:max-md:h-10 [&>button]:max-md:w-full [&>button]:max-md:text-[13px]">
             <Button
               variant="outline"
               size="sm"
@@ -352,17 +352,6 @@ const ContatosPage = () => {
             />
           </>
         )}
-
-        {/* FAB Mobile */}
-        <div className="fixed bottom-6 right-6 md:hidden z-50">
-          <Button
-            size="lg"
-            className="rounded-full w-14 h-14 shadow-lg"
-            onClick={handleNewContact}
-          >
-            <Plus className="w-6 h-6" />
-          </Button>
-        </div>
 
         {/* Filters Sheet */}
         <ContatosFiltersSheet 
