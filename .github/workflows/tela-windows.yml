@@ -45,6 +45,10 @@ jobs:
         env:
           EXA_TELA_SEM_PERGUNTAS: "1"
         run: |
+          # como estava antes (o runner do GitHub já vem com NoAutoUpdate=1): o desinstalador tem de devolver isso
+          $antesNau = (Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -ErrorAction SilentlyContinue).NoAutoUpdate
+          $antesWu = (Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode
+          "$antesNau|$antesWu" | Set-Content "$env:RUNNER_TEMP\antes.txt"
           try { & "$env:RUNNER_TEMP\instalar-exa-tela-windows.ps1" } catch { Write-Host "::error::instalador parou: $($_.Exception.Message) (linha $($_.InvocationInfo.ScriptLineNumber))"; exit 1 }
           $erros = @()
           if (-not (Test-Path 'C:\ExaTela\abrir-tela.ps1')) { $erros += 'falta abrir-tela.ps1' }
@@ -75,7 +79,10 @@ jobs:
           if (Get-ScheduledTask -TaskName 'EXA Tela' -ErrorAction SilentlyContinue) { $erros += 'tarefa continua' }
           if (Test-Path 'C:\ExaTela') { $erros += 'pasta continua' }
           $nau = (Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -ErrorAction SilentlyContinue).NoAutoUpdate
-          if ($nau -eq 1) { $erros += 'NoAutoUpdate continua 1' }
+          $antes = (Get-Content "$env:RUNNER_TEMP\antes.txt") -split '\|'
+          if ("$nau" -ne $antes[0]) { $erros += "NoAutoUpdate ficou '$nau' (antes era '$($antes[0])')" }
+          $wu = (Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode
+          if ($wu -ne $antes[1]) { $erros += "wuauserv ficou $wu (antes era $($antes[1]))" }
           Write-Host "wuauserv depois: $((Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode)"
           if ($erros.Count) { $erros | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
           Write-Host "::notice::Desinstalação conferida. wuauserv=$((Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode)"
