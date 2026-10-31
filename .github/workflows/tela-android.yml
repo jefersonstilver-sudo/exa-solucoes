@@ -1,0 +1,117 @@
+name: tela-android
+# Gera o APK "EXA Tela" (player da EXA em tela cheia para TV box / TV Android) e publica sempre no mesmo link:
+# https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk
+#
+# Assinatura: o keystore fica num bucket PRIVADO do Supabase (apps-assinatura/tela-android/). Na primeira
+# execução ele é criado e guardado; nas seguintes é reutilizado — assim cada APK novo instala por cima do antigo.
+# Nunca gera um keystore novo se já existir um (o upload é sem sobrescrever).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/tela-android/**"
+      - ".github/workflows/tela-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tela-android
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Keystore (bucket privado do Supabase)
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          B="apps-assinatura"
+          P="tela-android"
+          H=(-H "Authorization: Bearer $SB_KEY" -H "apikey: $SB_KEY")
+          baixar() {
+            # devolve 0 se baixou os dois arquivos; 2 se não existem; 1 em qualquer outro erro
+            local c1 c2
+            c1=$(curl -sS -o ks.jks -w '%{http_code}' "${H[@]}" "$SB_URL/storage/v1/object/authenticated/$B/$P/exa-tela.jks" || echo 000)
+            c2=$(curl -sS -o ks.json -w '%{http_code}' "${H[@]}" "$SB_URL/storage/v1/object/authenticated/$B/$P/exa-tela.json" || echo 000)
+            if [ "$c1" = 200 ] && [ "$c2" = 200 ]; then return 0; fi
+            if grep -qiE 'not.?found' ks.jks 2>/dev/null && grep -qiE 'not.?found' ks.json 2>/dev/null; then return 2; fi
+            echo "Falha ao ler o keystore (HTTP $c1/$c2):"; head -c 300 ks.jks || true; echo
+            return 1
+          }
+          set +e; baixar; r=$?; set -e
+          if [ $r = 2 ]; then
+            echo "Primeira vez: criando o keystore e guardando no bucket privado."
+            curl -sS "${H[@]}" -H 'Content-Type: application/json' -X POST "$SB_URL/storage/v1/bucket" \
+              -d "{\"id\":\"$B\",\"name\":\"$B\",\"public\":false}" || true
+            SENHA=$(openssl rand -hex 24)
+            rm -f ks.jks ks.json
+            keytool -genkeypair -keystore ks.jks -alias exatela -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$SENHA" -keypass "$SENHA" -dname "CN=EXA Midia, O=Indexa Midia LTDA, L=Foz do Iguacu, ST=PR, C=BR"
+            printf '{"alias":"exatela","senha":"%s"}' "$SENHA" > ks.json
+            for f in jks json; do
+              code=$(curl -sS -o up.txt -w '%{http_code}' "${H[@]}" -H 'x-upsert: false' -H 'Content-Type: application/octet-stream' \
+                --data-binary "@ks.$f" -X POST "$SB_URL/storage/v1/object/$B/$P/exa-tela.$f")
+              if [ "$code" != 200 ]; then echo "Upload exa-tela.$f HTTP $code: $(cat up.txt)"; fi
+            done
+            # relê do bucket: se outra execução criou antes, vale a do bucket
+            baixar
+          elif [ $r = 1 ]; then
+            exit 1
+          fi
+          SENHA=$(python3 -c "import json;print(json.load(open('ks.json'))['senha'])")
+          ALIAS=$(python3 -c "import json;print(json.load(open('ks.json'))['alias'])")
+          echo "::add-mask::$SENHA"
+          keytool -list -keystore ks.jks -storepass "$SENHA" >/dev/null
+          mv ks.jks "$RUNNER_TEMP/exa-tela.jks"; rm -f ks.json
+          {
+            echo "TELA_KEYSTORE_FILE=$RUNNER_TEMP/exa-tela.jks"
+            echo "TELA_KEYSTORE_PASS=$SENHA"
+            echo "TELA_KEY_PASS=$SENHA"
+            echo "TELA_KEY_ALIAS=$ALIAS"
+          } >> "$GITHUB_ENV"
+
+      - name: Build do APK
+        run: gradle -p apps/tela-android assembleRelease --no-daemon --stacktrace
+
+      - name: Conferir assinatura
+        run: |
+          set -euo pipefail
+          APK=apps/tela-android/app/build/outputs/apk/release/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$APK" | head -5
+          cp "$APK" exa-tela.apk
+          echo "versao=1.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          ls -la exa-tela.apk
+
+      - name: Publicar no link fixo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view tela-android >/dev/null 2>&1; then
+            gh release create tela-android --title "EXA Tela (Android)" --target "$GITHUB_SHA" \
+              --notes "App da tela EXA para TV box / TV Android. Baixe: exa-tela.apk"
+          fi
+          gh release upload tela-android exa-tela.apk --clobber
+          gh release edit tela-android --notes "App da tela EXA para TV box / TV Android — versão ${versao} (build ${GITHUB_RUN_NUMBER}, commit ${GITHUB_SHA::7}).
+
+          Link fixo: https://github.com/${GITHUB_REPOSITORY}/releases/download/tela-android/exa-tela.apk"
