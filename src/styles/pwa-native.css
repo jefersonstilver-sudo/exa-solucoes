@@ -181,3 +181,17 @@ body.teclado-aberto .exa-main-nav { padding-bottom: 0; }
     right: 16px !important;
   }
 }
+
+/* Abas em grade no celular: com muitas abas o texto se sobrepunha. Viram uma fileira que rola para o lado
+   (com poucas abas continuam ocupando a largura toda). */
+@media (max-width: 767px) {
+  [role="tablist"].grid {
+    display: flex !important;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  [role="tablist"].grid::-webkit-scrollbar { display: none; }
+  [role="tablist"].grid > [role="tab"] { flex: 1 0 auto; white-space: nowrap; }
+}

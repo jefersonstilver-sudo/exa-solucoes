@@ -45,7 +45,7 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
 
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-7">
+      <TabsList className="w-full max-md:flex max-md:justify-start max-md:overflow-x-auto max-md:[scrollbar-width:none] md:grid md:grid-cols-7 [&>button]:max-md:shrink-0 [&>button]:max-md:px-3">
         <TabsTrigger value="overview">Visão Geral</TabsTrigger>
         <TabsTrigger value="location">Localização</TabsTrigger>
         <TabsTrigger value="campaigns">Programação</TabsTrigger>
