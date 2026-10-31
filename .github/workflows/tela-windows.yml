@@ -45,7 +45,7 @@ jobs:
         env:
           EXA_TELA_SEM_PERGUNTAS: "1"
         run: |
-          & "$env:RUNNER_TEMP\instalar-exa-tela-windows.ps1"
+          try { & "$env:RUNNER_TEMP\instalar-exa-tela-windows.ps1" } catch { Write-Host "::error::instalador parou: $($_.Exception.Message) (linha $($_.InvocationInfo.ScriptLineNumber))"; exit 1 }
           $erros = @()
           if (-not (Test-Path 'C:\ExaTela\abrir-tela.ps1')) { $erros += 'falta abrir-tela.ps1' }
           if (-not (Test-Path 'C:\ExaTela\estado-anterior.json')) { $erros += 'falta estado-anterior.json' }
@@ -63,12 +63,14 @@ jobs:
           [void][System.Management.Automation.Language.Parser]::ParseInput((Get-Content -Raw 'C:\ExaTela\abrir-tela.ps1'), [ref]$tok, [ref]$pe)
           if ($pe.Count) { $erros += "abrir-tela.ps1 com erro: $($pe[0].Message)" }
           if ($erros.Count) { $erros | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
-          Write-Host 'Instalação conferida.'
+          $svc = 'wuauserv', 'UsoSvc', 'WaaSMedicSvc' | ForEach-Object { "$_=$((Get-CimInstance Win32_Service -Filter "Name='$_'").StartMode)" }
+          Write-Host "::notice::Instalação conferida. Tarefa: $($tarefa.State); serviços: $($svc -join ', ')"
+          exit 0
 
       - name: Desinstalar e conferir
         shell: powershell
         run: |
-          & "$env:RUNNER_TEMP\desinstalar-exa-tela-windows.ps1"
+          try { & "$env:RUNNER_TEMP\desinstalar-exa-tela-windows.ps1" } catch { Write-Host "::error::desinstalador parou: $($_.Exception.Message) (linha $($_.InvocationInfo.ScriptLineNumber))"; exit 1 }
           $erros = @()
           if (Get-ScheduledTask -TaskName 'EXA Tela' -ErrorAction SilentlyContinue) { $erros += 'tarefa continua' }
           if (Test-Path 'C:\ExaTela') { $erros += 'pasta continua' }
@@ -76,7 +78,8 @@ jobs:
           if ($nau -eq 1) { $erros += 'NoAutoUpdate continua 1' }
           Write-Host "wuauserv depois: $((Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode)"
           if ($erros.Count) { $erros | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
-          Write-Host 'Desinstalação conferida.'
+          Write-Host "::notice::Desinstalação conferida. wuauserv=$((Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode)"
+          exit 0
 
       - name: Gerar o .exe (NSIS)
         shell: powershell
