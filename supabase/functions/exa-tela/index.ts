@@ -91,37 +91,58 @@ async function cameras() {
   });
 }
 
-const S3_NOTICIAS = 'https://imagens-noticias.s3.sa-east-1.amazonaws.com';
-const absoluto = (v: unknown) => {
-  const s = String(v || '').trim();
-  if (!s) return '';
-  if (/^https?:\/\//i.test(s)) return s;
-  if (/\.(jpe?g|png|webp|gif)$/i.test(s)) return `${S3_NOTICIAS}/${s.replace(/^\.?\/*/, '').split('/').map(encodeURIComponent).join('/')}`;
-  return '';
-};
+// imagem da notícia: a do ExaSistema é só o nome do arquivo (bucket privado), então pega o og:image da matéria
+const ogImagem = new Map<string, { t: number; u: string }>();
+async function imagemDaMateria(link: string) {
+  if (!/^https?:\/\//i.test(link)) return '';
+  const m = ogImagem.get(link);
+  if (m && Date.now() - m.t < 6 * 3600000) return m.u;
+  let u = '';
+  try {
+    const r = await fetch(link, { headers: { 'User-Agent': 'Mozilla/5.0 (EXA Tela)' }, signal: AbortSignal.timeout(6000) });
+    const html = (await r.text()).slice(0, 200000);
+    const g = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    if (g && /^https?:\/\//i.test(g[1])) u = g[1].replace(/&amp;/g, '&');
+  } catch { /* sem imagem */ }
+  ogImagem.set(link, { t: Date.now(), u });
+  return u;
+}
+const ORIGEM: Record<string, string> = { portal_cidade: 'Portal da Cidade Foz', jovempan: 'Jovem Pan', cnn: 'CNN Brasil', g1: 'g1' };
+
 async function noticias() {
-  return lembrar('noticias', 5 * 60000, async () => {
+  return lembrar('noticias', 10 * 60000, async () => {
     try {
-      const rows: any[] = await exaSistema('noticias?select=*&order=created_at.desc&limit=40');
-      const out = [];
-      const vistos = new Set<string>();
+      // ExaSistema: uma linha por tipo, com valor = { portal_cidade: [{titulo, link, imagem, categoria}], jovempan: [...] }
+      const rows: any[] = await exaSistema('noticias?select=*&order=atualizado_em.desc&limit=10');
+      const brutas: any[] = [];
       for (const r of rows || []) {
-        const titulo = limpa(r.titulo || r.title || r.manchete, 220).trim();
+        const v = r.valor && typeof r.valor === 'object' ? r.valor : null;
+        if (v && !Array.isArray(v)) {
+          for (const [fonte, lista] of Object.entries(v)) if (Array.isArray(lista)) lista.forEach((n: any) => brutas.push({ ...n, _fonte: fonte, _em: r.atualizado_em }));
+        } else if (Array.isArray(v)) v.forEach((n: any) => brutas.push({ ...n, _fonte: r.tipo, _em: r.atualizado_em }));
+        else if (r.titulo) brutas.push({ ...r, _em: r.atualizado_em || r.created_at });
+      }
+      const out: any[] = [];
+      const vistos = new Set<string>();
+      for (const n of brutas) {
+        const titulo = limpa(n.titulo || n.title || n.manchete, 220).trim();
         if (!titulo || vistos.has(titulo.toLowerCase())) continue;
         vistos.add(titulo.toLowerCase());
-        const cat = limpa(r.categoria || r.category || '', 40);
+        const cat = limpa(n.categoria || n.category || '', 40);
         if (/culin|receita|gastronom/i.test(cat)) continue; // regra fixa: nada culinário nas notícias
+        const link = /^https?:\/\//i.test(String(n.link || n.url || '')) ? String(n.link || n.url) : '';
         out.push({
           titulo,
-          resumo: limpa(r.resumo || r.descricao || r.subtitulo || r.description || '', 260),
+          resumo: limpa(n.resumo || n.descricao || n.subtitulo || '', 260),
           categoria: cat,
-          origem: limpa(r.origem || r.fonte || r.source || '', 60),
-          imagem: absoluto(r.imagem_url || r.imagem || r.foto || r.image || r.thumbnail || r.thumb),
-          link: /^https?:\/\//i.test(String(r.link || r.url || r.fonte_url || '')) ? String(r.link || r.url || r.fonte_url) : '',
-          data: r.created_at || r.data || null,
+          origem: ORIGEM[String(n._fonte || '')] || limpa(n.origem || n.fonte || n._fonte || '', 60),
+          imagem: /^https?:\/\//i.test(String(n.imagem || '')) ? String(n.imagem) : '',
+          link,
+          data: n.data || n.publicado_em || null, // atualizado_em é da lista, não da matéria
         });
         if (out.length >= 20) break;
       }
+      await Promise.all(out.map(async (n) => { if (!n.imagem && n.link) n.imagem = await imagemDaMateria(n.link); }));
       return out;
     } catch (e) {
       console.warn('[exa-tela] notícias indisponíveis', (e as Error).message);
@@ -295,7 +316,7 @@ Deno.serve(async (req) => {
       const { data: papeis } = await admin.from('user_roles').select('role').eq('user_id', u.user.id);
       if (!(papeis || []).some((p: any) => ['super_admin', 'admin', 'diretora_operacoes', 'gestor_comercial'].includes(String(p.role)))) return json({ ok: false, erro: 'sem permissão' }, 403);
       const out: any = { ok: true };
-      try { const n: any[] = await exaSistema('noticias?select=*&order=created_at.desc&limit=2'); out.noticias_colunas = Object.keys(n?.[0] || {}); out.noticias_exemplo = n; } catch (e) { out.noticias_erro = (e as Error).message; }
+      try { const n: any[] = await exaSistema('noticias?select=*&order=atualizado_em.desc&limit=2'); out.noticias_colunas = Object.keys(n?.[0] || {}); out.noticias_exemplo = n; } catch (e) { out.noticias_erro = (e as Error).message; }
       try { out.cameras_bruto = await exaSistema('cameras?select=*'); } catch (e) { out.cameras_erro = (e as Error).message; }
       if (b.building_id) {
         const { data: building } = await admin.from('buildings').select('id, nome, bairro, tipo_local, segmento_local, pedido_casa_id, telas_ritmo').eq('id', b.building_id).maybeSingle();
