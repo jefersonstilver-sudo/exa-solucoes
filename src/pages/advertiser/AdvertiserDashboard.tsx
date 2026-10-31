@@ -235,7 +235,7 @@ const AdvertiserDashboard = () => {
           <p className="text-gray-600 mt-1">Bem-vindo de volta! Aqui está o resumo das suas campanhas.</p>
         </div>
         <div className="flex space-x-3">
-          <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-exa-red hover:bg-exa-red/90">
+          <Button onClick={() => navigate('/loja')} className="bg-exa-red hover:bg-exa-red/90">
             Comprar Painéis
           </Button>
         </div>
@@ -355,8 +355,8 @@ const AdvertiserDashboard = () => {
               <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum pedido encontrado</h3>
               <p className="text-gray-500 mb-4">Comece fazendo seu primeiro pedido de painéis digitais.</p>
-              <Button onClick={() => navigate('/paineis-digitais/loja')}>
-                Explorar Painéis
+              <Button onClick={() => navigate('/loja')}>
+                Ver prédios e preços
               </Button>
             </div>}
         </CardContent>

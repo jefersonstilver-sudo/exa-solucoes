@@ -11,7 +11,7 @@ import { UserProfile, UserRole } from '@/types/userTypes';
  */
 export const logoutUser = async (): Promise<{success: boolean, error?: any}> => {
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: 'local' }) /* sair só deste aparelho (antes derrubava todos) */;
     
     if (error) {
       return { success: false, error };

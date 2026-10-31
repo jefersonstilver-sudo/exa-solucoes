@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Função otimizada de logout
   const logout = async (): Promise<void> => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' }) /* sair só deste aparelho (antes derrubava todos) */;
     setUser(null);
     setSession(null);
     setUserProfile(null);

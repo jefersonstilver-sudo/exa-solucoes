@@ -367,10 +367,10 @@ const AdvertiserOrders = () => {
           'Comece criando sua primeira campanha publicitária.'}
           </p>
           <Button
-          onClick={() => navigate('/paineis-digitais/loja')}
+          onClick={() => navigate('/loja')}
           className="min-h-[44px] sm:min-h-[36px]">
           
-            Explorar Painéis
+            Ver prédios e preços
           </Button>
         </div> :
 

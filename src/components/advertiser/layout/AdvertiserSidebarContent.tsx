@@ -36,7 +36,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
 
   const sair = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' }) /* sair só deste aparelho (antes derrubava todos) */;
       toast.success('Você saiu da sua conta');
       navigate('/');
     } catch {

@@ -112,7 +112,7 @@ export const AnuncianteNavInferior: React.FC = () => {
   const sair = async () => {
     setMais(false);
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' }) /* sair só deste aparelho (antes derrubava todos) */;
       navigate('/login', { replace: true });
     } catch {
       toast.error('Não foi possível sair agora');

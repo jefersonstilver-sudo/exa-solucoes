@@ -22,7 +22,7 @@ const ModernAdvertiserHeader = () => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' }) /* sair só deste aparelho (antes derrubava todos) */;
       toast.success('Logout realizado com sucesso');
       navigate('/');
     } catch (error) {
