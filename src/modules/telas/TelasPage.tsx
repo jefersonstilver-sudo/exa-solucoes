@@ -166,13 +166,13 @@ export default function TelasPage() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {lista.map((t) => {
           const st = estadoDe(t);
           const local = t.building_id ? localPor.get(t.building_id) : null;
           const lay = infoLayout(t.layout);
           return (
-            <article key={t.id} className={`flex flex-col gap-3 rounded-3xl p-4 ${vidro}`}>
+            <article key={t.id} className={`flex min-w-0 flex-col gap-3 rounded-3xl p-4 ${vidro}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-[17px] font-extrabold">{t.nome || (t.status === 'ativa' ? 'Tela' : `Código ${t.codigo || '…'}`)}</div>
@@ -199,8 +199,13 @@ export default function TelasPage() {
                 </div>
               </div>
 
-              <button type="button" onClick={() => setLayoutDe(t)} className="flex items-center gap-3 rounded-2xl bg-black/[0.035] p-2 text-left hover:bg-black/[0.06]">
-                <MiniLayout id={t.layout} largura={112} />
+              {st === 'aguardando' && (
+                <button type="button" onClick={() => setAdicionar(true)} className="rounded-2xl bg-[#FFF1D6] px-3 py-2 text-left text-[13px] font-semibold text-[#8A5A00]">
+                  Esta TV está mostrando o código {t.codigo || '…'}. Toque para conectar →
+                </button>
+              )}
+              <button type="button" onClick={() => setLayoutDe(t)} className="flex min-w-0 items-center gap-3 rounded-2xl bg-black/[0.035] p-2 text-left hover:bg-black/[0.06]">
+                <MiniLayout id={t.layout} largura={112} className="shrink-0" />
                 <div className="min-w-0">
                   <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6A6B70]">Layout {lay.id}</div>
                   <div className="truncate text-[15px] font-bold">{lay.nome}</div>
@@ -208,7 +213,7 @@ export default function TelasPage() {
                 </div>
               </button>
 
-              <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[13px]">
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">
                 <dt className="text-[#6A6B70]">Tocando</dt>
                 <dd className="truncate font-semibold">{t.tocando?.cliente || t.tocando?.titulo || '—'}</dd>
                 <dt className="text-[#6A6B70]">Exibições hoje</dt>
