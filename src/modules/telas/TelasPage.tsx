@@ -15,7 +15,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CATALOGO, MiniLayout, infoLayout } from './catalogo';
+import { GradeLayouts, MiniLayout, infoLayout } from './catalogo';
 
 const db = supabase as any;
 const LINKS = {
@@ -220,6 +220,8 @@ export default function TelasPage() {
                 <dd className="font-semibold">{exib.data?.get(t.id) || 0}</dd>
                 <dt className="text-[#6A6B70]">Último sinal</dt>
                 <dd className="font-semibold">{quando(t.ultimo_sinal)}</dd>
+                <dt className="text-[#6A6B70]">Internet</dt>
+                <dd className="truncate font-semibold">{(t as any).saude?.conexao ? `${(t as any).saude.conexao}${(t as any).saude.rtt ? ` · ${(t as any).saude.rtt} ms` : ''}` : '—'}</dd>
                 <dt className="text-[#6A6B70]">Aparelho</dt>
                 <dd className="truncate font-semibold" title={t.info?.ua || ''}>{nomePlataforma(t.plataforma)}{t.info?.tela ? ` · ${String(t.info.tela).split('@')[0]}` : ''}</dd>
               </dl>
@@ -472,25 +474,6 @@ function AdicionarTela({ locais, onFechar, onPronto }: { locais: Local[]; onFech
   );
 }
 
-function GradeLayouts({ valor, onEscolher }: { valor: string; onEscolher: (id: string) => void }) {
-  return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-      {CATALOGO.map((l) => (
-        <button key={l.id} type="button" onClick={() => onEscolher(l.id)} className={`flex flex-col gap-1.5 rounded-2xl border p-2 text-left ${valor === l.id ? 'border-[#9C1E1E] bg-[#9C1E1E]/[0.05] ring-2 ring-[#9C1E1E]/30' : 'border-black/10 hover:border-black/25'}`}>
-          <MiniLayout id={l.id} largura={200} className="h-auto w-full" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-extrabold text-[#9C1E1E]">{l.id}</span>
-            <span className="truncate text-[13px] font-bold">{l.nome}</span>
-          </div>
-          <span className="text-[11.5px] leading-snug text-[#5E5F63]">{l.resumo}</span>
-          {l.destaque && <span className="self-start rounded-full bg-[#E3F4EA] px-2 py-0.5 text-[11px] font-bold text-[#1E6B47]">Mais atenção</span>}
-          {l.aviso && <span className="text-[11px] font-semibold text-[#8A5A00]">{l.aviso}</span>}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function Ritmo({ casa, ed, onCasa, onEd, mostrarEd }: { casa: number; ed: number; onCasa: (n: number) => void; onEd: (n: number) => void; mostrarEd: boolean }) {
   const Num = ({ v, on }: { v: number; on: (n: number) => void }) => (
     <div className="inline-flex items-center rounded-xl bg-black/[0.05] p-1">
@@ -541,6 +524,7 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
   const [camera, setCamera] = useState(local?.telas_ritmo?.camera !== false);
   const [noticias, setNoticias] = useState(local?.telas_ritmo?.noticias !== false);
   const [salvando, setSalvando] = useState(false);
+  const [limite, setLimite] = useState<number | null>(null);
   useEffect(() => {
     setCasaPedido(local?.pedido_casa_id || '');
     setCasa(Number(local?.telas_ritmo?.casa_a_cada) || 3); setEd(Number(local?.telas_ritmo?.editorial_a_cada) || 2);
@@ -551,7 +535,7 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
     queryKey: ['exa-telas-pedidos', localId],
     enabled: !!localId,
     queryFn: async () => {
-      const { data } = await db.from('pedidos').select('id, nome_pedido, client_id, status, lista_predios, created_at').order('created_at', { ascending: false }).limit(300);
+      const { data } = await db.from('pedidos').select('id, nome_pedido, client_id, status, lista_predios, created_at, telas_comercio').order('created_at', { ascending: false }).limit(300);
       const ps = (data || []) as any[];
       const ids = [...new Set(ps.map((p) => p.client_id).filter(Boolean))];
       const { data: us } = ids.length ? await db.from('users').select('id, nome, empresa_nome').in('id', ids) : { data: [] };
@@ -566,6 +550,10 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
     try {
       const { error } = await db.from('exa_telas').update({ nome: nome.trim() || null, building_id: localId || null, ambiente }).eq('id', tela.id);
       if (error) throw error;
+      if (casaPedido && limite !== null) {
+        const { error: e3 } = await db.from('pedidos').update({ telas_comercio: Math.max(0, Math.min(50, limite)) }).eq('id', casaPedido);
+        if (e3) throw e3;
+      }
       if (localId) {
         const { error: e2 } = await db.from('buildings').update({
           pedido_casa_id: casaPedido || null,
@@ -607,6 +595,18 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
                 </select>
                 <span className="block text-[12px] text-[#6A6B70]">O comerciante cria e troca os vídeos dele na área do cliente, como qualquer anunciante. Todos os vídeos aprovados desse pedido entram no rodízio "da casa" desta tela. ● = pedido que já inclui este local.</span>
               </label>
+              {casaPedido && (
+                <label className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-black/[0.035] p-3">
+                  <span className="min-w-0">
+                    <span className="block font-semibold">Telas que o cliente conecta sozinho</span>
+                    <span className="block text-[12px] text-[#6A6B70]">Ele vê "Minhas telas" na área do cliente e conecta pelo código até esse número. 0 = só a EXA conecta.</span>
+                  </span>
+                  <input type="number" min={0} max={50}
+                    value={limite ?? ((pedidos.data || []).find((p: any) => p.id === casaPedido)?.telas_comercio ?? 0)}
+                    onChange={(e) => setLimite(Number(e.target.value) || 0)}
+                    className="h-11 w-20 rounded-xl border border-black/15 px-3 text-center font-bold" />
+                </label>
+              )}
               <Ritmo casa={casa} ed={ed} onCasa={setCasa} onEd={setEd} mostrarEd />
               <div className="flex flex-wrap gap-4">
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={camera} onChange={(e) => setCamera(e.target.checked)} className="h-4 w-4 accent-[#9C1E1E]" />Câmera ao vivo da ponte</label>

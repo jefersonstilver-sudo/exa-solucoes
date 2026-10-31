@@ -9,7 +9,26 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { apagar, gravar, iniciar, infoAparelho, ler, pedirEstado, plataforma, recarregar, reiniciarApp, versaoCompleta, type Estado } from './api';
-import { aquecer, limparTudo, sincronizar } from './cache';
+import { aquecer, estatisticas, limparTudo, sincronizar } from './cache';
+
+const abertoEm = Date.now();
+/** O que o monitor mostra sobre o aparelho: rede, cache de vídeos, há quanto tempo a tela está aberta, memória. */
+function saudeAgora() {
+  const c: any = (navigator as any).connection || {};
+  const mem: any = (performance as any).memory;
+  return {
+    online: navigator.onLine,
+    conexao: c.type && c.type !== 'unknown' ? (c.type === 'wifi' ? 'Wi-Fi' : c.type === 'ethernet' ? 'cabo' : c.type) : c.effectiveType || null,
+    mbps: typeof c.downlink === 'number' ? c.downlink : null,
+    rtt: typeof c.rtt === 'number' ? c.rtt : null,
+    videos_no_aparelho: estatisticas.itens,
+    cache_mb: estatisticas.mb,
+    baixando: estatisticas.baixando || null,
+    falhas_download: estatisticas.falhas,
+    aberta_min: Math.round((Date.now() - abertoEm) / 60000),
+    memoria_mb: mem?.usedJSHeapSize ? Math.round(mem.usedJSHeapSize / 1048576) : null,
+  };
+}
 import { layoutDe, montarFaixas, urlsDoEstado } from './motor';
 import { COMPONENTES, SemVideo } from './layouts';
 import { devolverExibicoes, errosRecentes, registrarErro, registrarEvento, retirarEventos, retirarExibicoes, tocandoAgora } from './registro';
@@ -122,6 +141,7 @@ export default function App() {
         const r: Estado = await pedirEstado({
           token: token.current, tocando: tocandoAgora(), erros: errosRecentes(), exibicoes: exib, eventos: retirarEventos(),
           comando_ok: ler<string>(K_CMD, '') || undefined, ...(precisaInfo ? { info: infoAparelho() } : {}),
+          saude: saudeAgora(),
         });
         if (precisaInfo) ultimoInfo.current = Date.now();
         if (!vivo) return;

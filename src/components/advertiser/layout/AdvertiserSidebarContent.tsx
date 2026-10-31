@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { ShoppingBag, User, LogOut, MessageCircle } from 'lucide-react';
+import { ShoppingBag, User, LogOut, MessageCircle, MonitorPlay } from 'lucide-react';
+import { useMinhasTelas } from '@/modules/telas/useMinhasTelas';
 import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,6 +44,9 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       toast.error('Não foi possível sair agora');
     }
   };
+
+  const telas = useMinhasTelas();
+  const itens = telas.data?.locais?.length ? [ITENS[0], { title: 'Minhas telas', href: '/anunciante/telas', icon: MonitorPlay }, ...ITENS.slice(1)] : ITENS;
 
   const ativo = (href: string) =>
     href === '/anunciante/pedidos'
@@ -95,7 +99,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       {/* Navegação */}
       <nav className={cn('flex-1 overflow-y-auto', isCollapsed ? 'space-y-1.5 p-2' : 'space-y-1 px-3 py-1')}>
         {!isCollapsed && <div className="px-3 pb-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-white/45">Menu</div>}
-        {ITENS.map((it) => {
+        {itens.map((it) => {
           const on = ativo(it.href);
           return (
             <Link

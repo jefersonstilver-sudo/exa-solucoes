@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Building2, ChevronLeft, FileText, LogOut, MessageCircle, MoreHorizontal, ShieldCheck, ShoppingBag, User } from 'lucide-react';
+import { Building2, ChevronLeft, FileText, LogOut, MessageCircle, MonitorPlay, MoreHorizontal, ShieldCheck, ShoppingBag, User } from 'lucide-react';
+import { useMinhasTelas } from '@/modules/telas/useMinhasTelas';
 import AumenteAlcance from '@/components/advertiser/AumenteAlcance';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -108,6 +109,9 @@ export const AnuncianteNavInferior: React.FC = () => {
   const preservar = usePreservar();
   const [mais, setMais] = useState(false);
   const conta = useConta();
+  const telas = useMinhasTelas();
+  const temTelas = !!telas.data?.locais?.length;
+  const semSinal = (telas.data?.telas || []).filter((t) => t.status === 'ativa' && (Date.now() - new Date(t.ultimo_sinal || 0).getTime()) / 60000 > 3).length;
 
   const sair = async () => {
     setMais(false);
@@ -156,7 +160,10 @@ export const AnuncianteNavInferior: React.FC = () => {
             Perfil
           </NavLink>
           <button type="button" onClick={() => setMais(true)} className={cn(item, cor(mais))}>
-            <MoreHorizontal className="h-[22px] w-[22px]" strokeWidth={1.9} />
+            <span className="relative">
+              <MoreHorizontal className="h-[22px] w-[22px]" strokeWidth={1.9} />
+              {semSinal > 0 && <span className="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#C7141A] ring-2 ring-white" />}
+            </span>
             Mais
           </button>
         </div>
@@ -173,6 +180,13 @@ export const AnuncianteNavInferior: React.FC = () => {
               <div className="truncate text-[12.5px] text-[#8b8285]">{conta.email}</div>
             </div>
           </div>
+          {temTelas && (
+            <Link to={`/anunciante/telas${preservar}`} onClick={() => setMais(false)} className="mb-3 flex items-center gap-3 rounded-2xl bg-[#1b1719] px-4 py-3.5 text-white active:opacity-90">
+              <MonitorPlay className="h-5 w-5" />
+              <span className="flex-1 text-[15px] font-bold">Minhas telas</span>
+              {semSinal > 0 && <span className="rounded-full bg-[#C7141A] px-2 py-0.5 text-[12px] font-bold">{semSinal} sem sinal</span>}
+            </Link>
+          )}
           <div className="mb-3" onClick={() => setMais(false)}><AumenteAlcance compacto /></div>
           <div className="divide-y divide-black/[0.05] overflow-hidden rounded-2xl bg-[#f7f5f6]">
             {[

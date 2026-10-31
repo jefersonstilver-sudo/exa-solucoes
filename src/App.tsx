@@ -76,6 +76,7 @@ const EmailNotConfirmed = lazy(() => import('./pages/EmailNotConfirmed'));
 const EmailEnviado = lazy(() => import('./pages/EmailEnviado'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const PainelKiosk = lazy(() => import('./pages/PainelKiosk'));
+const MinhasTelas = lazy(() => import('./modules/telas/MinhasTelas'));
 
 /** Sai do app e abre uma página estática (player /tela, download do APK), mantendo a query (?plataforma=…). */
 function IrParaEstatico({ destino }: { destino: string }) {
@@ -596,6 +597,11 @@ const AppContent = () => {
             <Route path="pedido-classico/:id" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando detalhes do pedido..." />}>
                 <OrderDetails />
+              </Suspense>
+            } />
+            <Route path="telas" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando suas telas..." />}>
+                <MinhasTelas />
               </Suspense>
             } />
             <Route path="campanhas" element={

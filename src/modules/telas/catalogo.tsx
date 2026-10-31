@@ -52,3 +52,23 @@ export function MiniLayout({ id, largura = 160, className }: { id: string; largu
     </svg>
   );
 }
+
+/** Grade para escolher o layout (admin e área do cliente). */
+export function GradeLayouts({ valor, onEscolher }: { valor: string; onEscolher: (id: string) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {CATALOGO.map((l) => (
+        <button key={l.id} type="button" onClick={() => onEscolher(l.id)} className={`flex flex-col gap-1.5 rounded-2xl border p-2 text-left ${valor === l.id ? 'border-[#9C1E1E] bg-[#9C1E1E]/[0.05] ring-2 ring-[#9C1E1E]/30' : 'border-black/10 hover:border-black/25'}`}>
+          <MiniLayout id={l.id} largura={200} className="h-auto w-full" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-extrabold text-[#9C1E1E]">{l.id}</span>
+            <span className="truncate text-[13px] font-bold">{l.nome}</span>
+          </div>
+          <span className="text-[11.5px] leading-snug text-[#5E5F63]">{l.resumo}</span>
+          {l.destaque && <span className="self-start rounded-full bg-[#E3F4EA] px-2 py-0.5 text-[11px] font-bold text-[#1E6B47]">Mais atenção</span>}
+          {l.aviso && <span className="text-[11px] font-semibold text-[#8A5A00]">{l.aviso}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}

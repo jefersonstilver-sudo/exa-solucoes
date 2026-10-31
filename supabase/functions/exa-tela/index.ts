@@ -222,6 +222,119 @@ async function programacaoDoLocal(admin: any, building: any) {
   });
 }
 
+// ---------------------------------------------------------------- portal do restaurante e alertas
+const LAYOUTS_OK = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'L1', 'L2', 'L3', 'L4']);
+const CAMPOS_CLIENTE = 'id, nome, layout, config, status, ultimo_sinal, offline_desde, tocando, erros, plataforma, info, versao_player, saude, building_id, pareada_em, comando';
+const FUSO = 'America/Sao_Paulo';
+const hm = (iso?: string | null) => (iso ? new Intl.DateTimeFormat('pt-BR', { timeZone: FUSO, hour: '2-digit', minute: '2-digit' }).format(new Date(iso)) : '—');
+const minDesde = (iso?: string | null) => (iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) : 0);
+
+async function usuario(req: Request, admin: any) {
+  const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!jwt) return null;
+  const { data } = await admin.auth.getUser(jwt);
+  return data?.user || null;
+}
+
+/** Locais comércio cujo pedido "da casa" é deste cliente, com o limite de telas do pedido. */
+async function locaisDoCliente(admin: any, uid: string) {
+  const { data: peds } = await admin.from('pedidos').select('id, telas_comercio, nome_pedido').eq('client_id', uid);
+  const porId = new Map((peds || []).map((p: any) => [p.id, p]));
+  if (!porId.size) return [];
+  const { data: bs } = await admin.from('buildings').select('id, nome, bairro, segmento_local, pedido_casa_id').in('pedido_casa_id', [...porId.keys()]);
+  return (bs || []).map((x: any) => ({ id: x.id, nome: x.nome, bairro: x.bairro, segmento: x.segmento_local, pedido_id: x.pedido_casa_id, limite: Number((porId.get(x.pedido_casa_id) as any)?.telas_comercio) || 0 }));
+}
+
+async function telaDoCliente(admin: any, uid: string, telaId: string) {
+  const locais = await locaisDoCliente(admin, uid);
+  const { data: t } = await admin.from('exa_telas').select('*').eq('id', telaId).maybeSingle();
+  if (!t || !locais.some((l: any) => l.id === t.building_id)) return null;
+  return t;
+}
+
+const soDigitos = (t?: string | null) => {
+  let d = String(t || '').replace(/\D/g, '');
+  if (d.length === 10 || d.length === 11) d = `55${d}`;
+  return d.length >= 12 ? d : '';
+};
+async function whatsapp(phone: string, message: string) {
+  if (!phone) return { ok: false, erro: 'sem telefone' };
+  try {
+    const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/zapi-send-message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+      body: JSON.stringify({ agentKey: 'sofia', phone, message }),
+      signal: AbortSignal.timeout(20000),
+    });
+    return { ok: r.ok, status: r.status };
+  } catch (e) { return { ok: false, erro: (e as Error).message }; }
+}
+const descreverAparelho = (t: any) => {
+  const p = String(t.plataforma || '');
+  const nome = p.startsWith('android') ? 'Android' : p.startsWith('windows') ? 'Windows' : p.startsWith('linux') ? 'Linux' : 'Navegador';
+  const tela = t.info?.tela ? ` · ${String(t.info.tela).split('@')[0]}` : '';
+  const rede = t.saude?.conexao ? ` · rede ${t.saude.conexao}${t.saude.rtt ? ` (${t.saude.rtt} ms)` : ''}` : '';
+  return `${nome}${tela}${rede}`;
+};
+/** Horário de alerta da tela (padrão 08:00–22:00). Só avisa se a queda aconteceu dentro do horário e for das últimas 3 h:
+ * TV desligada à noite no fechamento não vira alerta na manhã seguinte. */
+const dentroDoHorario = (cfg: any, quando: Date = new Date()) => {
+  const a = cfg?.alertas || {};
+  if (a.ativo === false) return false;
+  const ini = String(a.inicio || '08:00'), fim = String(a.fim || '22:00');
+  const h = new Intl.DateTimeFormat('pt-BR', { timeZone: FUSO, hour: '2-digit', minute: '2-digit', hour12: false }).format(quando);
+  return ini <= fim ? h >= ini && h < fim : h >= ini || h < fim;
+};
+const deveAvisar = (t: any) => dentroDoHorario(t.config) && !!t.ultimo_sinal && dentroDoHorario(t.config, new Date(t.ultimo_sinal)) && minDesde(t.ultimo_sinal) < 180;
+
+/** A cada 5 min: tela ativa sem sinal há 10 min → avisa restaurante e EXA; quando volta → avisa que voltou. */
+async function vigiar(admin: any) {
+  const { data: telas } = await admin.from('exa_telas').select('*').eq('status', 'ativa').not('building_id', 'is', null);
+  const lista = telas || [];
+  if (!lista.length) return { telas: 0 };
+  const bIds = [...new Set(lista.map((t: any) => t.building_id))];
+  const { data: bs } = await admin.from('buildings').select('id, nome, pedido_casa_id').in('id', bIds);
+  const bPor = new Map((bs || []).map((x: any) => [x.id, x]));
+  const pIds = [...new Set((bs || []).map((x: any) => x.pedido_casa_id).filter(Boolean))];
+  const { data: ps } = pIds.length ? await admin.from('pedidos').select('id, client_id').in('id', pIds) : { data: [] };
+  const cIds = [...new Set((ps || []).map((p: any) => p.client_id).filter(Boolean))];
+  const { data: us } = cIds.length ? await admin.from('users').select('id, telefone, nome, empresa_nome').in('id', cIds) : { data: [] };
+  const donoPorPedido = new Map((ps || []).map((p: any) => [p.id, (us || []).find((u: any) => u.id === p.client_id)]));
+  const { data: dirs } = await admin.from('exa_alerts_directors').select('telefone, departamento').eq('ativo', true);
+  const exa = [...new Set((dirs || []).filter((d: any) => /ceo|opera/i.test(String(d.departamento || ''))).map((d: any) => soDigitos(d.telefone)).filter(Boolean))];
+  const out: any[] = [];
+  for (const t of lista) {
+    const b: any = bPor.get(t.building_id) || {};
+    const dono: any = b.pedido_casa_id ? donoPorPedido.get(b.pedido_casa_id) : null;
+    const foneDono = soDigitos(dono?.telefone);
+    const nome = t.nome || 'Tela';
+    const offline = minDesde(t.ultimo_sinal) >= 10;
+    if (offline && !t.alerta_offline_em) {
+      if (!t.offline_desde) await admin.from('exa_telas').update({ offline_desde: t.ultimo_sinal }).eq('id', t.id);
+      if (!deveAvisar(t)) { out.push({ tela: nome, offline: true, fora_do_horario: true }); continue; }
+      const avisos = (t.erros || []).slice(-2).map((e: string) => `• ${e}`).join('\n');
+      const corpo = `Sem sinal desde ${hm(t.ultimo_sinal)} (${minDesde(t.ultimo_sinal)} min).\nÚltimo que tocou: ${t.tocando?.cliente || t.tocando?.titulo || '—'}\nAparelho: ${descreverAparelho(t)}${avisos ? `\nÚltimos avisos:\n${avisos}` : ''}`;
+      const envios = [];
+      if (foneDono) envios.push(await whatsapp(foneDono, `⚠️ *Sua tela EXA está sem sinal*\n${nome} · ${b.nome || ''}\n${corpo}\n\nConfira se a TV está ligada, no app EXA Tela e com internet. Se desligaram a TV de propósito, pode ignorar.`));
+      for (const f of exa) envios.push(await whatsapp(f, `⚠️ *Tela de comércio sem sinal*\n${nome} · ${b.nome || ''}${dono ? ` (${dono.empresa_nome || dono.nome || ''})` : ''}\n${corpo}${foneDono ? '' : '\n(o restaurante não tem telefone cadastrado — não foi avisado)'}`));
+      await admin.from('exa_telas').update({ alerta_offline_em: new Date().toISOString(), offline_desde: t.offline_desde || t.ultimo_sinal }).eq('id', t.id);
+      await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'offline', dados: { desde: t.ultimo_sinal, envios } });
+      out.push({ tela: nome, offline: true, avisou: envios.length });
+    } else if (!offline && (t.alerta_offline_em || t.offline_desde)) {
+      const ficou = minDesde(t.offline_desde || t.alerta_offline_em);
+      if (t.alerta_offline_em) {
+        const msg = `✅ *Tela voltou* — ${nome} · ${b.nome || ''}\nFicou ${ficou} min sem sinal (desde ${hm(t.offline_desde)}).`;
+        if (foneDono) await whatsapp(foneDono, msg);
+        for (const f of exa) await whatsapp(f, msg);
+        await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'online', dados: { ficou_min: ficou } });
+      }
+      await admin.from('exa_telas').update({ alerta_offline_em: null, offline_desde: null }).eq('id', t.id);
+      out.push({ tela: nome, voltou: true, ficou_min: ficou });
+    }
+  }
+  return { telas: lista.length, mudancas: out };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   if (req.method !== 'POST') return json({ ok: false, erro: 'use POST' }, 405);
@@ -271,6 +384,7 @@ Deno.serve(async (req) => {
       if (b.info && typeof b.info === 'object') patch.info = b.info;
       if (b.tocando && typeof b.tocando === 'object') patch.tocando = { ...b.tocando, em: agora };
       if (Array.isArray(b.erros)) patch.erros = b.erros.slice(-10).map((e: unknown) => limpa(e, 300));
+      if (b.saude && typeof b.saude === 'object') patch.saude = { ...b.saude, em: agora };
       if (b.comando_ok && tela.comando && String(b.comando_ok) === String(tela.comando_em)) { patch.comando = null; patch.comando_em = null; }
       if (Array.isArray(b.exibicoes) && b.exibicoes.length && tela.status === 'ativa') {
         await admin.rpc('exa_telas_somar_exibicoes', { p_tela: tela.id, p_itens: b.exibicoes.slice(0, 200) });
@@ -333,6 +447,90 @@ Deno.serve(async (req) => {
       out.noticias = await noticias();
       out.cameras = await cameras();
       return json(out);
+    }
+
+    // ---------- vigia (cron a cada 5 min, token interno) ----------
+    if (acao === 'vigia') {
+      const { data: cfg } = await admin.from('exa2_config').select('valor').eq('chave', 'cron_token').maybeSingle();
+      if (!cfg?.valor || req.headers.get('x-exa2-cron') !== cfg.valor) return json({ ok: false, erro: 'sem permissão' }, 403);
+      return json({ ok: true, ...(await vigiar(admin)) });
+    }
+
+    // ---------- portal do restaurante (área do cliente) ----------
+    if (acao.startsWith('cliente_')) {
+      const u = await usuario(req, admin);
+      if (!u) return json({ ok: false, erro: 'Entre na sua conta.' }, 401);
+
+      if (acao === 'cliente_listar') {
+        const locais = await locaisDoCliente(admin, u.id);
+        if (!locais.length) return json({ ok: true, locais: [], telas: [] });
+        const { data: telas } = await admin.from('exa_telas').select(CAMPOS_CLIENTE).in('building_id', locais.map((l: any) => l.id)).order('pareada_em', { ascending: true });
+        const ids = (telas || []).map((t: any) => t.id);
+        const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: FUSO }).format(new Date());
+        const { data: ex } = ids.length ? await admin.from('exa_telas_exibicoes').select('tela_id, tipo, vezes').in('tela_id', ids).eq('dia', hoje) : { data: [] };
+        const { data: ev } = ids.length ? await admin.from('exa_telas_eventos').select('tela_id, tipo').in('tela_id', ids).eq('tipo', 'offline').gte('criado_em', new Date(Date.now() - 7 * 864e5).toISOString()) : { data: [] };
+        const exib = new Map<string, number>(); (ex || []).forEach((r: any) => { if (r.tipo === 'anuncio' || r.tipo === 'casa') exib.set(r.tela_id, (exib.get(r.tela_id) || 0) + r.vezes); });
+        const quedas = new Map<string, number>(); (ev || []).forEach((r: any) => quedas.set(r.tela_id, (quedas.get(r.tela_id) || 0) + 1));
+        return json({
+          ok: true, locais,
+          telas: (telas || []).map((t: any) => ({ ...t, info: { tela: t.info?.tela || null }, exibicoes_hoje: exib.get(t.id) || 0, quedas_7d: quedas.get(t.id) || 0 })),
+        });
+      }
+
+      if (acao === 'cliente_parear') {
+        const locais = await locaisDoCliente(admin, u.id);
+        const local = locais.find((l: any) => l.id === String(b.building_id || '')) || (locais.length === 1 ? locais[0] : null);
+        if (!local) return json({ ok: false, erro: 'Escolha o local da tela.' }, 400);
+        const { count } = await admin.from('exa_telas').select('id', { count: 'exact', head: true }).eq('building_id', local.id).eq('status', 'ativa');
+        if ((count || 0) >= local.limite) return json({ ok: false, erro: local.limite ? `Seu plano permite ${local.limite} ${local.limite === 1 ? 'tela' : 'telas'}. Para conectar mais, fale com a Sofia.` : 'Seu plano ainda não inclui telas próprias. Fale com a Sofia.' }, 403);
+        const codigo = String(b.codigo || '').replace(/\D/g, '');
+        if (codigo.length !== 6) return json({ ok: false, erro: 'O código tem 6 números.' }, 400);
+        const { data: t } = await admin.from('exa_telas').select('id, plataforma, info').eq('codigo', codigo).eq('status', 'aguardando').maybeSingle();
+        if (!t) return json({ ok: false, erro: 'Não achei esse código. Confira o número na TV.' }, 404);
+        const layout = LAYOUTS_OK.has(String(b.layout)) ? String(b.layout) : 'H6';
+        const { error } = await admin.from('exa_telas').update({
+          nome: limpa(b.nome, 60) || `${local.nome} · TV ${(count || 0) + 1}`, building_id: local.id, ambiente: 'comercio', layout,
+          status: 'ativa', codigo: null, codigo_expira: null, pareada_em: new Date().toISOString(), pareada_por: u.id, conectada_por: 'cliente',
+        }).eq('id', t.id).eq('status', 'aguardando');
+        if (error) throw error;
+        await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'conectada', dados: { por: 'cliente', usuario: u.id } });
+        return json({ ok: true, tela_id: t.id });
+      }
+
+      const t = await telaDoCliente(admin, u.id, String(b.tela_id || ''));
+      if (!t) return json({ ok: false, erro: 'Tela não encontrada na sua conta.' }, 404);
+
+      if (acao === 'cliente_atualizar') {
+        const patch: Record<string, unknown> = {};
+        if (typeof b.nome === 'string') patch.nome = limpa(b.nome, 60) || null;
+        if (b.layout !== undefined) { if (!LAYOUTS_OK.has(String(b.layout))) return json({ ok: false, erro: 'layout inválido' }, 400); patch.layout = String(b.layout); }
+        const cfg = { ...(t.config || {}) };
+        if (typeof b.camera === 'boolean' || typeof b.noticias === 'boolean') {
+          cfg.ritmo = { ...(cfg.ritmo || {}) };
+          if (typeof b.camera === 'boolean') cfg.ritmo.camera = b.camera;
+          if (typeof b.noticias === 'boolean') cfg.ritmo.noticias = b.noticias;
+          patch.config = cfg;
+        }
+        if (b.alertas && typeof b.alertas === 'object') {
+          cfg.alertas = { ativo: b.alertas.ativo !== false, inicio: /^\d\d:\d\d$/.test(b.alertas.inicio) ? b.alertas.inicio : '08:00', fim: /^\d\d:\d\d$/.test(b.alertas.fim) ? b.alertas.fim : '22:00' };
+          patch.config = cfg;
+        }
+        if (!Object.keys(patch).length) return json({ ok: true });
+        const { error } = await admin.from('exa_telas').update(patch).eq('id', t.id);
+        if (error) throw error;
+        return json({ ok: true });
+      }
+      if (acao === 'cliente_comando') {
+        const c = String(b.comando || '');
+        if (!['recarregar', 'limpar_cache', 'reiniciar_app'].includes(c)) return json({ ok: false, erro: 'comando inválido' }, 400);
+        await admin.from('exa_telas').update({ comando: c, comando_em: new Date().toISOString() }).eq('id', t.id);
+        return json({ ok: true });
+      }
+      if (acao === 'cliente_desconectar') {
+        await admin.from('exa_telas').update({ status: 'aguardando', building_id: null, codigo: null, codigo_expira: null, alerta_offline_em: null, offline_desde: null }).eq('id', t.id);
+        await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'desconectada', dados: { por: 'cliente', usuario: u.id } });
+        return json({ ok: true });
+      }
     }
 
     return json({ ok: false, erro: 'ação desconhecida' }, 400);
