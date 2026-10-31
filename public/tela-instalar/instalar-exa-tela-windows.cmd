@@ -50,7 +50,7 @@ function Servico($nome, $modo) {
     Stop-Service -Name $nome -Force -ErrorAction SilentlyContinue
     & sc.exe config $nome start= $modo | Out-Null
     if ($LASTEXITCODE -eq 0) { Ok "serviço $nome desativado" } else { Aviso "o Windows não deixou desativar o serviço $nome (protegido)" }
-  } catch { Aviso "serviço $nome: $($_.Exception.Message)" }
+  } catch { Aviso "serviço ${nome}: $($_.Exception.Message)" }
 }
 
 Write-Host ''

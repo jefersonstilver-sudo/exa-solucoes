@@ -35,7 +35,7 @@ jobs:
             $ps = $t.Substring($i + 10)
             $tok = $null; $erros = $null
             [void][System.Management.Automation.Language.Parser]::ParseInput($ps, [ref]$tok, [ref]$erros)
-            if ($erros.Count) { $falhou = $true; $erros | ForEach-Object { Write-Host "$f : $($_.Message) (linha $($_.Extent.StartLineNumber))" } } else { Write-Host "$f OK" }
+            if ($erros.Count) { $falhou = $true; $erros | ForEach-Object { Write-Host "::error::$f : $($_.Message) (linha $($_.Extent.StartLineNumber))" } } else { Write-Host "$f OK" }
             Set-Content -Path "$env:RUNNER_TEMP\$([IO.Path]::GetFileNameWithoutExtension($f)).ps1" -Value $ps -Encoding UTF8
           }
           if ($falhou) { exit 1 }
@@ -62,7 +62,7 @@ jobs:
           $tok = $null; $pe = $null
           [void][System.Management.Automation.Language.Parser]::ParseInput((Get-Content -Raw 'C:\ExaTela\abrir-tela.ps1'), [ref]$tok, [ref]$pe)
           if ($pe.Count) { $erros += "abrir-tela.ps1 com erro: $($pe[0].Message)" }
-          if ($erros.Count) { $erros | ForEach-Object { Write-Host "ERRO: $_" }; exit 1 }
+          if ($erros.Count) { $erros | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
           Write-Host 'Instalação conferida.'
 
       - name: Desinstalar e conferir
@@ -75,7 +75,7 @@ jobs:
           $nau = (Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -ErrorAction SilentlyContinue).NoAutoUpdate
           if ($nau -eq 1) { $erros += 'NoAutoUpdate continua 1' }
           Write-Host "wuauserv depois: $((Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode)"
-          if ($erros.Count) { $erros | ForEach-Object { Write-Host "ERRO: $_" }; exit 1 }
+          if ($erros.Count) { $erros | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
           Write-Host 'Desinstalação conferida.'
 
       - name: Gerar o .exe (NSIS)
