@@ -26,6 +26,7 @@ const OrderDetails = () => {
   const [isExporting, setIsExporting] = React.useState(false);
   const [purgeOpen, setPurgeOpen] = useState(false);
   const [clientViewSessionId, setClientViewSessionId] = useState<string | null>(null);
+  const telaGrande = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 
   const handleExportPDF = async () => {
     if (!orderDetails) return;
@@ -89,7 +90,9 @@ const OrderDetails = () => {
                 pedidoId={id}
                 variant="default"
                 className="col-span-2 sm:col-span-1 w-full sm:w-auto h-11 rounded-xl bg-[#C7141A] hover:bg-[#B40D1A] text-white"
-                onInternalView={(sid) => setClientViewSessionId(sid)}
+                // computador: painel lateral; celular/app: abre a área do cliente na própria tela
+                // (iframe dentro de painel no iPhone quebrava o layout e escondia o botão de sair)
+                onInternalView={telaGrande ? (sid) => setClientViewSessionId(sid) : undefined}
               />
             )}
             {orderDetails?.id && (

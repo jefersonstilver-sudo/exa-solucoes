@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { uploadVideo } from '@/services/videoUploadService';
 import { validateVideoUploadPermission } from '@/services/videoUploadSecurityService';
 import { VideoSlot } from '@/types/videoManagement';
-import { loadVideoSlots } from '@/services/videoSlotService';
+import { loadVideoSlots, slotsEmCache } from '@/services/videoSlotService';
 import { setBaseVideo } from '@/services/videoBaseService';
 import { deleteVideoWithExternalAPI } from '@/services/videoDeleteHelper';
 
@@ -17,7 +17,9 @@ interface UseVideoManagementProps {
 }
 
 export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }: UseVideoManagementProps) => {
-  const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
+  // abre com o último resultado salvo deste pedido; o banco atualiza logo em seguida
+  const [videoSlots, setVideoSlots] = useState<VideoSlot[]>(() => (orderId && slotsEmCache(orderId)) || []);
+  const [carregado, setCarregado] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -29,6 +31,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
       setVideoSlots(slots);
     } catch (error) {
       console.error('Erro ao carregar slots:', error);
+    } finally {
+      setCarregado(true);
     }
   }, [orderId]);
 
@@ -400,6 +404,9 @@ export const useVideoManagement = ({ orderId, userId, orderStatus, tipoProduto }
 
   return {
     videoSlots,
+    carregado,
+    temCache: videoSlots.length > 0,
+    refreshSlots,
     uploading,
     uploadProgress,
     handleUpload,

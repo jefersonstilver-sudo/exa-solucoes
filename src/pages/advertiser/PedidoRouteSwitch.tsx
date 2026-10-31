@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { EsqueletoPedido } from '@/components/pedido-v2/Esqueletos';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 
 const OrderDetails = lazy(() => import('./OrderDetails'));
 const OrderDetailsV2 = lazy(() => import('./OrderDetailsV2'));
@@ -14,8 +15,13 @@ const OrderDetailsV2 = lazy(() => import('./OrderDetailsV2'));
  */
 export default function PedidoRouteSwitch() {
   const [usarV2, setUsarV2] = useState<boolean | null>(null);
+  // "Acessar como cliente": a página segue a chave do CLIENTE, não a do admin
+  const { impersonationRequested, loading: impCarregando, isImpersonating, impersonation } = useImpersonation();
+  const esperandoImp = impersonationRequested && impCarregando;
+  const alvo = isImpersonating ? impersonation?.target_user_id || null : null;
 
   useEffect(() => {
+    if (esperandoImp) return;
     let ativo = true;
     (async () => {
       const forcar = new URLSearchParams(window.location.search).get('versao');
@@ -27,7 +33,7 @@ export default function PedidoRouteSwitch() {
           (supabase as any).from('exa2_flags').select('ativo_todos, usuarios').eq('chave', 'pedido_v2').maybeSingle(),
         ]);
         if (error || !flag) return ativo && setUsarV2(false);
-        const uid = u?.user?.id;
+        const uid = alvo || u?.user?.id;
         ativo && setUsarV2(Boolean(flag.ativo_todos || (uid && (flag.usuarios || []).includes(uid))));
       } catch {
         ativo && setUsarV2(false);
@@ -36,7 +42,7 @@ export default function PedidoRouteSwitch() {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [esperandoImp, alvo]);
 
   if (usarV2 === null) return <EsqueletoPedido />;
   return (

@@ -116,7 +116,9 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode; fallba
     }
     // Embedded (iframe) view: the parent sheet handles closing.
     if (embedded === '1' && window.parent !== window) return;
-    navigate('/super_admin/pedidos', { replace: true });
+    let volta = '/super_admin/pedidos';
+    try { const v = sessionStorage.getItem('exa-imp-volta'); if (v && /^\/(super_admin|admin)\b/.test(v)) volta = v; sessionStorage.removeItem('exa-imp-volta'); } catch { /* nada */ }
+    navigate(volta, { replace: true });
   }, [impersonation, navigate, embedded]);
 
   // Auto-expire timer

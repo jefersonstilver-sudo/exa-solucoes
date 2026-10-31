@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
 import { useVideoManagement } from '@/hooks/useVideoManagement';
-import { loadVideoSlots } from '@/services/videoSlotService';
 import { VideoSlot } from '@/types/videoManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,9 +21,7 @@ export const useOrderVideoManagement = (orderId: string) => {
   const { userProfile } = useAuth();
   const [orderStatus, setOrderStatus] = useState('pendente');
   const [tipoProduto, setTipoProduto] = useState<string | undefined>(undefined);
-  const [maxVideos, setMaxVideos] = useState<number>(10);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [, setMaxVideos] = useState<number>(10); // limite do produto (os slots seguem o padrão de 10)
   
   // Estados de popup de sucesso
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
@@ -89,35 +86,14 @@ export const useOrderVideoManagement = (orderId: string) => {
     tipoProduto
   });
 
-  // Carregar slots inicialmente
-  useEffect(() => {
-    const loadInitialSlots = async () => {
-      if (!orderId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setLoadError(null);
-        
-        await loadVideoSlots(orderId, maxVideos);
-
-      } catch (error: any) {
-        setLoadError(error.message || 'Erro ao carregar vídeos');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadInitialSlots();
-  }, [orderId, maxVideos]);
-
-  // Função para refresh manual de slots
+  // Os slots vêm só do hook base (antes este hook carregava tudo de novo, 2 vezes, e o resultado era descartado).
+  // Atualizar agora atualiza de verdade o que aparece na tela.
   const refreshSlots = async (): Promise<void> => {
     if (!orderId) return;
-    await loadVideoSlots(orderId, maxVideos);
+    await baseHook.refreshSlots();
   };
+  const loading = !!orderId && !baseHook.carregado && !baseHook.temCache;
+  const loadError: string | null = null;
 
   // Wrapper para upload com tratamento de sucesso e conflitos
   // IMPORTANTE: só abre popup de sucesso se o upload realmente concluiu.

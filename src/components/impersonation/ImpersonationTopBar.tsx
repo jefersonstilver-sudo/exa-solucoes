@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, LogOut, Clock } from 'lucide-react';
+import { ShieldAlert, LogOut, Clock, Eye } from 'lucide-react';
 
 const fmt = (ms: number) => {
   if (ms < 0) ms = 0;
@@ -10,9 +10,29 @@ const fmt = (ms: number) => {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
+const useTelaGrande = () => {
+  const q = '(min-width: 1024px)';
+  const [g, setG] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches);
+  useEffect(() => {
+    const m = window.matchMedia(q);
+    const f = () => setG(m.matches);
+    m.addEventListener?.('change', f);
+    return () => m.removeEventListener?.('change', f);
+  }, []);
+  return g;
+};
+
+/**
+ * Aviso de "Acessar como cliente".
+ * Computador: faixa vermelha fixa no topo.
+ * Celular/app: pílula escura presa acima da barra de abas (sempre alcançável, fora do entalhe do iPhone),
+ * com o nome do cliente, o tempo restante e o botão Sair.
+ */
 const ImpersonationTopBar: React.FC = () => {
   const { impersonation, isImpersonating, endSession } = useImpersonation();
   const [now, setNow] = useState(Date.now());
+  const [saindo, setSaindo] = useState(false);
+  const telaGrande = useTelaGrande();
 
   useEffect(() => {
     if (!isImpersonating) return;
@@ -24,7 +44,44 @@ const ImpersonationTopBar: React.FC = () => {
 
   const remaining = new Date(impersonation.expires_at).getTime() - now;
   const target = impersonation.target_user;
-  const targetLabel = target?.nome || target?.email || impersonation.target_user_id.slice(0, 8);
+  const targetLabel = target?.empresa_nome || target?.nome || target?.email || impersonation.target_user_id.slice(0, 8);
+  const sair = () => { setSaindo(true); endSession('manual'); };
+
+  if (!telaGrande) {
+    return (
+      <>
+        {/* espaço no fim da página para a pílula não cobrir o último conteúdo */}
+        <style>{'.exa-anunciante main>div::after{content:"";display:block;height:68px}'}</style>
+        <div
+          role="alert"
+          style={{
+            position: 'fixed', left: 10, right: 10, zIndex: 1000,
+            bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '8px 8px 8px 14px', borderRadius: 18,
+            background: 'rgba(23,24,26,.94)', color: '#fff',
+            boxShadow: '0 14px 34px -14px rgba(0,0,0,.6)',
+            backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+            fontFamily: 'Manrope, system-ui, sans-serif',
+          }}
+        >
+          <Eye size={18} style={{ flex: 'none', color: '#FF8A80' }} />
+          <div style={{ minWidth: 0, flex: 1, lineHeight: 1.2 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,.62)' }}>Vendo como cliente · {fmt(remaining)}</div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{targetLabel}</div>
+          </div>
+          <button
+            type="button"
+            onClick={sair}
+            disabled={saindo}
+            style={{ flex: 'none', height: 40, padding: '0 16px', borderRadius: 12, border: 0, background: '#fff', color: '#9C1E1E', fontWeight: 800, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: saindo ? 0.7 : 1 }}
+          >
+            <LogOut size={16} /> {saindo ? 'Saindo…' : 'Sair'}
+          </button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -48,7 +105,8 @@ const ImpersonationTopBar: React.FC = () => {
             size="sm"
             variant="secondary"
             className="bg-white text-[#7D1818] hover:bg-white/90 font-semibold"
-            onClick={() => endSession('manual')}
+            onClick={sair}
+            disabled={saindo}
           >
             <LogOut className="h-4 w-4 mr-1" /> Sair do modo cliente
           </Button>

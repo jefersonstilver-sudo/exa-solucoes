@@ -61,6 +61,8 @@ const AccessAsClientButton: React.FC<AccessAsClientButtonProps> = ({
         return;
       }
 
+      // "Sair do modo cliente" volta exatamente para onde o admin estava
+      try { sessionStorage.setItem('exa-imp-volta', window.location.pathname + window.location.search); } catch { /* nada */ }
       const path = redirectPath ?? (pedidoId ? `pedido/${pedidoId}` : 'pedidos');
       const url = `/anunciante/${path}?impersonate=${encodeURIComponent(sessionId)}`;
       toast.success('Modo cliente ativo (30 min).');
