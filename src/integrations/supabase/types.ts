@@ -1732,6 +1732,7 @@ export type Database = {
           numero_unidades: number | null
           padrao_publico: string | null
           peak_hours: string | null
+          pedido_casa_id: string | null
           position_validated: boolean | null
           position_validation_date: string | null
           preco_anual: number | null
@@ -1740,8 +1741,11 @@ export type Database = {
           preco_trimestral: number | null
           publico_estimado: number | null
           quantidade_telas: number | null
+          segmento_local: string | null
           status: string
+          telas_ritmo: Json
           tem_airbnb: boolean
+          tipo_local: string
           venue_type: string | null
           visualizacoes_mes: number | null
         }
@@ -1808,6 +1812,7 @@ export type Database = {
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null
+          pedido_casa_id?: string | null
           position_validated?: boolean | null
           position_validation_date?: string | null
           preco_anual?: number | null
@@ -1816,8 +1821,11 @@ export type Database = {
           preco_trimestral?: number | null
           publico_estimado?: number | null
           quantidade_telas?: number | null
+          segmento_local?: string | null
           status?: string
+          telas_ritmo?: Json
           tem_airbnb?: boolean
+          tipo_local?: string
           venue_type?: string | null
           visualizacoes_mes?: number | null
         }
@@ -1884,6 +1892,7 @@ export type Database = {
           numero_unidades?: number | null
           padrao_publico?: string | null
           peak_hours?: string | null
+          pedido_casa_id?: string | null
           position_validated?: boolean | null
           position_validation_date?: string | null
           preco_anual?: number | null
@@ -1892,8 +1901,11 @@ export type Database = {
           preco_trimestral?: number | null
           publico_estimado?: number | null
           quantidade_telas?: number | null
+          segmento_local?: string | null
           status?: string
+          telas_ritmo?: Json
           tem_airbnb?: boolean
+          tipo_local?: string
           venue_type?: string | null
           visualizacoes_mes?: number | null
         }
@@ -1903,6 +1915,13 @@ export type Database = {
             columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buildings_pedido_casa_id_fkey"
+            columns: ["pedido_casa_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
             referencedColumns: ["id"]
           },
         ]
@@ -5190,6 +5209,51 @@ export type Database = {
           },
         ]
       }
+      crm_agendadas: {
+        Row: {
+          agente: string
+          alvo: string
+          arquivo: Json | null
+          created_at: string
+          criado_por: string | null
+          criado_por_nome: string | null
+          enviada_em: string | null
+          enviar_em: string
+          erro: string | null
+          id: string
+          status: string
+          texto: string | null
+        }
+        Insert: {
+          agente: string
+          alvo: string
+          arquivo?: Json | null
+          created_at?: string
+          criado_por?: string | null
+          criado_por_nome?: string | null
+          enviada_em?: string | null
+          enviar_em: string
+          erro?: string | null
+          id?: string
+          status?: string
+          texto?: string | null
+        }
+        Update: {
+          agente?: string
+          alvo?: string
+          arquivo?: Json | null
+          created_at?: string
+          criado_por?: string | null
+          criado_por_nome?: string | null
+          enviada_em?: string | null
+          enviar_em?: string
+          erro?: string | null
+          id?: string
+          status?: string
+          texto?: string | null
+        }
+        Relationships: []
+      }
       crm_ai_analysis_history: {
         Row: {
           analysis_data: Json
@@ -5263,6 +5327,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_notas: {
+        Row: {
+          agente: string
+          alvo: string
+          autor: string | null
+          autor_id: string | null
+          created_at: string
+          id: string
+          texto: string
+        }
+        Insert: {
+          agente: string
+          alvo: string
+          autor?: string | null
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          texto: string
+        }
+        Update: {
+          agente?: string
+          alvo?: string
+          autor?: string | null
+          autor_id?: string | null
+          created_at?: string
+          id?: string
+          texto?: string
+        }
+        Relationships: []
       }
       cron_job_logs: {
         Row: {
@@ -7294,6 +7388,219 @@ export type Database = {
           },
         ]
       }
+      exa_radar_conteudo: {
+        Row: {
+          ativo: boolean
+          autocura: boolean
+          lembrar_horas: number
+          max_horas: number
+          nome: string
+          obs: string | null
+          pedido_id: string
+          ultimo_alerta_em: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          autocura?: boolean
+          lembrar_horas?: number
+          max_horas: number
+          nome: string
+          obs?: string | null
+          pedido_id: string
+          ultimo_alerta_em?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          autocura?: boolean
+          lembrar_horas?: number
+          max_horas?: number
+          nome?: string
+          obs?: string | null
+          pedido_id?: string
+          ultimo_alerta_em?: string | null
+        }
+        Relationships: []
+      }
+      exa_radar_log: {
+        Row: {
+          criado_em: string
+          detalhe: Json | null
+          id: number
+          pedido_id: string | null
+          tipo: string
+        }
+        Insert: {
+          criado_em?: string
+          detalhe?: Json | null
+          id?: number
+          pedido_id?: string | null
+          tipo: string
+        }
+        Update: {
+          criado_em?: string
+          detalhe?: Json | null
+          id?: number
+          pedido_id?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      exa_telas: {
+        Row: {
+          ambiente: string
+          atualizado_em: string
+          building_id: string | null
+          codigo: string | null
+          codigo_expira: string | null
+          comando: string | null
+          comando_em: string | null
+          config: Json
+          criado_em: string
+          erros: Json | null
+          id: string
+          info: Json
+          ip: string | null
+          layout: string
+          nome: string | null
+          pareada_em: string | null
+          pareada_por: string | null
+          plataforma: string | null
+          status: string
+          tocando: Json | null
+          token_hash: string
+          ultimo_sinal: string | null
+          versao_player: string | null
+        }
+        Insert: {
+          ambiente?: string
+          atualizado_em?: string
+          building_id?: string | null
+          codigo?: string | null
+          codigo_expira?: string | null
+          comando?: string | null
+          comando_em?: string | null
+          config?: Json
+          criado_em?: string
+          erros?: Json | null
+          id?: string
+          info?: Json
+          ip?: string | null
+          layout?: string
+          nome?: string | null
+          pareada_em?: string | null
+          pareada_por?: string | null
+          plataforma?: string | null
+          status?: string
+          tocando?: Json | null
+          token_hash: string
+          ultimo_sinal?: string | null
+          versao_player?: string | null
+        }
+        Update: {
+          ambiente?: string
+          atualizado_em?: string
+          building_id?: string | null
+          codigo?: string | null
+          codigo_expira?: string | null
+          comando?: string | null
+          comando_em?: string | null
+          config?: Json
+          criado_em?: string
+          erros?: Json | null
+          id?: string
+          info?: Json
+          ip?: string | null
+          layout?: string
+          nome?: string | null
+          pareada_em?: string | null
+          pareada_por?: string | null
+          plataforma?: string | null
+          status?: string
+          tocando?: Json | null
+          token_hash?: string
+          ultimo_sinal?: string | null
+          versao_player?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa_telas_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exa_telas_eventos: {
+        Row: {
+          criado_em: string
+          dados: Json | null
+          id: number
+          tela_id: string | null
+          tipo: string
+        }
+        Insert: {
+          criado_em?: string
+          dados?: Json | null
+          id?: number
+          tela_id?: string | null
+          tipo: string
+        }
+        Update: {
+          criado_em?: string
+          dados?: Json | null
+          id?: number
+          tela_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa_telas_eventos_tela_id_fkey"
+            columns: ["tela_id"]
+            isOneToOne: false
+            referencedRelation: "exa_telas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exa_telas_exibicoes: {
+        Row: {
+          dia: string
+          pedido_id: string
+          segundos: number
+          tela_id: string
+          tipo: string
+          vezes: number
+          video_id: string
+        }
+        Insert: {
+          dia: string
+          pedido_id?: string
+          segundos?: number
+          tela_id: string
+          tipo?: string
+          vezes?: number
+          video_id?: string
+        }
+        Update: {
+          dia?: string
+          pedido_id?: string
+          segundos?: number
+          tela_id?: string
+          tipo?: string
+          vezes?: number
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa_telas_exibicoes_tela_id_fkey"
+            columns: ["tela_id"]
+            isOneToOne: false
+            referencedRelation: "exa_telas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exa2_agenda_sync_estado: {
         Row: {
           origem: string | null
@@ -7370,6 +7677,57 @@ export type Database = {
           tipo?: string
         }
         Relationships: []
+      }
+      exa2_cobranca_avisos: {
+        Row: {
+          canal: string
+          created_at: string
+          destino: string
+          detalhe: string | null
+          id: string
+          ok: boolean
+          parcela_id: string | null
+          pedido_id: string | null
+          tipo: string
+        }
+        Insert: {
+          canal: string
+          created_at?: string
+          destino?: string
+          detalhe?: string | null
+          id?: string
+          ok?: boolean
+          parcela_id?: string | null
+          pedido_id?: string | null
+          tipo: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string
+          destino?: string
+          detalhe?: string | null
+          id?: string
+          ok?: boolean
+          parcela_id?: string | null
+          pedido_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa2_cobranca_avisos_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exa2_cobranca_avisos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exa2_config: {
         Row: {
@@ -11985,16 +12343,24 @@ export type Database = {
       }
       parcelas: {
         Row: {
+          asaas_invoice_url: string | null
+          asaas_payment_id: string | null
+          asaas_status: string | null
           boleto_barcode: string | null
+          boleto_gerado_em: string | null
           boleto_url: string | null
           created_at: string
           data_pagamento: string | null
           data_vencimento: string
+          forma: string | null
           id: string
           mercadopago_external_reference: string | null
           mercadopago_payment_id: string | null
           metodo_pagamento: string | null
+          multa_perdoada: boolean
           numero_parcela: number
+          pago_fora_descricao: string | null
+          pago_fora_por: string | null
           pedido_id: string
           pix_qr_code: string | null
           pix_qr_code_base64: string | null
@@ -12007,16 +12373,24 @@ export type Database = {
           valor_original: number
         }
         Insert: {
+          asaas_invoice_url?: string | null
+          asaas_payment_id?: string | null
+          asaas_status?: string | null
           boleto_barcode?: string | null
+          boleto_gerado_em?: string | null
           boleto_url?: string | null
           created_at?: string
           data_pagamento?: string | null
           data_vencimento: string
+          forma?: string | null
           id?: string
           mercadopago_external_reference?: string | null
           mercadopago_payment_id?: string | null
           metodo_pagamento?: string | null
+          multa_perdoada?: boolean
           numero_parcela: number
+          pago_fora_descricao?: string | null
+          pago_fora_por?: string | null
           pedido_id: string
           pix_qr_code?: string | null
           pix_qr_code_base64?: string | null
@@ -12029,16 +12403,24 @@ export type Database = {
           valor_original: number
         }
         Update: {
+          asaas_invoice_url?: string | null
+          asaas_payment_id?: string | null
+          asaas_status?: string | null
           boleto_barcode?: string | null
+          boleto_gerado_em?: string | null
           boleto_url?: string | null
           created_at?: string
           data_pagamento?: string | null
           data_vencimento?: string
+          forma?: string | null
           id?: string
           mercadopago_external_reference?: string | null
           mercadopago_payment_id?: string | null
           metodo_pagamento?: string | null
+          multa_perdoada?: boolean
           numero_parcela?: number
+          pago_fora_descricao?: string | null
+          pago_fora_por?: string | null
           pedido_id?: string
           pix_qr_code?: string | null
           pix_qr_code_base64?: string | null
@@ -12476,6 +12858,7 @@ export type Database = {
       pedidos: {
         Row: {
           asaas_authorization_id: string | null
+          asaas_customer_id: string | null
           asaas_subscription_id: string | null
           blocked_at: string | null
           blocked_by: string | null
@@ -12488,6 +12871,9 @@ export type Database = {
           client_name: string | null
           cobranca_futura: boolean | null
           compliance_data: Json | null
+          confianca_ate: string | null
+          confianca_motivo: string | null
+          confianca_por: string | null
           contrato_assinado_em: string | null
           contrato_enviado_em: string | null
           contrato_id: string | null
@@ -12506,6 +12892,7 @@ export type Database = {
           email: string | null
           exigir_contrato: boolean | null
           expires_at: string | null
+          forma_cobranca: string | null
           grupo_id: string | null
           id: string
           ip_origem: string | null
@@ -12543,6 +12930,7 @@ export type Database = {
         }
         Insert: {
           asaas_authorization_id?: string | null
+          asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           blocked_at?: string | null
           blocked_by?: string | null
@@ -12555,6 +12943,9 @@ export type Database = {
           client_name?: string | null
           cobranca_futura?: boolean | null
           compliance_data?: Json | null
+          confianca_ate?: string | null
+          confianca_motivo?: string | null
+          confianca_por?: string | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null
           contrato_id?: string | null
@@ -12573,6 +12964,7 @@ export type Database = {
           email?: string | null
           exigir_contrato?: boolean | null
           expires_at?: string | null
+          forma_cobranca?: string | null
           grupo_id?: string | null
           id?: string
           ip_origem?: string | null
@@ -12610,6 +13002,7 @@ export type Database = {
         }
         Update: {
           asaas_authorization_id?: string | null
+          asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           blocked_at?: string | null
           blocked_by?: string | null
@@ -12622,6 +13015,9 @@ export type Database = {
           client_name?: string | null
           cobranca_futura?: boolean | null
           compliance_data?: Json | null
+          confianca_ate?: string | null
+          confianca_motivo?: string | null
+          confianca_por?: string | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null
           contrato_id?: string | null
@@ -12640,6 +13036,7 @@ export type Database = {
           email?: string | null
           exigir_contrato?: boolean | null
           expires_at?: string | null
+          forma_cobranca?: string | null
           grupo_id?: string | null
           id?: string
           ip_origem?: string | null
@@ -14071,6 +14468,87 @@ export type Database = {
         }
         Relationships: []
       }
+      push_assinaturas: {
+        Row: {
+          aparelho: string | null
+          ativo: boolean
+          atualizado_em: string
+          auth: string
+          criado_em: string
+          endpoint: string
+          falhas: number
+          id: string
+          p256dh: string
+          ultimo_ok: string | null
+          user_id: string
+        }
+        Insert: {
+          aparelho?: string | null
+          ativo?: boolean
+          atualizado_em?: string
+          auth: string
+          criado_em?: string
+          endpoint: string
+          falhas?: number
+          id?: string
+          p256dh: string
+          ultimo_ok?: string | null
+          user_id: string
+        }
+        Update: {
+          aparelho?: string | null
+          ativo?: boolean
+          atualizado_em?: string
+          auth?: string
+          criado_em?: string
+          endpoint?: string
+          falhas?: number
+          id?: string
+          p256dh?: string
+          ultimo_ok?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_envios: {
+        Row: {
+          assinatura_id: string | null
+          corpo: string | null
+          created_at: string
+          erro: string | null
+          id: number
+          ok: boolean | null
+          tipo: string | null
+          titulo: string | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          assinatura_id?: string | null
+          corpo?: string | null
+          created_at?: string
+          erro?: string | null
+          id?: number
+          ok?: boolean | null
+          tipo?: string | null
+          titulo?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          assinatura_id?: string | null
+          corpo?: string | null
+          created_at?: string
+          erro?: string | null
+          id?: number
+          ok?: boolean | null
+          tipo?: string | null
+          titulo?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       qr_codes: {
         Row: {
           campanha_id: string
@@ -14880,6 +15358,75 @@ export type Database = {
           },
         ]
       }
+      sofia_acoes_ceo: {
+        Row: {
+          code_hash: string
+          confirmada_em: string | null
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string
+          executada_em: string | null
+          expira_em: string
+          id: number
+          nonce: string
+          params: Json
+          resultado: string | null
+          resumo: string
+          status: string
+          tentativas: number
+          tipo: string
+        }
+        Insert: {
+          code_hash: string
+          confirmada_em?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          executada_em?: string | null
+          expira_em: string
+          id?: never
+          nonce: string
+          params: Json
+          resultado?: string | null
+          resumo: string
+          status?: string
+          tentativas?: number
+          tipo: string
+        }
+        Update: {
+          code_hash?: string
+          confirmada_em?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          executada_em?: string | null
+          expira_em?: string
+          id?: never
+          nonce?: string
+          params?: Json
+          resultado?: string | null
+          resumo?: string
+          status?: string
+          tentativas?: number
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_acoes_ceo_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sofia_acoes_ceo_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sofia_admin_access_logs: {
         Row: {
           created_at: string
@@ -14960,6 +15507,42 @@ export type Database = {
           user_name?: string | null
           user_phone?: string
           verification_code?: string
+        }
+        Relationships: []
+      }
+      sofia_auditoria_ceo: {
+        Row: {
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string
+          entrada: Json | null
+          erro: boolean
+          ferramenta: string
+          id: number
+          ms: number | null
+          resultado: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          entrada?: Json | null
+          erro?: boolean
+          ferramenta: string
+          id?: never
+          ms?: number | null
+          resultado?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          entrada?: Json | null
+          erro?: boolean
+          ferramenta?: string
+          id?: never
+          ms?: number | null
+          resultado?: string | null
         }
         Relationships: []
       }
@@ -15176,6 +15759,7 @@ export type Database = {
           jid: string
           last_message_at: string
           mode: string
+          respondido_ate: number | null
           summary: string | null
         }
         Insert: {
@@ -15186,6 +15770,7 @@ export type Database = {
           jid: string
           last_message_at?: string
           mode?: string
+          respondido_ate?: number | null
           summary?: string | null
         }
         Update: {
@@ -15196,6 +15781,7 @@ export type Database = {
           jid?: string
           last_message_at?: string
           mode?: string
+          respondido_ate?: number | null
           summary?: string | null
         }
         Relationships: [
@@ -15432,6 +16018,66 @@ export type Database = {
           valido_ate?: string | null
         }
         Relationships: []
+      }
+      sofia_pendencias: {
+        Row: {
+          cliente_avisado: boolean | null
+          codigo: string | null
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string
+          decidido_em: string | null
+          decisao: string | null
+          id: number
+          mensagem_cliente: string | null
+          motivo: string
+          resumo: string | null
+          status: string
+        }
+        Insert: {
+          cliente_avisado?: boolean | null
+          codigo?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decisao?: string | null
+          id?: never
+          mensagem_cliente?: string | null
+          motivo: string
+          resumo?: string | null
+          status?: string
+        }
+        Update: {
+          cliente_avisado?: boolean | null
+          codigo?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decisao?: string | null
+          id?: never
+          mensagem_cliente?: string | null
+          motivo?: string
+          resumo?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_pendencias_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sofia_pendencias_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sofia_video_jobs: {
         Row: {
@@ -17222,6 +17868,9 @@ export type Database = {
           empresa_nome: string | null
           empresa_pais: string | null
           empresa_segmento: string | null
+          financeiro_email: string | null
+          financeiro_nome: string | null
+          financeiro_whatsapp: string | null
           id: string
           is_blocked: boolean | null
           nome: string | null
@@ -17264,6 +17913,9 @@ export type Database = {
           empresa_nome?: string | null
           empresa_pais?: string | null
           empresa_segmento?: string | null
+          financeiro_email?: string | null
+          financeiro_nome?: string | null
+          financeiro_whatsapp?: string | null
           id: string
           is_blocked?: boolean | null
           nome?: string | null
@@ -17306,6 +17958,9 @@ export type Database = {
           empresa_nome?: string | null
           empresa_pais?: string | null
           empresa_segmento?: string | null
+          financeiro_email?: string | null
+          financeiro_nome?: string | null
+          financeiro_whatsapp?: string | null
           id?: string
           is_blocked?: boolean | null
           nome?: string | null
@@ -18322,6 +18977,16 @@ export type Database = {
       emergency_financial_audit_and_fix: { Args: never; Returns: Json }
       ensure_ficha_padrao: { Args: { p_marca_id: string }; Returns: undefined }
       ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
+      exa_radar_conteudo_rodar: {
+        Args: { p_dry?: boolean; p_forcar_aviso?: boolean }
+        Returns: Json
+      }
+      exa_telas_equipe: { Args: never; Returns: boolean }
+      exa_telas_limpar: { Args: never; Returns: undefined }
+      exa_telas_somar_exibicoes: {
+        Args: { p_itens: Json; p_tela: string }
+        Returns: undefined
+      }
       exa2_avisar_sync: { Args: { p_pedido: string }; Returns: undefined }
       extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
       generate_contract_number: { Args: never; Returns: string }
@@ -18489,8 +19154,10 @@ export type Database = {
           preco_base: number
           publico_estimado: number
           quantidade_telas: number
+          segmento_local: string
           status: string
           tem_airbnb: boolean
+          tipo_local: string
           venue_type: string
           visualizacoes_mes: number
         }[]
@@ -19216,6 +19883,10 @@ export type Database = {
         }[]
       }
       sincronizar_exibicoes_buildings: { Args: never; Returns: Json }
+      sofia_marcar_respondido: {
+        Args: { p_ate: number; p_conv: string }
+        Returns: undefined
+      }
       sofia_match_phone: {
         Args: { p: string }
         Returns: {
