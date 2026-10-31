@@ -102,12 +102,15 @@ interface ProfessionalOrderReportProps {
   panels: PanelData[];
   videos: OrderVideo[];
   onBuildingChanged?: () => void;
+  /** Parte mostrada: 'tudo' (relatório completo) ou só a aba da página do pedido. */
+  parte?: 'tudo' | 'resumo' | 'cobranca' | 'videos';
 }
 export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = ({
   order,
   panels,
   videos,
-  onBuildingChanged
+  onBuildingChanged,
+  parte = 'tudo'
 }) => {
   console.log('📋 [PROFESSIONAL REPORT] Renderizando relatório');
   console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
@@ -317,7 +320,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   const desconto = order.cupom_id ? subtotal * 0.1 : 0;
   return <><div className="w-full max-w-7xl mx-auto bg-white md:shadow-sm md:border border-gray-200 overflow-hidden rounded-2xl md:rounded-none">
       {/* HEADER MINIMALISTA PROFISSIONAL - RESPONSIVO */}
-      <div className="hidden md:block bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-4 lg:px-6 py-4 lg:py-5 border-b-2 border-gray-200">
+      {parte === 'tudo' && <div className="hidden md:block bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-4 lg:px-6 py-4 lg:py-5 border-b-2 border-gray-200">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           {/* Logo e Info */}
           <div className="flex items-center gap-4 lg:gap-6">
@@ -363,9 +366,12 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         </div>
       </div>
 
+      }
+
       {/* CONTEÚDO PRINCIPAL - MINIMALISTA */}
       <div className="px-3 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
 
+        {(parte === 'tudo' || parte === 'resumo') && <>
         {/* SEÇÃO: NOME DO PEDIDO */}
         <OrderNameEdit orderId={order.id} currentName={order.nome_pedido} />
         
@@ -531,6 +537,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
         </section>
 
+        </>}
+
+        {(parte === 'tudo' || parte === 'cobranca') && <>
         {/* SEÇÃO: RESUMO FINANCEIRO */}
         <section className="border border-gray-200 rounded bg-gray-50">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
@@ -929,6 +938,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             </div>
           </section>}
 
+        </>}
+
+        {(parte === 'tudo' || parte === 'resumo') && <>
         {/* SEÇÃO: LOCAIS CONTRATADOS */}
         {panels && panels.length > 0 ? <section className="border border-border rounded-xl overflow-hidden">
             <Collapsible defaultOpen={false}>
@@ -1030,6 +1042,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             </div>
           </section>}
 
+        </>}
+
+        {(parte === 'tudo' || parte === 'videos') && <>
         {/* SEÇÃO: VÍDEOS ENVIADOS COM PREVIEW */}
         <section className="border border-gray-200 rounded">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
@@ -1145,10 +1160,11 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           })}
             </div>}
         </section>
+        </>}
       </div>
 
       {/* FOOTER MINIMALISTA */}
-      <div className="bg-gray-100 border-t border-gray-300 px-6 py-4 mt-6">
+      {parte === 'tudo' && <div className="bg-gray-100 border-t border-gray-300 px-6 py-4 mt-6">
         <div className="flex justify-between items-center text-xs text-gray-600">
           <div>
             <p className="font-semibold text-gray-900">EXA - Publicidade Inteligente</p>
@@ -1159,7 +1175,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             <p className="font-medium text-gray-700">{emittedAt}</p>
           </div>
         </div>
-      </div>
+      </div>}
     </div>
 
     {/* Dialog de Gestão de Prédios */}

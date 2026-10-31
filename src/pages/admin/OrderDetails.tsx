@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Download, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Download, Trash2, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
 import { ProfessionalOrderReport } from '@/components/admin/orders/ProfessionalOrderReport';
@@ -103,48 +104,52 @@ const OrderDetails = () => {
                 onDone={refetch}
               />
             )}
-            <Button
-              variant="outline"
-              onClick={() => setPurgeOpen(true)}
-              className="w-full sm:w-auto h-11 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4 mr-1.5 shrink-0" />
-              <span className="sm:hidden">Excluir vídeos</span>
-              <span className="hidden sm:inline">Excluir todos os vídeos</span>
-            </Button>
-            <Button
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              className="w-full sm:w-auto h-11 rounded-xl flex items-center gap-2 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white font-semibold shadow-sm"
-            >
-              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {isExporting ? 'Gerando...' : 'Exportar PDF'}
-            </Button>
+            {/* ações raras ficam no "Mais" para o topo não virar um muro de botões */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto h-11 rounded-xl">
+                  <MoreHorizontal className="h-4 w-4 mr-1.5" /> Mais
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleExportPDF} disabled={isExporting}>
+                  {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  {isExporting ? 'Gerando PDF…' : 'Exportar PDF'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPurgeOpen(true)} className="text-destructive focus:text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" /> Excluir todos os vídeos
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
-        <Tabs defaultValue="pedido" className="w-full">
-          <div className="mb-3 text-[13px]"><OrderCRM360Fields userId={orderDetails.client_id} email={orderDetails.email} whatsapp={orderDetails.whatsapp} /></div>
-          <TabsList className="w-full sm:w-auto mb-1 rounded-full bg-black/[0.05] p-1 [&>button]:flex-1 [&>button]:rounded-full sm:[&>button]:flex-none">
-            <TabsTrigger value="pedido">Pedido</TabsTrigger>
+        <Tabs defaultValue="resumo" className="w-full">
+          <TabsList className="w-full sm:w-auto mb-1 rounded-full bg-black/[0.05] p-1 [&>button]:flex-1 [&>button]:rounded-full [&>button]:px-2 sm:[&>button]:flex-none sm:[&>button]:px-4">
+            <TabsTrigger value="resumo">Resumo</TabsTrigger>
+            <TabsTrigger value="videos">Vídeos{orderVideos?.length ? ` · ${orderVideos.length}` : ''}</TabsTrigger>
             <TabsTrigger value="cobranca">Cobrança</TabsTrigger>
-            {orderDetails?.client_id && <TabsTrigger value="perfil">Perfil do cliente</TabsTrigger>}
+            {orderDetails?.client_id && <TabsTrigger value="cliente">Cliente</TabsTrigger>}
           </TabsList>
-          <TabsContent value="pedido">
-            {/* Relatório Profissional */}
-            <ProfessionalOrderReport 
-              order={orderDetails}
-              panels={panelData}
-              videos={orderVideos}
-              onBuildingChanged={refetch}
-            />
+          <TabsContent value="resumo">
+            <ProfessionalOrderReport parte="resumo" order={orderDetails} panels={panelData} videos={orderVideos} onBuildingChanged={refetch} />
+          </TabsContent>
+          <TabsContent value="videos">
+            <ProfessionalOrderReport parte="videos" order={orderDetails} panels={panelData} videos={orderVideos} onBuildingChanged={refetch} />
           </TabsContent>
           <TabsContent value="cobranca">
-            <CobrancaPedidoAdmin pedidoId={orderDetails.id} clientId={orderDetails.client_id} onChanged={refetch} />
+            <div className="space-y-4">
+              <CobrancaPedidoAdmin pedidoId={orderDetails.id} clientId={orderDetails.client_id} onChanged={refetch} />
+              <details className="group rounded-2xl border border-gray-200 bg-white">
+                <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-gray-700">Valores, parcelas e histórico do pedido</summary>
+                <ProfessionalOrderReport parte="cobranca" order={orderDetails} panels={panelData} videos={orderVideos} onBuildingChanged={refetch} />
+              </details>
+            </div>
           </TabsContent>
           {orderDetails?.client_id && (
-            <TabsContent value="perfil">
+            <TabsContent value="cliente">
               <div className="space-y-4">
+                <div className="text-[13px]"><OrderCRM360Fields userId={orderDetails.client_id} email={orderDetails.email} whatsapp={orderDetails.whatsapp} /></div>
                 <PedidoWhatsappAcessosCard
                   pedidoId={orderDetails.id}
                   clientId={orderDetails.client_id}
