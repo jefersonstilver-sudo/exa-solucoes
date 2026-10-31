@@ -333,7 +333,7 @@ function AdicionarTela({ locais, onFechar, onPronto }: { locais: Local[]; onFech
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
         <DialogHeader>
           <DialogTitle>Adicionar tela · passo {passo} de 4</DialogTitle>
           <DialogDescription>{['Instale na TV', 'Digite o código da TV', 'Onde fica a tela', 'Layout e ritmo'][passo - 1]}</DialogDescription>
@@ -463,7 +463,7 @@ function AdicionarTela({ locais, onFechar, onPronto }: { locais: Local[]; onFech
           <div className="space-y-4">
             <GradeLayouts valor={layout} onEscolher={setLayout} />
             <Ritmo casa={casaCada} ed={edCada} onCasa={setCasaCada} onEd={setEdCada} mostrarEd={layout === 'H6'} />
-            <div className="flex justify-between">
+            <div className="sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-between">
               <button type="button" onClick={() => setPasso(3)} className="inline-flex h-11 items-center gap-1 rounded-xl px-3 text-sm font-semibold hover:bg-black/5"><ChevronLeft className="h-4 w-4" />Voltar</button>
               <button type="button" disabled={salvando} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />{salvando ? 'Conectando…' : 'Conectar tela'}</button>
             </div>
@@ -493,20 +493,20 @@ function Ritmo({ casa, ed, onCasa, onEd, mostrarEd }: { casa: number; ed: number
 
 // ============================================================== trocar layout
 function EscolherLayout({ tela, onFechar, onSalvo }: { tela: Tela; onFechar: () => void; onSalvo: () => void }) {
-  const [v, setV] = useState(tela.layout);
-  const [salvando, setSalvando] = useState(false);
-  const salvar = async () => {
-    setSalvando(true);
-    const { error } = await db.from('exa_telas').update({ layout: v }).eq('id', tela.id);
-    setSalvando(false);
-    if (error) toast.error(error.message); else { toast.success(`Layout ${v} aplicado`, { description: 'A TV troca em até 1 minuto.' }); onSalvo(); }
+  const [aplicando, setAplicando] = useState<string | null>(null);
+  const escolher = async (id: string) => {
+    if (id === tela.layout) { onFechar(); return; }
+    setAplicando(id);
+    const { error } = await db.from('exa_telas').update({ layout: id }).eq('id', tela.id);
+    if (error) { toast.error(error.message); setAplicando(null); return; }
+    toast.success(`Layout ${id} aplicado`, { description: 'A TV troca em até 1 minuto.' });
+    onSalvo();
   };
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
-        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Escolha como a tela organiza os anúncios, a hora, o clima, as notícias e a câmera.</DialogDescription></DialogHeader>
-        <GradeLayouts valor={v} onEscolher={setV} />
-        <div className="flex justify-end"><button type="button" disabled={salvando || v === tela.layout} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />Aplicar</button></div>
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
+        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Toque no layout para aplicar. A TV troca em até 1 minuto.</DialogDescription></DialogHeader>
+        <GradeLayouts valor={aplicando || tela.layout} atual={tela.layout} aplicando={aplicando} onEscolher={escolher} />
       </DialogContent>
     </Dialog>
   );
@@ -568,7 +568,7 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[620px]">
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[620px]">
         <DialogHeader><DialogTitle>Configurar tela</DialogTitle><DialogDescription>Nome, local, vídeos do próprio comerciante e o ritmo da programação.</DialogDescription></DialogHeader>
         <div className="space-y-4 text-[14px]">
           <div className="grid gap-2 sm:grid-cols-2">
@@ -614,7 +614,7 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
               </div>
             </>
           )}
-          <div className="flex justify-end"><button type="button" disabled={salvando} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Pencil className="h-4 w-4" />Salvar</button></div>
+          <div className="sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-end"><button type="button" disabled={salvando} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Pencil className="h-4 w-4" />Salvar</button></div>
         </div>
       </DialogContent>
     </Dialog>

@@ -171,6 +171,12 @@ export default function MinhasTelas() {
                       <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.noticias !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, noticias: v }, v ? 'Notícias ligadas' : 'Notícias desligadas')} /><Newspaper className="h-4 w-4 text-[#8b8285]" />Notícias</label>
                     </div>
 
+                    <div className="grid grid-cols-3 gap-2">
+                      <button type="button" onClick={() => setLayoutDe(t)} className="h-10 rounded-xl border border-black/10 text-[13px] font-bold active:bg-black/[0.04]">Layout</button>
+                      <button type="button" onClick={() => setConfigDe(t)} className="h-10 rounded-xl border border-black/10 text-[13px] font-bold active:bg-black/[0.04]">Configurar</button>
+                      <button type="button" onClick={() => acao({ acao: 'cliente_comando', tela_id: t.id, comando: 'recarregar' }, 'A tela recarrega em até 1 minuto')} className="h-10 rounded-xl border border-black/10 text-[13px] font-bold active:bg-black/[0.04]">Recarregar</button>
+                    </div>
+
                     {!!t.erros?.length && (
                       <details className="rounded-xl bg-[#FFF6E5] px-3 py-2 text-[12px] text-[#7A5200]">
                         <summary className="cursor-pointer font-bold">{t.erros.length} aviso(s) do aparelho</summary>
@@ -230,7 +236,7 @@ function Conectar({ local, onFechar, onPronto }: { local: LocalCliente; onFechar
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[680px]">
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[680px]">
         <DialogHeader>
           <DialogTitle>Conectar tela · {passo} de 3</DialogTitle>
           <DialogDescription>{['Instale na TV', 'Digite o código que aparece na TV', 'Escolha como a tela fica'][passo - 1]}</DialogDescription>
@@ -277,7 +283,7 @@ function Conectar({ local, onFechar, onPronto }: { local: LocalCliente; onFechar
         {passo === 3 && (
           <div className="space-y-4">
             <GradeLayouts valor={layout} onEscolher={setLayout} />
-            <div className="flex justify-between">
+            <div className="sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-between">
               <button type="button" onClick={() => setPasso(2)} className="inline-flex h-11 items-center gap-1 rounded-xl px-3 text-sm font-semibold hover:bg-black/5"><ChevronLeft className="h-4 w-4" />Voltar</button>
               <button type="button" disabled={salvando} onClick={conectar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />{salvando ? 'Conectando…' : 'Conectar'}</button>
             </div>
@@ -289,19 +295,19 @@ function Conectar({ local, onFechar, onPronto }: { local: LocalCliente; onFechar
 }
 
 function TrocarLayout({ tela, onFechar, onSalvo }: { tela: TelaCliente; onFechar: () => void; onSalvo: () => void }) {
-  const [v, setV] = useState(tela.layout);
-  const [s, setS] = useState(false);
-  const salvar = async () => {
-    setS(true);
-    try { await chamar({ acao: 'cliente_atualizar', tela_id: tela.id, layout: v }); toast.success(`Layout ${v} aplicado`, { description: 'A TV troca em até 1 minuto.' }); onSalvo(); }
-    catch (e) { toast.error((e as Error).message); } finally { setS(false); }
+  const [aplicando, setAplicando] = useState<string | null>(null);
+  // tocou, aplicou: no celular o botão "Aplicar" ficava lá embaixo da lista e ninguém achava
+  const escolher = async (id: string) => {
+    if (id === tela.layout) { onFechar(); return; }
+    setAplicando(id);
+    try { await chamar({ acao: 'cliente_atualizar', tela_id: tela.id, layout: id }); toast.success(`Layout ${id} aplicado`, { description: 'A TV troca em até 1 minuto.' }); onSalvo(); }
+    catch (e) { toast.error((e as Error).message); setAplicando(null); }
   };
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[700px]">
-        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Como a TV organiza os vídeos, a hora, o clima, as notícias e a câmera.</DialogDescription></DialogHeader>
-        <GradeLayouts valor={v} onEscolher={setV} />
-        <div className="flex justify-end"><button type="button" disabled={s || v === tela.layout} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />Aplicar</button></div>
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[700px]">
+        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Toque no layout para aplicar. A TV troca em até 1 minuto.</DialogDescription></DialogHeader>
+        <GradeLayouts valor={aplicando || tela.layout} atual={tela.layout} aplicando={aplicando} onEscolher={escolher} />
       </DialogContent>
     </Dialog>
   );
@@ -321,7 +327,7 @@ function ConfigTela({ tela, onFechar, onSalvo }: { tela: TelaCliente; onFechar: 
   };
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[480px]">
         <DialogHeader><DialogTitle>Configurar tela</DialogTitle><DialogDescription>Nome e avisos de queda no WhatsApp.</DialogDescription></DialogHeader>
         <div className="space-y-4 text-[14px]">
           <label className="block space-y-1"><span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#8b8285]">Nome da tela</span>
@@ -338,7 +344,7 @@ function ConfigTela({ tela, onFechar, onSalvo }: { tela: TelaCliente; onFechar: 
             )}
             <p className="text-[12px] text-[#8b8285]">Use o horário em que o estabelecimento está aberto: TV desligada no fechamento não gera aviso.</p>
           </div>
-          <div className="flex justify-end"><button type="button" disabled={s} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />Salvar</button></div>
+          <div className="sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-end"><button type="button" disabled={s} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />Salvar</button></div>
         </div>
       </DialogContent>
     </Dialog>

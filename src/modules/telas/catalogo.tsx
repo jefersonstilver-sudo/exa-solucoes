@@ -53,22 +53,28 @@ export function MiniLayout({ id, largura = 160, className }: { id: string; largu
   );
 }
 
-/** Grade para escolher o layout (admin e área do cliente). */
-export function GradeLayouts({ valor, onEscolher }: { valor: string; onEscolher: (id: string) => void }) {
+/** Grade para escolher o layout (admin e área do cliente). No celular mostra só o desenho e o nome. */
+export function GradeLayouts({ valor, onEscolher, atual, aplicando }: { valor: string; onEscolher: (id: string) => void; atual?: string; aplicando?: string | null }) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-      {CATALOGO.map((l) => (
-        <button key={l.id} type="button" onClick={() => onEscolher(l.id)} className={`flex flex-col gap-1.5 rounded-2xl border p-2 text-left ${valor === l.id ? 'border-[#9C1E1E] bg-[#9C1E1E]/[0.05] ring-2 ring-[#9C1E1E]/30' : 'border-black/10 hover:border-black/25'}`}>
-          <MiniLayout id={l.id} largura={200} className="h-auto w-full" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-extrabold text-[#9C1E1E]">{l.id}</span>
-            <span className="truncate text-[13px] font-bold">{l.nome}</span>
-          </div>
-          <span className="text-[11.5px] leading-snug text-[#5E5F63]">{l.resumo}</span>
-          {l.destaque && <span className="self-start rounded-full bg-[#E3F4EA] px-2 py-0.5 text-[11px] font-bold text-[#1E6B47]">Mais atenção</span>}
-          {l.aviso && <span className="text-[11px] font-semibold text-[#8A5A00]">{l.aviso}</span>}
-        </button>
-      ))}
+      {CATALOGO.map((l) => {
+        const sel = valor === l.id;
+        return (
+          <button key={l.id} type="button" disabled={!!aplicando} onClick={() => onEscolher(l.id)}
+            className={`relative flex flex-col gap-1.5 rounded-2xl border p-2 text-left outline-none transition-colors disabled:opacity-60 ${sel ? 'border-[#9C1E1E] bg-[#9C1E1E]/[0.05] ring-2 ring-[#9C1E1E]/30' : 'border-black/10 active:bg-black/[0.03] sm:hover:border-black/25'}`}>
+            <MiniLayout id={l.id} largura={200} className="h-auto w-full" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-extrabold text-[#9C1E1E]">{l.id}</span>
+              <span className="truncate text-[13px] font-bold">{l.nome}</span>
+            </div>
+            <span className="hidden text-[11.5px] leading-snug text-[#5E5F63] sm:block">{l.resumo}</span>
+            {l.destaque && <span className="self-start rounded-full bg-[#E3F4EA] px-2 py-0.5 text-[11px] font-bold text-[#1E6B47]">Mais atenção</span>}
+            {l.aviso && <span className="hidden text-[11px] font-semibold text-[#8A5A00] sm:block">{l.aviso}</span>}
+            {atual === l.id && <span className="absolute right-3 top-3 rounded-full bg-[#1b1719] px-2 py-0.5 text-[10.5px] font-bold text-white">Atual</span>}
+            {aplicando === l.id && <span className="absolute inset-0 grid place-items-center rounded-2xl bg-white/70 text-[13px] font-bold text-[#9C1E1E]">Aplicando…</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }
