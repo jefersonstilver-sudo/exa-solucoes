@@ -1,0 +1,3 @@
+# .cmd precisa de CRLF para o cmd.exe; gravado assim mesmo, sem conversão do git
+*.cmd -text
+*.sh text eol=lf

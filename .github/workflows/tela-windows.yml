@@ -1,0 +1,104 @@
+name: tela-windows
+# 1) Testa o instalador e o desinstalador da tela EXA num Windows de verdade (runner do GitHub).
+# 2) Gera o instalar-exa-tela.exe (NSIS) e publica sempre no mesmo link:
+#    https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-windows/instalar-exa-tela.exe
+on:
+  push:
+    branches: [main]
+    paths:
+      - "public/tela-instalar/*.cmd"
+      - "apps/tela-windows/**"
+      - ".github/workflows/tela-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tela-windows
+  cancel-in-progress: false
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Sintaxe do PowerShell embutido (PowerShell 5.1, o que roda nos computadores)
+        shell: powershell
+        run: |
+          $falhou = $false
+          foreach ($f in 'public/tela-instalar/instalar-exa-tela-windows.cmd', 'public/tela-instalar/desinstalar-exa-tela-windows.cmd') {
+            $t = Get-Content -Raw -Encoding UTF8 $f
+            $i = $t.LastIndexOf('<#EXA-PS#>')
+            $ps = $t.Substring($i + 10)
+            $tok = $null; $erros = $null
+            [void][System.Management.Automation.Language.Parser]::ParseInput($ps, [ref]$tok, [ref]$erros)
+            if ($erros.Count) { $falhou = $true; $erros | ForEach-Object { Write-Host "$f : $($_.Message) (linha $($_.Extent.StartLineNumber))" } } else { Write-Host "$f OK" }
+            Set-Content -Path "$env:RUNNER_TEMP\$([IO.Path]::GetFileNameWithoutExtension($f)).ps1" -Value $ps -Encoding UTF8
+          }
+          if ($falhou) { exit 1 }
+
+      - name: Instalar de verdade e conferir
+        shell: powershell
+        env:
+          EXA_TELA_SEM_PERGUNTAS: "1"
+        run: |
+          & "$env:RUNNER_TEMP\instalar-exa-tela-windows.ps1"
+          $erros = @()
+          if (-not (Test-Path 'C:\ExaTela\abrir-tela.ps1')) { $erros += 'falta abrir-tela.ps1' }
+          if (-not (Test-Path 'C:\ExaTela\estado-anterior.json')) { $erros += 'falta estado-anterior.json' }
+          $tarefa = Get-ScheduledTask -TaskName 'EXA Tela' -ErrorAction SilentlyContinue
+          $atalho = Test-Path "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\EXA Tela.lnk"
+          if (-not $tarefa -and -not $atalho) { $erros += 'nem tarefa agendada nem atalho de inicialização' }
+          $nau = (Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -ErrorAction SilentlyContinue).NoAutoUpdate
+          if ($nau -ne 1) { $erros += 'NoAutoUpdate não ficou 1' }
+          Write-Host "wuauserv: $((Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode)"
+          Write-Host "UsoSvc: $((Get-CimInstance Win32_Service -Filter "Name='UsoSvc'").StartMode)"
+          Write-Host "WaaSMedicSvc: $((Get-CimInstance Win32_Service -Filter "Name='WaaSMedicSvc'").StartMode)"
+          Write-Host "Tarefa: $($tarefa.State)  Atalho: $atalho"
+          Get-Content 'C:\ExaTela\abrir-tela.ps1'
+          $tok = $null; $pe = $null
+          [void][System.Management.Automation.Language.Parser]::ParseInput((Get-Content -Raw 'C:\ExaTela\abrir-tela.ps1'), [ref]$tok, [ref]$pe)
+          if ($pe.Count) { $erros += "abrir-tela.ps1 com erro: $($pe[0].Message)" }
+          if ($erros.Count) { $erros | ForEach-Object { Write-Host "ERRO: $_" }; exit 1 }
+          Write-Host 'Instalação conferida.'
+
+      - name: Desinstalar e conferir
+        shell: powershell
+        run: |
+          & "$env:RUNNER_TEMP\desinstalar-exa-tela-windows.ps1"
+          $erros = @()
+          if (Get-ScheduledTask -TaskName 'EXA Tela' -ErrorAction SilentlyContinue) { $erros += 'tarefa continua' }
+          if (Test-Path 'C:\ExaTela') { $erros += 'pasta continua' }
+          $nau = (Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -ErrorAction SilentlyContinue).NoAutoUpdate
+          if ($nau -eq 1) { $erros += 'NoAutoUpdate continua 1' }
+          Write-Host "wuauserv depois: $((Get-CimInstance Win32_Service -Filter "Name='wuauserv'").StartMode)"
+          if ($erros.Count) { $erros | ForEach-Object { Write-Host "ERRO: $_" }; exit 1 }
+          Write-Host 'Desinstalação conferida.'
+
+      - name: Gerar o .exe (NSIS)
+        shell: powershell
+        run: |
+          $mk = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
+          if (-not (Test-Path $mk)) { choco install nsis -y --no-progress | Out-Null }
+          if (-not (Test-Path $mk)) { $mk = "$env:ProgramFiles\NSIS\makensis.exe" }
+          & $mk /V2 apps/tela-windows/instalador.nsi
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Get-Item apps/tela-windows/instalar-exa-tela.exe | Format-List Name, Length
+
+      - name: Publicar no link fixo
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view tela-windows >/dev/null 2>&1; then
+            gh release create tela-windows --title "EXA Tela (Windows)" --target "$GITHUB_SHA" --notes "Instalador da tela EXA para Windows 10/11."
+          fi
+          gh release upload tela-windows apps/tela-windows/instalar-exa-tela.exe --clobber
+          gh release edit tela-windows --notes "Instalador da tela EXA para Windows 10/11 (build ${GITHUB_RUN_NUMBER}, commit ${GITHUB_SHA::7}). Testado num Windows do GitHub antes de publicar.
+
+          Link fixo: https://github.com/${GITHUB_REPOSITORY}/releases/download/tela-windows/instalar-exa-tela.exe
+          Mesma coisa sem .exe: https://examidia.com.br/tela-instalar/instalar-exa-tela-windows.cmd"

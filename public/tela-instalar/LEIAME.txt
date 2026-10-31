@@ -1,0 +1,21 @@
+EXA Tela — como transformar um aparelho em tela da EXA
+
+Em todos os casos a tela abre mostrando um CÓDIGO. No painel EXA: Telas > Adicionar tela > digite o código.
+
+1) TV box / TV Android
+   Baixe e instale: https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk
+   (permita "instalar apps de fontes desconhecidas"). Para abrir sozinho ao ligar: defina a EXA Tela como
+   app inicial (tela de início) ou, no Android 10+, permita "Sobrepor a outros apps" quando a tela pedir.
+
+2) Computador com Windows 10/11
+   Baixe e rode: https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-windows/instalar-exa-tela.exe
+   ou o mesmo sem .exe: https://examidia.com.br/tela-instalar/instalar-exa-tela-windows.cmd
+   Abre o Edge em tela cheia ao entrar no Windows, reabre se fechar, tira suspensão, avisos e Windows Update,
+   e (se você quiser) liga o login automático. Para desfazer: desinstalar-exa-tela-windows.cmd (mesma pasta).
+
+3) Computador com Ubuntu / Linux
+   No terminal, na conta que fica logada na TV:
+   curl -fsSL https://examidia.com.br/tela-instalar/instalar-exa-tela-linux.sh | bash
+   Para desfazer: o mesmo comando com  | bash -s -- --desinstalar
+
+Qualquer outro aparelho com navegador: abra https://examidia.com.br/tela/ em tela cheia.
