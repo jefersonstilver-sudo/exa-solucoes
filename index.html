@@ -271,7 +271,18 @@ setTimeout(function(){window.__exaSplashFim&&window.__exaSplashFim()},9000)})();
         var MIN_RECHECK_MS = 60 * 1000;       // 60s — respeita política de polling
         var VISIBILITY_RECHECK_MS = 5 * 60 * 1000; // 5min — re-checa quando aba volta a ficar visível
 
+        /* A hospedagem prende cada aparelho na publicação que ele abriu primeiro (cookie __dpl).
+           Sem tirar esse cookie, o recarregamento devolvia a versão antiga e o app ficava dias sem atualizar. */
+        function soltaPublicacao() {
+          try {
+            var h = location.hostname, base = h.replace(/^www\./, '');
+            ['', '; domain=' + h, '; domain=.' + base, '; domain=' + base].forEach(function(dm) {
+              document.cookie = '__dpl=; Max-Age=0; path=/' + dm;
+            });
+          } catch (e) {}
+        }
         function clearAndReload() {
+          soltaPublicacao();
           try { localStorage.removeItem('html-build-id'); } catch (e) {}
           try { localStorage.removeItem('app-version'); } catch (e) {}
           var doReload = function() {
@@ -302,12 +313,19 @@ setTimeout(function(){window.__exaSplashFim&&window.__exaSplashFim()},9000)})();
 
           fetch(VERSION_URL + '?t=' + Date.now(), {
             cache: 'no-store',
+            credentials: 'omit', /* sem o cookie de publicação: responde a versão mais nova de verdade */
             headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
             signal: ctrl ? ctrl.signal : undefined
           })
             .then(function(r) { if (timeoutId) clearTimeout(timeoutId); return r.json(); })
             .then(function(d) {
               if (d && d.version && d.version !== '0' && d.version !== BUILD_ID) {
+                /* trava de segurança: se já tentou atualizar há menos de 10 min e continua diferente, não insiste */
+                try {
+                  var t = parseInt(localStorage.getItem('exa-atualizou-ts') || '0', 10);
+                  if (Date.now() - t < 10 * 60 * 1000) return;
+                  localStorage.setItem('exa-atualizou-ts', String(Date.now()));
+                } catch (e) {}
                 clearAndReload();
               }
             })

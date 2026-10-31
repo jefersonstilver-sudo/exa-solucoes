@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { APP_VERSION, BUILD_TIMESTAMP } from '@/config/version';
 import { setStoredVersion } from '@/config/version';
 import { ROTAS_SEM_RECARGA } from '@/hooks/useVersionWatcher';
+import { soltarPublicacao } from '@/hooks/useVersionWatcher';
 
 const RELOAD_KEY = 'cache-reload-done';
 
@@ -65,7 +66,7 @@ export const useForceCacheClear = () => {
       // em abril/2026 e fazia o app recarregar em toda abertura.
       let data: any = null;
       try {
-        const r = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
+        const r = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store', credentials: 'omit' }); // sem o cookie __dpl
         if (!r.ok) return;
         data = await r.json();
       } catch {
@@ -82,6 +83,7 @@ export const useForceCacheClear = () => {
         
         // Mark that we already reloaded to prevent infinite loop
         sessionStorage.setItem(RELOAD_KEY, '1');
+        soltarPublicacao();
 
         // Clear all caches before reload
         if ('caches' in window) {

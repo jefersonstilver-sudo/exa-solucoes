@@ -18,6 +18,17 @@ export const ROTAS_SEM_RECARGA = /^\/(definir-senha|reset-password|redefinir-sen
 // versão publicada junto com o site (vite gera /version.json). A função get-app-version ficou parada
 // em abril/2026 e, como nunca batia com a versão do site, o app recarregava a cada 5 minutos.
 const VERSION_URL = '/version.json';
+
+/** Tira o cookie __dpl da hospedagem (prende o aparelho na publicação antiga; o recarregamento voltava igual). */
+export function soltarPublicacao() {
+  try {
+    const h = window.location.hostname;
+    const base = h.replace(/^www\./, '');
+    ['', `; domain=${h}`, `; domain=.${base}`, `; domain=${base}`].forEach((dm) => {
+      document.cookie = `__dpl=; Max-Age=0; path=/${dm}`;
+    });
+  } catch { /* nada */ }
+}
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 
 declare global {
@@ -52,6 +63,7 @@ export const useVersionWatcher = () => {
         const timeout = setTimeout(() => ctrl.abort(), 4000);
         const r = await fetch(`${VERSION_URL}?t=${Date.now()}`, {
           cache: 'no-store',
+          credentials: 'omit', // sem o cookie __dpl (que prende o aparelho na publicação antiga)
           headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
           signal: ctrl.signal,
         });
@@ -68,6 +80,7 @@ export const useVersionWatcher = () => {
             duration: 5000,
           });
           setTimeout(() => {
+            soltarPublicacao();
             if (typeof window.__exaForceRefresh === 'function') {
               window.__exaForceRefresh();
             } else {
