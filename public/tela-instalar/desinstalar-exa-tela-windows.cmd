@@ -36,7 +36,8 @@ Ok 'tela fechada e abertura automática removida'
 # 2. devolve registro, serviços e tarefas como estavam
 $arq = "$PASTA\estado-anterior.json"
 if (Test-Path $arq) {
-  $itens = @(Get-Content -Raw -Encoding UTF8 $arq | ConvertFrom-Json)
+  # no PowerShell 5.1 o ConvertFrom-Json entrega a lista inteira como UM objeto: desembrulha item a item
+  $itens = @((Get-Content -Raw -Encoding UTF8 $arq | ConvertFrom-Json) | ForEach-Object { $_ })
   [array]::Reverse($itens)
   foreach ($e in $itens) {
     try {
