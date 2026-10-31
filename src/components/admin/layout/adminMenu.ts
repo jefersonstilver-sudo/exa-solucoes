@@ -72,6 +72,7 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
       { title: 'Prédios', path: 'predios', icon: Building2, moduleKey: MODULE_KEYS.predios },
       { title: 'Síndicos', path: 'sindicos-interessados', icon: ClipboardList, moduleKey: MODULE_KEYS.sindicos, badge: 'sindicosNovos', badgeTooltip: 'Novos cadastros de síndicos' },
       { title: 'Painéis EXA', path: 'paineis-exa', icon: Tv, moduleKey: MODULE_KEYS.paineis, badge: 'offline', badgeTooltip: 'Painéis sem sinal' },
+      { title: 'Telas (comércio)', path: 'telas', icon: MonitorPlay, moduleKey: MODULE_KEYS.paineis },
       { title: 'Aprovações', path: 'aprovacoes', icon: CheckSquare, moduleKey: MODULE_KEYS.aprovacoes, badge: 'aprovacoes', badgeTooltip: 'Vídeos aguardando aprovação' },
       { title: 'Benefícios', path: 'beneficio-prestadores', icon: Gift, moduleKey: MODULE_KEYS.beneficios, badge: 'beneficios', badgeTooltip: 'Benefícios com ação necessária' },
     ],

@@ -1,0 +1,47 @@
+/* Player das telas novas — palco fixo 1920×1080 escalado para qualquer TV */
+.palco-fora { position: fixed; inset: 0; background: #000; overflow: hidden; }
+.palco { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center center; overflow: hidden;
+  font-family: Inter, Arial, Helvetica, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; background: #000; }
+.palco * { box-sizing: border-box; }
+.abs { position: absolute; }
+.cheio { position: absolute; inset: 0; }
+.fundo-exa { background: radial-gradient(900px 700px at 85% 105%, rgba(230,30,60,.45), rgba(230,30,60,0) 65%), radial-gradient(700px 600px at 100% 0%, rgba(150,20,90,.45), rgba(150,20,90,0) 65%), #0c0610; }
+.fundo-exa-esq { background: radial-gradient(900px 700px at 15% 110%, rgba(230,30,60,.45), rgba(230,30,60,0) 65%), radial-gradient(700px 600px at 100% 0%, rgba(150,20,90,.45), rgba(150,20,90,0) 65%), #0c0610; }
+.vidro { background: linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.035) 40%, rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.14); border-top-color: rgba(255,255,255,.28); border-radius: 20px; box-shadow: 0 14px 34px rgba(0,0,0,.4); }
+.vidro-escuro { background: rgba(16,8,14,.62); border: 1px solid rgba(255,255,255,.20); border-top-color: rgba(255,255,255,.32); box-shadow: 0 16px 40px rgba(0,0,0,.45); }
+.clima-card { background: linear-gradient(155deg, #25205e 0%, #16153f 55%, #0b0b24 100%); border: 1px solid rgba(255,255,255,.18); border-radius: 20px; box-shadow: 0 14px 34px rgba(0,0,0,.4); }
+.rotulo { font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.72); }
+.grande { font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.etiqueta { font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #1a0a0d; background: #ffc35a; border-radius: 999px; }
+.ponto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #5aa9ff; flex: none; }
+.ao-vivo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: 2px; border-radius: 999px; background: #e0263a; color: #fff; }
+.ao-vivo i { width: 11px; height: 11px; border-radius: 50%; background: #fff; animation: pisca 1.4s ease-in-out infinite; }
+@keyframes pisca { 50% { opacity: .35; } }
+.corta { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; }
+.uma-linha { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* faixa de vídeo */
+.faixa { position: absolute; overflow: hidden; background: #000; }
+.faixa video.v { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .25s linear; background: transparent; }
+.faixa video.v.on { opacity: 1; }
+.faixa video.v.cobrir { object-fit: cover; }
+.faixa video.v.conter { object-fit: contain; }
+.faixa .fundo-desfocado { position: absolute; inset: -60px; width: calc(100% + 120px); height: calc(100% + 120px); object-fit: cover; filter: blur(46px) brightness(.5) saturate(1.2); opacity: 0; transition: opacity .4s; }
+.faixa .fundo-desfocado.on { opacity: 1; }
+.barra { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.15); z-index: 5; }
+.barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff4d5e, #ffc35a); animation-name: enche; animation-timing-function: linear; animation-fill-mode: forwards; }
+.barra.fina { height: 4px; }
+@keyframes enche { from { width: 0; } to { width: 100%; } }
+.especial { position: absolute; inset: 0; z-index: 3; }
+.entra { animation: entra .5s ease-out both; }
+@keyframes entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.troca { animation: troca .6s ease-out both; }
+@keyframes troca { from { opacity: 0; } to { opacity: 1; } }
+
+/* câmera: a opacidade "respirando" evita o quadro preto do decodificador em aparelho fraco */
+.cam-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: respira 4s ease-in-out infinite; }
+@keyframes respira { 50% { opacity: .96; } }
+.cam-vazia { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #1d2a44 0%, #2c3550 45%, #141a26 100%); color: rgba(255,255,255,.45); }
+
+/* pareamento */
+.par-digito { width: 168px; height: 220px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 150px; font-weight: 800; font-variant-numeric: tabular-nums; }

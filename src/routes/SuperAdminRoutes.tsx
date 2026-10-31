@@ -56,6 +56,7 @@ const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').th
 const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
 const EntregaTelasPage = lazy(() => import('@/pages/admin/EntregaTelasPage'));
 const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/PaineisEXA'));
+const TelasPage = lazy(() => import('@/modules/telas/TelasPage'));
 const NandoConversaPage = lazy(() => import('@/pages/admin/nando/NandoConversaPage'));
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 
@@ -269,6 +270,11 @@ const SuperAdminRoutes = () => {
         </Suspense>
       } />
       <Route path="nando" element={<Suspense fallback={<GlobalLoadingPage message="Carregando Nando..." />}><NandoConversaPage /></Suspense>} />
+      <Route path="telas" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando telas..." />}>
+          <TelasPage />
+        </Suspense>
+      } />
       <Route path="paineis-exa" element={
         <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>
           <PaineisPage />

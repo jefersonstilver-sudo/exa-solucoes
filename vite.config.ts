@@ -26,6 +26,11 @@ export default defineConfig(() => ({
   },
   build: {
     rollupOptions: {
+      // segunda página: o player das telas novas (examidia.com.br/tela/), leve e separado do site
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        tela: path.resolve(__dirname, "tela/index.html"),
+      },
       output: {
         entryFileNames: "assets/[name]-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",
@@ -41,6 +46,9 @@ export default defineConfig(() => ({
         server.middlewares.use((req: any, _res: any, next: any) => {
           if (req.url === "/proposta-jorbel" || req.url === "/proposta-jorbel/") {
             req.url = "/proposta-jorbel/index.html";
+          }
+          if (req.url === "/tela" || req.url?.startsWith("/tela?") || req.url?.startsWith("/tela/?") || req.url === "/tela/") {
+            req.url = "/tela/index.html" + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "");
           }
           if (req.url === "/midiakit-sindicos" || req.url === "/midiakit-sindicos/") {
             req.url = "/midiakit-sindicos/index.html";

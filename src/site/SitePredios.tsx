@@ -29,6 +29,9 @@ const kmEntre = (a: { lat: number; lng: number }, b: { lat: number; lng: number 
 };
 const fmtKm = (k: number) => (k < 1 ? `${Math.round(k * 1000)} m` : `${k.toFixed(1).replace('.', ',')} km`);
 const telas = (p: BuildingStore) => p.quantidade_telas || 1;
+/** comércio parceiro (restaurante, clínica…): tela no salão, público = pessoas por mês */
+const ehComercio = (p: BuildingStore) => p.tipo_local === 'comercio';
+const publico = (p: BuildingStore) => (ehComercio(p) ? 'pessoas/mês' : 'moradores');
 const IcoMapa = () => (
   <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></svg>
 );
@@ -183,7 +186,7 @@ export default function SitePredios() {
                   </button>
                   <div className="pcard-corpo">
                     <strong className="pcard-nome">{p.nome}</strong>
-                    <span className="pcard-info">{p.bairro} · {telas(p)} {telas(p) > 1 ? 'telas' : 'tela'}{p.publico_estimado ? ` · ${num(p.publico_estimado)} moradores` : ''}</span>
+                    <span className="pcard-info">{ehComercio(p) ? `${p.segmento_local || 'Comércio'} · ` : ''}{p.bairro} · {telas(p)} {telas(p) > 1 ? 'telas' : 'tela'}{p.publico_estimado ? ` · ${num(p.publico_estimado)} ${publico(p)}` : ''}</span>
                     <span className="pcard-preco">
                       {promo
                         ? <><s>{reais(p.preco_base || 0)}</s> <strong>{reais(PROMO_PRECO)}</strong><small>/mês</small></>
@@ -244,7 +247,7 @@ export default function SitePredios() {
                       <span className="mc-foto">{p.imagem_principal && <img src={getImageUrl(p.imagem_principal) || ''} alt="" loading="lazy" />}{on && <span className="mc-ok">✓</span>}</span>
                       <span className="mc-txt">
                         <strong>{p.nome}</strong>
-                        <span>{p.bairro}{p.publico_estimado ? ` · ${num(p.publico_estimado)} moradores` : ''}</span>
+                        <span>{ehComercio(p) ? `${p.segmento_local || 'Comércio'} · ` : ''}{p.bairro}{p.publico_estimado ? ` · ${num(p.publico_estimado)} ${publico(p)}` : ''}</span>
                         <em>{promo ? reais(PROMO_PRECO) : reais(p.preco_base || 0)}<small>/mês</small></em>
                       </span>
                     </button>
@@ -308,7 +311,7 @@ export default function SitePredios() {
                     </div>
                   )}
                   <div className="gl-resumo">
-                    <span>{telasLista} {telasLista > 1 ? 'telas' : 'tela'}{moradoresLista ? ` · ${num(moradoresLista)} moradores` : ''}</span>
+                    <span>{telasLista} {telasLista > 1 ? 'telas' : 'tela'}{moradoresLista ? ` · ${num(moradoresLista)} ${naLista.some(ehComercio) ? 'pessoas' : 'moradores'}` : ''}</span>
                   </div>
                   <div className="gl-total">
                     <span>{promo ? 'Por mês' : plano === 1 ? 'Por mês' : `Por mês, em ${plano} meses`}</span>
@@ -338,15 +341,15 @@ export default function SitePredios() {
             <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <h2 className="t" style={{ fontSize: 30 }}>{aberto.nome}</h2>
-                <p style={{ margin: '4px 0 0', color: '#5A5852', fontSize: 15 }}>{aberto.endereco || aberto.bairro}</p>
+                <p style={{ margin: '4px 0 0', color: '#5A5852', fontSize: 15 }}>{ehComercio(aberto) ? `${aberto.segmento_local || 'Comércio parceiro'} · ` : ''}{aberto.endereco || aberto.bairro}</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '14px 12px', borderBlock: '1px solid #E2E0DA', paddingBlock: 14 }}>
                 <div>
                   <span className="t" style={{ display: 'block', fontSize: 26, color: '#EA251D' }}>{reais(promo ? PROMO_PRECO : aberto.preco_base || 0)}</span>
                   <span style={{ fontSize: 13, color: '#5A5852' }}>{promo ? <>por mês em novembro (era {reais(aberto.preco_base || 0)})</> : 'por mês (mensal)'}</span>
                 </div>
-                <div><span className="t" style={{ display: 'block', fontSize: 26 }}>{telas(aberto)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{telas(aberto) > 1 ? 'telas' : 'tela'} no elevador</span></div>
-                {!!aberto.publico_estimado && <div><span className="t" style={{ display: 'block', fontSize: 26 }}>{num(aberto.publico_estimado)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>moradores</span></div>}
+                <div><span className="t" style={{ display: 'block', fontSize: 26 }}>{telas(aberto)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{telas(aberto) > 1 ? 'telas' : 'tela'} {ehComercio(aberto) ? 'no salão' : 'no elevador'}</span></div>
+                {!!aberto.publico_estimado && <div><span className="t" style={{ display: 'block', fontSize: 26 }}>{num(aberto.publico_estimado)}</span><span style={{ fontSize: 13, color: '#5A5852' }}>{publico(aberto)}</span></div>}
                 <div><span className="t" style={{ display: 'block', fontSize: 19 }}>{aberto.bairro}</span><span style={{ fontSize: 13, color: '#5A5852' }}>bairro</span></div>
               </div>
               {aberto.tem_airbnb && <p style={{ margin: 0, padding: '12px 14px', borderRadius: 12, background: '#F4F3F0', fontSize: 14 }}><strong>Tem apartamentos de temporada.</strong> A tela também é vista por turistas hospedados no prédio.</p>}

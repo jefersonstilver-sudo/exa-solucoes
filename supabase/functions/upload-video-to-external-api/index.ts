@@ -129,9 +129,16 @@ serve(async (req) => {
 
     // 2. REGRA CONSOLIDADA: clientId = primeiros 4 dígitos do UUID do prédio (sem hífens)
     // CRÍTICO: Enviar para TODOS os prédios do pedido, não apenas o primeiro!
-    const listaPredios = pedidoVideo.pedidos.lista_predios;
-    if (!listaPredios || !Array.isArray(listaPredios) || listaPredios.length === 0) {
+    const listaTodos = pedidoVideo.pedidos.lista_predios;
+    if (!listaTodos || !Array.isArray(listaTodos) || listaTodos.length === 0) {
       throw new Error('Nenhum prédio selecionado no pedido (campo lista_predios vazio)');
+    }
+    // locais "comércio" tocam nas telas novas (função exa-tela) direto do Storage: não vão para a API dos NUCs
+    const { data: comercios } = await supabase.from('buildings').select('id').eq('tipo_local', 'comercio').in('id', listaTodos);
+    const ehComercio = new Set((comercios || []).map((b: any) => String(b.id)));
+    const listaPredios = listaTodos.filter((b: string) => !ehComercio.has(String(b)));
+    if (!listaPredios.length) {
+      return new Response(JSON.stringify({ success: true, message: 'Pedido só com locais de tela nova: nada a enviar para os NUCs', comercio: [...ehComercio] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     
     // Mapear TODOS os prédios para seus clientIds

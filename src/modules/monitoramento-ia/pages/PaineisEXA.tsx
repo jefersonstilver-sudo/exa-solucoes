@@ -10,8 +10,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Activity, ChevronDown, MoreHorizontal, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, ExternalLink, BellOff,
+  Activity, ChevronDown, MoreHorizontal, Clock, Copy, Layers, Link2, MapPin, Maximize2, RefreshCw, Search, ExternalLink, BellOff, Plus,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import { generatePublicUrl } from '@/config/domain';
 import { useDevices } from '../hooks/useDevices';
@@ -51,6 +53,8 @@ const Chip = ({ children, fundo = 'rgba(23,24,26,0.05)', cor = '#45464A' }: { ch
 
 
 export default function PaineisEXA() {
+  const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const { devices, refresh, lastUpdate } = useDevices(0, 500);
   const frota = useFrotaSaude();
   const { groups: deviceGroups, createGroup, updateGroup, deleteGroup, moveDeviceToGroup } = useDeviceGroups();
@@ -210,6 +214,10 @@ export default function PaineisEXA() {
               </button>
             ))}
           </div>
+          <button type="button" onClick={() => navigate(buildPath('telas?adicionar=1'))} title="Adicionar uma tela nova (TV Android, mini PC ou navegador)"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-3 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(156,30,30,0.8)]">
+            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Adicionar painel</span>
+          </button>
           <button type="button" onClick={sincronizar} title="Buscar agora o status no AnyDesk"
             className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold ${glass} hover:bg-white`}>
             <RefreshCw className={`h-4 w-4 ${sincronizando ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Atualizar</span>

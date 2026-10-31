@@ -3,6 +3,10 @@
 /midiakit-sindicos/*  /midiakit-sindicos/:splat  200
 /programacao/*  /programacao/:splat  200
 /embed/*  /embed/:splat  200
+/tela  /tela/index.html  200
+/tela/  /tela/index.html  200
+/tela-instalar/*  /tela-instalar/:splat  200
+/baixar-tela  https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk  302
 
 # SPA catch-all (must be LAST)
 /*  /index.html  200

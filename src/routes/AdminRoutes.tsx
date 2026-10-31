@@ -136,6 +136,7 @@ const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').th
 const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
 const EntregaTelasPage = lazy(() => import('@/pages/admin/EntregaTelasPage'));
 const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/PaineisEXA'));
+const TelasPage = lazy(() => import('@/modules/telas/TelasPage'));
 const NandoConversaPage = lazy(() => import('@/pages/admin/nando/NandoConversaPage'));
 const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 const CRMClients = lazy(() => import('@/pages/admin/CRMClients'));
@@ -410,6 +411,13 @@ const AdminRoutes = () => {
         </ProtectedModuleRoute>
       } />
       <Route path="nando" element={<ProtectedModuleRoute moduleKey={MODULE_KEYS.crm_evolution}><Suspense fallback={<GlobalLoadingPage message="Carregando Nando..." />}><NandoConversaPage /></Suspense></ProtectedModuleRoute>} />
+      <Route path="telas" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.paineis}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando telas..." />}>
+            <TelasPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
       <Route path="paineis-exa" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.paineis}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>

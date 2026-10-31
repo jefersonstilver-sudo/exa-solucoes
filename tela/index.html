@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="exa-build" content="__BUILD_ID__" />
+    <meta name="theme-color" content="#000000" />
+    <title>EXA · Tela</title>
+    <link rel="icon" href="/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; cursor: none; user-select: none; -webkit-user-select: none; }
+      #tela { position: fixed; inset: 0; }
+      #carregando { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.5); font: 600 18px Inter, Arial, sans-serif; letter-spacing: 2px; }
+    </style>
+  </head>
+  <body>
+    <div id="tela"><div id="carregando">EXA</div></div>
+    <script type="module" src="/src/tela/main.tsx"></script>
+  </body>
+</html>

@@ -34,6 +34,9 @@ export interface BuildingStore {
   quantidade_telas: number;
   numero_elevadores: number; // Número de telas (campo renomeado)
   tem_airbnb?: boolean;
+  /** 'comercio' = local parceiro (restaurante, clínica…) com tela no salão; 'predio' = elevador */
+  tipo_local?: string;
+  segmento_local?: string | null;
 }
 
 /**
@@ -153,7 +156,9 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       padrao_publico: 'normal' as 'alto' | 'medio' | 'normal',
       quantidade_telas: building.quantidade_telas || 1,
       numero_elevadores: (building as any).numero_elevadores || 0,
-      tem_airbnb: Boolean((building as any).tem_airbnb)
+      tem_airbnb: Boolean((building as any).tem_airbnb),
+      tipo_local: (building as any).tipo_local || 'predio',
+      segmento_local: (building as any).segmento_local || null,
     }));
 
     return buildingStores;

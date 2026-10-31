@@ -654,3 +654,6 @@ verify_jwt = false
 
 [functions.exa2-push]
 verify_jwt = false
+
+[functions.exa-tela]
+verify_jwt = false

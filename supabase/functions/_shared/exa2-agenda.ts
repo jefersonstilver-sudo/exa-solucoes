@@ -53,6 +53,9 @@ const segments = (slots: Slot[], rules: Rule[], day: Date) => {
   return out;
 };
 
+/** Qual vídeo do pedido vale AGORA (mesma regra do player: override > data > recorrente; fora de faixa, o principal). Usado pela exa-tela. */
+export const slotAgora = (slots: Slot[], rules: Rule[], at: Date) => winner(slots, rules, at);
+
 export const DIAS = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'] as const;
 export type Prog = Record<(typeof DIAS)[number], { inicio: string; fim: string }[]>;
 export const emptyProg = (): Prog => ({ domingo: [], segunda: [], terca: [], quarta: [], quinta: [], sexta: [], sabado: [] });

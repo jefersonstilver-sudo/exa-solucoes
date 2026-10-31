@@ -81,6 +81,10 @@ Deno.serve(async (req) => {
     if (pedidoIds?.length) q = q.in('id', pedidoIds);
     const { data: pedidos, error: pe } = await q;
     if (pe) throw pe;
+    // locais "comércio" tocam nas telas novas (função exa-tela), não nos NUCs: ficam fora da entrega
+    const { data: comercios } = await admin.from('buildings').select('id').eq('tipo_local', 'comercio');
+    const ehComercio = new Set((comercios || []).map((b: any) => String(b.id)));
+    if (ehComercio.size) for (const p of pedidos || []) if (Array.isArray(p.lista_predios)) p.lista_predios = p.lista_predios.filter((b: string) => !ehComercio.has(String(b)));
 
     // --- estado REAL das telas: manifesto de cada prédio envolvido (uma leitura por rodada) ---
     const telasEnvolvidas = [...new Set((pedidos || []).flatMap((p: any) => (Array.isArray(p.lista_predios) ? p.lista_predios : []).map(telaDe)))];

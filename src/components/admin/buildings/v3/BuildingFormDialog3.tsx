@@ -53,6 +53,8 @@ interface FormData {
   endereco: string;
   bairro: string;
   venue_type: string;
+  tipo_local: string;
+  segmento_local: string;
   padrao_publico: string;
   latitude: number;
   longitude: number;
@@ -81,6 +83,8 @@ const initialFormData: FormData = {
   endereco: '',
   bairro: '',
   venue_type: 'Residencial',
+  tipo_local: 'predio',
+  segmento_local: '',
   padrao_publico: 'normal',
   latitude: 0,
   longitude: 0,
@@ -131,6 +135,8 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
           endereco: building.endereco || '',
           bairro: building.bairro || '',
           venue_type: building.venue_type || 'Residencial',
+          tipo_local: (building as any).tipo_local || 'predio',
+          segmento_local: (building as any).segmento_local || '',
           padrao_publico: building.padrao_publico || 'normal',
           latitude: building.latitude || 0,
           longitude: building.longitude || 0,
@@ -254,6 +260,8 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
         endereco: formData.endereco,
         bairro: formData.bairro,
         venue_type: formData.venue_type,
+        tipo_local: formData.tipo_local,
+        segmento_local: formData.tipo_local === 'comercio' ? (formData.segmento_local.trim() || null) : null,
         padrao_publico: formData.padrao_publico,
         latitude: formData.latitude || null,
         longitude: formData.longitude || null,
@@ -486,6 +494,32 @@ const BuildingFormDialog3: React.FC<BuildingFormDialog3Props> = ({
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Local</Label>
+                      <Select value={formData.tipo_local} onValueChange={(v) => updateField('tipo_local', v)}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="predio">Prédio · tela no elevador (NUC)</SelectItem>
+                          <SelectItem value="comercio">Comércio parceiro · tela no salão</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {formData.tipo_local === 'comercio' && (
+                      <div className="space-y-2">
+                        <Label>Segmento</Label>
+                        <Input
+                          value={formData.segmento_local}
+                          onChange={(e) => updateField('segmento_local', e.target.value)}
+                          placeholder="Restaurante, Clínica odontológica…"
+                          className="h-10"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
