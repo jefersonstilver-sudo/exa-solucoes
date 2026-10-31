@@ -5,12 +5,14 @@ import { UnifiedDashboardStats } from '@/hooks/useDashboardUnifiedStats';
 import { Badge } from '@/components/ui/badge';
 import { PrivacyMask } from '@/components/ui/PrivacyMask';
 import { usePrivacyModeStore } from '@/hooks/usePrivacyMode';
+import { useTelasDaRede } from '@/modules/monitoramento-ia/hooks/useTelasDaRede';
 
 interface UnifiedStatsRowProps {
   stats: UnifiedDashboardStats;
 }
 
 const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
+  const telas = useTelasDaRede();
   const { isPrivate } = usePrivacyModeStore();
 
   const formatCurrency = (value: number) => {
@@ -156,12 +158,12 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           hoverContent={<p className="text-sm text-muted-foreground">Previsto e contratado não são recebidos. Consulte-os separadamente no financeiro.</p>}
         />
 
-        {/* 5. Dispositivos Online (Painéis EXA) */}
+        {/* 5. Telas no ar — mesma conta da página Painéis EXA (grupo Prédios, tocando) */}
         <AppleLikeMetricCard
-          label="Dispositivos Online"
-          value={stats.loading ? '...' : `${stats.devicesTotal > 0 ? ((stats.devicesOnline / stats.devicesTotal) * 100).toFixed(0) : 0}%`}
+          label="Telas no ar"
+          value={telas.carregando ? '...' : `${telas.total > 0 ? ((telas.noAr / telas.total) * 100).toFixed(0) : 0}%`}
           icon={Building2}
-          description={stats.loading ? undefined : `${stats.devicesOnline} de ${stats.devicesTotal}`}
+          description={telas.carregando ? undefined : `${telas.noAr} de ${telas.total}`}
           hoverContent={
             <div className="space-y-3">
               <div>
@@ -173,15 +175,15 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
               <div className="space-y-2 pt-2 border-t border-border/50">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">🟢 Online:</span>
-                  <span className="text-sm font-semibold text-emerald-600">{stats.devicesOnline}</span>
+                  <span className="text-sm font-semibold text-emerald-600">{telas.noAr}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">🔴 Offline:</span>
-                  <span className="text-sm font-semibold text-red-600">{stats.devicesOffline}</span>
+                  <span className="text-sm font-semibold text-red-600">{telas.fora}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Total:</span>
-                  <span className="text-sm font-semibold">{stats.devicesTotal}</span>
+                  <span className="text-sm font-semibold">{telas.total}</span>
                 </div>
                 {stats.quedasPeriodo > 0 && (
                   <div className="flex justify-between items-center pt-1 border-t border-border/30">

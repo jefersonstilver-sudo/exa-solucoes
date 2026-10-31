@@ -20,11 +20,14 @@ import ContratosAlertCard from '@/components/admin/dashboard/ContratosAlertCard'
 import AlertasGeraisCard from '@/components/admin/dashboard/AlertasGeraisCard';
 import SortableDashboardCard from '@/components/admin/dashboard/SortableDashboardCard';
 import { ElegantPeriodType, getElegantPeriodDates } from '@/components/admin/dashboard/ElegantPeriodButton';
+import DashboardCelular from '@/components/admin/dashboard/DashboardCelular';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Default order: Dispositivos, Contratos, Vendedores na primeira linha (3 cols)
-const DEFAULT_CARDS_ORDER = ['panels', 'contracts', 'sellers', 'alerts'];
+// ranking de vendedores saiu (31/10/2026, pedido do CEO: não há mais equipe comercial)
+const DEFAULT_CARDS_ORDER = ['panels', 'contracts', 'alerts'];
 
-const Dashboard = () => {
+const DashboardCompleto = () => {
   console.log('🎯 [DASHBOARD] Componente renderizado');
   
   // Preferences hook for cross-device persistence
@@ -61,7 +64,7 @@ const Dashboard = () => {
       }
       if (savedCardsOrder && savedCardsOrder.length > 0) {
         // Filter out removed cards (like 'proposals')
-        const validCards = savedCardsOrder.filter(id => DEFAULT_CARDS_ORDER.includes(id) || id === 'proposals');
+        const validCards = savedCardsOrder.filter(id => DEFAULT_CARDS_ORDER.includes(id));
         const filteredCards = validCards.filter(id => id !== 'proposals');
         if (filteredCards.length > 0) {
           setCardsOrder(filteredCards);
@@ -224,7 +227,7 @@ const Dashboard = () => {
         >
           <SortableContext items={cardsOrder} strategy={rectSortingStrategy}>
             {/* All 4 cards in grid with equal heights */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
               {cardsOrder.map(cardId => (
                 <SortableDashboardCard key={cardId} id={cardId} isDragging={activeId === cardId}>
                   {renderCard(cardId)}
@@ -268,6 +271,12 @@ const Dashboard = () => {
       </div>
     </div>
   );
+};
+
+/** Celular: dashboard enxuto (telas, aprovações, Sofia e Nando). Computador: o completo. */
+const Dashboard = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <DashboardCelular /> : <DashboardCompleto />;
 };
 
 export default Dashboard;

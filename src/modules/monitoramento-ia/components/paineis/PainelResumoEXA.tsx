@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import type { FrotaPainel } from '../../hooks/useFrotaSaude';
 import { ESTADO_INFO } from './estados';
+import { SelosEstado, textoParaOperadora, copiarTexto } from './estadoVivo';
 
 interface Contato { papel: string; nome: string | null; telefone: string }
 
@@ -58,25 +59,10 @@ export const PainelResumoEXA = ({ computer, saude, predioNome, elevadorNome, gru
     return () => { ativo = false; };
   }, [computer?.building_id]);
 
-  const info = saude ? ESTADO_INFO[saude.estado] : null;
   const endereco = computer?.address || saude?.endereco || [predio?.endereco, predio?.bairro].filter(Boolean).join(' – ') || null;
 
-  const copiarTudo = async () => {
-    const linhas = [
-      `Painel: ${computer?.name || computer?.condominio_name}`,
-      predioNome || predio?.nome ? `Prédio: ${predioNome || predio?.nome}` : null,
-      endereco ? `Endereço: ${endereco}` : null,
-      `Operadora: ${computer?.provider || saude?.operadora || 'não informada'}`,
-      computer?.anydesk_client_id ? `AnyDesk: ${computer.anydesk_client_id}` : null,
-      grupoNome ? `Grupo: ${grupoNome}` : null,
-      elevadorNome ? `Empresa do elevador: ${elevadorNome}` : null,
-      saude ? `Situação: ${ESTADO_INFO[saude.estado].rotulo} — ${saude.causa}` : null,
-      saude ? `Quedas em 7 dias: ${saude.quedas_7d} (fora ${saude.fora_7d})` : null,
-      ...contatos.map((c) => `${c.papel}: ${c.nome || ''} ${fone(c.telefone)}`.trim()),
-    ].filter(Boolean);
-    try { await navigator.clipboard.writeText(linhas.join('\n')); toast.success('Informações copiadas'); }
-    catch { toast.error('Não consegui copiar'); }
-  };
+  // para a operadora de internet: nome do prédio e endereço, só isso
+  const copiarTudo = () => copiarTexto(textoParaOperadora(predioNome || predio?.nome || computer?.condominio_name || computer?.name, endereco), 'Prédio e endereço copiados');
 
   const linhaTec: string[] = [];
   if (saude) {
@@ -95,15 +81,15 @@ export const PainelResumoEXA = ({ computer, saude, predioNome, elevadorNome, gru
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            {info && <span className="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-bold" style={{ background: info.fundo, color: info.cor }}>{info.rotulo}</span>}
+            {saude && <SelosEstado estado={saude.estado} desde={saude.visto_anydesk_em} />}
             <span className="text-sm font-semibold text-[#45464A]">{computer?.provider || saude?.operadora || 'Operadora não informada'}</span>
           </div>
           <p className="mt-1 text-sm text-[#6A6B70]">{endereco || 'Endereço não cadastrado'}</p>
           {saude && <p className="mt-2 text-[15px] font-bold leading-snug">{saude.causa}</p>}
         </div>
         <button type="button" onClick={copiarTudo}
-          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold hover:bg-black/[0.03]">
-          <Copy className="h-4 w-4" /> Copiar informações
+          className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold hover:bg-black/[0.03] sm:w-auto">
+          <Copy className="h-4 w-4" /> Copiar prédio e endereço
         </button>
       </div>
 

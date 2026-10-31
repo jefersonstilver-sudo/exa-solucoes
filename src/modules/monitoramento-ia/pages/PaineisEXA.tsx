@@ -33,6 +33,7 @@ import { ConfigHorarioDialog } from '@/components/admin/paineis-exa/ConfigHorari
 import { DeviceGroupManager } from '@/components/monitor/DeviceGroupManager';
 import { InternetAccountsSection } from '@/components/admin/internet-accounts/InternetAccountsSection';
 import { ESTADO_INFO, ehProblema, glass } from '../components/paineis/estados';
+import { SelosEstado, textoParaOperadora, copiarTexto } from '../components/paineis/estadoVivo';
 
 const periodoRotulo: Record<PeriodType, string> = {
   hoje: 'hoje', ontem: 'ontem', 'esta-semana': 'esta semana', '7dias': 'últ. 7 dias', '30dias': 'últ. 30 dias', personalizado: 'no período',
@@ -179,16 +180,8 @@ export default function PaineisEXA() {
 
 
   const abrir = (id: string) => { const d = devPorId.get(id); if (d) setSelecionado(d); else toast.error('Painel ainda carregando, tente de novo.'); };
-  const copiar = async (p: FrotaPainel) => {
-    const elev = devPorId.get(p.id)?.empresa_elevador_id;
-    const t = [
-      `Painel: ${p.nome}`, p.building_id && predios.get(p.building_id) ? `Prédio: ${predios.get(p.building_id)}` : null,
-      p.endereco ? `Endereço: ${p.endereco}` : null, `Operadora: ${p.operadora || 'não informada'}`,
-      p.anydesk ? `AnyDesk: ${p.anydesk}` : null, elev ? `Empresa do elevador: ${elevadores.get(elev) || ''}` : null,
-      `Situação: ${ESTADO_INFO[p.estado].rotulo} — ${p.causa}`, `Quedas em 7 dias: ${p.quedas_7d} (fora ${p.fora_7d})`,
-    ].filter(Boolean).join('\n');
-    try { await navigator.clipboard.writeText(t); toast.success('Informações copiadas'); } catch { toast.error('Não consegui copiar'); }
-  };
+  // o que se manda para a operadora de internet: nome do prédio e endereço, só isso
+  const copiar = (p: FrotaPainel) => copiarTexto(textoParaOperadora((p.building_id && predios.get(p.building_id)) || p.condominio || p.nome, p.endereco), 'Prédio e endereço copiados');
   const sincronizar = async () => {
     setSincronizando(true);
     const { error } = await supabase.functions.invoke('sync-anydesk', { body: { force: true } });
@@ -351,7 +344,8 @@ export default function PaineisEXA() {
                     {!fechado && (
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         {g.itens.map((p) => {
-                          const info = ESTADO_INFO[p.estado];
+                          // tocando com alerta (internet ruim, instável, quente) = cartão verde; o alerta vai no selo
+                          const info = ESTADO_INFO[['internet_ruim', 'instavel', 'quente'].includes(p.estado) ? 'tocando' : p.estado];
                           const dev = devPorId.get(p.id);
                           const aberto = cardAberto === p.id;
                           const elev = dev?.empresa_elevador_id ? elevadores.get(dev.empresa_elevador_id) : null;
@@ -362,25 +356,20 @@ export default function PaineisEXA() {
                               <button type="button" onClick={() => setCardAberto(aberto ? null : p.id)} aria-expanded={aberto}
                                 className="flex w-full flex-col gap-2 p-4 text-left">
                                 <span className="flex items-start justify-between gap-2">
-                                  <span className="text-[15px] font-extrabold leading-tight">{p.nome}</span>
-                                  <Chip fundo={info.fundo} cor={info.cor}><span className="h-1.5 w-1.5 rounded-full" style={{ background: info.ponto }} />{info.rotulo}</Chip>
+                                  <span className="min-w-0 text-[15px] font-extrabold leading-tight">{p.nome}</span>
+                                  <SelosEstado estado={p.estado} desde={p.visto_anydesk_em} />
                                 </span>
-                                <span className="flex min-w-0 items-center gap-2 text-xs text-[#6A6B70]">
-                                  <Chip>{p.operadora || 'Operadora ?'}</Chip>
-                                  <span className="truncate">{p.endereco || 'Endereço não cadastrado'}</span>
-                                </span>
-                                <span className="flex flex-wrap gap-1.5">
-                                  <Chip fundo={p.quedas_7d >= 15 ? '#FCF1DF' : undefined} cor={p.quedas_7d >= 15 ? '#9A5300' : undefined}>{p.quedas_7d} quedas · 7d</Chip>
-                                  {(eventsMap.get(p.id) || 0) > 0 && periodo !== '7dias' && <Chip>{eventsMap.get(p.id)} {periodoRotulo[periodo]}</Chip>}
-                                  <Chip>{predio ? `Prédio: ${predio}` : 'Sem prédio'}</Chip>
-                                  {elev && <Chip>Elevador: {elev}</Chip>}
-                                  {(p.causa_registrada || inc) && <Chip fundo="#EEF2FB" cor="#2B4C8C">{p.causa_registrada ? 'Causa registrada' : 'Causa pendente'}</Chip>}
-                                </span>
-                                <span className="text-sm leading-snug text-[#3F4044]"><strong>Causa:</strong> {p.causa}</span>
-                                <span className="flex justify-between text-[11px] text-[#8A8B90]">
-                                  <span>ID {p.anydesk || '—'}</span>
-                                  <span>{p.player?.versao || (p.coletor ? 'diagnóstico ativo' : 'sem coletor')}</span>
-                                </span>
+                                <span className="truncate text-xs text-[#6A6B70]">{p.operadora || 'Operadora ?'} · {p.endereco || 'endereço não cadastrado'}</span>
+                                {p.estado !== 'tocando' && p.estado !== 'sem_diagnostico' && !/^sem sinal h[áa]/i.test(p.causa || '') && (
+                                  <span className="text-[13px] leading-snug text-[#3F4044]">{p.causa}</span>
+                                )}
+                                {(p.quedas_7d > 0 || p.causa_registrada || inc || ((eventsMap.get(p.id) || 0) > 0 && periodo !== '7dias')) && (
+                                  <span className="flex flex-wrap gap-1.5">
+                                    {p.quedas_7d > 0 && <Chip fundo={p.quedas_7d >= 15 ? '#FCF1DF' : undefined} cor={p.quedas_7d >= 15 ? '#9A5300' : undefined}>{p.quedas_7d} {p.quedas_7d === 1 ? 'queda' : 'quedas'} · 7d</Chip>}
+                                    {(eventsMap.get(p.id) || 0) > 0 && periodo !== '7dias' && <Chip>{eventsMap.get(p.id)} {periodoRotulo[periodo]}</Chip>}
+                                    {(p.causa_registrada || inc) && <Chip fundo="#EEF2FB" cor="#2B4C8C">{p.causa_registrada ? 'Causa registrada' : 'Causa pendente'}</Chip>}
+                                  </span>
+                                )}
                               </button>
                               {aberto && (
                                 <div className="border-t border-black/[0.06] bg-white/60 p-4">
@@ -392,10 +381,11 @@ export default function PaineisEXA() {
                                     {p.ultimo_boot?.tipo ? `Último religamento: ${p.ultimo_boot.tipo}. ` : ''}
                                     {`Fora ${p.fora_7d} em 7 dias.`}
                                   </p>
-                                  <div className="mt-3 flex flex-wrap gap-2">
-                                    <button type="button" onClick={() => abrir(p.id)} className="inline-flex h-9 items-center rounded-xl bg-[#17181A] px-3 text-sm font-bold text-white">Abrir painel</button>
-                                    <button type="button" onClick={() => copiar(p)} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold"><Copy className="h-4 w-4" />Copiar informações</button>
-                                    {p.anydesk && <a href={`anydesk:${String(p.anydesk).replace(/\D/g, '')}`} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold"><ExternalLink className="h-4 w-4" />AnyDesk</a>}
+                                  <p className="mt-2 text-xs text-[#8A8B90]">{predio ? `Prédio: ${predio}` : 'Sem prédio'}{elev ? ` · Elevador: ${elev}` : ''} · AnyDesk {p.anydesk || '—'} · {p.player?.versao || (p.coletor ? 'diagnóstico ativo' : 'sem coletor')}</p>
+                                  <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <button type="button" onClick={() => abrir(p.id)} className="inline-flex h-10 items-center justify-center rounded-xl bg-[#17181A] px-3 text-sm font-bold text-white">Abrir painel</button>
+                                    <button type="button" onClick={() => copiar(p)} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold"><Copy className="h-4 w-4 shrink-0" /><span className="truncate">Copiar endereço</span></button>
+                                    {p.anydesk && <a href={`anydesk:${String(p.anydesk).replace(/\D/g, '')}`} className="col-span-2 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold"><ExternalLink className="h-4 w-4" />Abrir no AnyDesk</a>}
                                   </div>
                                 </div>
                               )}

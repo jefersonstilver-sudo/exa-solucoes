@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffectiveAuth } from '@/hooks/useEffectiveAuth';
 import { toast } from 'sonner';
 
 interface Notification {
@@ -18,24 +18,22 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const { userProfile } = useAuth();
+  // usuário EFETIVO: no "Acessar como cliente" o sininho é o do cliente, não o de quem está vendo
+  const { userProfile, isImpersonating } = useEffectiveAuth() as any;
 
   const fetchNotifications = async () => {
     if (!userProfile?.id) return;
 
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userProfile.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const [lista, naoLidas] = await Promise.all([
+        supabase.from('notifications').select('*').eq('user_id', userProfile.id).order('created_at', { ascending: false }).limit(30),
+        // número real de não lidas (antes contava só dentro das 50 carregadas → aparecia sempre "50")
+        supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', userProfile.id).eq('is_read', false),
+      ]);
+      if (lista.error) throw lista.error;
 
-      if (error) throw error;
-
-      setNotifications(data || []);
-      const unread = (data || []).filter(n => !n.is_read).length;
-      setUnreadCount(unread);
+      setNotifications(lista.data || []);
+      setUnreadCount(naoLidas.count ?? (lista.data || []).filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Erro ao carregar notificações:', error);
     } finally {
@@ -44,6 +42,7 @@ export const useNotifications = () => {
   };
 
   const markAsRead = async (notificationId: string) => {
+    if (isImpersonating) return; // vendo como cliente: só olha, não marca nada como lido por ele
     try {
       const { error } = await supabase.rpc('mark_notification_read', {
         notification_id: notificationId
@@ -65,14 +64,17 @@ export const useNotifications = () => {
   };
 
   const markAllAsRead = async () => {
-    if (!userProfile?.id) return;
+    if (!userProfile?.id || isImpersonating) return;
 
     try {
-      const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-      
-      for (const id of unreadIds) {
-        await markAsRead(id);
+      // todas as não lidas de uma vez (não só as que estão na lista)
+      const { error } = await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() } as any).eq('user_id', userProfile.id).eq('is_read', false);
+      if (error) {
+        for (const id of notifications.filter(n => !n.is_read).map(n => n.id)) await markAsRead(id);
+        return;
       }
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
     } catch (error) {
       console.error('Erro ao marcar todas as notificações como lidas:', error);
     }

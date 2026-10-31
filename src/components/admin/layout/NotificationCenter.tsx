@@ -112,7 +112,7 @@ const NotificationCenter = () => {
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent align="end" className="w-[400px] p-0 rounded-2xl shadow-2xl border">
+      <DropdownMenuContent align="end" className="w-[min(400px,calc(100vw-24px))] max-h-[min(70vh,560px)] overflow-y-auto p-0 rounded-2xl shadow-2xl border">
         {/* Header - Design moderno */}
         <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
           <div className="flex items-center justify-between">

@@ -61,7 +61,7 @@ export const GlobalNotificationProvider: React.FC<{ children: React.ReactNode }>
   // Criar elemento de áudio para beep
   useEffect(() => {
     audioRef.current = new Audio('/notification.mp3');
-    audioRef.current.volume = preferences.panel_alerts_volume;
+    audioRef.current.volume = Number.isFinite(Number(preferences?.panel_alerts_volume)) ? Math.min(1, Math.max(0, Number(preferences.panel_alerts_volume))) : 0.5; // volume inválido derrubava o painel inteiro
   }, [preferences.panel_alerts_volume]);
 
   useEffect(() => {
@@ -168,7 +168,7 @@ export const GlobalNotificationProvider: React.FC<{ children: React.ReactNode }>
             });
 
             if (preferences.panel_alerts_sound && audioRef.current) {
-              audioRef.current.volume = preferences.panel_alerts_volume;
+              audioRef.current.volume = Number.isFinite(Number(preferences?.panel_alerts_volume)) ? Math.min(1, Math.max(0, Number(preferences.panel_alerts_volume))) : 0.5; // volume inválido derrubava o painel inteiro
               audioRef.current.play().catch(() => {
                 console.log('🔇 [GlobalNotifications] Não foi possível tocar som de alerta');
               });
@@ -197,7 +197,7 @@ export const GlobalNotificationProvider: React.FC<{ children: React.ReactNode }>
             });
 
             if (preferences.panel_alerts_sound && audioRef.current) {
-              audioRef.current.volume = preferences.panel_alerts_volume;
+              audioRef.current.volume = Number.isFinite(Number(preferences?.panel_alerts_volume)) ? Math.min(1, Math.max(0, Number(preferences.panel_alerts_volume))) : 0.5; // volume inválido derrubava o painel inteiro
               audioRef.current.play().catch(() => {
                 console.log('🔇 [GlobalNotifications] Não foi possível tocar som');
               });

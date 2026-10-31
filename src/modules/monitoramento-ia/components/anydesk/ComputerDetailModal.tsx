@@ -172,8 +172,9 @@ export const ComputerDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`max-w-7xl max-h-[95vh] overflow-y-auto ${themeClass} !bg-module-primary !border-module !shadow-lg`}>
-        <div className="glass-card bg-module-card border-module rounded-lg p-6 shadow-xl">
+      {/* celular: tela cheia (antes era uma janela de computador espremida) */}
+      <DialogContent className={`max-w-7xl max-h-[95vh] overflow-y-auto ${themeClass} !bg-module-primary !border-module !shadow-lg max-sm:!w-screen max-sm:!max-w-none max-sm:!h-[100dvh] max-sm:!max-h-[100dvh] max-sm:!rounded-none max-sm:!p-0`}>
+        <div className="glass-card bg-module-card border-module rounded-lg p-6 shadow-xl max-sm:rounded-none max-sm:border-0 max-sm:p-4 max-sm:pt-[max(16px,env(safe-area-inset-top))] max-sm:pb-[max(24px,env(safe-area-inset-bottom))] max-sm:shadow-none">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-module-primary">
               <Monitor className="h-6 w-6 text-module-accent" />
