@@ -7,6 +7,7 @@ import { ADMIN_FUNDO_CLASSE } from './ModernSuperAdminLayout';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
+import ConviteAvisos from '@/components/avisos/ConviteAvisos';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
 import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
@@ -54,6 +55,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
             <DentroDoLayout.Provider value={true}>{children || <Outlet />}</DentroDoLayout.Provider>
           </main>
           {isMobile && <MobileBottomNav />}
+          <ConviteAvisos publico="equipe" />
         </SidebarInset>
       </div>
     </SidebarProvider>

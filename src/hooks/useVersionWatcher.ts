@@ -15,8 +15,9 @@ export const ROTAS_SEM_RECARGA = /^\/(definir-senha|reset-password|redefinir-sen
  * Respeita o memory rule de polling mínimo 60s — usa 5min (300s).
  */
 
-const VERSION_URL =
-  'https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/get-app-version';
+// versão publicada junto com o site (vite gera /version.json). A função get-app-version ficou parada
+// em abril/2026 e, como nunca batia com a versão do site, o app recarregava a cada 5 minutos.
+const VERSION_URL = '/version.json';
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 
 declare global {
@@ -49,7 +50,7 @@ export const useVersionWatcher = () => {
       try {
         const ctrl = new AbortController();
         const timeout = setTimeout(() => ctrl.abort(), 4000);
-        const r = await fetch(VERSION_URL, {
+        const r = await fetch(`${VERSION_URL}?t=${Date.now()}`, {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
           signal: ctrl.signal,
@@ -70,9 +71,9 @@ export const useVersionWatcher = () => {
             if (typeof window.__exaForceRefresh === 'function') {
               window.__exaForceRefresh();
             } else {
-              const search = window.location.search || '';
-              const separator = search ? '&' : '?';
-              window.location.replace(`${window.location.pathname}${search}${separator}_v=${Date.now()}${window.location.hash || ''}`);
+              const q = new URLSearchParams(window.location.search);
+              q.delete('_v'); q.delete('_cb'); q.set('_v', String(Date.now()));
+              window.location.replace(`${window.location.pathname}?${q.toString()}${window.location.hash || ''}`);
             }
           }, 5000);
         }

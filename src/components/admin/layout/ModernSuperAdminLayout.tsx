@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
+import ConviteAvisos from '@/components/avisos/ConviteAvisos';
 import AdminMenuButton from './AdminMenuButton';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
@@ -61,6 +62,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
               <DentroDoLayout.Provider value={true}>{children || <Outlet />}</DentroDoLayout.Provider>
             </main>
             {isMobile && !isFullscreenMode && <MobileBottomNav />}
+            <ConviteAvisos publico="equipe" />
           </SidebarInset>
 
           {/* Voz da Sofia desativada em 28/10/2026 (decisão do CEO): sem botão flutuante no painel. */}

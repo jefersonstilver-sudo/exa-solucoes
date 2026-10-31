@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { APP_VERSION, BUILD_TIMESTAMP } from '@/config/version';
 import { setStoredVersion } from '@/config/version';
-import { supabase } from '@/integrations/supabase/client';
 import { ROTAS_SEM_RECARGA } from '@/hooks/useVersionWatcher';
 
 const RELOAD_KEY = 'cache-reload-done';
@@ -23,7 +22,11 @@ export const useForceCacheClear = () => {
     // Active SW cleanup on every mount
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
-        regs.forEach((r) => r.unregister());
+        // mantém só o /sw-exa.js (avisos no celular; não guarda cache de nada)
+        regs.forEach((r) => {
+          const w = r.active || r.waiting || r.installing;
+          if (!w || !/\/sw-exa\.js(\?|$)/.test(w.scriptURL)) r.unregister();
+        });
         if (regs.length > 0) console.log(`🧹 Unregistered ${regs.length} stale Service Workers`);
       });
     }
@@ -58,17 +61,15 @@ export const useForceCacheClear = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('get-app-version', {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        },
-      });
-
-      if (error) {
-        console.warn('⚠️ Could not check remote version:', error.message);
-        return;
+      // versão publicada junto com o site (/version.json, mesma origem). A get-app-version estava parada
+      // em abril/2026 e fazia o app recarregar em toda abertura.
+      let data: any = null;
+      try {
+        const r = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (!r.ok) return;
+        data = await r.json();
+      } catch {
+        return; // sem version.json (ambiente local) ou rede: não recarrega
       }
 
       const serverVersion = data?.version;
@@ -90,19 +91,12 @@ export const useForceCacheClear = () => {
 
         // Force browser to bypass cache — location.replace works better on Safari/iOS
         const url = new URL(window.location.href);
+        url.searchParams.delete('_v');
         url.searchParams.set('_cb', String(Date.now()));
         window.location.replace(url.toString());
         return;
       }
 
-      // If versions match, update server with our version (for first deploy / manual updates)
-      if (serverVersion === '0') {
-        console.log('📤 Registering build version on server...');
-        await supabase.functions.invoke('get-app-version', {
-          method: 'POST',
-          body: { version: localVersion },
-        });
-      }
     } catch (err) {
       console.warn('⚠️ Remote version check failed:', err);
     }

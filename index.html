@@ -32,11 +32,14 @@
       })();
     </script>
 
-    <!-- Service Worker cleanup (legacy PWA builds) -->
+    <!-- Service Worker cleanup (legacy PWA builds) — mantém só o /sw-exa.js (avisos no celular, sem cache) -->
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister(); });
+          regs.forEach(function(r) {
+            var w = r.active || r.waiting || r.installing;
+            if (!w || !/\/sw-exa\.js(\?|$)/.test(w.scriptURL)) r.unregister();
+          });
         });
         if ('caches' in window) {
           caches.keys().then(function(names) {
@@ -235,7 +238,7 @@ setTimeout(function(){window.__exaSplashFim&&window.__exaSplashFim()},9000)})();
         var BUILD_ID = '__BUILD_ID__';
         var key = 'html-build-id';
         // mantém ?parâmetros e #hash do endereço (links de senha, propostas, UTM)
-        function comCb() { var q = location.search || ''; return location.pathname + q + (q ? '&' : '?') + '_cb=' + Date.now() + (location.hash || ''); }
+        function comCb() { var q = (location.search || '').replace(/[?&](_v|_cb)=\d+/g, '').replace(/^&/, '?'); return location.pathname + q + (q ? '&' : '?') + '_cb=' + Date.now() + (location.hash || ''); }
         var stored = localStorage.getItem(key);
         // Páginas de link único (criar/redefinir senha, confirmação, 2FA) NUNCA recarregam sozinhas:
         // o recarregamento perdia o ?th=… / #access_token=… do link e o cliente via "link inválido".
@@ -264,7 +267,7 @@ setTimeout(function(){window.__exaSplashFim&&window.__exaSplashFim()},9000)})();
     <script>
       (function() {
         var BUILD_ID = '__BUILD_ID__';
-        var VERSION_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/get-app-version';
+        var VERSION_URL = '/version.json'; // publicado junto com o site (antes: get-app-version, parada em abril → recarregava sempre)
         var MIN_RECHECK_MS = 60 * 1000;       // 60s — respeita política de polling
         var VISIBILITY_RECHECK_MS = 5 * 60 * 1000; // 5min — re-checa quando aba volta a ficar visível
 
@@ -272,7 +275,8 @@ setTimeout(function(){window.__exaSplashFim&&window.__exaSplashFim()},9000)})();
           try { localStorage.removeItem('html-build-id'); } catch (e) {}
           try { localStorage.removeItem('app-version'); } catch (e) {}
           var doReload = function() {
-            var search = location.search || '';
+            // tira os _v/_cb antigos (antes o endereço ia acumulando um a cada recarga)
+            var search = (location.search || '').replace(/[?&](_v|_cb)=\d+/g, '').replace(/^&/, '?');
             var sep = search ? '&' : '?';
             location.replace(location.pathname + search + sep + '_v=' + Date.now() + (location.hash || ''));
           };
@@ -296,7 +300,7 @@ setTimeout(function(){window.__exaSplashFim&&window.__exaSplashFim()},9000)})();
           var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
           var timeoutId = ctrl ? setTimeout(function() { ctrl.abort(); }, 4000) : null;
 
-          fetch(VERSION_URL, {
+          fetch(VERSION_URL + '?t=' + Date.now(), {
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
             signal: ctrl ? ctrl.signal : undefined

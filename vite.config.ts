@@ -54,6 +54,12 @@ export default defineConfig(() => ({
       transformIndexHtml(html: string) {
         return html.split("__BUILD_ID__").join(BUILD_ID);
       },
+      // versão publicada, lida pelo próprio site (mesma origem): o aparelho só recarrega se a página
+      // aberta for mais velha que a publicada. Antes comparava com a função get-app-version, que
+      // ninguém atualizava (parada em abril) → o app recarregava em toda abertura e a cada 5 min.
+      generateBundle(this: any) {
+        this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ version: BUILD_ID }) });
+      },
     },
   ].filter(Boolean),
   resolve: {

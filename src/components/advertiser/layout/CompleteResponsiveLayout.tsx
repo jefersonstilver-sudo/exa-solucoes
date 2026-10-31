@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 import { AnuncianteAppTopo, AnuncianteNavInferior } from './AnuncianteAppChrome';
+import ConviteAvisos from '@/components/avisos/ConviteAvisos';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
 import { DentroDoLayout } from '@/components/loading/MarcaCarregando';
 import { ImpersonationProvider } from '@/contexts/ImpersonationContext';
@@ -87,6 +88,7 @@ const CompleteResponsiveLayout = () => {
         </div>
       </main>
       {celular && <AnuncianteNavInferior />}
+      <ConviteAvisos publico="cliente" />
       </div>
     </ImpersonationProvider>
   );
