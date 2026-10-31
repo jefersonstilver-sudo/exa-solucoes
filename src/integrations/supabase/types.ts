@@ -7447,6 +7447,7 @@ export type Database = {
       }
       exa_telas: {
         Row: {
+          alerta_offline_em: string | null
           ambiente: string
           atualizado_em: string
           building_id: string | null
@@ -7454,6 +7455,7 @@ export type Database = {
           codigo_expira: string | null
           comando: string | null
           comando_em: string | null
+          conectada_por: string | null
           config: Json
           criado_em: string
           erros: Json | null
@@ -7462,9 +7464,11 @@ export type Database = {
           ip: string | null
           layout: string
           nome: string | null
+          offline_desde: string | null
           pareada_em: string | null
           pareada_por: string | null
           plataforma: string | null
+          saude: Json | null
           status: string
           tocando: Json | null
           token_hash: string
@@ -7472,6 +7476,7 @@ export type Database = {
           versao_player: string | null
         }
         Insert: {
+          alerta_offline_em?: string | null
           ambiente?: string
           atualizado_em?: string
           building_id?: string | null
@@ -7479,6 +7484,7 @@ export type Database = {
           codigo_expira?: string | null
           comando?: string | null
           comando_em?: string | null
+          conectada_por?: string | null
           config?: Json
           criado_em?: string
           erros?: Json | null
@@ -7487,9 +7493,11 @@ export type Database = {
           ip?: string | null
           layout?: string
           nome?: string | null
+          offline_desde?: string | null
           pareada_em?: string | null
           pareada_por?: string | null
           plataforma?: string | null
+          saude?: Json | null
           status?: string
           tocando?: Json | null
           token_hash: string
@@ -7497,6 +7505,7 @@ export type Database = {
           versao_player?: string | null
         }
         Update: {
+          alerta_offline_em?: string | null
           ambiente?: string
           atualizado_em?: string
           building_id?: string | null
@@ -7504,6 +7513,7 @@ export type Database = {
           codigo_expira?: string | null
           comando?: string | null
           comando_em?: string | null
+          conectada_por?: string | null
           config?: Json
           criado_em?: string
           erros?: Json | null
@@ -7512,9 +7522,11 @@ export type Database = {
           ip?: string | null
           layout?: string
           nome?: string | null
+          offline_desde?: string | null
           pareada_em?: string | null
           pareada_por?: string | null
           plataforma?: string | null
+          saude?: Json | null
           status?: string
           tocando?: Json | null
           token_hash?: string
@@ -12916,6 +12928,7 @@ export type Database = {
           source_tentativa_id: string | null
           status: string
           status_adimplencia: string | null
+          telas_comercio: number
           termos_aceitos: boolean | null
           tipo_cobranca: string | null
           tipo_pagamento: string | null
@@ -12988,6 +13001,7 @@ export type Database = {
           source_tentativa_id?: string | null
           status?: string
           status_adimplencia?: string | null
+          telas_comercio?: number
           termos_aceitos?: boolean | null
           tipo_cobranca?: string | null
           tipo_pagamento?: string | null
@@ -13060,6 +13074,7 @@ export type Database = {
           source_tentativa_id?: string | null
           status?: string
           status_adimplencia?: string | null
+          telas_comercio?: number
           termos_aceitos?: boolean | null
           tipo_cobranca?: string | null
           tipo_pagamento?: string | null
