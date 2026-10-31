@@ -75,3 +75,7 @@
 # CRM: correção do build e deploy solicitado (29/10)
 - [x] Identificar TS2345 nas linhas 59 e 178 da exa2-crm-chat e alinhar apenas o import Supabase à versão 2.49.4 do código compartilhado; chats e visual preservados.
 - [x] Compilação automática confirmada (build OK, 29/10 00:38:49 UTC); exa2-crm-chat e nando-crm implantadas e ambas respondem 401 "não autenticado" ao token inválido. Migration 20261029010000_exa2_crm_chat.sql não executada; site não publicado e funções protegidas intactas.
+
+# exa-tela: leitura das notícias (31/10)
+- [x] Deploy da exa-tela no commit 9e71fcf (leitura no formato real do ExaSistema, foto pelo og:image); verify_jwt=false mantido, resposta 400 "ação desconhecida" no teste.
+- [ ] Redeploy da exa-tela no commit 530c846 — bloqueado: o commit ainda não sincronizou no projeto (só 9e71fcf no disco); precisa de um novo push na main.
