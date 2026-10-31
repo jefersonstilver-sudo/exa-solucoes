@@ -18,7 +18,9 @@ function saudeAgora() {
   const mem: any = (performance as any).memory;
   return {
     online: navigator.onLine,
-    conexao: c.type && c.type !== 'unknown' ? (c.type === 'wifi' ? 'Wi-Fi' : c.type === 'ethernet' ? 'cabo' : c.type) : c.effectiveType || null,
+    // tipo (Wi-Fi/cabo) só o Android informa; no resto, a qualidade estimada da conexão
+    conexao: c.type && c.type !== 'unknown' ? (c.type === 'wifi' ? 'Wi-Fi' : c.type === 'ethernet' ? 'cabo' : c.type === 'cellular' ? 'dados móveis' : c.type)
+      : ({ '4g': 'boa', '3g': 'média', '2g': 'fraca', 'slow-2g': 'muito fraca' } as Record<string, string>)[c.effectiveType] || null,
     mbps: typeof c.downlink === 'number' ? c.downlink : null,
     rtt: typeof c.rtt === 'number' ? c.rtt : null,
     videos_no_aparelho: estatisticas.itens,
