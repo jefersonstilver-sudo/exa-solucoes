@@ -151,6 +151,14 @@ async function noticias() {
   });
 }
 
+/** Nome que aparece no "A seguir": o do pedido (vários clientes ainda estão na conta interna), em Título se vier todo maiúsculo. */
+function nomeDoPedido(n?: string | null) {
+  const t = String(n || '').trim();
+  if (!t || /^pedido\b/i.test(t)) return '';
+  if (t === t.toUpperCase()) return t.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_m, a, b) => a + b.toUpperCase()).replace(/\b(De|Da|Do|Dos|Das|E)\b/g, (x) => x.toLowerCase());
+  return t;
+}
+
 /** Anúncios que valem agora no local + vídeos da casa. */
 async function programacaoDoLocal(admin: any, building: any) {
   return lembrar(`prog:${building.id}`, 55000, async () => {
@@ -186,7 +194,7 @@ async function programacaoDoLocal(admin: any, building: any) {
         return {
           id: slotId, tipo, pedido_id: p.id, video_id: v.id, url: v.url,
           titulo: String(v.nome || '').replace(/\.[^/.]+$/, ''),
-          cliente: (p.id === casaId ? building.nome : '') || nomeCli.get(p.client_id) || p.nome_pedido || '',
+          cliente: (p.id === casaId ? building.nome : '') || nomeDoPedido(p.nome_pedido) || nomeCli.get(p.client_id) || '',
           formato: formatoDe(v.largura, v.altura, v.orientacao),
           duracao: Number(v.duracao) || null,
           trim_inicio: Number(v.trim_start_seconds) || 0,
