@@ -20,6 +20,5 @@ begin
   return new;
 end $$;
 
-drop trigger if exists exa_telas_grupo_do_local on public.exa_telas;
-create trigger exa_telas_grupo_do_local before insert or update of building_id on public.exa_telas
+create or replace trigger exa_telas_grupo_do_local before insert or update of building_id on public.exa_telas
   for each row execute function public.exa_telas_grupo_do_local();
