@@ -92,7 +92,7 @@ serve(async (req: Request) => {
       throw usersError;
     }
 
-    const authUser = (users as { email?: string | null }[] | undefined)?.find(user => user.email?.toLowerCase() === sanitizedEmail);
+    const authUser = (users as { id: string; email?: string | null; email_confirmed_at?: string | null }[] | undefined)?.find(user => user.email?.toLowerCase() === sanitizedEmail);
     
     if (authUser) {
       console.log('⚠️ [CHECK-EMAIL] Email encontrado no auth.users:', sanitizedEmail);
