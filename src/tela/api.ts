@@ -15,8 +15,8 @@ export interface ItemVideo {
   trim_fim: number;
 }
 export interface Camera { url: string; nome: string; credito: string; segundos: number }
-export interface Noticia { titulo: string; resumo: string; categoria: string; origem: string; imagem: string; link: string; data: string | null }
-export interface Ritmo { casa_a_cada: number; editorial_a_cada: number; camera: boolean; noticias: boolean }
+export interface Noticia { titulo: string; resumo: string; categoria: string; origem: string; imagem: string; link: string; data: string | null; escopo?: 'foz' | 'brasil' }
+export interface Ritmo { casa_a_cada: number; editorial_a_cada: number; camera: boolean; noticias: boolean; noticias_foz?: boolean; noticias_brasil?: boolean }
 export interface Estado {
   ok: boolean;
   pareada: boolean;

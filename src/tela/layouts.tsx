@@ -291,7 +291,7 @@ function QuadroNoticia({ n }: { n: Noticia }) {
       <Logo altura={30} style={{ position: 'absolute', left: 40, top: 44, opacity: 0.85 }} />
       <div className="abs entra" style={{ left: 40, top: 250, width: 1040, display: 'flex', flexDirection: 'column', gap: 26 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span className="etiqueta" style={{ fontSize: 16, letterSpacing: 2, padding: '6px 14px' }}>{n.categoria || 'Foz agora'}</span>
+          <span className="etiqueta" style={{ fontSize: 16, letterSpacing: 2, padding: '6px 14px' }}>{n.categoria || (n.escopo === 'brasil' ? 'Brasil agora' : 'Foz agora')}</span>
           {minutosAtras(n.data) && <span className="rotulo" style={{ fontSize: 16 }}>{minutosAtras(n.data)}</span>}
         </div>
         <div className="corta" style={{ fontSize: 72, fontWeight: 900, letterSpacing: -2.5, lineHeight: 1.05, WebkitLineClamp: 4 }}>{n.titulo}</div>
@@ -338,7 +338,7 @@ function Chamada({ info }: { info: InfoFaixa | null }) {
   if (!prox || prox.tipo === 'video') return null;
   const resta = Math.ceil(info.dur - (Date.now() - info.inicio) / 1000);
   if (resta > 15 || resta < 1) return null;
-  const titulo = prox.tipo === 'camera' ? `${partesCamera(prox.cam.nome).titulo} ao vivo` : prox.tipo === 'aviso' ? 'Avisos do condomínio' : 'A notícia de Foz agora';
+  const titulo = prox.tipo === 'camera' ? `${partesCamera(prox.cam.nome).titulo} ao vivo` : prox.tipo === 'aviso' ? 'Avisos do condomínio' : prox.n.escopo === 'brasil' ? 'A notícia do Brasil agora' : 'A notícia de Foz agora';
   return (
     <div className="abs vidro-escuro entra" style={{ right: 36, bottom: 40, padding: '12px 22px 12px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 16, zIndex: 6 }}>
       <div style={{ width: 128, height: 72, borderRadius: 12, background: 'linear-gradient(180deg,#1d2a44,#2c3550 45%,#141a26)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.65)' }}>
@@ -400,7 +400,7 @@ function JanelaAlterna({ e }: { e: Estado }) {
             <div className="cheio" style={{ background: 'linear-gradient(0deg, rgba(12,6,16,.95) 10%, rgba(12,6,16,.25) 70%)' }} />
             <div className="abs" style={{ left: 20, right: 20, bottom: 18, display: 'flex', gap: 14, alignItems: 'flex-end' }}>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span className="etiqueta" style={{ alignSelf: 'flex-start', fontSize: 12, padding: '4px 10px' }}>{modo === 'curiosidade' ? 'Curiosidade' : n.categoria || 'Foz agora'}</span>
+                <span className="etiqueta" style={{ alignSelf: 'flex-start', fontSize: 12, padding: '4px 10px' }}>{modo === 'curiosidade' ? 'Curiosidade' : n.categoria || (n.escopo === 'brasil' ? 'Brasil agora' : 'Foz agora')}</span>
                 <span className="corta" style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.15, WebkitLineClamp: 3 }}>{n.titulo}</span>
               </div>
               {n.link && <QR valor={n.link} tamanho={86} />}

@@ -547,13 +547,14 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
   const [casa, setCasa] = useState(Number(local?.telas_ritmo?.casa_a_cada) || 3);
   const [ed, setEd] = useState(Number(local?.telas_ritmo?.editorial_a_cada) || 2);
   const [camera, setCamera] = useState(local?.telas_ritmo?.camera !== false);
-  const [noticias, setNoticias] = useState(local?.telas_ritmo?.noticias !== false);
+  const [noticias, setNoticias] = useState(local?.telas_ritmo?.noticias !== false && local?.telas_ritmo?.noticias_foz !== false);
+  const [brasil, setBrasil] = useState(local?.telas_ritmo?.noticias !== false && local?.telas_ritmo?.noticias_brasil !== false);
   const [salvando, setSalvando] = useState(false);
   const [limite, setLimite] = useState<number | null>(null);
   useEffect(() => {
     setCasaPedido(local?.pedido_casa_id || '');
     setCasa(Number(local?.telas_ritmo?.casa_a_cada) || 3); setEd(Number(local?.telas_ritmo?.editorial_a_cada) || 2);
-    setCamera(local?.telas_ritmo?.camera !== false); setNoticias(local?.telas_ritmo?.noticias !== false);
+    setCamera(local?.telas_ritmo?.camera !== false); setNoticias(local?.telas_ritmo?.noticias !== false && local?.telas_ritmo?.noticias_foz !== false); setBrasil(local?.telas_ritmo?.noticias !== false && local?.telas_ritmo?.noticias_brasil !== false);
   }, [localId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pedidos = useQuery({
@@ -582,7 +583,7 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
       if (localId) {
         const { error: e2 } = await db.from('buildings').update({
           pedido_casa_id: casaPedido || null,
-          telas_ritmo: { ...(local?.telas_ritmo || {}), casa_a_cada: casa, editorial_a_cada: ed, camera, noticias },
+          telas_ritmo: { ...(local?.telas_ritmo || {}), casa_a_cada: casa, editorial_a_cada: ed, camera, noticias: noticias || brasil, noticias_foz: noticias, noticias_brasil: brasil },
         }).eq('id', localId);
         if (e2) throw e2;
       }
@@ -635,7 +636,8 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
               <Ritmo casa={casa} ed={ed} onCasa={setCasa} onEd={setEd} mostrarEd />
               <div className="flex flex-wrap gap-4">
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={camera} onChange={(e) => setCamera(e.target.checked)} className="h-4 w-4 accent-[#9C1E1E]" />Câmera ao vivo da ponte</label>
-                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={noticias} onChange={(e) => setNoticias(e.target.checked)} className="h-4 w-4 accent-[#9C1E1E]" />Notícias</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={noticias} onChange={(e) => setNoticias(e.target.checked)} className="h-4 w-4 accent-[#9C1E1E]" />Notícias de Foz</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={brasil} onChange={(e) => setBrasil(e.target.checked)} className="h-4 w-4 accent-[#9C1E1E]" />Notícias do Brasil</label>
               </div>
             </>
           )}

@@ -107,7 +107,7 @@ const categoriaRotulo = (n?: Noticia) => {
 const origemRotulo = (n?: Noticia) => {
   const o = `${n?.origem || ''} ${n?.categoria || ''}`.toLowerCase();
   if (/curios/.test(o)) return 'Curiosidades';
-  if (/brasil|cnn/.test(o)) return 'Notícias · Brasil';
+  if (n?.escopo === 'brasil' || /brasil|cnn|jovem/.test(o)) return 'Notícias · Brasil';
   return 'Notícias · Foz';
 };
 

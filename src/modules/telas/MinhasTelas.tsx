@@ -179,7 +179,8 @@ export default function MinhasTelas() {
 
                     <div className="flex flex-wrap gap-4 rounded-2xl bg-[#f7f5f6] px-3 py-2.5 text-[13.5px]">
                       <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.camera !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, camera: v }, v ? 'Câmera ligada' : 'Câmera desligada')} /><Video className="h-4 w-4 text-[#8b8285]" />Câmera ao vivo</label>
-                      <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.noticias !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, noticias: v }, v ? 'Notícias ligadas' : 'Notícias desligadas')} /><Newspaper className="h-4 w-4 text-[#8b8285]" />Notícias</label>
+                      <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.noticias !== false && t.config?.ritmo?.noticias_foz !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, noticias_foz: v }, v ? 'Notícias de Foz ligadas' : 'Notícias de Foz desligadas')} /><Newspaper className="h-4 w-4 text-[#8b8285]" />Notícias de Foz</label>
+                      <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.noticias !== false && t.config?.ritmo?.noticias_brasil !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, noticias_brasil: v }, v ? 'Notícias do Brasil ligadas' : 'Notícias do Brasil desligadas')} /><Newspaper className="h-4 w-4 text-[#8b8285]" />Notícias do Brasil</label>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">

@@ -35,7 +35,7 @@ const CAMERAS_PADRAO: { chave: string; nome: string }[] = [
 ];
 const NOME_CAMERA = new Map(CAMERAS_PADRAO.map((c) => [c.chave, c.nome]));
 const STATUS_TOCANDO = ['ativo', 'video_aprovado', 'video_enviado'];
-const RITMO_PADRAO = { casa_a_cada: 3, editorial_a_cada: 2, camera: true, noticias: true };
+const RITMO_PADRAO = { casa_a_cada: 3, editorial_a_cada: 2, camera: true, noticias: true, noticias_foz: true, noticias_brasil: true };
 
 const sha256 = async (t: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, '0')).join('');
 const segredo = () => [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -125,6 +125,7 @@ async function noticias() {
       }
       const out: any[] = [];
       const vistos = new Set<string>();
+      const porEscopo: Record<string, number> = { foz: 0, brasil: 0 };
       for (const n of brutas) {
         const titulo = limpa(n.titulo || n.title || n.manchete, 220).trim();
         if (!titulo || vistos.has(titulo.toLowerCase())) continue;
@@ -132,7 +133,13 @@ async function noticias() {
         const cat = limpa(n.categoria || n.category || '', 40);
         if (/culin|receita|gastronom/i.test(cat)) continue; // regra fixa: nada culinário nas notícias
         const link = /^https?:\/\//i.test(String(n.link || n.url || '')) ? String(n.link || n.url) : '';
+        // Foz = portal da cidade; Brasil = Jovem Pan e outras nacionais (até 15 de cada, para uma não esconder a outra)
+        const fonte = String(n._fonte || n.origem || n.fonte || '').toLowerCase();
+        const escopo = /portal|cidade|foz/.test(fonte) || !fonte ? 'foz' : 'brasil';
+        if (porEscopo[escopo] >= 15) continue;
+        porEscopo[escopo]++;
         out.push({
+          escopo,
           titulo,
           resumo: limpa(n.resumo || n.descricao || n.subtitulo || '', 260),
           categoria: cat,
@@ -141,7 +148,7 @@ async function noticias() {
           link,
           data: n.data || n.publicado_em || null, // atualizado_em é da lista, não da matéria
         });
-        if (out.length >= 20) break;
+        if (out.length >= 30) break;
       }
       await Promise.all(out.map(async (n) => { if (!n.imagem && n.link) n.imagem = await imagemDaMateria(n.link); }));
       return out;
@@ -437,6 +444,13 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ---------- quantas notícias de Foz e do Brasil chegam do ExaSistema (dados públicos, para conferência) ----------
+    if (acao === 'noticias_resumo') {
+      const ns: any[] = await noticias();
+      const conta = (e: string) => ns.filter((n) => (n.escopo === 'brasil') === (e === 'brasil'));
+      return json({ ok: true, foz: conta('foz').length, brasil: conta('brasil').length, origens: [...new Set(ns.map((n) => n.origem))], exemplos: ns.slice(0, 6).map((n) => `${n.escopo} · ${n.titulo}`) });
+    }
+
     // ---------- réplica do elevador para a TV do prédio (o painel-web/sw.js chama com o token da tela) ----------
     if (acao === 'replica') {
       const token = String(b.token || '');
@@ -516,7 +530,14 @@ Deno.serve(async (req) => {
       const [prog, cams, nots] = await Promise.all([
         programacaoDoLocal(admin, building).catch((e) => { console.error('[exa-tela] programação', e); return { anuncios: [], casa: [] }; }),
         ritmo.camera === false ? Promise.resolve([]) : cameras(),
-        ritmo.noticias === false ? Promise.resolve([]) : noticias(),
+        ritmo.noticias === false ? Promise.resolve([]) : noticias().then((ns: any[]) => {
+          // o local escolhe Foz, Brasil ou as duas (intercaladas)
+          const foz = ritmo.noticias_foz === false ? [] : ns.filter((n) => n.escopo !== 'brasil');
+          const br = ritmo.noticias_brasil === false ? [] : ns.filter((n) => n.escopo === 'brasil');
+          const out: any[] = [];
+          for (let i = 0; i < Math.max(foz.length, br.length); i++) { if (foz[i]) out.push(foz[i]); if (br[i]) out.push(br[i]); }
+          return out;
+        }),
       ]);
       // prédio: quantos avisos do síndico há na programação do NUC (a TV horizontal intercala os avisos)
       let avisos = 0;
@@ -612,10 +633,14 @@ Deno.serve(async (req) => {
         if (typeof b.nome === 'string') patch.nome = limpa(b.nome, 60) || null;
         if (b.layout !== undefined) { if (!LAYOUTS_OK.has(String(b.layout))) return json({ ok: false, erro: 'layout inválido' }, 400); patch.layout = String(b.layout); }
         const cfg = { ...(t.config || {}) };
-        if (typeof b.camera === 'boolean' || typeof b.noticias === 'boolean') {
+        if (typeof b.camera === 'boolean' || typeof b.noticias === 'boolean' || typeof b.noticias_foz === 'boolean' || typeof b.noticias_brasil === 'boolean') {
           cfg.ritmo = { ...(cfg.ritmo || {}) };
           if (typeof b.camera === 'boolean') cfg.ritmo.camera = b.camera;
           if (typeof b.noticias === 'boolean') cfg.ritmo.noticias = b.noticias;
+          if (typeof b.noticias_foz === 'boolean') cfg.ritmo.noticias_foz = b.noticias_foz;
+          if (typeof b.noticias_brasil === 'boolean') cfg.ritmo.noticias_brasil = b.noticias_brasil;
+          // as duas desligadas = sem notícias; alguma ligada = notícias ligadas
+          if (typeof b.noticias_foz === 'boolean' || typeof b.noticias_brasil === 'boolean') cfg.ritmo.noticias = cfg.ritmo.noticias_foz !== false || cfg.ritmo.noticias_brasil !== false;
           patch.config = cfg;
         }
         if (b.orientacao !== undefined || b.giro !== undefined) {
