@@ -75,6 +75,48 @@ export default defineConfig(() => ({
       },
     },
     {
+      // A réplica da tela do elevador (public/painel-web/ui, idêntica à dos NUCs) roda também na TV vertical do prédio
+      // (APK, Chrome 7x). O código dos NUCs usa ?. / ?? (Chrome 80) e o CSS usa inset (87) e gap no flex (84): no TV box
+      // o script dos vídeos e o dos avisos nem carregavam e o layout desmontava. Só na cópia publicada (dist):
+      // JS rebaixado para o Chrome 51, CSS com inset expandido, compat/gap.js injetado e ?v= para não ficar em cache velho.
+      name: "painel-web-legado",
+      apply: "build" as const,
+      async closeBundle() {
+        const ui = path.resolve(__dirname, "dist", "painel-web", "ui");
+        if (!fs.existsSync(ui) || process.env.EXA_PAINEL_LEGADO === "0") return;
+        try {
+          const esb: any = await import("esbuild");
+          const v = BUILD_ID;
+          const pastaJs = path.join(ui, "scripts");
+          for (const f of fs.readdirSync(pastaJs).filter((x: string) => x.endsWith(".js"))) {
+            const p = path.join(pastaJs, f);
+            const r = await esb.transform(fs.readFileSync(p, "utf8"), { loader: "js", target: "chrome51", charset: "utf8" });
+            fs.writeFileSync(p, r.code);
+          }
+          for (const f of fs.readdirSync(ui).filter((x: string) => x.endsWith(".css"))) {
+            const p = path.join(ui, f);
+            const r = await esb.transform(fs.readFileSync(p, "utf8"), { loader: "css", target: "chrome74", charset: "utf8" });
+            fs.writeFileSync(p, r.code);
+          }
+          for (const f of fs.readdirSync(ui).filter((x: string) => x.endsWith(".html"))) {
+            const p = path.join(ui, f);
+            let h = fs.readFileSync(p, "utf8");
+            // scripts e estilos dentro do HTML
+            const blocos: [string, string][] = [];
+            for (const m of h.matchAll(/<script>([\s\S]*?)<\/script>/g)) blocos.push([m[0], "<script>" + (await esb.transform(m[1], { loader: "js", target: "chrome51", charset: "utf8" })).code + "</script>"]);
+            for (const m of h.matchAll(/<style>([\s\S]*?)<\/style>/g)) blocos.push([m[0], "<style>" + (await esb.transform(m[1], { loader: "css", target: "chrome74", charset: "utf8" })).code + "</style>"]);
+            for (const [a, b] of blocos) h = h.split(a).join(b);
+            h = h.replace(/(<script src="\.\/scripts\/[^"?]+\.js)"/g, `$1?v=${v}"`).replace(/(<link rel="stylesheet" href="[^"?:]+\.css)"/g, `$1?v=${v}"`);
+            h = h.replace("</body>", `  <script src="../compat/gap.js?v=${v}"></script>\n</body>`);
+            fs.writeFileSync(p, h);
+          }
+          console.log("[painel-web-legado] réplica rebaixada para TV box (Chrome 51+)");
+        } catch (e) {
+          console.warn("[painel-web-legado] mantendo os arquivos originais:", (e as Error)?.message || e);
+        }
+      },
+    },
+    {
       // O /tela roda em TV box e player IPTV com o navegador do sistema parado no Chrome 5x–7x, que não
       // entende o JavaScript moderno do build normal (tela preta). Depois do build, gera o player de novo
       // em um único arquivo clássico rebaixado para o Chrome 51 (Android 7) e troca o <script type="module"> do /tela por ele.
