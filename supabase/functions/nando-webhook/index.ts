@@ -113,6 +113,9 @@ Deno.serve(async (req) => {
     conteudo: { msg_id: msgId, texto, midia, nome_whatsapp: d.pushName || null, key: midia ? key : undefined, mensagem: midia ? d.message : undefined },
   }).select("id").single();
 
+  // aviso no celular do CEO (app da EXA), como o WhatsApp: a tag junta as mensagens do mesmo contato
+  const aviso = ehAdmin(tel) ? Promise.resolve() : avisoCelular(sb, "Nando · " + String(d.pushName || tel).slice(0, 40), texto || (midia ? "📎 " + midia : "mensagem"), "/super_admin/crm-evolution/conversas/nando?telefone=" + tel, "nando-" + tel);
+
   // responde rapido para a Evolution e trabalha em segundo plano
   const tarefa = processar(tel, salva?.id || 0, d.pushName || "").catch(async (e) => {
     console.error("[NANDO] falha", e);
@@ -122,9 +125,28 @@ Deno.serve(async (req) => {
     } catch (_) { /* nada */ }
   });
   // @ts-ignore EdgeRuntime existe no Supabase
-  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(tarefa); else await tarefa;
+  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(Promise.all([tarefa, aviso])); else await Promise.all([tarefa, aviso]);
   return json(200, { ok: true });
 });
+
+/** Notificação no app da EXA (Web Push pela exa2-push, com o token interno do cron). Nunca derruba o atendimento. */
+let cronTok = { t: 0, v: "" };
+async function avisoCelular(sb: ReturnType<typeof db>, titulo: string, corpo: string, url: string, tag: string) {
+  try {
+    if (!cronTok.v || Date.now() - cronTok.t > 600000) {
+      const { data } = await sb.from("exa2_config").select("valor").eq("chave", "cron_token").maybeSingle();
+      cronTok = { t: Date.now(), v: String(data?.valor || "") };
+    }
+    if (!cronTok.v) return;
+    const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 4000);
+    await fetch(Deno.env.get("SUPABASE_URL") + "/functions/v1/exa2-push", {
+      method: "POST", signal: ctl.signal,
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), "x-exa2-cron": cronTok.v },
+      body: JSON.stringify({ action: "enviar", para: "ceo", titulo, corpo: String(corpo || "").slice(0, 300), url, tag, tipo: "mensagem_nando" }),
+    }).catch(() => null);
+    clearTimeout(to);
+  } catch (e) { console.error("[NANDO] aviso celular", e); }
+}
 
 async function processar(tel: string, minhaMsg: number, pushName: string) {
   const sb = db();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ const foneCurto = (t?: string | null) => {
 
 const CRMConversationsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [qs] = useSearchParams();
+  const telefoneQs = (qs.get('telefone') || '').replace(/\D/g, '');
   const navigate = useNavigate();
   const [collaborator, setCollaborator] = useState<CollaboratorRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,8 +36,9 @@ const CRMConversationsPage: React.FC = () => {
           'id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status, instance_name',
         );
       // "sofia" = atalho usado pelo botao Conversar da lista de pedidos
-      const { data } = id === 'sofia'
-        ? await base.or('collaborator_name.ilike.%sofia%,instance_name.ilike.%sofia%').limit(1).maybeSingle()
+      // "sofia" / "nando": atalhos usados pelo botão Conversar e pelas notificações do celular
+      const { data } = id === 'sofia' || id === 'nando'
+        ? await base.or(`collaborator_name.ilike.%${id}%,instance_name.ilike.%${id}%`).limit(1).maybeSingle()
         : await base.eq('id', id).maybeSingle();
       setCollaborator((data as CollaboratorRow) ?? null);
       setLoading(false);
@@ -85,7 +88,7 @@ const CRMConversationsPage: React.FC = () => {
           ) : ehSofia ? (
             <SofiaChatPanel onVoltar={goBack} fotoAgente={collaborator.profile_picture_url} telefoneAgente={tel} />
           ) : ehNando ? (
-            <NandoChatPanel onVoltar={goBack} telefoneAgente={tel} />
+            <NandoChatPanel abrir={telefoneQs ? { telefone: telefoneQs } : null} onVoltar={goBack} telefoneAgente={tel} />
           ) : (
             <ChatPanel collaborator={collaborator} />
           )}
