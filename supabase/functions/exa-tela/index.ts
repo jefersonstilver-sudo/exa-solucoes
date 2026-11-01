@@ -302,7 +302,7 @@ async function vigiar(admin: any) {
   const { data: us } = cIds.length ? await admin.from('users').select('id, telefone, nome, empresa_nome').in('id', cIds) : { data: [] };
   const donoPorPedido = new Map((ps || []).map((p: any) => [p.id, (us || []).find((u: any) => u.id === p.client_id)]));
   const { data: dirs } = await admin.from('exa_alerts_directors').select('telefone, departamento').eq('ativo', true);
-  const exa = [...new Set((dirs || []).filter((d: any) => /ceo|opera/i.test(String(d.departamento || ''))).map((d: any) => soDigitos(d.telefone)).filter(Boolean))];
+  const exa = [...new Set<string>((dirs || []).filter((d: any) => /ceo|opera/i.test(String(d.departamento || ''))).map((d: any) => soDigitos(d.telefone)).filter(Boolean) as string[])];
   const out: any[] = [];
   for (const t of lista) {
     const b: any = bPor.get(t.building_id) || {};
