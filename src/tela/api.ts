@@ -31,6 +31,8 @@ export interface Estado {
   casa?: ItemVideo[];
   cameras?: Camera[];
   noticias?: Noticia[];
+  /** prédio: quantos avisos do síndico há na programação do NUC */
+  avisos?: number;
   desconhecida?: boolean;
   erro?: string;
 }

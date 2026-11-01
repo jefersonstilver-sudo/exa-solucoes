@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avisos do condomínio · EXA</title>
+  <!-- Só o quadro de avisos da tela do elevador (mesmos scripts do NUC), para a TV horizontal do prédio
+       intercalar os avisos do síndico. Servido pelo painel-web/sw.js, como a réplica inteira. -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="aviso-nando.css">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+    body { display: block; }
+    .so-avisos { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: flex; }
+    .so-avisos .widget-avisos { flex: 1; height: auto; margin: 0; box-sizing: border-box; background: rgba(16, 8, 14, .55); }
+  </style>
+</head>
+<body>
+  <div class="so-avisos">
+    <div class="widget-avisos card">
+      <div class="TituloAviso" id="avisos-titulo"><span class="aviso-k">Avisos do</span><span class="aviso-nome">&nbsp;</span></div>
+      <div class="aviso-container">
+        <img id="aviso-img" src="../assets/no_notices.png" alt="Aviso" class="aviso-icon">
+      </div>
+    </div>
+  </div>
+  <script src="./scripts/NomeTela.js"></script>
+  <script src="./scripts/aviso-nando.js"></script>
+  <script src="./scripts/avisos.js"></script>
+</body>
+</html>

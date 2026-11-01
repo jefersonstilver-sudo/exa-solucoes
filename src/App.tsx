@@ -77,6 +77,7 @@ const EmailEnviado = lazy(() => import('./pages/EmailEnviado'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const PainelKiosk = lazy(() => import('./pages/PainelKiosk'));
 const MinhasTelas = lazy(() => import('./modules/telas/MinhasTelas'));
+const ConectarTV = lazy(() => import('./modules/telas/ConectarTV'));
 
 /** Sai do app e abre uma página estática (player /tela, download do APK), mantendo a query (?plataforma=…). */
 function IrParaEstatico({ destino }: { destino: string }) {
@@ -460,6 +461,8 @@ const AppContent = () => {
           
           {/* PAINEL KIOSK - VINCULAÇÃO DE DISPOSITIVOS */}
           {/* páginas estáticas: se o aparelho cair no app (cookie de publicação velha), vai para o arquivo certo */}
+          {/* QR da TV sem local: abre o "conectar esta TV" (equipe ou cliente) */}
+          <Route path="/conectar" element={<Suspense fallback={<GlobalLoadingPage />}><ConectarTV /></Suspense>} />
           <Route path="/tela/*" element={<IrParaEstatico destino="/tela/index.html" />} />
           <Route path="/tela" element={<IrParaEstatico destino="/tela/index.html" />} />
           <Route path="/baixar-tela/*" element={<IrParaEstatico destino="https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk" />} />

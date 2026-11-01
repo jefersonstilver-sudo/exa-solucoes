@@ -224,7 +224,46 @@ async function programacaoDoLocal(admin: any, building: any) {
 }
 
 // ---------------------------------------------------------------- portal do restaurante e alertas
-const LAYOUTS_OK = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'L1', 'L2', 'L3', 'L4']);
+const LAYOUTS_OK = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'L1', 'L2', 'L3', 'L4', 'V1', 'V2', 'V3', 'V4', 'R']);
+
+/** Orientação da TV (fica em exa_telas.config): horizontal, ou vertical com o giro da imagem (TV box só manda imagem deitada). */
+function orientacaoDoCorpo(b: any, cfg: Record<string, any>) {
+  const out = { ...cfg };
+  if (b.orientacao === 'horizontal' || b.orientacao === 'vertical') out.orientacao = b.orientacao;
+  if (b.giro !== undefined && [0, 90, 270].includes(Number(b.giro))) out.giro = Number(b.giro);
+  return out;
+}
+
+// ---------- réplica do elevador (TV vertical num prédio): o MESMO updates.json que o NUC do prédio lê no ExaSistema ----------
+const DIAS_SEMANA = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+/** A mesma escolha do NUC ao montar a PlaylistPronta: 1 vídeo por pedido, dentro das datas; o agendado para agora substitui o master. */
+function playlistAgora(lista: any[]): any[] {
+  const agora = new Date(Date.now() - 3 * 3600000);
+  const hhmm = agora.toISOString().slice(11, 16), dia = DIAS_SEMANA[agora.getUTCDay()];
+  const local = (t: unknown) => { const v = String(t || '').replace(' ', 'T'); const d = new Date(v.replace(/(Z|[+-]\d{2}:?\d{2})$/, '') + 'Z'); return isNaN(+d) ? null : d; };
+  const valido = (it: any) => {
+    if (!it?.video || it.status === 'deleted') return false;
+    const ini = local(it.data_ini), fim = local(it.data_fim);
+    return !(ini && agora < ini) && !(fim && agora > fim);
+  };
+  const temProg = (it: any) => Object.values(it.programacao || {}).some((x: any) => Array.isArray(x) && x.length);
+  const naHora = (it: any) => ((it.programacao || {})[dia] || []).some((f: any) => String(f.inicio || '00:00') <= hhmm && hhmm <= String(f.fim || '23:59'));
+  const porPedido = new Map<string, any[]>();
+  for (const it of lista.filter(valido)) { const k = String(it.id_pedido || it.video); porPedido.set(k, [...(porPedido.get(k) || []), it]); }
+  const out: any[] = [];
+  for (const itens of porPedido.values()) {
+    const e = itens.find((it) => temProg(it) && naHora(it)) || itens.find((it) => it.master === true || it.master === 'true') || itens.find((it) => !temProg(it));
+    if (e) out.push(e);
+  }
+  return out;
+}
+const clienteIdDoPredio = (buildingId: string) => buildingId.replace(/-/g, '').substring(0, 4);
+async function updatesDoPredio(buildingId: string) {
+  return lembrar(`upd:${buildingId}`, 15000, async () => {
+    const rows: any[] = await exaSistema(`updates_clientes?cliente_id=eq.${encodeURIComponent(clienteIdDoPredio(buildingId))}&select=json_data`);
+    return rows?.[0]?.json_data || null;
+  });
+}
 const CAMPOS_CLIENTE = 'id, nome, layout, config, status, ultimo_sinal, offline_desde, tocando, erros, plataforma, info, versao_player, saude, building_id, pareada_em, comando';
 const FUSO = 'America/Sao_Paulo';
 const hm = (iso?: string | null) => (iso ? new Intl.DateTimeFormat('pt-BR', { timeZone: FUSO, hour: '2-digit', minute: '2-digit' }).format(new Date(iso)) : '—');
@@ -398,6 +437,39 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ---------- réplica do elevador para a TV do prédio (o painel-web/sw.js chama com o token da tela) ----------
+    if (acao === 'replica') {
+      const token = String(b.token || '');
+      if (token.length < 32) return json({ ok: false, erro: 'sem token' }, 401);
+      const { data: tela } = await admin.from('exa_telas').select('id, building_id, status').eq('token_hash', await sha256(token)).maybeSingle();
+      if (!tela || tela.status !== 'ativa' || !tela.building_id) return json({ ok: false, erro: 'tela não conectada' }, 403);
+      const arq = String(b.arq || 'updates');
+      if (arq === 'noticias') {
+        const ns = await noticias();
+        return json({ ok: true, linhas: ns.map((n: any) => ({ titulo: n.titulo, link: n.link, categoria: n.categoria, origem: n.origem })) });
+      }
+      if (arq === 'clima') {
+        const r = await fetch('http://18.228.252.149:8000/api/clima', { signal: AbortSignal.timeout(12000) });
+        return new Response(await r.text(), { status: r.status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' } });
+      }
+      const { data: predio } = await admin.from('buildings').select('nome').eq('id', tela.building_id).maybeSingle();
+      const j = await updatesDoPredio(tela.building_id);
+      if (!j) return json({ ok: false, erro: 'A tela desse prédio ainda não tem programação.' }, 404);
+      if (arq === 'arquivo') {
+        // imagens, PDFs e avisos do Nando do próprio prédio (o S3 não libera o navegador; vídeo vai direto)
+        const caminho = String(b.caminho || '');
+        if (!/^(CondominiumNotices|Propagandas|Banners|News|qrcodes)\/[^/]+$/.test(caminho) || caminho.includes('..')) return json({ ok: false }, 400);
+        const pasta = String(j.pasta_s3 || '').replace(/^\/+|\/+$/g, '');
+        const r = await fetch(`https://telas-clientes.s3.sa-east-1.amazonaws.com/${pasta}/${caminho.split('/').map(encodeURIComponent).join('/')}`, { signal: AbortSignal.timeout(20000) });
+        const ext = (caminho.split('.').pop() || '').toLowerCase();
+        const tipo = ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', pdf: 'application/pdf', json: 'application/json', svg: 'image/svg+xml' } as Record<string, string>)[ext] || 'application/octet-stream';
+        return new Response(r.body, { status: r.status, headers: { ...cors, 'Content-Type': tipo, 'Cache-Control': 'max-age=3600' } });
+      }
+      const upd = { ...j };
+      if (!Array.isArray(upd.PlaylistPronta) || !upd.PlaylistPronta.length) upd.PlaylistPronta = playlistAgora(upd.Propagandas || []);
+      return json({ ok: true, predio: predio?.nome || '', updates: upd, avisos: Array.isArray(upd.CondominiumNotices) ? upd.CondominiumNotices.length : 0 });
+    }
+
     // ---------- batimento + programação ----------
     if (acao === 'estado') {
       const token = String(b.token || '');
@@ -446,12 +518,17 @@ Deno.serve(async (req) => {
         ritmo.camera === false ? Promise.resolve([]) : cameras(),
         ritmo.noticias === false ? Promise.resolve([]) : noticias(),
       ]);
-      const conteudo = { anuncios: prog.anuncios, casa: prog.casa, cameras: cams, noticias: nots };
-      const versao = (await sha256(JSON.stringify({ l: tela.layout, c: tela.config, r: ritmo, n: tela.nome, a: prog.anuncios.map((x: any) => x.url), k: prog.casa.map((x: any) => x.url) }))).slice(0, 16);
+      // prédio: quantos avisos do síndico há na programação do NUC (a TV horizontal intercala os avisos)
+      let avisos = 0;
+      if (building.tipo_local !== 'comercio') {
+        try { const j = await updatesDoPredio(building.id); avisos = Array.isArray(j?.CondominiumNotices) ? j.CondominiumNotices.length : 0; } catch { /* sem ExaSistema: sem avisos */ }
+      }
+      const conteudo = { anuncios: prog.anuncios, casa: prog.casa, cameras: cams, noticias: nots, avisos };
+      const versao = (await sha256(JSON.stringify({ l: tela.layout, c: tela.config, r: ritmo, n: tela.nome, a: prog.anuncios.map((x: any) => x.url), k: prog.casa.map((x: any) => x.url), av: avisos }))).slice(0, 16);
       return json({
         ok: true, pareada: true, versao, servidor_agora: agora,
         tela: { id: tela.id, nome: tela.nome, layout: tela.layout, ambiente: tela.ambiente, config: tela.config || {} },
-        local: { id: building.id, nome: building.nome, bairro: building.bairro, segmento: building.segmento_local, tipo: building.tipo_local },
+        local: { id: building.id, nome: building.nome, bairro: building.bairro, segmento: building.segmento_local, tipo: building.tipo_local === 'comercio' ? 'comercio' : 'predio' },
         ritmo,
         comando: tela.comando ? { tipo: tela.comando, em: tela.comando_em } : null,
         ...conteudo,
@@ -516,7 +593,9 @@ Deno.serve(async (req) => {
         const { data: t } = await admin.from('exa_telas').select('id, plataforma, info').eq('codigo', codigo).eq('status', 'aguardando').maybeSingle();
         if (!t) return json({ ok: false, erro: 'Não achei esse código. Confira o número na TV.' }, 404);
         const layout = LAYOUTS_OK.has(String(b.layout)) ? String(b.layout) : 'H6';
+        const { data: atual } = await admin.from('exa_telas').select('config').eq('id', t.id).maybeSingle();
         const { error } = await admin.from('exa_telas').update({
+          config: orientacaoDoCorpo(b, atual?.config || {}),
           nome: limpa(b.nome, 60) || `${local.nome} · TV ${(count || 0) + 1}`, building_id: local.id, ambiente: 'comercio', layout,
           status: 'ativa', codigo: null, codigo_expira: null, pareada_em: new Date().toISOString(), pareada_por: u.id, conectada_por: 'cliente',
         }).eq('id', t.id).eq('status', 'aguardando');
@@ -537,6 +616,10 @@ Deno.serve(async (req) => {
           cfg.ritmo = { ...(cfg.ritmo || {}) };
           if (typeof b.camera === 'boolean') cfg.ritmo.camera = b.camera;
           if (typeof b.noticias === 'boolean') cfg.ritmo.noticias = b.noticias;
+          patch.config = cfg;
+        }
+        if (b.orientacao !== undefined || b.giro !== undefined) {
+          Object.assign(cfg, orientacaoDoCorpo(b, cfg));
           patch.config = cfg;
         }
         if (b.alertas && typeof b.alertas === 'object') {

@@ -6,10 +6,15 @@
  *   /cache/cotacao.json   -> cotacoes ao vivo (AwesomeAPI)
  *   /cache/noticias.json  -> noticias do ExaSistema
  *   /cache/live(s).json   -> lista vazia (a tela usa as cameras padrao dela)
+ * Duas origens de acesso (gravadas em /painel-web/__cfg pela pagina de fora):
+ *   { sessao } -> painel do sindico (nando-painel)
+ *   { tela }   -> TV vertical num predio (player /tela): o token da tela, lido pela funcao exa-tela
  */
 const FN = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/nando-painel";
 const S3 = "https://telas-clientes.s3.sa-east-1.amazonaws.com";
 const CFG = "/painel-web/__cfg";
+const FN_TELA = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/exa-tela";
+const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk";
 const memo = new Map(); // predio -> { t, dados }
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -17,15 +22,24 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
 const resp = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
-async function sessao() {
-  try { const c = await caches.open("replica"); const r = await c.match(CFG); return r ? (await r.json()).sessao || "" : ""; } catch { return ""; }
+async function cfg() {
+  try { const c = await caches.open("replica"); const r = await c.match(CFG); return r ? (await r.json()) || {} : {}; } catch { return {}; }
+}
+async function sessao() { return (await cfg()).sessao || ""; }
+/** POST para quem atende esta replica: exa-tela (TV do predio, com o token) ou nando-painel (sindico, com a sessao). */
+async function postar(corpo) {
+  const c = await cfg();
+  if (c.tela) {
+    return fetch(FN_TELA, { method: "POST", headers: { "Content-Type": "application/json", apikey: ANON, Authorization: "Bearer " + ANON }, body: JSON.stringify({ ...corpo, acao: "replica", token: c.tela }) });
+  }
+  return fetch(FN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...corpo, sessao: c.sessao || "" }) });
 }
 async function predioDoCliente(clientId) {
   const c = clientId ? await self.clients.get(clientId) : null;
   try { return new URL(c ? c.url : "").searchParams.get("p") || ""; } catch { return ""; }
 }
 async function chamar(corpo) {
-  const r = await fetch(FN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...corpo, sessao: await sessao() }) });
+  const r = await postar(corpo);
   return { status: r.status, j: await r.json().catch(() => ({})) };
 }
 const voando = new Map(); // predio -> leitura em andamento (a tela pede o updates.json em 3 lugares ao mesmo tempo)
@@ -91,7 +105,7 @@ self.addEventListener("fetch", (e) => {
   }
   if (u.pathname === "/__api/api/clima") {
     e.respondWith((async () => {
-      const r = await fetch(FN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ acao: "replica", arq: "clima", sessao: await sessao() }) });
+      const r = await postar({ acao: "replica", arq: "clima" });
       return new Response(await r.text(), { status: r.status, headers: { "Content-Type": "application/json" } });
     })());
     return;
@@ -116,7 +130,7 @@ self.addEventListener("fetch", (e) => {
       const chave = `/painel-web/__arq/${pasta}/${arq}`;
       const guardado = await caixa.match(chave);
       if (guardado) return guardado;
-      const r = await fetch(FN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ acao: "replica", arq: "arquivo", predio, caminho: arq, sessao: await sessao() }) });
+      const r = await postar({ acao: "replica", arq: "arquivo", predio, caminho: arq });
       const corpo = await r.blob();
       const pronto = new Response(corpo, { status: r.status, headers: { "Content-Type": r.headers.get("Content-Type") || "application/octet-stream" } });
       if (r.ok) await caixa.put(chave, pronto.clone());

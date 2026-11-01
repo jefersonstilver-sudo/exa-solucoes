@@ -15,7 +15,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { GradeLayouts, MiniLayout, infoLayout } from './catalogo';
+import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLayout } from './catalogo';
 
 const db = supabase as any;
 const LINKS = {
@@ -238,7 +238,7 @@ export default function TelasPage() {
       </div>
 
       {adicionar && <AdicionarTela locais={locais.data || []} codigoInicial={(params.get('codigo') || '').replace(/\D/g, '').slice(0, 6)} onFechar={fecharAdicionar} onPronto={() => { fecharAdicionar(); recarregar(); }} />}
-      {layoutDe && <EscolherLayout tela={layoutDe} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} />}
+      {layoutDe && <EscolherLayout tela={layoutDe} predio={(locais.data || []).find((l) => l.id === layoutDe.building_id)?.tipo_local !== 'comercio'} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} onAtualizou={recarregar} />}
       {localDe && <ConfigTela tela={localDe} locais={locais.data || []} onFechar={() => setLocalDe(null)} onSalvo={() => { setLocalDe(null); recarregar(); }} />}
     </div>
   );
@@ -261,6 +261,8 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
   const [ambiente, setAmbiente] = useState<'comercio' | 'hall'>('comercio');
   const [nome, setNome] = useState('');
   const [layout, setLayout] = useState('H6');
+  const [orientacao, setOrientacao] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [giro, setGiro] = useState(90);
   const [casaCada, setCasaCada] = useState(3);
   const [edCada, setEdCada] = useState(2);
   const [salvando, setSalvando] = useState(false);
@@ -272,6 +274,9 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
     return (q ? base.filter((l) => `${l.nome} ${l.bairro || ''} ${l.segmento_local || ''}`.toLowerCase().includes(q)) : base).slice(0, 60);
   }, [locais, busca]);
   const localEscolhido = locais.find((l) => l.id === localId);
+  const ehPredio = modoLocal === 'existente' && !!localEscolhido && localEscolhido.tipo_local !== 'comercio';
+  // TV em pé: prédio = réplica do elevador; estabelecimento = layout vertical
+  useEffect(() => { setLayout(orientacao === 'vertical' ? (ehPredio ? 'R' : 'V2') : 'H6'); }, [orientacao, ehPredio]);
 
   const conferir = async () => {
     const c = codigo.replace(/\D/g, '');
@@ -307,6 +312,7 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
       const { data: u } = await supabase.auth.getUser();
       const { error } = await db.from('exa_telas').update({
         nome: nome.trim() || `${localNome} · TV`, building_id: bId, ambiente, layout, status: 'ativa',
+        config: { ...(achada.config || {}), orientacao, giro },
         codigo: null, codigo_expira: null, pareada_em: new Date().toISOString(), pareada_por: u?.user?.id || null,
       }).eq('id', achada.id).eq('status', 'aguardando');
       if (error) throw error;
@@ -462,8 +468,10 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
 
         {passo === 4 && (
           <div className="space-y-4">
-            <GradeLayouts valor={layout} onEscolher={setLayout} />
-            <Ritmo casa={casaCada} ed={edCada} onCasa={setCasaCada} onEd={setEdCada} mostrarEd={layout === 'H6'} />
+            <EscolherOrientacao orientacao={orientacao} giro={giro} onOrientacao={setOrientacao} onGiro={setGiro} predio={ehPredio} />
+            <GradeLayouts valor={layout} onEscolher={setLayout} vertical={orientacao === 'vertical'} predio={ehPredio} />
+            {layout !== 'R' && <Ritmo casa={casaCada} ed={edCada} onCasa={setCasaCada} onEd={setEdCada} mostrarEd={layout === 'H6'} />}
+            {ehPredio && orientacao === 'horizontal' && <p className="rounded-2xl bg-[#FFF9EE] p-3 text-[12.5px] text-[#5A3A00]">Prédio: os <b>avisos do síndico</b> entram intercalados no <b>H6</b> e na coluna vertical do <b>H2</b> e do <b>H5</b>.</p>}
             <div className="sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-between">
               <button type="button" onClick={() => setPasso(3)} className="inline-flex h-11 items-center gap-1 rounded-xl px-3 text-sm font-semibold hover:bg-black/5"><ChevronLeft className="h-4 w-4" />Voltar</button>
               <button type="button" disabled={salvando} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />{salvando ? 'Conectando…' : 'Conectar tela'}</button>
@@ -493,10 +501,22 @@ function Ritmo({ casa, ed, onCasa, onEd, mostrarEd }: { casa: number; ed: number
 }
 
 // ============================================================== trocar layout
-function EscolherLayout({ tela, onFechar, onSalvo }: { tela: Tela; onFechar: () => void; onSalvo: () => void }) {
+function EscolherLayout({ tela, predio, onFechar, onSalvo, onAtualizou }: { tela: Tela; predio: boolean; onFechar: () => void; onSalvo: () => void; onAtualizou: () => void }) {
+  const cfg = tela.config || {};
+  const [ori, setOri] = useState<'horizontal' | 'vertical'>(cfg.orientacao === 'vertical' || ehLayoutVertical(tela.layout) ? 'vertical' : 'horizontal');
+  const [giro, setGiro] = useState<number>([0, 90, 270].includes(Number(cfg.giro)) ? Number(cfg.giro) : 90);
+  const [atual, setAtual] = useState(tela.layout);
   const [aplicando, setAplicando] = useState<string | null>(null);
+  const mudarOrientacao = async (o: 'horizontal' | 'vertical', g: number) => {
+    const layout = o === 'vertical' ? (predio ? 'R' : /^V\d$/.test(atual) ? atual : 'V2') : (ehLayoutVertical(atual) ? 'H6' : atual);
+    const { error } = await db.from('exa_telas').update({ config: { ...cfg, orientacao: o, giro: g }, layout }).eq('id', tela.id);
+    if (error) { toast.error(error.message); return; }
+    setOri(o); setGiro(g); setAtual(layout);
+    toast.success(o === 'vertical' ? 'TV em pé' : 'TV deitada', { description: 'A TV muda em até 1 minuto.' });
+    onAtualizou();
+  };
   const escolher = async (id: string) => {
-    if (id === tela.layout) { onFechar(); return; }
+    if (id === atual) { onFechar(); return; }
     setAplicando(id);
     const { error } = await db.from('exa_telas').update({ layout: id }).eq('id', tela.id);
     if (error) { toast.error(error.message); setAplicando(null); return; }
@@ -506,8 +526,12 @@ function EscolherLayout({ tela, onFechar, onSalvo }: { tela: Tela; onFechar: () 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
       <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
-        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Toque no layout para aplicar. A TV troca em até 1 minuto.</DialogDescription></DialogHeader>
-        <GradeLayouts valor={aplicando || tela.layout} atual={tela.layout} aplicando={aplicando} onEscolher={escolher} />
+        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Deitada ou em pé, e o layout. Toque para aplicar: a TV troca em até 1 minuto.</DialogDescription></DialogHeader>
+        <div className="space-y-4">
+          <EscolherOrientacao orientacao={ori} giro={giro} predio={predio} onOrientacao={(o) => mudarOrientacao(o, giro)} onGiro={(g) => mudarOrientacao(ori, g)} />
+          <GradeLayouts valor={aplicando || atual} atual={atual} aplicando={aplicando} onEscolher={escolher} vertical={ori === 'vertical'} predio={predio} />
+          {predio && ori === 'horizontal' && <p className="rounded-2xl bg-[#FFF9EE] p-3 text-[12.5px] text-[#5A3A00]">Prédio: os <b>avisos do síndico</b> entram intercalados no <b>H6</b> e na coluna vertical do <b>H2</b> e do <b>H5</b>.</p>}
+        </div>
       </DialogContent>
     </Dialog>
   );

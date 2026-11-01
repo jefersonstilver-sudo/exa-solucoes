@@ -13,7 +13,8 @@ import type { Camera, Estado, ItemVideo, Noticia } from './api';
 export type ItemFaixa =
   | { k: string; tipo: 'video'; v: ItemVideo }
   | { k: string; tipo: 'camera'; cam: Camera; dur: number }
-  | { k: string; tipo: 'noticia'; n: Noticia; dur: number };
+  | { k: string; tipo: 'noticia'; n: Noticia; dur: number }
+  | { k: string; tipo: 'aviso'; dur: number };
 
 export interface Layout {
   id: string;
@@ -40,6 +41,9 @@ export const LAYOUTS: Record<string, Layout> = {
   L2: { id: 'L2', nome: 'Câmera ao vivo (6:5)', principal: '6:5' },
   L3: { id: 'L3', nome: 'Cinema (6:5)', principal: '6:5' },
   L4: { id: 'L4', nome: 'Tela cheia com faixa (6:5 ou 16:9)', principal: '16:9' },
+  // TV em pé (1080×1920)
+  V2: { id: 'V2', nome: 'Como o elevador (vertical)', principal: '6:5' },
+  R: { id: 'R', nome: 'Réplica do elevador do prédio', principal: '6:5' },
 };
 export const layoutDe = (id?: string) => LAYOUTS[String(id || '').toUpperCase()] || LAYOUTS.H1;
 
@@ -54,9 +58,12 @@ const video = (v: ItemVideo): ItemFaixa => ({ k: `v:${v.id}`, tipo: 'video', v }
 function editoriais(e: Estado, quantos: number): ItemFaixa[] {
   const cams = e.ritmo?.camera === false ? [] : e.cameras || [];
   const ns = e.ritmo?.noticias === false ? [] : e.noticias || [];
+  // TV horizontal num prédio: os avisos do síndico entram a cada 2 quadros (câmera → aviso → notícia → aviso…)
+  const comAvisos = (e.avisos || 0) > 0 && e.local?.tipo !== 'comercio';
   const out: ItemFaixa[] = [];
   for (let i = 0; i < quantos; i++) {
-    const querCamera = i % 2 === 0;
+    if (comAvisos && i % 2 === 1) { out.push({ k: `a:${i}`, tipo: 'aviso', dur: 20 }); continue; }
+    const querCamera = (comAvisos ? Math.floor(i / 2) : i) % 2 === 0;
     if (querCamera && cams.length) { const c = proxCamera(cams); out.push({ k: `c:${i}:${c.url}`, tipo: 'camera', cam: c, dur: c.segundos || 14 }); }
     else if (ns.length) { const n = proxNoticia(ns); out.push({ k: `n:${i}:${n.titulo}`, tipo: 'noticia', n, dur: 12 }); }
     else if (cams.length) { const c = proxCamera(cams); out.push({ k: `c:${i}:${c.url}`, tipo: 'camera', cam: c, dur: c.segundos || 14 }); }

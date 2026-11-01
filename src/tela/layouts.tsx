@@ -13,6 +13,10 @@ import {
   Previsao, QR, SeloAoVivo, Temperatura, TextoClima, proximosDe,
 } from './widgets';
 import { agora } from './tempo';
+import { AvisosFrame } from './replica';
+
+/** TV de prédio com avisos do síndico na programação do NUC */
+const temAvisos = (e: Estado) => (e.avisos || 0) > 0 && e.local?.tipo !== 'comercio';
 
 type P = { e: Estado; f: Faixas; layout: Layout };
 
@@ -84,6 +88,8 @@ function RelogioCanto() {
 function VerticalReserva({ e }: { e: Estado }) {
   const cams = e.cameras || [];
   const [semCam, setSemCam] = useState(false);
+  // prédio: a coluna vertical mostra os avisos do síndico (a mesma tela do elevador)
+  if (temAvisos(e) && e.local) return <AvisosFrame predioId={e.local.id} style={CHEIO} />;
   if (cams.length && !semCam) {
     return (
       <CameraRodizio cameras={cams} onSemCamera={() => setSemCam(true)}>
@@ -303,6 +309,25 @@ function QuadroNoticia({ n }: { n: Noticia }) {
     </div>
   );
 }
+/** Aviso do síndico em tela cheia (H6 num prédio): o quadro de avisos do elevador à direita, o prédio e a hora à esquerda. */
+function QuadroAviso({ e }: { e: Estado }) {
+  return (
+    <div className="cheio fundo-exa troca">
+      <div className="abs" style={{ left: 110, top: 0, bottom: 0, width: 1000, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 26 }}>
+        <span className="rotulo" style={{ fontSize: 22, color: '#ffc35a' }}>Avisos do condomínio</span>
+        <span style={{ fontSize: 92, fontWeight: 900, letterSpacing: -3, lineHeight: 1.02 }}>{e.local?.nome || 'Seu prédio'}</span>
+        <span style={{ fontSize: 30, fontWeight: 600, color: 'rgba(255,255,255,.78)', lineHeight: 1.35 }}>Recados da administração, os mesmos da tela do elevador.</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 22, marginTop: 20 }}>
+          <Hora tamanho={96} />
+          <DataTexto tipo="longa" tamanho={20} />
+        </div>
+      </div>
+      {e.local && <AvisosFrame predioId={e.local.id} style={{ left: 1292, top: 136, width: 518, height: 920, borderRadius: 22, overflow: 'hidden', boxShadow: '0 30px 70px rgba(0,0,0,.55)' }} />}
+      <Logo altura={30} style={{ position: 'absolute', left: 110, bottom: 56, opacity: 0.85 }} />
+    </div>
+  );
+}
+
 /** Chamada "Em N segundos · Ponte ao vivo" durante o anúncio que antecede o quadro editorial. */
 function Chamada({ info }: { info: InfoFaixa | null }) {
   const [, tic] = useState(0);
@@ -313,7 +338,7 @@ function Chamada({ info }: { info: InfoFaixa | null }) {
   if (!prox || prox.tipo === 'video') return null;
   const resta = Math.ceil(info.dur - (Date.now() - info.inicio) / 1000);
   if (resta > 15 || resta < 1) return null;
-  const titulo = prox.tipo === 'camera' ? `${partesCamera(prox.cam.nome).titulo} ao vivo` : 'A notícia de Foz agora';
+  const titulo = prox.tipo === 'camera' ? `${partesCamera(prox.cam.nome).titulo} ao vivo` : prox.tipo === 'aviso' ? 'Avisos do condomínio' : 'A notícia de Foz agora';
   return (
     <div className="abs vidro-escuro entra" style={{ right: 36, bottom: 40, padding: '12px 22px 12px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 16, zIndex: 6 }}>
       <div style={{ width: 128, height: 72, borderRadius: 12, background: 'linear-gradient(180deg,#1d2a44,#2c3550 45%,#141a26)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.65)' }}>
@@ -333,7 +358,7 @@ function H6({ e, f }: P) {
     <div className="cheio">
       <Faixa
         itens={f.principal} area="16:9" principal onInfo={onInfo} style={CHEIO} vazio={<SemVideo e={e} />}
-        especial={(it, fim) => (it.tipo === 'camera' ? <QuadroCamera it={it} fim={fim} /> : it.tipo === 'noticia' ? <QuadroNoticia n={it.n} /> : null)}
+        especial={(it, fim) => (it.tipo === 'camera' ? <QuadroCamera it={it} fim={fim} /> : it.tipo === 'noticia' ? <QuadroNoticia n={it.n} /> : it.tipo === 'aviso' ? <QuadroAviso e={e} /> : null)}
       />
       {!editorialAgora && <Logo altura={30} style={{ position: 'absolute', left: 40, top: 44, opacity: 0.85, zIndex: 6 }} />}
       <RelogioCanto />
@@ -539,4 +564,49 @@ export function SemVideo({ e }: { e: Estado }) {
   );
 }
 
-export const COMPONENTES: Record<string, (p: P) => JSX.Element> = { H1, H2, H3, H4, H5, H6, H7, L1, L2, L3, L4 };
+// ------------------------------------------------------------------ V2 · TV em pé, como o elevador (1080×1920)
+function V2({ e, f }: P) {
+  const [info, onInfo] = useInfo();
+  const [semCam, setSemCam] = useState(false);
+  const cams = e.cameras || [];
+  return (
+    <div className="cheio fundo-exa-esq">
+      <Faixa itens={f.principal} area="6:5" principal onInfo={onInfo} style={{ left: 0, top: 0, width: 1080, height: 900 }} vazio={<VerticalReserva e={e} />} />
+      <div className="abs" style={{ left: 0, top: 900, width: 1080, height: 1020, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ height: 210, flex: 'none', display: 'flex', gap: 20 }}>
+          <CartaoHora dataTam={16} horaTam={100} style={{ flex: 1, minWidth: 0, padding: '22px 26px' }} />
+          <div className="clima-card" style={{ flex: 1, minWidth: 0, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
+            <IconeAgora tamanho={72} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+              <span className="rotulo" style={{ fontSize: 15, color: '#fff' }}>Foz do Iguaçu</span>
+              <Temperatura tamanho={72} comTexto={false} />
+              <div className="uma-linha" style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,.85)' }}><TextoClima /></div>
+            </div>
+          </div>
+        </div>
+        <div className="vidro" style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg,#1b1f2b,#0e1018)' }}>
+          {cams.length && !semCam ? (
+            <CameraRodizio cameras={cams} onSemCamera={() => setSemCam(true)}>
+              {(c) => (
+                <>
+                  <div className="abs" style={{ left: 22, right: 22, top: 20, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                    <SeloAoVivo tamanho={16} texto={`AO VIVO · ${partesCamera(c.nome).titulo.toUpperCase()}`} />
+                  </div>
+                  <div className="abs" style={{ left: 0, right: 0, bottom: 0, padding: '50px 22px 18px', background: 'linear-gradient(0deg, rgba(0,0,0,.75), rgba(0,0,0,0))' }}><Credito cam={c} tamanho={17} /></div>
+                </>
+              )}
+            </CameraRodizio>
+          ) : (
+            <CartaoNoticia noticias={e.noticias} linhas={4} tamanho={34} qr={130} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+          )}
+        </div>
+        <div className="vidro" style={{ height: 250, flex: 'none', padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <span className="rotulo" style={{ fontSize: 15, letterSpacing: 2.2 }}>A seguir</span>
+          <ASeguir info={info} n={3} alturaThumb={110} tamanhoNome={18} gap={14} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const COMPONENTES: Record<string, (p: P) => JSX.Element> = { H1, H2, H3, H4, H5, H6, H7, L1, L2, L3, L4, V2 };

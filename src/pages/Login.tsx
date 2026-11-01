@@ -63,7 +63,9 @@ export default function Login() {
   useEffect(() => {
     if (isLoading || !isLoggedIn || !userProfile) return;
     let destino = redirectPath;
-    if (userProfile.role === 'super_admin') destino = redirectPath.startsWith('/super_admin') ? redirectPath : '/super_admin';
+    // QR da TV (/conectar): vale para qualquer papel (a própria página manda a equipe para Telas)
+    if (redirectPath.startsWith('/conectar')) destino = redirectPath;
+    else if (userProfile.role === 'super_admin') destino = redirectPath.startsWith('/super_admin') ? redirectPath : '/super_admin';
     else if (['admin', 'admin_marketing', 'admin_financeiro'].includes(userProfile.role)) destino = redirectPath.startsWith('/admin') ? redirectPath : '/admin';
     if (enviou.current) voarMarca(document.querySelector('.exa-login [data-exa-marca]'));
     navigate(destino, { replace: true });

@@ -15,7 +15,8 @@ import { chamar, useMinhasTelas, type LocalCliente, type TelaCliente } from './u
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import { GradeLayouts, MiniLayout, infoLayout } from './catalogo';
+import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLayout } from './catalogo';
+import { useSearchParams } from 'react-router-dom';
 import { SOFIA_WA } from '@/site/comum';
 
 const SOFIA = `https://wa.me/${SOFIA_WA}?text=${encodeURIComponent('Quero conectar mais telas no meu estabelecimento')}`;
@@ -52,6 +53,9 @@ export default function MinhasTelas() {
   const q = useMinhasTelas();
   const [conectarEm, setConectarEm] = useState<LocalCliente | null>(null);
   const [layoutDe, setLayoutDe] = useState<TelaCliente | null>(null);
+  // veio do QR da TV (/conectar?c=…): abre o "Conectar tela" já com o código
+  const [params, setParams] = useSearchParams();
+  const [codigoQR, setCodigoQR] = useState((params.get('conectar') || '').replace(/\D/g, '').slice(0, 6));
   const [configDe, setConfigDe] = useState<TelaCliente | null>(null);
   const recarregar = () => qc.invalidateQueries({ queryKey: ['minhas-telas'] });
 
@@ -61,6 +65,13 @@ export default function MinhasTelas() {
 
   const locais = q.data?.locais || [];
   const telas = q.data?.telas || [];
+  useEffect(() => {
+    if (!codigoQR || !q.data) return;
+    if (params.get('conectar')) { params.delete('conectar'); setParams(params, { replace: true }); }
+    if (locais.length === 1) setConectarEm(locais[0]);
+    else if (!locais.length) { toast.error('Sua conta ainda não tem telas próprias', { description: 'Fale com a Sofia para incluir no seu plano.' }); setCodigoQR(''); }
+    else toast('Escolha o estabelecimento', { description: `Toque em "Conectar tela" no local desta TV (código ${codigoQR}).` });
+  }, [codigoQR, q.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mx-auto max-w-[1100px] space-y-5 px-1 pb-24 text-[#1b1719] md:px-0" style={{ fontFeatureSettings: '"tnum"' }}>
@@ -198,7 +209,7 @@ export default function MinhasTelas() {
         </p>
       )}
 
-      {conectarEm && <Conectar local={conectarEm} onFechar={() => setConectarEm(null)} onPronto={() => { setConectarEm(null); recarregar(); }} />}
+      {conectarEm && <Conectar local={conectarEm} codigoInicial={codigoQR} onFechar={() => { setConectarEm(null); setCodigoQR(''); }} onPronto={() => { setConectarEm(null); setCodigoQR(''); recarregar(); }} />}
       {layoutDe && <TrocarLayout tela={layoutDe} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} />}
       {configDe && <ConfigTela tela={configDe} onFechar={() => setConfigDe(null)} onSalvo={() => { setConfigDe(null); recarregar(); }} />}
     </div>
@@ -206,19 +217,22 @@ export default function MinhasTelas() {
 }
 
 // ------------------------------------------------------------------ conectar (instalar → código → layout)
-function Conectar({ local, onFechar, onPronto }: { local: LocalCliente; onFechar: () => void; onPronto: () => void }) {
-  const [passo, setPasso] = useState(1);
+function Conectar({ local, onFechar, onPronto, codigoInicial = '' }: { local: LocalCliente; onFechar: () => void; onPronto: () => void; codigoInicial?: string }) {
+  const [passo, setPasso] = useState(codigoInicial ? 2 : 1);
   const [plat, setPlat] = useState<'android' | 'windows' | 'navegador'>('android');
-  const [codigo, setCodigo] = useState('');
+  const [codigo, setCodigo] = useState(codigoInicial);
   const [nome, setNome] = useState('');
   const [layout, setLayout] = useState('H6');
+  const [orientacao, setOrientacao] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [giro, setGiro] = useState(90);
+  useEffect(() => { setLayout(orientacao === 'vertical' ? 'V2' : 'H6'); }, [orientacao]);
   const [salvando, setSalvando] = useState(false);
   const qr = useQr(LINK_APK);
 
   const conectar = async () => {
     setSalvando(true);
     try {
-      await chamar({ acao: 'cliente_parear', building_id: local.id, codigo, nome, layout });
+      await chamar({ acao: 'cliente_parear', building_id: local.id, codigo, nome, layout, orientacao, giro });
       toast.success('Tela conectada!', { description: 'Em alguns segundos a programação aparece na TV.' });
       onPronto();
     } catch (e) { toast.error((e as Error).message); setPasso(2); } finally { setSalvando(false); }
@@ -282,7 +296,8 @@ function Conectar({ local, onFechar, onPronto }: { local: LocalCliente; onFechar
 
         {passo === 3 && (
           <div className="space-y-4">
-            <GradeLayouts valor={layout} onEscolher={setLayout} />
+            <EscolherOrientacao orientacao={orientacao} giro={giro} onOrientacao={setOrientacao} onGiro={setGiro} />
+            <GradeLayouts valor={layout} onEscolher={setLayout} vertical={orientacao === 'vertical'} />
             <div className="sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-between">
               <button type="button" onClick={() => setPasso(2)} className="inline-flex h-11 items-center gap-1 rounded-xl px-3 text-sm font-semibold hover:bg-black/5"><ChevronLeft className="h-4 w-4" />Voltar</button>
               <button type="button" disabled={salvando} onClick={conectar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Check className="h-4 w-4" />{salvando ? 'Conectando…' : 'Conectar'}</button>
@@ -295,19 +310,34 @@ function Conectar({ local, onFechar, onPronto }: { local: LocalCliente; onFechar
 }
 
 function TrocarLayout({ tela, onFechar, onSalvo }: { tela: TelaCliente; onFechar: () => void; onSalvo: () => void }) {
+  const cfg = tela.config || {};
+  const [ori, setOri] = useState<'horizontal' | 'vertical'>(cfg.orientacao === 'vertical' || ehLayoutVertical(tela.layout) ? 'vertical' : 'horizontal');
+  const [giro, setGiro] = useState<number>([0, 90, 270].includes(Number(cfg.giro)) ? Number(cfg.giro) : 90);
+  const [atual, setAtual] = useState(tela.layout);
   const [aplicando, setAplicando] = useState<string | null>(null);
+  const mudarOrientacao = async (o: 'horizontal' | 'vertical', g: number) => {
+    const layout = o === 'vertical' ? (/^V\d$/.test(atual) ? atual : 'V2') : (ehLayoutVertical(atual) ? 'H6' : atual);
+    try {
+      await chamar({ acao: 'cliente_atualizar', tela_id: tela.id, orientacao: o, giro: g, layout });
+      setOri(o); setGiro(g); setAtual(layout);
+      toast.success(o === 'vertical' ? 'TV em pé' : 'TV deitada', { description: 'A TV muda em até 1 minuto.' });
+    } catch (e) { toast.error((e as Error).message); }
+  };
   // tocou, aplicou: no celular o botão "Aplicar" ficava lá embaixo da lista e ninguém achava
   const escolher = async (id: string) => {
-    if (id === tela.layout) { onFechar(); return; }
+    if (id === atual) { onFechar(); return; }
     setAplicando(id);
     try { await chamar({ acao: 'cliente_atualizar', tela_id: tela.id, layout: id }); toast.success(`Layout ${id} aplicado`, { description: 'A TV troca em até 1 minuto.' }); onSalvo(); }
     catch (e) { toast.error((e as Error).message); setAplicando(null); }
   };
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
+    <Dialog open onOpenChange={(o) => { if (!o) onSalvo(); }}>
       <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[700px]">
-        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Toque no layout para aplicar. A TV troca em até 1 minuto.</DialogDescription></DialogHeader>
-        <GradeLayouts valor={aplicando || tela.layout} atual={tela.layout} aplicando={aplicando} onEscolher={escolher} />
+        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Deitada ou em pé, e o layout. Toque para aplicar: a TV troca em até 1 minuto.</DialogDescription></DialogHeader>
+        <div className="space-y-4">
+          <EscolherOrientacao orientacao={ori} giro={giro} onOrientacao={(o) => mudarOrientacao(o, giro)} onGiro={(g) => mudarOrientacao(ori, g)} />
+          <GradeLayouts valor={aplicando || atual} atual={atual} aplicando={aplicando} onEscolher={escolher} vertical={ori === 'vertical'} />
+        </div>
       </DialogContent>
     </Dialog>
   );

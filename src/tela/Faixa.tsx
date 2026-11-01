@@ -98,7 +98,7 @@ export default function Faixa({ itens, area, style, className, barra = true, pri
     if (!atual) return;
     if (principal) marcarTocando(atual.tipo === 'video'
       ? { tipo: atual.v.tipo, titulo: atual.v.titulo, cliente: atual.v.cliente, pedido_id: atual.v.pedido_id, formato: atual.v.formato }
-      : { tipo: atual.tipo, titulo: atual.tipo === 'camera' ? atual.cam.nome : atual.n.titulo });
+      : { tipo: atual.tipo, titulo: atual.tipo === 'camera' ? atual.cam.nome : atual.tipo === 'noticia' ? atual.n.titulo : 'Avisos do condomínio' });
     if (atual.tipo !== 'video') {
       refs.forEach((r) => r.current?.pause());
       setDur(atual.dur);

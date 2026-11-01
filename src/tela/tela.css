@@ -45,3 +45,20 @@
 
 /* pareamento */
 .par-digito { width: 168px; height: 220px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 150px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* espera: TV ainda sem local (mesma marca animada da intro) */
+.esp-luz { position: absolute; width: 1300px; height: 1300px; border-radius: 50%; }
+.esp-luz.a { left: -320px; bottom: -760px; background: radial-gradient(closest-side, rgba(234,37,29,.55), rgba(234,37,29,0)); animation: esp-flutua-a 9s ease-in-out infinite alternate; }
+.esp-luz.b { right: -420px; top: -700px; background: radial-gradient(closest-side, rgba(156,30,110,.55), rgba(156,30,110,0)); animation: esp-flutua-b 11s ease-in-out infinite alternate; }
+@keyframes esp-flutua-a { to { transform: translate(150px, -90px) scale(1.12); } }
+@keyframes esp-flutua-b { to { transform: translate(-130px, 110px) scale(1.08); } }
+.esp-logo { position: relative; display: inline-block; height: 162px; }
+.esp-logo img { display: block; height: 100%; width: auto; }
+.esp-brilho { position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; -webkit-mask: url(/site/exa-branco.svg) center / contain no-repeat; mask: url(/site/exa-branco.svg) center / contain no-repeat; }
+.esp-brilho i { position: absolute; top: -20%; bottom: -20%; width: 35%; left: -60%; background: linear-gradient(100deg, rgba(255,255,255,0), rgba(255,215,160,.95), rgba(255,255,255,0)); animation: esp-brilho 4.6s cubic-bezier(.5,0,.2,1) infinite; }
+@keyframes esp-brilho { 0% { left: -60%; } 38%, 100% { left: 130%; } }
+.esp-linha { position: relative; width: 476px; height: 5px; margin: 56px auto 0; border-radius: 10px; background: rgba(255,255,255,.10); overflow: hidden; }
+.esp-linha i { position: absolute; top: 0; bottom: 0; width: 30%; left: -30%; background: linear-gradient(90deg, rgba(255,90,74,0), #ff5a4a, #ffc35a, rgba(255,195,90,0)); animation: esp-corre 1.5s cubic-bezier(.45,0,.25,1) infinite; }
+@keyframes esp-corre { to { left: 100%; } }
+.esp-frase { margin-top: 36px; font-size: 21px; font-weight: 700; letter-spacing: 11px; text-transform: uppercase; color: rgba(255,255,255,.8); animation: esp-respira 3.2s ease-in-out infinite; }
+@keyframes esp-respira { 50% { opacity: .55; } }
