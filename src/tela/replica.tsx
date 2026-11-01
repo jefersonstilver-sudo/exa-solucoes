@@ -75,15 +75,42 @@ export function ReplicaElevador({ predioId, alternativa }: { predioId: string; a
       const info = mapa.get(atual);
       if (seg >= 3 && info?.pedido) registrarExibicao('anuncio', info.pedido, null, seg);
     };
+    // saúde do vídeo na TV (para saber se trava por decodificação, rede ou troca): quadros perdidos, segundos parado,
+    // resolução de cada arquivo e o que mais está decodificando junto (câmera ao vivo, vídeo seguinte)
+    const saude = { seg: 0, parado: 0, preto: 0, trocas: 0, perdidos: 0, quadros: 0, arquivos: {} as Record<string, string>, camera: 0 };
+    let qAnt = { d: 0, t: 0 };
+    let ultimoEnvio = Date.now();
     const id = setInterval(async () => {
       if (Date.now() - ultimoMapa > 5 * 60000) { ultimoMapa = Date.now(); mapaDePedidos().then((m) => { if (m.size) mapa = m; }).catch(() => {}); }
+      try {
+        const doc = ref.current?.contentDocument;
+        const vp = doc?.getElementById('video-propaganda') as HTMLVideoElement | null;
+        saude.seg++;
+        if (!vp || !vp.currentSrc) saude.preto++;
+        else if (vp.paused || vp.readyState < 3) saude.parado++;
+        if (vp) {
+          const q: any = (vp as any).getVideoPlaybackQuality ? (vp as any).getVideoPlaybackQuality() : { droppedVideoFrames: (vp as any).webkitDroppedFrameCount || 0, totalVideoFrames: (vp as any).webkitDecodedFrameCount || 0 };
+          const d = Number(q.droppedVideoFrames || 0), t = Number(q.totalVideoFrames || 0);
+          if (t >= qAnt.t) { saude.perdidos += d - qAnt.d; saude.quadros += t - qAnt.t; }
+          qAnt = { d, t };
+          const nomeV = vp.currentSrc.includes('/cache/') ? decodeURIComponent(vp.currentSrc.split('/cache/')[1].split('?')[0]).slice(-40) : '';
+          if (nomeV && vp.videoWidth && !saude.arquivos[nomeV]) saude.arquivos[nomeV] = `${vp.videoWidth}x${vp.videoHeight}`;
+        }
+        const cam = doc?.getElementById('live-video') as HTMLVideoElement | null;
+        if (cam && !cam.paused && cam.readyState >= 3) saude.camera++;
+        if (Date.now() - ultimoEnvio > 120000 && saude.seg >= 30) {
+          ultimoEnvio = Date.now();
+          registrarEvento('replica_saude', { ...saude, pct_perdidos: saude.quadros ? Math.round((saude.perdidos / saude.quadros) * 1000) / 10 : null });
+          Object.assign(saude, { seg: 0, parado: 0, preto: 0, trocas: 0, perdidos: 0, quadros: 0, arquivos: {}, camera: 0 });
+        }
+      } catch { /* a página ainda está carregando */ }
       try {
         const v = ref.current?.contentDocument?.getElementById('video-propaganda') as HTMLVideoElement | null;
         const src = v?.currentSrc || v?.src || '';
         const nome = src.includes('/cache/') ? decodeURIComponent(src.split('/cache/')[1].split('?')[0]) : '';
         if (nome && nome !== atual) {
           fechar();
-          atual = nome; desde = Date.now();
+          atual = nome; desde = Date.now(); saude.trocas++;
           const info = mapa.get(nome);
           marcarTocando({ tipo: 'anuncio', titulo: nome, cliente: info?.nome || '', pedido_id: info?.pedido || null, formato: 'replica' });
         }

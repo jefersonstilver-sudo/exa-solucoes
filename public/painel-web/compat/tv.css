@@ -1,0 +1,32 @@
+/*
+ * EXA · réplica da tela do elevador numa TV box (html.tv-leve, ligado quando a página abre com ?tela=1).
+ * O NUC tem GPU de sobra; o TV box barato decodifica o anúncio, a câmera ao vivo e o próximo vídeo ao mesmo tempo
+ * e ainda gira e escala a tela inteira. Aqui saem os efeitos que redesenham a tela a cada quadro, para sobrar
+ * fôlego para o vídeo. Nada muda no NUC nem no navegador do síndico: só com tv-leve.
+ */
+
+/* câmera: recorta no cartão (no WebView antigo o vídeo vazava por cima dos avisos) e sem o "respirar" de opacidade */
+.tv-leve .widget-camera,
+.tv-leve .camera-video-wrapper { overflow: hidden !important; }
+.tv-leve .camera-video-wrapper video.on,
+.tv-leve .camera-video-wrapper video.on.entra { animation: none !important; opacity: 1 !important; }
+.tv-leve .camera-video-wrapper video { transition: opacity .4s linear !important; }
+
+/* avisos do síndico: sem o zoom lento infinito na imagem inteira e sem flutuar/pulsar */
+.tv-leve .na-fundo,
+.tv-leve .na-flutua,
+.tv-leve .na-brilho,
+.tv-leve [class*="na-pulso"] { animation: none !important; will-change: auto !important; }
+
+/* mascote e clima: animações decorativas contínuas */
+.tv-leve .mascote.em-cena .mascote-video { animation: none !important; opacity: 1 !important; }
+.tv-leve .c-nuvem,
+.tv-leve .c-gota,
+.tv-leve .c-estrela,
+.tv-leve .cta-scan { animation: none !important; }
+
+/* notícias: troca de título sem desfoque animado (filter:blur por letra é caro) */
+.tv-leve .noticia-titulo .w { filter: none !important; }
+
+/* sombras grandes e desfocadas em cima de vídeo pesam no compositor girado */
+.tv-leve .card { box-shadow: none !important; }
