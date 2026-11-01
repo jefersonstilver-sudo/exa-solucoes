@@ -108,7 +108,33 @@ async function imagemDaMateria(link: string) {
   ogImagem.set(link, { t: Date.now(), u });
   return u;
 }
-const ORIGEM: Record<string, string> = { portal_cidade: 'Portal da Cidade Foz', jovempan: 'Jovem Pan', cnn: 'CNN Brasil', g1: 'g1' };
+const ORIGEM: Record<string, string> = { portal_cidade: 'Portal da Cidade Foz', jovempan: 'Jovem Pan', cnn: 'CNN Brasil', g1: 'g1', agencia_brasil: 'Agência Brasil' };
+
+/** Notícias do Brasil: Agência Brasil (EBC), que permite reproduzir citando a fonte. Usada quando o ExaSistema não traz nacionais. */
+async function noticiasAgenciaBrasil(): Promise<any[]> {
+  return lembrar('agencia-brasil', 15 * 60000, async () => {
+    try {
+      const r = await fetch('https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml', { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'Mozilla/5.0 (EXA Midia)' } });
+      if (!r.ok) return [];
+      const xml = await r.text();
+      const tira = (t: string) => t.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<[^>]+>/g, '').trim();
+      const tag = (bloco: string, nome: string) => { const m = bloco.match(new RegExp(`<${nome}[^>]*>([\\s\\S]*?)</${nome}>`)); return m ? tira(m[1]) : ''; };
+      const out: any[] = [];
+      for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+        const titulo = tag(m[1], 'title');
+        const link = tag(m[1], 'link');
+        if (!titulo || !/^https?:\/\//.test(link) || /^hoje é dia/i.test(titulo)) continue;
+        const imagem = tag(m[1], 'imagem-destaque');
+        out.push({ titulo, link, imagem: /^https?:\/\//.test(imagem) ? imagem : '', categoria: 'Brasil', _fonte: 'agencia_brasil', origem: 'Agência Brasil' });
+        if (out.length >= 15) break;
+      }
+      return out;
+    } catch (e) {
+      console.warn('[exa-tela] Agência Brasil indisponível', (e as Error).message);
+      return [];
+    }
+  });
+}
 
 async function noticias() {
   return lembrar('noticias', 10 * 60000, async () => {
@@ -123,6 +149,9 @@ async function noticias() {
         } else if (Array.isArray(v)) v.forEach((n: any) => brutas.push({ ...n, _fonte: r.tipo, _em: r.atualizado_em }));
         else if (r.titulo) brutas.push({ ...r, _em: r.atualizado_em || r.created_at });
       }
+      // poucas nacionais no ExaSistema (a lista da Jovem Pan às vezes vem vazia): completa com a Agência Brasil
+      const nacionais = brutas.filter((n) => !/portal|cidade|foz/i.test(String(n._fonte || ''))).length;
+      if (nacionais < 5) brutas.push(...(await noticiasAgenciaBrasil()));
       const out: any[] = [];
       const vistos = new Set<string>();
       const porEscopo: Record<string, number> = { foz: 0, brasil: 0 };
@@ -348,7 +377,7 @@ async function vigiar(admin: any) {
   const { data: us } = cIds.length ? await admin.from('users').select('id, telefone, nome, empresa_nome').in('id', cIds) : { data: [] };
   const donoPorPedido = new Map((ps || []).map((p: any) => [p.id, (us || []).find((u: any) => u.id === p.client_id)]));
   const { data: dirs } = await admin.from('exa_alerts_directors').select('telefone, departamento').eq('ativo', true);
-  const exa = [...new Set((dirs || []).filter((d: any) => /ceo|opera/i.test(String(d.departamento || ''))).map((d: any) => soDigitos(d.telefone)).filter(Boolean))];
+  const exa = [...new Set<string>((dirs || []).filter((d: any) => /ceo|opera/i.test(String(d.departamento || ''))).map((d: any) => soDigitos(d.telefone)).filter(Boolean))];
   const out: any[] = [];
   for (const t of lista) {
     const b: any = bPor.get(t.building_id) || {};
