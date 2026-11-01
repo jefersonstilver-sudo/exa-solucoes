@@ -17,8 +17,8 @@ Deno.serve(async (req) => {
   const bruto = (url.searchParams.get("c") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
   const codigo = bruto.length >= 3 ? bruto : null;
   const texto = codigo
-    ? `Oi Sofia! Vi a EXA no elevador e quero anunciar minha marca. (cód. ${codigo})`
-    : "Oi Sofia! Vi a EXA no elevador e quero anunciar minha marca.";
+    ? `Oi Sofia! Vi a EXA no elevador e quero ver como a minha marca ficaria aqui. (cód. ${codigo})`
+    : "Oi Sofia! Vi a EXA no elevador e quero ver como a minha marca ficaria aqui.";
   const destino = `https://wa.me/${SOFIA}?text=${encodeURIComponent(texto)}`;
 
   if (codigo && req.method === "GET") {
