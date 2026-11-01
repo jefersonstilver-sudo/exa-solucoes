@@ -284,7 +284,18 @@ class MainActivity : Activity() {
 
     private val prazo = Runnable {
         if (paginaPronta) return@Runnable
-        if (problema != null) { relatar(); return@Runnable }
+        // página de uma versão que ainda não avisa "pronto": se o palco do player já está desenhado, está tudo bem
+        val w = web
+        if (w != null && problema == null) {
+            w.evaluateJavascript("(function(){return !!document.querySelector('.palco')})()") { r ->
+                if (r == "true") Ponte().pronto() else diagnosticar()
+            }
+        } else diagnosticar()
+    }
+
+    private fun diagnosticar() {
+        if (paginaPronta) return
+        if (problema != null) { relatar(); return }
         val ultimoJs = errosJs.lastOrNull()
         when {
             !temInternet() -> mostrarProblema("internet", "Sem internet", "O aparelho não está conectado. Confira o Wi-Fi ou o cabo — a tela tenta de novo sozinha.",
