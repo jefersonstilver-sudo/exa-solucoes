@@ -7458,6 +7458,7 @@ export type Database = {
           conectada_por: string | null
           config: Json
           criado_em: string
+          device_group_id: string | null
           erros: Json | null
           id: string
           info: Json
@@ -7487,6 +7488,7 @@ export type Database = {
           conectada_por?: string | null
           config?: Json
           criado_em?: string
+          device_group_id?: string | null
           erros?: Json | null
           id?: string
           info?: Json
@@ -7516,6 +7518,7 @@ export type Database = {
           conectada_por?: string | null
           config?: Json
           criado_em?: string
+          device_group_id?: string | null
           erros?: Json | null
           id?: string
           info?: Json
@@ -7539,6 +7542,13 @@ export type Database = {
             columns: ["building_id"]
             isOneToOne: false
             referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exa_telas_device_group_id_fkey"
+            columns: ["device_group_id"]
+            isOneToOne: false
+            referencedRelation: "device_groups"
             referencedColumns: ["id"]
           },
         ]
