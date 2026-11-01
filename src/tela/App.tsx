@@ -27,6 +27,7 @@ function saudeAgora() {
     cache_mb: estatisticas.mb,
     baixando: estatisticas.baixando || null,
     falhas_download: estatisticas.falhas,
+    sem_cache: estatisticas.semCache || undefined,
     aberta_min: Math.round((Date.now() - abertoEm) / 60000),
     memoria_mb: mem?.usedJSHeapSize ? Math.round(mem.usedJSHeapSize / 1048576) : null,
   };
@@ -78,8 +79,8 @@ function Pareamento({ codigo, online, erro }: { codigo: string | null; online: b
         <div style={{ display: 'flex', gap: 22 }}>
           {dig.map((d, i) => <div key={i} className="par-digito vidro" style={{ opacity: codigo ? 1 : 0.4 }}>{d}</div>)}
         </div>
-        <div style={{ display: 'flex', gap: 48, fontSize: 28, fontWeight: 600, color: 'rgba(255,255,255,.88)' }}>
-          <span><b style={{ color: '#ffc35a' }}>1</b>  No painel EXA, abra <b>Telas → Adicionar tela</b></span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 48px', fontSize: 28, fontWeight: 600, color: 'rgba(255,255,255,.88)' }}>
+          <span><b style={{ color: '#ffc35a' }}>1</b>  No site da EXA: <b>Painéis → Adicionar painel</b> ou <b>Minhas telas → Conectar</b></span>
           <span><b style={{ color: '#ffc35a' }}>2</b>  Digite este código</span>
           <span><b style={{ color: '#ffc35a' }}>3</b>  A programação começa sozinha</span>
         </div>
@@ -212,6 +213,8 @@ export default function App() {
     const cheia = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); };
     document.addEventListener('click', cheia);
     window.addEventListener('error', (e) => registrarErro(`js: ${e.message}`));
+    // a primeira tela já foi desenhada: encerra a intro (web) e o splash do app Android
+    requestAnimationFrame(() => requestAnimationFrame(() => { try { (window as any).__telaPronta?.(); } catch { /* */ } }));
     return () => { document.removeEventListener('visibilitychange', vis); document.removeEventListener('contextmenu', menu); document.removeEventListener('click', cheia); try { lock?.release(); } catch { /* */ } };
   }, []);
 

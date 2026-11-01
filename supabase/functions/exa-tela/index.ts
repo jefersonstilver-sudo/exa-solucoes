@@ -56,6 +56,7 @@ function formatoDe(l?: number | null, a?: number | null, orient?: string | null)
 
 // cache por instância (o aparelho pergunta a cada ~60 s; vários aparelhos no mesmo local dividem)
 const memo = new Map<string, { t: number; v: any }>();
+const relatos = new Map<string, number>(); // relato_app: no máximo 1 por aparelho por minuto
 async function lembrar<T>(chave: string, ms: number, f: () => Promise<T>): Promise<T> {
   const m = memo.get(chave);
   if (m && Date.now() - m.t < ms) return m.v as T;
@@ -368,6 +369,33 @@ Deno.serve(async (req) => {
         if (!String(error?.message || '').includes('exa_telas_codigo_uk')) throw error;
       }
       throw new Error('não consegui gerar um código livre');
+    }
+
+    // ---------- o app Android não conseguiu abrir o player: relato do aparelho (data errada, navegador antigo...) ----------
+    if (acao === 'relato_app') {
+      const chave = `relato:${ip || 'sem-ip'}:${limpa(b.id_aparelho, 40)}`;
+      const ultimo = relatos.get(chave) || 0;
+      if (Date.now() - ultimo < 60000) return json({ ok: true, ignorado: true });
+      relatos.set(chave, Date.now());
+      if (relatos.size > 500) relatos.clear();
+      const dados = {
+        ip,
+        id_aparelho: limpa(b.id_aparelho, 40),
+        tipo: limpa(b.tipo, 20),
+        problema: limpa(b.problema, 600),
+        erros_js: Array.isArray(b.erros_js) ? b.erros_js.slice(-6).map((e: unknown) => limpa(e, 300)) : [],
+        info: {} as Record<string, unknown>,
+      };
+      const infoTxt = JSON.stringify(typeof b.info === 'object' && b.info ? b.info : {});
+      dados.info = infoTxt.length <= 4000 ? JSON.parse(infoTxt) : { resumo: infoTxt.slice(0, 4000) };
+      // se o aparelho já foi pareado antes (mesmo id), liga o relato à tela
+      let tela_id: string | null = null;
+      if (dados.id_aparelho) {
+        const { data: t } = await admin.from('exa_telas').select('id').eq('info->>id_aparelho', dados.id_aparelho).order('ultimo_sinal', { ascending: false }).limit(1).maybeSingle();
+        tela_id = t?.id || null;
+      }
+      await admin.from('exa_telas_eventos').insert({ tela_id, tipo: 'relato_app', dados });
+      return json({ ok: true });
     }
 
     // ---------- batimento + programação ----------

@@ -112,7 +112,7 @@ export default function TelasPage() {
   ];
 
   const recarregar = () => { qc.invalidateQueries({ queryKey: ['exa-telas'] }); qc.invalidateQueries({ queryKey: ['exa-telas-locais'] }); };
-  const fecharAdicionar = () => { setAdicionar(false); if (params.get('adicionar')) { params.delete('adicionar'); setParams(params, { replace: true }); } };
+  const fecharAdicionar = () => { setAdicionar(false); if (params.get('adicionar')) { params.delete('adicionar'); params.delete('codigo'); setParams(params, { replace: true }); } };
 
   const comando = async (t: Tela, c: string, msg: string) => {
     const { error } = await db.from('exa_telas').update({ comando: c, comando_em: new Date().toISOString() }).eq('id', t.id);
@@ -237,7 +237,7 @@ export default function TelasPage() {
         })}
       </div>
 
-      {adicionar && <AdicionarTela locais={locais.data || []} onFechar={fecharAdicionar} onPronto={() => { fecharAdicionar(); recarregar(); }} />}
+      {adicionar && <AdicionarTela locais={locais.data || []} codigoInicial={(params.get('codigo') || '').replace(/\D/g, '').slice(0, 6)} onFechar={fecharAdicionar} onPronto={() => { fecharAdicionar(); recarregar(); }} />}
       {layoutDe && <EscolherLayout tela={layoutDe} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} />}
       {localDe && <ConfigTela tela={localDe} locais={locais.data || []} onFechar={() => setLocalDe(null)} onSalvo={() => { setLocalDe(null); recarregar(); }} />}
     </div>
@@ -247,10 +247,11 @@ export default function TelasPage() {
 // ============================================================== adicionar tela (4 passos)
 type NovoLocal = { nome: string; segmento: string; endereco: string; bairro: string };
 
-function AdicionarTela({ locais, onFechar, onPronto }: { locais: Local[]; onFechar: () => void; onPronto: () => void }) {
-  const [passo, setPasso] = useState(1);
+function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { locais: Local[]; onFechar: () => void; onPronto: () => void; codigoInicial?: string }) {
+  // vindo de Painéis EXA com o código da TV já conhecido: pula direto para o passo do código
+  const [passo, setPasso] = useState(codigoInicial ? 2 : 1);
   const [plat, setPlat] = useState<'android' | 'windows' | 'linux' | 'navegador'>('android');
-  const [codigo, setCodigo] = useState('');
+  const [codigo, setCodigo] = useState(codigoInicial);
   const [achada, setAchada] = useState<Tela | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [modoLocal, setModoLocal] = useState<'existente' | 'novo'>('existente');

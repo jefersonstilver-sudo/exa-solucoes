@@ -36,6 +36,8 @@ import { DeviceGroupManager } from '@/components/monitor/DeviceGroupManager';
 import { InternetAccountsSection } from '@/components/admin/internet-accounts/InternetAccountsSection';
 import { ESTADO_INFO, ehProblema, glass } from '../components/paineis/estados';
 import { SelosEstado, textoParaOperadora, copiarTexto } from '../components/paineis/estadoVivo';
+import { useTelasEquipe, type TelaEquipe } from '@/modules/telas/useTelasEquipe';
+import { TelaNoPaineis, estadoTela } from '@/modules/telas/TelaNoPaineis';
 
 const periodoRotulo: Record<PeriodType, string> = {
   hoje: 'hoje', ontem: 'ontem', 'esta-semana': 'esta semana', '7dias': 'últ. 7 dias', '30dias': 'últ. 30 dias', personalizado: 'no período',
@@ -58,6 +60,8 @@ export default function PaineisEXA() {
   const { devices, refresh, lastUpdate } = useDevices(0, 500);
   const frota = useFrotaSaude();
   const { groups: deviceGroups, createGroup, updateGroup, deleteGroup, moveDeviceToGroup } = useDeviceGroups();
+  // telas novas (TV Android, mini PC, navegador): aparecem aqui junto com os painéis, no grupo escolhido
+  const telasNovas = useTelasEquipe();
 
   const [periodo, setPeriodo] = useState<PeriodType>('hoje');
   const [ini, setIni] = useState<Date | undefined>();
@@ -140,13 +144,41 @@ export default function PaineisEXA() {
       : peso[a.estado] - peso[b.estado] || b.quedas_7d - a.quedas_7d);
   }, [paineis, busca, filtroEstado, filtroOp, filtroElev, ordem, devPorId, predios]);
 
+  const telasFiltradas = useMemo(() => {
+    if (filtroOp !== 'todas' || filtroElev !== 'todas') return [] as TelaEquipe[];
+    const q = busca.trim().toLowerCase();
+    return telasNovas.telas.filter((t) => {
+      const e = estadoTela(t);
+      if (filtroEstado === 'tocando' && e !== 'ao_vivo') return false;
+      if (['problema', 'sem_sinal', 'sem_imagem'].includes(filtroEstado) && e !== 'sem_sinal') return false;
+      if (!['todos', 'tocando', 'problema', 'sem_sinal', 'sem_imagem'].includes(filtroEstado)) return false;
+      if (!q) return true;
+      return [t.nome, t.codigo, t.building_id ? predios.get(t.building_id) : '', t.info?.modelo].some((x) => (x || '').toLowerCase().includes(q));
+    });
+  }, [telasNovas.telas, busca, filtroEstado, filtroOp, filtroElev, predios]);
+  const telasResumo = useMemo(() => {
+    const ativas = telasNovas.telas.filter((t) => estadoTela(t) !== 'aguardando');
+    return { total: ativas.length, aoVivo: ativas.filter((t) => estadoTela(t) === 'ao_vivo').length, esperando: telasNovas.telas.length - ativas.length };
+  }, [telasNovas.telas]);
+  const locaisOrdenados = useMemo(() => [...predios.entries()].map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)), [predios]);
+
   const grupos = useMemo(() => {
     const m = new Map<string, FrotaPainel[]>();
     for (const p of filtrados) { const k = p.grupo_id || '__sem__'; if (!m.has(k)) m.set(k, []); m.get(k)!.push(p); }
-    const out = deviceGroups.filter((g) => m.has(g.id)).map((g) => ({ id: g.id, nome: g.nome, cor: g.cor, silenciado: g.silenciar_alertas, itens: m.get(g.id)! }));
-    if (m.has('__sem__')) out.push({ id: '__sem__', nome: 'Sem grupo', cor: '#9A9893', silenciado: false, itens: m.get('__sem__')! });
+    const mt = new Map<string, TelaEquipe[]>();
+    for (const t of telasFiltradas) {
+      const k = t.device_group_id && grupoPorId.has(t.device_group_id) ? t.device_group_id : '__telas__';
+      if (!mt.has(k)) mt.set(k, []); mt.get(k)!.push(t);
+    }
+    const out: { id: string; nome: string; cor: string; silenciado: boolean; itens: FrotaPainel[]; telas: TelaEquipe[] }[] = [];
+    // TVs novas sem grupo (inclusive as que acabaram de abrir o app com o código) ficam no topo
+    if (mt.has('__telas__')) out.push({ id: '__telas__', nome: 'Telas novas · sem grupo', cor: '#9C1E1E', silenciado: false, itens: [], telas: mt.get('__telas__')! });
+    for (const g of deviceGroups) {
+      if (m.has(g.id) || mt.has(g.id)) out.push({ id: g.id, nome: g.nome, cor: g.cor, silenciado: g.silenciar_alertas, itens: m.get(g.id) || [], telas: mt.get(g.id) || [] });
+    }
+    if (m.has('__sem__')) out.push({ id: '__sem__', nome: 'Sem grupo', cor: '#9A9893', silenciado: false, itens: m.get('__sem__')!, telas: [] });
     return out;
-  }, [filtrados, deviceGroups]);
+  }, [filtrados, telasFiltradas, deviceGroups, grupoPorId]);
 
   // conexões e operadoras: só os painéis do grupo Prédios (regra do sistema)
   const idsPredios = useMemo(() => {
@@ -258,6 +290,12 @@ export default function PaineisEXA() {
               <span className="mt-2 block h-2 overflow-hidden rounded-full bg-black/[0.06]">
                 <span className="block h-full rounded-full bg-[#2E9B62] transition-all" style={{ width: kpis.total ? `${(kpis.tocando / kpis.total) * 100}%` : '0%' }} />
               </span>
+              {(telasResumo.total > 0 || telasResumo.esperando > 0) && (
+                <span className="mt-2 block text-xs font-bold text-[#6A6B70]">
+                  Telas novas (comércio): <span className={telasResumo.aoVivo < telasResumo.total ? 'text-[#B0261D]' : 'text-[#1E6B47]'}>{telasResumo.aoVivo} de {telasResumo.total} ao vivo</span>
+                  {telasResumo.esperando > 0 && <span className="text-[#9A5300]"> · {telasResumo.esperando} esperando conexão</span>}
+                </span>
+              )}
             </button>
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -334,23 +372,31 @@ export default function PaineisEXA() {
           ) : (
             <div className="space-y-5">
               {frota.carregando && !paineis.length && <p className="text-sm text-[#6A6B70]">Carregando painéis…</p>}
-              {!frota.carregando && !filtrados.length && <p className={`${glass} rounded-2xl p-6 text-sm text-[#6A6B70]`}>Nenhum painel com esses filtros.</p>}
+              {!frota.carregando && !filtrados.length && !telasFiltradas.length && <p className={`${glass} rounded-2xl p-6 text-sm text-[#6A6B70]`}>Nenhum painel com esses filtros.</p>}
               {grupos.map((g) => {
                 const fechado = gruposFechados.has(g.id);
-                const problemas = g.itens.filter((p) => ehProblema(p.estado)).length;
+                const problemas = g.itens.filter((p) => ehProblema(p.estado)).length + g.telas.filter((t) => estadoTela(t) === 'sem_sinal').length;
                 return (
                   <section key={g.id}>
                     <button type="button" onClick={() => alternarGrupo(g.id)} aria-expanded={!fechado}
                       className="mb-3 flex w-full items-center gap-2 text-left">
                       <span className="h-3 w-3 rounded-full" style={{ background: g.cor || '#9A9893' }} />
                       <strong className="text-base">{g.nome}</strong>
-                      <span className="text-sm text-[#6A6B70]">({g.itens.length})</span>
+                      <span className="text-sm text-[#6A6B70]">({g.itens.length + g.telas.length})</span>
                       {problemas > 0 && <Chip fundo="#FCF1DF" cor="#9A5300">{problemas} com problema</Chip>}
                       {g.silenciado && <Chip><BellOff className="h-3 w-3" />sem notificações</Chip>}
                       <ChevronDown className={`ml-auto h-4 w-4 text-[#6A6B70] transition-transform ${fechado ? '-rotate-90' : ''}`} />
                     </button>
                     {!fechado && (
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {g.telas.map((t) => (
+                          <TelaNoPaineis key={`tela:${t.id}`} t={t} aberto={cardAberto === `tela:${t.id}`}
+                            onAlternar={() => setCardAberto(cardAberto === `tela:${t.id}` ? null : `tela:${t.id}`)}
+                            locais={locaisOrdenados} grupos={deviceGroups.map((x) => ({ id: x.id, nome: x.nome }))} semColunaGrupo={telasNovas.semColunaGrupo}
+                            onAtualizar={(patch) => telasNovas.atualizar(t.id, patch)} onComando={(tipo) => telasNovas.comando(t.id, tipo)}
+                            onAbrirTelas={() => navigate(buildPath('telas'))}
+                            onConectar={(codigo) => navigate(buildPath(`telas?adicionar=1&codigo=${encodeURIComponent(codigo)}`))} />
+                        ))}
                         {g.itens.map((p) => {
                           // tocando com alerta (internet ruim, instável, quente) = cartão verde; o alerta vai no selo
                           const info = ESTADO_INFO[['internet_ruim', 'instavel', 'quente'].includes(p.estado) ? 'tocando' : p.estado];

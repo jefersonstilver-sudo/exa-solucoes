@@ -16,6 +16,9 @@ import { agora } from './tempo';
 
 type P = { e: Estado; f: Faixas; layout: Layout };
 
+/** inset:0 escrito por extenso: WebView antigo de TV box (Chrome < 87) não conhece "inset". */
+const CHEIO: React.CSSProperties = { top: 0, right: 0, bottom: 0, left: 0 };
+
 const useInfo = () => {
   const [info, setInfo] = useState<InfoFaixa | null>(null);
   const on = useCallback((i: InfoFaixa) => setInfo(i), []);
@@ -137,7 +140,7 @@ function H2({ e, f }: P) {
     <div className="cheio fundo-exa-esq">
       <Faixa itens={f.principal} area="16:9" principal style={{ left: 0, top: 0, width: 1312, height: 738 }} vazio={<VerticalReserva e={e} />} />
       <div className="abs" style={{ left: 1312, top: 0, width: 608, height: 1080, borderLeft: '4px solid #0c0610', overflow: 'hidden', background: '#000' }}>
-        {f.vertical.length ? <Faixa itens={f.vertical} area="9:16" style={{ inset: 0 }} /> : <VerticalReserva e={e} />}
+        {f.vertical.length ? <Faixa itens={f.vertical} area="9:16" style={CHEIO} /> : <VerticalReserva e={e} />}
       </div>
       <div className="abs" style={{ left: 0, top: 738, width: 1312, height: 342, padding: 24, display: 'flex', gap: 20 }}>
         <div className="vidro" style={{ width: 330, flex: 'none', padding: '20px 26px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
@@ -160,7 +163,7 @@ function H2({ e, f }: P) {
 function H3({ f, e }: P) {
   return (
     <div className="cheio">
-      <Faixa itens={f.principal} area="16:9" principal style={{ inset: 0 }} vazio={<SemVideo e={e} />} />
+      <Faixa itens={f.principal} area="16:9" principal style={CHEIO} vazio={<SemVideo e={e} />} />
       <div className="abs vidro-escuro" style={{ right: 32, top: 32, padding: '14px 22px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 18, zIndex: 6 }}>
         <Hora tamanho={40} />
         <i style={{ width: 1, height: 34, background: 'rgba(255,255,255,.25)' }} />
@@ -178,10 +181,10 @@ function H4({ e, f }: P) {
     <div className="cheio fundo-exa">
       <Faixa itens={f.principal} area="16:9" principal barra="fina" style={{ left: 0, top: 0, width: 960, height: 540 }} vazio={<VerticalReserva e={e} />} />
       <div className="abs" style={{ left: 0, top: 540, width: 960, height: 540, borderTop: '4px solid #0c0610', overflow: 'hidden', background: '#000' }}>
-        {f.segunda.length ? <Faixa itens={f.segunda} area="16:9" barra="fina" style={{ inset: 0 }} /> : <VerticalReserva e={e} />}
+        {f.segunda.length ? <Faixa itens={f.segunda} area="16:9" barra="fina" style={CHEIO} /> : <VerticalReserva e={e} />}
       </div>
       <div className="abs" style={{ left: 960, top: 0, width: 608, height: 1080, borderLeft: '4px solid #0c0610', overflow: 'hidden', background: '#000' }}>
-        {f.vertical.length ? <Faixa itens={f.vertical} area="9:16" barra="fina" style={{ inset: 0 }} /> : <VerticalReserva e={e} />}
+        {f.vertical.length ? <Faixa itens={f.vertical} area="9:16" barra="fina" style={CHEIO} /> : <VerticalReserva e={e} />}
       </div>
       <div className="abs" style={{ left: 1568, top: 0, width: 352, height: 1080, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div className="vidro" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -207,7 +210,7 @@ function H5({ e, f }: P) {
   const temV = f.vertical.length > 0;
   return (
     <div className="cheio">
-      <Faixa itens={f.principal} area="16:9" principal style={{ inset: 0 }} vazio={<SemVideo e={e} />} />
+      <Faixa itens={f.principal} area="16:9" principal style={CHEIO} vazio={<SemVideo e={e} />} />
       {temV && (
         <>
           <div className="abs" style={{ right: 0, top: 0, width: 520, height: 1080, background: 'linear-gradient(90deg, rgba(12,6,16,0), rgba(12,6,16,.55))', zIndex: 4 }} />
@@ -216,7 +219,7 @@ function H5({ e, f }: P) {
               <i className="ponto" style={{ background: '#ff4d5e', boxShadow: '0 0 0 4px rgba(255,77,94,.25)' }} />Também agora
             </div>
             <div style={{ position: 'relative', width: 340, height: 604, borderRadius: 26, overflow: 'hidden', border: '2px solid rgba(255,255,255,.28)', boxShadow: '0 30px 70px rgba(0,0,0,.6), 0 0 0 8px rgba(12,6,16,.35)' }}>
-              <Faixa itens={f.vertical} area="9:16" barra="fina" style={{ inset: 0 }} />
+              <Faixa itens={f.vertical} area="9:16" barra="fina" style={CHEIO} />
             </div>
           </div>
         </>
@@ -329,7 +332,7 @@ function H6({ e, f }: P) {
   return (
     <div className="cheio">
       <Faixa
-        itens={f.principal} area="16:9" principal onInfo={onInfo} style={{ inset: 0 }} vazio={<SemVideo e={e} />}
+        itens={f.principal} area="16:9" principal onInfo={onInfo} style={CHEIO} vazio={<SemVideo e={e} />}
         especial={(it, fim) => (it.tipo === 'camera' ? <QuadroCamera it={it} fim={fim} /> : it.tipo === 'noticia' ? <QuadroNoticia n={it.n} /> : null)}
       />
       {!editorialAgora && <Logo altura={30} style={{ position: 'absolute', left: 40, top: 44, opacity: 0.85, zIndex: 6 }} />}
@@ -393,7 +396,7 @@ function JanelaAlterna({ e }: { e: Estado }) {
 function H7({ e, f }: P) {
   return (
     <div className="cheio">
-      <Faixa itens={f.principal} area="16:9" principal style={{ inset: 0 }} vazio={<SemVideo e={e} />} />
+      <Faixa itens={f.principal} area="16:9" principal style={CHEIO} vazio={<SemVideo e={e} />} />
       <Logo altura={30} style={{ position: 'absolute', left: 40, top: 44, opacity: 0.85, zIndex: 6 }} />
       <RelogioCanto />
       <JanelaAlterna e={e} />
@@ -494,7 +497,7 @@ function L4({ e, f }: P) {
   const [info, onInfo] = useInfo();
   return (
     <div className="cheio">
-      <Faixa itens={f.principal} area="16:9" principal onInfo={onInfo} barra={false} style={{ inset: 0 }} vazio={<SemVideo e={e} />} />
+      <Faixa itens={f.principal} area="16:9" principal onInfo={onInfo} barra={false} style={CHEIO} vazio={<SemVideo e={e} />} />
       <div className="abs" style={{ left: 0, right: 0, bottom: 0, height: 280, background: 'linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.55))', zIndex: 4 }} />
       <div className="abs" style={{ left: 28, right: 28, bottom: 28, height: 140, borderRadius: 26, overflow: 'hidden', background: 'rgba(16,8,14,.80)', border: '1px solid rgba(255,255,255,.16)', borderTopColor: 'rgba(255,255,255,.30)', boxShadow: '0 20px 50px rgba(0,0,0,.5)', display: 'flex', alignItems: 'stretch', zIndex: 5 }}>
         <div style={{ width: 270, flex: 'none', padding: '0 30px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,.12)' }}>

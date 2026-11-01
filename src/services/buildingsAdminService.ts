@@ -76,6 +76,13 @@ export const fetchAllBuildingsForAdmin = async () => {
       .select('building_id, status')
       .eq('status', 'online');
 
+    // Telas novas (TV Android, mini PC, navegador) ligadas ao prédio/estabelecimento
+    const telasPromise = (supabase as any)
+      .from('exa_telas')
+      .select('building_id, ultimo_sinal')
+      .eq('status', 'ativa')
+      .not('building_id', 'is', null);
+
     // Buscar vendas do mês atual por prédio
     const currentMonth = new Date();
     const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -91,8 +98,8 @@ export const fetchAllBuildingsForAdmin = async () => {
       setTimeout(() => reject(new Error('Timeout na busca de dados')), 10000);
     });
 
-    const [buildingsResult, devicesResult, panelsResult, salesResult] = await Promise.race([
-      Promise.all([buildingsPromise, devicesPromise, panelsPromise, salesPromise]),
+    const [buildingsResult, devicesResult, panelsResult, salesResult, telasResult] = await Promise.race([
+      Promise.all([buildingsPromise, devicesPromise, panelsPromise, salesPromise, telasPromise.then((r: any) => r, () => ({ data: [] }))]),
       timeoutPromise
     ]) as any;
 
@@ -140,13 +147,26 @@ export const fetchAllBuildingsForAdmin = async () => {
       return acc;
     }, {});
 
+    // telas novas por local: quantas e se alguma está ao vivo (batimento nos últimos 3 min)
+    const telasPorLocal: Record<string, { total: number; aoVivo: number; ultimo: string | null }> = {};
+    for (const t of (telasResult?.data || []) as any[]) {
+      const k = t.building_id;
+      const o = telasPorLocal[k] || (telasPorLocal[k] = { total: 0, aoVivo: 0, ultimo: null });
+      o.total++;
+      if (t.ultimo_sinal && Date.now() - new Date(t.ultimo_sinal).getTime() < 3 * 60000) o.aoVivo++;
+      if (t.ultimo_sinal && (!o.ultimo || t.ultimo_sinal > o.ultimo)) o.ultimo = t.ultimo_sinal;
+    }
+
     // Enriquecer dados dos prédios com métricas e status do device (via relacionamento reverso)
     const enrichedBuildings = (buildingsData || []).map((building: any) => {
       // Buscar device vinculado a este prédio (device.building_id = building.id)
-      const linkedDevice = devicesByBuildingId[building.id];
+      const linkedDevice = devicesByBuildingId[building.id]
+        // sem NUC/AnyDesk: o status vem das telas novas do local
+        || (telasPorLocal[building.id] ? { id: null, status: telasPorLocal[building.id].aoVivo ? 'online' : 'offline', last_online_at: telasPorLocal[building.id].ultimo } : null);
       return {
         ...building,
-        paineis_ativos: activePanelsByBuilding[building.id] || 0,
+        telas_novas: telasPorLocal[building.id]?.total || 0,
+        paineis_ativos: (activePanelsByBuilding[building.id] || 0) + (telasPorLocal[building.id]?.aoVivo || 0),
         vendas_mes_atual: salesByBuilding[building.id] || 0,
         // Device status (relacionamento reverso: device → building)
         device_id: linkedDevice?.id || null,

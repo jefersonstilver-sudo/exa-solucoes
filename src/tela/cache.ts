@@ -10,7 +10,7 @@ const ouvintes = new Set<() => void>();
 let fila: string[] = [];
 let baixando = false;
 let desejados = new Set<string>();
-export const estatisticas = { itens: 0, mb: 0, falhas: 0, baixando: '' };
+export const estatisticas = { itens: 0, mb: 0, falhas: 0, baixando: '', semCache: false };
 
 const avisar = () => ouvintes.forEach((f) => f());
 export const aoMudar = (f: () => void) => { ouvintes.add(f); return () => { ouvintes.delete(f); }; };
@@ -78,6 +78,8 @@ async function baixarProximo() {
       const b = await r.blob();
       if (b.size > 1000) {
         blobs.set(url, URL.createObjectURL(b));
+        // o monitor mostra o número certo logo após cada download (antes só no próximo batimento)
+        estatisticas.itens = [...desejados].filter((u) => blobs.has(u)).length;
         await tirarMiniatura(url, blobs.get(url)!);
       }
     }
@@ -111,6 +113,7 @@ export async function sincronizar(urls: string[]) {
   desejados = new Set(urls.filter(Boolean));
   filaMini = [...desejados].filter((u) => !miniaturas.has(u));
   proximaMini();
+  estatisticas.semCache = !temCache();
   if (!temCache()) return;
   try { await (navigator.storage as any)?.persist?.(); } catch { /* */ }
   fila = [...desejados].filter((u) => !blobs.has(u));

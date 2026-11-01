@@ -141,7 +141,25 @@ export function CartaoNoticia({ noticias, linhas = 4, tamanho = 26, qr = 96, hor
 
 // ---------- câmera ao vivo (HLS do Portal da Cidade) ----------
 let hlsMod: any = null;
-const carregarHls = async () => { if (!hlsMod) hlsMod = (await import('hls.js')).default; return hlsMod; };
+declare const __TELA_LEGADO__: boolean;
+declare const __HLS_URL__: string;
+/** No player "legado" (TV box com navegador antigo) o hls.js vem em arquivo à parte, carregado só quando há câmera. */
+const scriptGlobal = (src: string, nome: string) => new Promise<any>((ok, falha) => {
+  const w = window as any;
+  if (w[nome]) { ok(w[nome]); return; }
+  const s = document.createElement('script');
+  s.src = src; s.async = true;
+  s.onload = () => (w[nome] ? ok(w[nome]) : falha(new Error(`${nome} não carregou`)));
+  s.onerror = () => falha(new Error(`${nome} não carregou`));
+  document.head.appendChild(s);
+});
+const carregarHls = async () => {
+  if (!hlsMod) {
+    if (__TELA_LEGADO__) hlsMod = await scriptGlobal(__HLS_URL__, 'Hls');
+    else hlsMod = (await import('hls.js')).default;
+  }
+  return hlsMod;
+};
 
 /** Toca uma câmera. Se não aparecer imagem em 10 s ou der erro, chama onFalha (a tela pula, nunca fica preta). */
 export function CameraAoVivo({ cam, onFalha, onPronta }: { cam: Camera; onFalha?: () => void; onPronta?: () => void }) {
