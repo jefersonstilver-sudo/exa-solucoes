@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Switch } from '@/components/ui/switch';
 import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLayout } from './catalogo';
 import { useSearchParams } from 'react-router-dom';
+import { EscolherCameras, resumoCameras } from './EscolherCameras';
 import { SOFIA_WA } from '@/site/comum';
 
 const SOFIA = `https://wa.me/${SOFIA_WA}?text=${encodeURIComponent('Quero conectar mais telas no meu estabelecimento')}`;
@@ -57,6 +58,7 @@ export default function MinhasTelas() {
   const [params, setParams] = useSearchParams();
   const [codigoQR, setCodigoQR] = useState((params.get('conectar') || '').replace(/\D/g, '').slice(0, 6));
   const [configDe, setConfigDe] = useState<TelaCliente | null>(null);
+  const [camerasDe, setCamerasDe] = useState<TelaCliente | null>(null);
   const recarregar = () => qc.invalidateQueries({ queryKey: ['minhas-telas'] });
 
   const acao = async (corpo: Record<string, unknown>, ok: string) => {
@@ -179,6 +181,7 @@ export default function MinhasTelas() {
 
                     <div className="flex flex-wrap gap-4 rounded-2xl bg-[#f7f5f6] px-3 py-2.5 text-[13.5px]">
                       <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.camera !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, camera: v }, v ? 'Câmera ligada' : 'Câmera desligada')} /><Video className="h-4 w-4 text-[#8b8285]" />Câmera ao vivo</label>
+                      {t.config?.ritmo?.camera !== false && <button type="button" onClick={() => setCamerasDe(t)} className="text-[13px] font-bold text-[#9C1E1E] underline underline-offset-2">{resumoCameras(t.config?.cameras)} · escolher</button>}
                       <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.noticias !== false && t.config?.ritmo?.noticias_foz !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, noticias_foz: v }, v ? 'Notícias de Foz ligadas' : 'Notícias de Foz desligadas')} /><Newspaper className="h-4 w-4 text-[#8b8285]" />Notícias de Foz</label>
                       <label className="inline-flex items-center gap-2"><Switch checked={t.config?.ritmo?.noticias !== false && t.config?.ritmo?.noticias_brasil !== false} onCheckedChange={(v) => acao({ acao: 'cliente_atualizar', tela_id: t.id, noticias_brasil: v }, v ? 'Notícias do Brasil ligadas' : 'Notícias do Brasil desligadas')} /><Newspaper className="h-4 w-4 text-[#8b8285]" />Notícias do Brasil</label>
                     </div>
@@ -210,6 +213,10 @@ export default function MinhasTelas() {
         </p>
       )}
 
+      {camerasDe && (
+        <EscolherCameras titulo={camerasDe.nome || 'tela'} atual={camerasDe.config?.cameras} onFechar={() => setCamerasDe(null)}
+          onSalvar={async (c) => { await chamar({ acao: 'cliente_atualizar', tela_id: camerasDe.id, cameras: c }); recarregar(); }} />
+      )}
       {conectarEm && <Conectar local={conectarEm} codigoInicial={codigoQR} onFechar={() => { setConectarEm(null); setCodigoQR(''); }} onPronto={() => { setConectarEm(null); setCodigoQR(''); recarregar(); }} />}
       {layoutDe && <TrocarLayout tela={layoutDe} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} />}
       {configDe && <ConfigTela tela={configDe} onFechar={() => setConfigDe(null)} onSalvo={() => { setConfigDe(null); recarregar(); }} />}

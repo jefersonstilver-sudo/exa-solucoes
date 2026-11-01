@@ -10,12 +10,13 @@ import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import {
   Plus, RefreshCw, MonitorPlay, Smartphone, Laptop, Terminal, Globe, Copy, ChevronRight, ChevronLeft, Check,
-  MoreHorizontal, Trash2, Unlink, RotateCcw, Eraser, Store, Settings2, LayoutTemplate, Pencil,
+  MoreHorizontal, Trash2, Unlink, RotateCcw, Eraser, Store, Settings2, LayoutTemplate, Pencil, Video,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLayout } from './catalogo';
+import { EscolherCameras } from './EscolherCameras';
 
 const db = supabase as any;
 const LINKS = {
@@ -72,6 +73,7 @@ export default function TelasPage() {
   const [adicionar, setAdicionar] = useState(params.get('adicionar') === '1');
   const [layoutDe, setLayoutDe] = useState<Tela | null>(null);
   const [localDe, setLocalDe] = useState<Tela | null>(null);
+  const [camerasDe, setCamerasDe] = useState<Tela | null>(null);
 
   const telas = useQuery({
     queryKey: ['exa-telas'],
@@ -187,6 +189,7 @@ export default function TelasPage() {
                     <DropdownMenuContent align="end" className="w-60">
                       <DropdownMenuItem onClick={() => setLayoutDe(t)}><LayoutTemplate className="mr-2 h-4 w-4" />Trocar layout</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setLocalDe(t)}><Settings2 className="mr-2 h-4 w-4" />Nome, local, vídeos da casa e ritmo</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setCamerasDe(t)}><Video className="mr-2 h-4 w-4" />Câmeras ao vivo</DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => comando(t, 'recarregar', 'Recarregando a tela')}><RotateCcw className="mr-2 h-4 w-4" />Recarregar a tela</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => comando(t, 'limpar_cache', 'Limpando os vídeos guardados')}><Eraser className="mr-2 h-4 w-4" />Baixar os vídeos de novo</DropdownMenuItem>
@@ -239,6 +242,14 @@ export default function TelasPage() {
 
       {adicionar && <AdicionarTela locais={locais.data || []} codigoInicial={(params.get('codigo') || '').replace(/\D/g, '').slice(0, 6)} onFechar={fecharAdicionar} onPronto={() => { fecharAdicionar(); recarregar(); }} />}
       {layoutDe && <EscolherLayout tela={layoutDe} predio={(locais.data || []).find((l) => l.id === layoutDe.building_id)?.tipo_local !== 'comercio'} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} onAtualizou={recarregar} />}
+      {camerasDe && (
+        <EscolherCameras titulo={camerasDe.nome || 'tela'} atual={camerasDe.config?.cameras} onFechar={() => setCamerasDe(null)}
+          onSalvar={async (c) => {
+            const { error } = await db.from('exa_telas').update({ config: { ...(camerasDe.config || {}), cameras: c } }).eq('id', camerasDe.id);
+            if (error) throw error;
+            recarregar();
+          }} />
+      )}
       {localDe && <ConfigTela tela={localDe} locais={locais.data || []} onFechar={() => setLocalDe(null)} onSalvo={() => { setLocalDe(null); recarregar(); }} />}
     </div>
   );

@@ -92,6 +92,18 @@ async function cameras() {
   });
 }
 
+/**
+ * Câmeras escolhidas para esta tela (config.cameras = { ids: [url…], segundos }): só as escolhidas, na ordem escolhida,
+ * e o tempo de cada uma. Uma só = câmera fixa, sem trocar. Nada escolhido (ou nenhuma ainda existe) = todas.
+ */
+function camerasDaTela(cams: any[], cfg: any) {
+  const ids: string[] = Array.isArray(cfg?.ids) ? cfg.ids.map(String) : [];
+  let out = ids.length ? ids.map((u) => cams.find((c) => c.url === u)).filter(Boolean) : cams;
+  if (!out.length) out = cams;
+  const seg = Number(cfg?.segundos);
+  return seg ? out.map((c: any) => ({ ...c, segundos: Math.min(Math.max(seg, 5), 600) })) : out;
+}
+
 // imagem da notícia: a do ExaSistema é só o nome do arquivo (bucket privado), então pega o og:image da matéria
 const ogImagem = new Map<string, { t: number; u: string }>();
 async function imagemDaMateria(link: string) {
@@ -473,6 +485,12 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ---------- câmeras disponíveis (para escolher no admin e na área do cliente; são transmissões públicas) ----------
+    if (acao === 'cameras_lista') {
+      const cs: any[] = await cameras();
+      return json({ ok: true, cameras: cs.map((c) => ({ url: c.url, nome: c.nome, credito: c.credito })) });
+    }
+
     // ---------- quantas notícias de Foz e do Brasil chegam do ExaSistema (dados públicos, para conferência) ----------
     if (acao === 'noticias_resumo') {
       const ns: any[] = await noticias();
@@ -558,7 +576,7 @@ Deno.serve(async (req) => {
       const ritmo = { ...RITMO_PADRAO, ...(building.telas_ritmo || {}), ...((tela.config || {}).ritmo || {}) };
       const [prog, cams, nots] = await Promise.all([
         programacaoDoLocal(admin, building).catch((e) => { console.error('[exa-tela] programação', e); return { anuncios: [], casa: [] }; }),
-        ritmo.camera === false ? Promise.resolve([]) : cameras(),
+        ritmo.camera === false ? Promise.resolve([]) : cameras().then((cs: any[]) => camerasDaTela(cs, (tela.config || {}).cameras)),
         ritmo.noticias === false ? Promise.resolve([]) : noticias().then((ns: any[]) => {
           // o local escolhe Foz, Brasil ou as duas (intercaladas)
           const foz = ritmo.noticias_foz === false ? [] : ns.filter((n) => n.escopo !== 'brasil');
@@ -670,6 +688,13 @@ Deno.serve(async (req) => {
           if (typeof b.noticias_brasil === 'boolean') cfg.ritmo.noticias_brasil = b.noticias_brasil;
           // as duas desligadas = sem notícias; alguma ligada = notícias ligadas
           if (typeof b.noticias_foz === 'boolean' || typeof b.noticias_brasil === 'boolean') cfg.ritmo.noticias = cfg.ritmo.noticias_foz !== false || cfg.ritmo.noticias_brasil !== false;
+          patch.config = cfg;
+        }
+        if (b.cameras && typeof b.cameras === 'object') {
+          const validas = new Set((await cameras()).map((c: any) => c.url));
+          const ids = (Array.isArray(b.cameras.ids) ? b.cameras.ids : []).map(String).filter((u: string) => validas.has(u)).slice(0, 20);
+          const seg = Number(b.cameras.segundos);
+          cfg.cameras = { ids, segundos: seg ? Math.min(Math.max(Math.round(seg), 5), 600) : null };
           patch.config = cfg;
         }
         if (b.orientacao !== undefined || b.giro !== undefined) {

@@ -381,7 +381,7 @@ function JanelaAlterna({ e }: { e: Estado }) {
     setGiro((g) => ({ c: modo === 'camera' ? g.c + 1 : g.c, n: modo === 'noticia' ? g.n + 1 : g.n, q: modo === 'curiosidade' ? g.q + 1 : g.q }));
     setM((x) => x + 1);
   }, [modo]);
-  useEffect(() => { if (!modo) return; const t = setTimeout(proximo, modo === 'camera' ? 16000 : 14000); return () => clearTimeout(t); }, [m, modo, proximo]);
+  useEffect(() => { if (!modo) return; const t = setTimeout(proximo, modo === 'camera' ? Math.max(8, cams[giro.c % Math.max(1, cams.length)]?.segundos || 16) * 1000 : 14000); return () => clearTimeout(t); }, [m, modo, proximo]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!modo) return null;
   const cam = cams[giro.c % Math.max(1, cams.length)];
   const n = modo === 'curiosidade' ? curiosidades[giro.q % curiosidades.length] : comuns[giro.n % Math.max(1, comuns.length)];
