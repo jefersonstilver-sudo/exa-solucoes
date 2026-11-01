@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { canDeleteSofiaContact } from '@/lib/deleteContactRules';
 import DeleteContactDialog, { type DeleteContactTarget } from './DeleteContactDialog';
 import { ChatEXA, CxGaveta, CxNotas, cxQuando, type CxConversa, type CxMsg } from './chat/ChatEXA';
+import { IndicacaoDialog, PAPEIS_INDICACAO } from './IndicacaoDialog';
 
 /**
  * CRM da Sofia (clientes). Conversas, modo, envio de texto e contato pela sofia-panel (código só do painel);
@@ -85,6 +86,8 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
   selRef.current = selId;
   const { userProfile } = useAuth();
   const canDelete = canDeleteSofiaContact(userProfile?.role);
+  const podeIndicar = PAPEIS_INDICACAO.includes(String(userProfile?.role || ''));
+  const [indicacaoAberta, setIndicacaoAberta] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<(DeleteContactTarget & { conversationId: string }) | null>(null);
   // ?telefone= (botão "Conversar" da lista de pedidos): abre direto a conversa daquele cliente
   const [searchParams] = useSearchParams();
@@ -331,6 +334,15 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
   return (
     <>
       <DeleteContactDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={handleDeleted} />
+      {indicacaoAberta && (
+        <IndicacaoDialog
+          conversaAtual={selId}
+          onFechar={() => setIndicacaoAberta(false)}
+          onAbrirConversa={(id) => {
+            call('list').then((d) => { setConvs(d.conversations || []); setSelId(id); }).catch(() => setSelId(id));
+          }}
+        />
+      )}
       <ChatEXA
         agente="sofia"
         nomeAgente="Sofia"
@@ -357,6 +369,12 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
           <button className="cx-ib" style={{ width: 32, height: 32, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} aria-label="Apagar contato" title="Apagar contato"
             onClick={() => { const x = listaTodas.find((k) => k.id === c.id); if (x) openDelete(x); }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9E1014" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+          </button>
+        ) : undefined}
+        extraCabecalho={podeIndicar ? (
+          <button className="cx-btn cx-fb" onClick={() => setIndicacaoAberta(true)} title="Cadastrar uma pessoa indicada para a Sofia chamar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4" /><path d="M2 21c.8-3.6 3.6-6 7-6s6.2 2.4 7 6M19 8v6M16 11h6" /></svg>
+            <span>Indicação</span>
           </button>
         ) : undefined}
         aviso={aviso}
