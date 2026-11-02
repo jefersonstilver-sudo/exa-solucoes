@@ -1,3 +1,4 @@
+import { exigirEquipe, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { Resend } from "npm:resend@4.0.0";
@@ -12,6 +13,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Só equipe autorizada (auditoria de segurança 02/11/2026: antes qualquer pessoa chamava)
+  if (!(await exigirEquipe(req, ['super_admin','admin']))) return naoAutorizado(corsHeaders);
 
   try {
     const { userId, newEmail, updateEmail } = await req.json();

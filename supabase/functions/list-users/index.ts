@@ -14,6 +14,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // DESATIVADA (02/11/2026, auditoria de segurança): era chamável por qualquer pessoa e não é usada pelo sistema.
+  return new Response(JSON.stringify({ error: 'desativada' }), { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   try {
     // Create a Supabase client with the service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''

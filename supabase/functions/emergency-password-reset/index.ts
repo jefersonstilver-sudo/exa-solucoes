@@ -13,6 +13,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // DESATIVADA (02/11/2026, auditoria de segurança): era chamável por qualquer pessoa e não é usada pelo sistema.
+  return new Response(JSON.stringify({ error: 'desativada' }), { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   // Rate limiting: 2 password resets per hour per IP (prevent brute force)
   const clientId = getClientIdentifier(req);
   const rateLimitResult = checkRateLimit(clientId, {

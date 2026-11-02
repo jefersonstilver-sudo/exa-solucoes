@@ -48,6 +48,8 @@ export const createAdminUser = async (
         email,
         password: defaultPassword,
         email_confirm: true, // ✅ Confirmar email automaticamente (contas admin são criadas por admins de confiança)
+        // papel em app_metadata: só o servidor grava; o trigger de cadastro passou a ler daqui (user_metadata qualquer um preenche no cadastro)
+        app_metadata: { role: adminType },
         user_metadata: {
           role: adminType,
           created_by_admin: true,

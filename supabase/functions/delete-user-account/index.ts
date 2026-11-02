@@ -1,3 +1,4 @@
+import { exigirEquipe, naoAutorizado } from "../_shared/guarda.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
 
@@ -11,6 +12,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Só equipe autorizada (auditoria de segurança 02/11/2026: antes qualquer pessoa chamava)
+  if (!(await exigirEquipe(req, ['super_admin']))) return naoAutorizado(corsHeaders);
 
   // Rate limiting: 3 deletions per hour per IP (very restrictive for account deletion)
   const clientId = getClientIdentifier(req);

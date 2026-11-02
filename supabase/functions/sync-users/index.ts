@@ -1,4 +1,5 @@
 
+import { exigirEquipe, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
@@ -12,6 +13,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+
+  // Só equipe autorizada (auditoria de segurança 02/11/2026: antes qualquer pessoa chamava)
+  if (!(await exigirEquipe(req, ['super_admin','admin']))) return naoAutorizado(corsHeaders);
 
   try {
     // Create a Supabase client with the Admin key
@@ -66,7 +70,7 @@ serve(async (req) => {
     // Use our security definer function to insert users safely
     let syncedCount = 0
     for (const user of usersToCreate) {
-      const role = user.user_metadata?.role || 'client'
+      const role = (user.app_metadata as any)?.role || 'client' // nunca user_metadata: o próprio usuário preenche no cadastro
       
       const { error: insertError } = await supabaseAdmin.rpc(
         'admin_insert_user',
