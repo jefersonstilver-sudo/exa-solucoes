@@ -9,6 +9,7 @@
  * @version 1.0.0
  */
 
+import { exigirEquipeOuSistema, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { getPixQrCode, listPaymentsBySubscription } from '../_shared/asaas-client.ts';
@@ -30,6 +31,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Rotina automática: só o cron (x-exa2-cron), o sistema (service role) ou a equipe disparam (auditoria 02/11/2026)
+  if (!(await exigirEquipeOuSistema(req))) return naoAutorizado(corsHeaders);
 
   console.log('🔔 [NOTIFY-PIX] Iniciando notificação de parcelas próximas...');
   

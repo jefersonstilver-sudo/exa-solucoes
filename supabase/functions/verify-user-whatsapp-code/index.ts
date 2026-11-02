@@ -8,6 +8,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+
+// Segurança (02/11/2026): quem pede/verifica código para uma conta tem que ser o dono da conta (JWT) ou a equipe.
+// Antes o userId vinha do corpo: dava para trocar o telefone de qualquer conta e o limite era por sessionId (contornável).
+const EQUIPE = ['super_admin', 'admin', 'admin_financeiro', 'admin_departamental', 'comercial'];
+async function donoOuEquipe(supabase: any, req: Request, userId?: string): Promise<boolean> {
+  if (!userId) return true;
+  const token = req.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) return false;
+  const { data: { user } } = await supabase.auth.getUser(token);
+  if (!user) return false;
+  if (user.id === userId) return true;
+  const { data: papeis } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
+  return (papeis || []).some((r: any) => EQUIPE.includes(String(r.role)));
+}
+const soDigitos = (t?: string) => String(t || '').replace(/\D/g, '');
+
 interface RequestBody {
   userId?: string;
   telefone: string;
@@ -58,12 +74,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (!(await donoOuEquipe(supabase, req, userId))) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    let telefoneAlvo = telefone;
+    if (userId && (tipo === '2fa_login' || tipo === 'phone_change')) {
+      const { data: u } = await supabase.from('users').select('telefone').eq('id', userId).maybeSingle();
+      if (u?.telefone) telefoneAlvo = u.telefone;
+    }
+    // troca de número: só grava o número que recebeu o código
+    if (tipo === 'new_phone' && novoTelefone && soDigitos(novoTelefone) !== soDigitos(telefone)) {
+      return new Response(JSON.stringify({ success: false, error: 'O novo número precisa ser o mesmo que recebeu o código' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Buscar código válido no banco
     let codigoQuery = supabase
       .from('exa_alerts_verification_codes')
       .select('*')
-      .eq('telefone', telefone)
+      .eq('telefone', telefoneAlvo)
       .eq('codigo', codigo)
+      .lt('tentativas', 5)
       .eq('tipo_verificacao', tipo)
       .eq('verificado', false)
       .gte('expires_at', new Date().toISOString())
@@ -85,6 +115,11 @@ Deno.serve(async (req) => {
     }
 
     if (!codigoData) {
+      // conta a tentativa errada no código ativo deste telefone; com 5 erros o código deixa de valer (antes dava para chutar sem limite)
+      const { data: ativo } = await supabase.from('exa_alerts_verification_codes').select('id, tentativas')
+        .eq('telefone', telefoneAlvo).eq('tipo_verificacao', tipo).eq('verificado', false)
+        .gte('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (ativo) await supabase.from('exa_alerts_verification_codes').update({ tentativas: (ativo.tentativas || 0) + 1 }).eq('id', ativo.id);
       console.warn('⚠️ [VERIFY-USER-CODE] Código inválido ou expirado');
       return new Response(
         JSON.stringify({ 

@@ -1,3 +1,4 @@
+import { exigirEquipeOuSistema, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -33,6 +34,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Rotina automática: só o cron (x-exa2-cron), o sistema (service role) ou a equipe disparam (auditoria 02/11/2026)
+  if (!(await exigirEquipeOuSistema(req))) return naoAutorizado(corsHeaders);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

@@ -24,10 +24,8 @@ const AssinaturaConfirmadaPage = () => {
       }
 
       try {
-        const { data: proposal, error: proposalError } = await supabase
-          .from('proposals')
-          .select('*, metadata')
-          .eq('id', proposalId)
+        // leitura pública só pela RPC proposta_publica (o link abre apenas a própria proposta)
+        const { data: proposal, error: proposalError } = await (supabase as any).rpc('proposta_publica', { p_id: proposalId })
           .single();
 
         if (proposalError || !proposal) {

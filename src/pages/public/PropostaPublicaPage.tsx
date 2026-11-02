@@ -318,10 +318,9 @@ const PropostaPublicaPage = () => {
         const officialStatus = await readAsaasStatus(paymentData.paymentId);
         if (!officialStatus.paid) return;
         // Check if proposal was converted (payment approved)
-        const { data: proposalData, error } = await supabase
-          .from('proposals')
+        // leitura pública só pela RPC proposta_publica (o link abre apenas a própria proposta)
+        const { data: proposalData, error } = await (supabase as any).rpc('proposta_publica', { p_id: proposal.id })
           .select('status, converted_order_id')
-          .eq('id', proposal.id)
           .single();
         
         if (error) {
@@ -382,10 +381,8 @@ const PropostaPublicaPage = () => {
       try {
         console.log('🔍 Buscando proposta:', id);
         
-        const { data, error } = await supabase
-          .from('proposals')
-          .select('*')
-          .eq('id', id)
+        // leitura pública só pela RPC proposta_publica (o link abre apenas a própria proposta)
+        const { data, error } = await (supabase as any).rpc('proposta_publica', { p_id: id })
           .single();
 
         if (error) {
