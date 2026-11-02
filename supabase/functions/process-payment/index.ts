@@ -11,6 +11,7 @@
  * @version 10.0.0 - Simplificado para Subscription Mode
  */
 
+import { exigirEquipeOuSistema, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
@@ -26,6 +27,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Só equipe ou chamada interna (auditoria de segurança 02/11/2026: antes quem tinha o id da proposta/pedido chamava)
+  if (!(await exigirEquipeOuSistema(req))) return naoAutorizado(corsHeaders);
 
   // Rate limiting: 5 payment attempts per minute per IP
   const clientId = getClientIdentifier(req);

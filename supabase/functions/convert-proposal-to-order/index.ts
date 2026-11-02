@@ -1,3 +1,4 @@
+import { exigirEquipeOuSistema, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -19,6 +20,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Só equipe ou chamada interna (auditoria de segurança 02/11/2026: antes quem tinha o id da proposta/pedido chamava)
+  if (!(await exigirEquipeOuSistema(req))) return naoAutorizado(corsHeaders);
 
   const startTime = Date.now();
   console.log('========================================');

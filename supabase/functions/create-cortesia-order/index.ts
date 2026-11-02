@@ -51,6 +51,21 @@ serve(async (req) => {
       throw new Error('Cart items are required')
     }
 
+    // Segurança (02/11/2026): pedido de cortesia só com cupom de cortesia válido, ou criado pela equipe.
+    // Antes qualquer cliente logado criava pedido 'ativo' de R$ 0 nos prédios e no período que quisesse.
+    const { data: papeis } = await supabase.from('user_roles').select('role').eq('user_id', user.id)
+    const ehEquipe = (papeis || []).some((r: { role: string }) => ['super_admin', 'admin', 'admin_financeiro', 'admin_departamental', 'comercial'].includes(String(r.role)))
+    if (!ehEquipe) {
+      if (!couponId) throw new Error('Cupom de cortesia obrigatório')
+      const { data: cupom } = await supabase.from('cupons').select('id, ativo, categoria, expira_em, data_inicio, max_usos, usos_atuais').eq('id', couponId).maybeSingle()
+      const agora = Date.now()
+      const valido = !!cupom && cupom.ativo === true && cupom.categoria === 'cortesia'
+        && (!cupom.expira_em || new Date(cupom.expira_em).getTime() > agora)
+        && (!cupom.data_inicio || new Date(cupom.data_inicio).getTime() <= agora)
+        && (cupom.max_usos == null || (cupom.usos_atuais ?? 0) < cupom.max_usos)
+      if (!valido) throw new Error('Cupom de cortesia inválido ou esgotado')
+    }
+
     console.log('🎁 [CORTESIA] Creating courtesy order:', {
       userId: user.id,
       cartItemsCount: cartItems.length,

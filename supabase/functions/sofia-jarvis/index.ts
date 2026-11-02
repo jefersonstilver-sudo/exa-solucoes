@@ -3017,6 +3017,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // DESATIVADA (02/11/2026, auditoria de segurança): Z-API e Sofia por voz (ElevenLabs) não são mais usadas, e a função era chamável por qualquer pessoa.
+  return new Response(JSON.stringify({ error: 'desativada' }), { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   // GET endpoint for testing
   if (req.method === 'GET') {
     console.log('[Sofia JARVIS] Health check request');

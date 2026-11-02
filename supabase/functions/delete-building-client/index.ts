@@ -1,3 +1,4 @@
+import { exigirEquipe, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -9,6 +10,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
+
+  // Só equipe (auditoria de segurança 02/11/2026)
+  if (!(await exigirEquipe(req))) return naoAutorizado(corsHeaders);
 
   try {
     const { cliente_id } = await req.json()

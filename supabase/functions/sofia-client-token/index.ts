@@ -15,6 +15,9 @@ const requestId = crypto.randomUUID().slice(0, 8);
     return new Response(null, { headers: corsHeaders });
   }
 
+  // DESATIVADA (02/11/2026, auditoria de segurança): Z-API e Sofia por voz (ElevenLabs) não são mais usadas, e a função era chamável por qualquer pessoa.
+  return new Response(JSON.stringify({ error: 'desativada' }), { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   try {
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     // Use dedicated client agent ID - DO NOT fallback to admin agent!
