@@ -15032,6 +15032,24 @@ export type Database = {
         }
         Relationships: []
       }
+      seg_backup_20261102: {
+        Row: {
+          def: Json | null
+          nome: string | null
+          tipo: string | null
+        }
+        Insert: {
+          def?: Json | null
+          nome?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          def?: Json | null
+          nome?: string | null
+          tipo?: string | null
+        }
+        Relationships: []
+      }
       session_navigation_history: {
         Row: {
           action_details: Json | null
@@ -19002,6 +19020,7 @@ export type Database = {
       emergency_financial_audit_and_fix: { Args: never; Returns: Json }
       ensure_ficha_padrao: { Args: { p_marca_id: string }; Returns: undefined }
       ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
+      exa_eh_equipe: { Args: { papeis?: string[] }; Returns: boolean }
       exa_radar_conteudo_rodar: {
         Args: { p_dry?: boolean; p_forcar_aviso?: boolean }
         Returns: Json
