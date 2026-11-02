@@ -11,6 +11,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // DESATIVADA (02/11/2026): aceitava qualquer POST anônimo e marcava o pedido como pago sem consultar o MercadoPago.
+  // Nenhuma chamada registrada em webhook_logs. Pagamentos seguem pelo asaas-webhook.
+  return new Response(JSON.stringify({ error: 'desativada' }), { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

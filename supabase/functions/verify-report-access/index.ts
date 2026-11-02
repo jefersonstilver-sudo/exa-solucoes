@@ -141,17 +141,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. FALLBACK: Código de emergência EXA2024
-    if (!authenticatedUser && password === 'EXA2024') {
-      console.log('⚠️ Acesso via código de emergência EXA2024');
-      authenticatedUser = {
-        id: 'emergency',
-        email: 'emergency_access',
-        role: 'emergency',
-        director_name: 'Acesso Emergência'
-      };
-    }
-
     if (!authenticatedUser) {
       console.log('❌ Autenticação falhou - senha incorreta');
       return new Response(

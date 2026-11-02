@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { exigirEquipe, naoAutorizado } from "../_shared/guarda.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,13 +13,17 @@ serve(async (req) => {
   }
 
   try {
+    // Só a equipe cria conta de cliente (antes qualquer um criava conta com o papel que quisesse, até super_admin)
+    if (!(await exigirEquipe(req))) return naoAutorizado(corsHeaders);
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { email, password, primeiro_nome, sobrenome, telefone, role } = await req.json();
+    const { email, password, primeiro_nome, sobrenome, telefone } = await req.json();
+    const role = 'client'; // nunca vem do corpo
 
     console.log(`[CREATE-CLIENT] Creating account for: ${email}`);
 
@@ -83,8 +88,7 @@ serve(async (req) => {
         nome: `${primeiro_nome} ${sobrenome}`,
         primeiro_nome,
         sobrenome,
-        telefone,
-        role: role || 'client'
+        telefone
       }).eq('id', userId);
 
       if (updateError) {
