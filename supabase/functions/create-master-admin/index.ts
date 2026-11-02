@@ -1,107 +1,13 @@
-
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  // DESATIVADA (02/11/2026, auditoria de segurança): era chamável por qualquer pessoa e não é usada pelo sistema.
+// DESATIVADA (02/11/2026): criava conta master com senha fixa no código. O código antigo foi removido
+// (inclusive a senha). Contas de equipe são criadas por create-admin-account, só por super_admin.
+serve((req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   return new Response(JSON.stringify({ error: 'desativada' }), { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-
-  try {
-    // Create a Supabase client with the Admin key
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-
-    // Check if master admin already exists using direct SQL query
-    // This avoids potential RLS recursion issues
-    const { data: existingUser, error: checkError } = await supabaseAdmin.rpc(
-      'admin_check_user_exists',
-      { user_email: 'jefersonstilver@gmail.com' }
-    )
-
-    if (checkError) {
-      throw checkError
-    }
-
-    if (existingUser) {
-      return new Response(
-        JSON.stringify({
-          message: 'Master admin already exists',
-          user: existingUser,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
-    }
-
-    // Create the master admin user
-    const { data: authUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'jefersonstilver@gmail.com',
-      password: '573039',
-      email_confirm: true,
-      user_metadata: {
-        role: 'super_admin',
-        name: 'Jeferson Stilver',
-      },
-    })
-
-    if (createError) {
-      throw createError
-    }
-
-    // Insert the user role directly using our security definer function to bypass RLS
-    const { data: userData, error: userError } = await supabaseAdmin.rpc(
-      'admin_insert_user',
-      {
-        user_id: authUser.user.id,
-        user_email: 'jefersonstilver@gmail.com',
-        user_role: 'super_admin'
-      }
-    )
-
-    if (userError) {
-      throw userError
-    }
-
-    return new Response(
-      JSON.stringify({
-        message: 'Master admin user created successfully',
-        user: userData,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
-  } catch (error) {
-    console.error('Error creating master admin:', error)
-    return new Response(
-      JSON.stringify({
-        error: error.message,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
-  }
-})
+});

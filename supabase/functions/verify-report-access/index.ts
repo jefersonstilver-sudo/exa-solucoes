@@ -54,6 +54,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 2b. Limite de tentativas (segurança 02/11/2026): no máximo 8 senhas erradas por relatório a cada 15 min
+    const desde = new Date(Date.now() - 15 * 60000).toISOString();
+    const { count: falhas } = await supabase
+      .from('log_eventos_sistema')
+      .select('id', { count: 'exact', head: true })
+      .eq('tipo_evento', 'RELATORIO_SENHA_ERRADA')
+      .eq('descricao', String(report_id))
+      .gte('created_at', desde);
+    if ((falhas ?? 0) >= 8) {
+      return new Response(
+        JSON.stringify({ error: 'Muitas tentativas. Aguarde 15 minutos e tente de novo.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // 3. BUSCAR DIRETORES VINCULADOS A ESTE RELATÓRIO
     const { data: linkedDirectors, error: linkError } = await supabase
       .from('report_director_links')
@@ -143,6 +158,7 @@ Deno.serve(async (req) => {
 
     if (!authenticatedUser) {
       console.log('❌ Autenticação falhou - senha incorreta');
+      await supabase.from('log_eventos_sistema').insert({ tipo_evento: 'RELATORIO_SENHA_ERRADA', descricao: String(report_id) });
       return new Response(
         JSON.stringify({ error: 'Senha incorreta' }),
         { 
