@@ -82,7 +82,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
         />
         <p className="text-xs text-gray-600">
-          A senha deve ter pelo menos 6 caracteres
+          A senha deve ter pelo menos 8 caracteres
         </p>
       </div>
       

@@ -55,7 +55,7 @@ const Olho = ({ aberto }: { aberto: boolean }) => aberto ? (
 
 function forca(s: string) {
   if (!s) return { n: 0, txt: '' };
-  if (s.length < 6) return { n: 1, txt: 'Curta demais' };
+  if (s.length < 8) return { n: 1, txt: 'Curta demais' };
   const tipos = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((r) => r.test(s)).length;
   if (s.length < 8 || tipos <= 1) return { n: 2, txt: 'Fraca' };
   if (tipos === 2) return { n: 3, txt: 'Boa' };
@@ -101,7 +101,7 @@ export default function DefinirSenhaPage() {
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     setAviso('');
-    if (senha.length < 6) { setAviso('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    if (senha.length < 8) { setAviso('A senha precisa ter pelo menos 8 caracteres.'); return; }
     if (senha !== confirma) { setAviso('As duas senhas não estão iguais.'); return; }
     setEtapa('salvando');
     try {
@@ -125,7 +125,7 @@ export default function DefinirSenhaPage() {
         const msg = String(u.corpo?.msg || u.corpo?.message || '');
         console.warn('[DEFINIR SENHA] update', u.status, msg);
         if (/same|different from the old/i.test(msg)) { setAviso('Essa já é a sua senha. Use outra ou entre com ela.'); setEtapa('form'); return; }
-        if (/weak|short|characters/i.test(msg)) { setAviso('Senha fraca demais. Use pelo menos 8 caracteres, com letras e números.'); setEtapa('form'); return; }
+        if (/weak|short|characters|pwned|leaked|known/i.test(msg)) { setAviso('Essa senha é fraca ou já apareceu em vazamentos na internet. Use outra, com pelo menos 8 caracteres, letras e números.'); setEtapa('form'); return; }
         setEtapa(u.status === 401 || u.status === 403 ? 'expirado' : 'erro');
         return;
       }
@@ -166,7 +166,7 @@ export default function DefinirSenhaPage() {
           <div className="el-campo">
             <label htmlFor="s1">Nova senha</label>
             <div className="el-inp">
-              <input id="s1" type={ver ? 'text' : 'password'} autoComplete="new-password" placeholder="Mínimo de 6 caracteres" value={senha} onChange={(e) => setSenha(e.target.value)} disabled={etapa === 'salvando'} style={{ paddingRight: 54 }} />
+              <input id="s1" type={ver ? 'text' : 'password'} autoComplete="new-password" placeholder="Mínimo de 8 caracteres" value={senha} onChange={(e) => setSenha(e.target.value)} disabled={etapa === 'salvando'} style={{ paddingRight: 54 }} />
               <button className="el-olho" type="button" onClick={() => setVer((v) => !v)} aria-label={ver ? 'Esconder senha' : 'Mostrar senha'}><Olho aberto={ver} /></button>
             </div>
             {!!senha && (
