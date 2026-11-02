@@ -1,3 +1,4 @@
+import "../_shared/aws-chave.ts"; // EXA: chave de escrita da API das telas
 import { exigirEquipe, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 

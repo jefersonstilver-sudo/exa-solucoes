@@ -1,3 +1,4 @@
+import "../_shared/aws-chave.ts"; // EXA: chave de escrita da API das telas
 import { authorizeOrderSync } from '../_shared/order-sync-auth.ts'
 import { orderSyncOutcome } from '../_shared/order-sync-policy.ts'
 import { agendaDoPedido } from '../_shared/exa2-agenda.ts'

@@ -1,3 +1,4 @@
+import "../_shared/aws-chave.ts"; // EXA: chave de escrita da API das telas
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {

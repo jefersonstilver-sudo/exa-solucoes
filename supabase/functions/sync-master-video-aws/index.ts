@@ -1,3 +1,4 @@
+import "../_shared/aws-chave.ts"; // EXA: chave de escrita da API das telas
 // Automatic AWS sync for MASTER orders (is_master=true).
 // Fired by database triggers when a master order's video is inserted/approved,
 // becomes the base/selected video, or is renamed. It re-uploads the video when

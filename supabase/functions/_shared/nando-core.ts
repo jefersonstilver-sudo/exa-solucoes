@@ -1,3 +1,4 @@
+import "./aws-chave.ts"; // EXA: chave de escrita da API das telas
 // =====================================================================
 // NANDO - nucleo compartilhado (assistente de avisos dos sindicos no WhatsApp)
 // Usado por: nando-webhook, nando-cron, nando-previa.

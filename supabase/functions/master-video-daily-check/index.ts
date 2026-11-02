@@ -1,3 +1,4 @@
+import "../_shared/aws-chave.ts"; // EXA: chave de escrita da API das telas
 // Daily read-only verification of master videos on AWS + building client presence probe.
 // - default (cron): runs reconcile-video-masters-external with dry_run=true, then probes every
 //   building on AWS and records problems in api_sync_logs and exa_alerts_history. Never fixes anything.

@@ -1,3 +1,4 @@
+import "../_shared/aws-chave.ts"; // EXA: chave de escrita da API das telas
 /**
  * EXA 2.0 — Sincronizador da agenda do pedido com os painéis (API externa / AWS).
  *
