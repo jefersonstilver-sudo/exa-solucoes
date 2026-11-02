@@ -9,15 +9,17 @@ do $$
 declare
   -- só a equipe usa (CRM, financeiro, Sofia admin, tarefas): leitura E escrita passam a exigir equipe
   so_equipe text[] := array['conversations','messages','extrato_bancario','knowledge_base','mp_transactions_cache','vendas',
-    'contact_notes','contact_files','report_access_tokens','report_director_links','sofia_admin_sessions','sofia_admin_access_logs',
-    'task_notification_queue','active_sessions_monitor','events_log','retornos_investimento','despesas_predios','signatarios_exa',
-    'quick_replies','evolution_logs','provider_alerts','conversation_heat_metrics','contact_scoring_config','contact_scoring_rules',
-    'api_sync_logs','task_read_receipts','task_reminders','task_participantes','task_propostas','tarefas_geradas','juridico_prompts',
-    'agent_knowledge_items','agent_sections','agent_logs','contact_audit_logs','contact_interactions','contact_types','conversation_events',
-    'exclusividades_segmento','notion_task_sync_logs','tarefa_regras','exa2_flags','configuracoes_sistema','categorias_despesas'];
+    'contact_notes','contact_files','report_access_tokens','report_director_links','sofia_admin_sessions',
+    'retornos_investimento','despesas_predios','signatarios_exa',
+    'quick_replies','provider_alerts','conversation_heat_metrics','contact_scoring_config','contact_scoring_rules',
+    'task_read_receipts','task_reminders','task_participantes','task_propostas','tarefas_geradas','juridico_prompts',
+    'agent_knowledge_items','agent_sections','contact_types',
+    'exclusividades_segmento','tarefa_regras','exa2_flags','configuracoes_sistema','categorias_despesas'];
   -- leitura continua como está (site, checkout, monitor público); só a escrita "true" passa a exigir equipe
   escrita_equipe text[] := array['painels','devices','device_groups','building_geocodes','incident_categories','paineis_status',
     'uptime_records','connection_history','generated_reports'];
+  -- logs: gravação continua livre (triggers de ações de cliente gravam aqui); só LER passa a exigir equipe
+  so_leitura text[] := array['events_log','active_sessions_monitor','conversation_events','contact_interactions','agent_logs','api_sync_logs','contact_audit_logs','notion_task_sync_logs','sofia_admin_access_logs','task_notification_queue','evolution_logs'];
   p record; n int := 0; cond text := 'public.exa_eh_equipe()';
 begin
   for p in
@@ -27,10 +29,13 @@ begin
     from pg_policies pol
     where pol.schemaname='public' and pol.permissive='PERMISSIVE'
       and pol.roles && array['public','anon','authenticated']::name[]
-      and (pol.tablename = any(so_equipe) or (pol.tablename = any(escrita_equipe) and pol.cmd <> 'SELECT'))
+      and (pol.tablename = any(so_equipe) or (pol.tablename = any(escrita_equipe) and pol.cmd <> 'SELECT') or (pol.tablename = any(so_leitura) and pol.cmd <> 'INSERT'))
       and (trim(coalesce(pol.qual,'')) in ('true','(true)') or trim(coalesce(pol.with_check,'')) in ('true','(true)'))
   loop
-    if p.cmd = 'INSERT' then
+    if p.t = any(so_leitura) then
+      if p.cmd in ('SELECT','DELETE') then execute format('alter policy %I on public.%I using (%s)', p.nome, p.t, cond);
+      else execute format('alter policy %I on public.%I using (%s) with check (true)', p.nome, p.t, cond); end if;
+    elsif p.cmd = 'INSERT' then
       execute format('alter policy %I on public.%I with check (%s)', p.nome, p.t, cond);
     elsif p.cmd in ('SELECT','DELETE') then
       execute format('alter policy %I on public.%I using (%s)', p.nome, p.t, cond);
