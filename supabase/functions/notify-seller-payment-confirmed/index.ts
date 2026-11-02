@@ -3,6 +3,7 @@
 // Envia EXA Alert + Email quando cliente paga a proposta
 // ============================================
 
+import { exigirEquipeOuSistema, naoAutorizado } from "../_shared/guarda.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "npm:resend@2.0.0";
@@ -26,6 +27,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Só equipe logada ou chamada interna (service role / x-exa2-cron). Auditoria 02/11/2026: antes qualquer pessoa chamava.
+  if (!(await exigirEquipeOuSistema(req))) return naoAutorizado(corsHeaders);
 
   try {
     const { proposalId, orderId, paymentAmount, paymentMethod } = await req.json() as NotifyPaymentRequest;

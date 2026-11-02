@@ -1,3 +1,4 @@
+import { exigirEquipeOuSistema, naoAutorizado } from "../_shared/guarda.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -10,6 +11,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Só equipe logada ou chamada interna (service role / x-exa2-cron). Auditoria 02/11/2026: antes qualquer pessoa chamava.
+  if (!(await exigirEquipeOuSistema(req))) return naoAutorizado(corsHeaders);
 
   try {
     const { audioUrl, audioBase64, mimeType, language = 'pt', prompt = 'Áudio de WhatsApp' } = await req.json();
