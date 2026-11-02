@@ -3,6 +3,7 @@
 // para registrar este endpoint como webhook na instância de notificações.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { exigirEquipeOuSistema, urlWebhookEvolution, webhookEvolutionOk } from "../_shared/guarda.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
 
   // ============== SETUP: registra este endpoint como webhook na instância ==============
   if (action === "setup") {
+    if (!(await exigirEquipeOuSistema(req, ["super_admin", "admin"]))) return json(401, { error: "Não autorizado" });
     const evoUrl = (Deno.env.get("EVOLUTION_API_URL") || "").replace(/\/+$/, "");
     const evoKey = Deno.env.get("EVOLUTION_API_KEY") || "";
     if (!evoUrl || !evoKey) return json(500, { error: "EVOLUTION_API_URL/KEY missing" });
@@ -69,7 +71,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!inst?.instance_name) return json(404, { error: "no notifications instance" });
 
-    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/evolution-webhook`;
+    const webhookUrl = await urlWebhookEvolution("evolution-webhook"); // leva o token: sem ele a chamada e recusada
     const payload = {
       webhook: {
         enabled: true,
@@ -95,14 +97,17 @@ Deno.serve(async (req) => {
         results.push({ path, error: (e as Error).message });
       }
     }
-    return json(200, { ok: true, instance: inst.instance_name, webhookUrl, results });
+    return json(200, { ok: true, instance: inst.instance_name, webhookUrl: webhookUrl.replace(/token=[^&]+/, "token=***"), results });
   }
 
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
   try {
     const payload = await req.json();
-    console.log("[EVO-WEBHOOK] 📥", JSON.stringify(payload).slice(0, 800));
+    // so a Evolution (URL cadastrada com ?token=) pode entregar mensagens: sem isso qualquer um respondia alertas e tarefas
+    if (!(await webhookEvolutionOk(req, "notificacoes", String(payload?.instance || "")))) return json(401, { error: "nao autorizado" });
+    const { apikey: _k, ...semChave } = payload || {};
+    console.log("[EVO-WEBHOOK] 📥", JSON.stringify(semChave).slice(0, 800));
 
     const event = payload.event || payload.type || "";
     const data = payload.data || payload;

@@ -26,6 +26,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // DESATIVADA (02/11/2026): ManyChat desligado pelo Jeferson; recebia mensagens sem validar a origem.
+  return new Response(JSON.stringify({ error: 'desativada' }), { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   try {
     console.log('📥 [MANYCHAT WEBHOOK] Received request');
     

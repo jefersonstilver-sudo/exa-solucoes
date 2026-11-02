@@ -9,6 +9,7 @@ import {
   MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO, enviarImagem, chavesTelefone, CADASTRO_ABERTO,
 } from "../_shared/nando-core.ts";
 import { Contexto, rodarAgente } from "../_shared/nando-agente.ts";
+import { exigirSistema, urlWebhookEvolution, webhookEvolutionOk } from "../_shared/guarda.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
@@ -34,22 +35,24 @@ function tipoMidia(m: any): string | null {
 }
 
 async function setup(req: Request) {
-  // so administradores do site podem registrar o webhook
-  const auth = req.headers.get("Authorization") || "";
+  // so administradores do site (ou o sistema, com o token do cron) podem registrar o webhook
   const sb = db();
-  const { data: u } = await sb.auth.getUser(auth.replace("Bearer ", ""));
-  if (!u?.user) return json(401, { error: "login necessario" });
-  const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", u.user.id);
-  if (!(roles || []).some((r: any) => ["super_admin", "admin"].includes(r.role))) return json(403, { error: "sem permissao" });
+  if (!(await exigirSistema(req))) {
+    const auth = req.headers.get("Authorization") || "";
+    const { data: u } = await sb.auth.getUser(auth.replace("Bearer ", ""));
+    if (!u?.user) return json(401, { error: "login necessario" });
+    const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", u.user.id);
+    if (!(roles || []).some((r: any) => ["super_admin", "admin"].includes(r.role))) return json(403, { error: "sem permissao" });
+  }
   const evoUrl = (Deno.env.get("EVOLUTION_API_URL") || "").replace(/\/+$/, "");
   const evoKey = Deno.env.get("EVOLUTION_API_KEY") || "";
   const inst = await instanciaNando(sb);
-  const alvo = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nando-webhook`;
+  const alvo = await urlWebhookEvolution("nando-webhook"); // leva o token: sem ele a chamada e recusada
   const r = await fetch(`${evoUrl}/webhook/set/${inst}`, {
     method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
     body: JSON.stringify({ webhook: { enabled: true, url: alvo, webhookByEvents: false, webhookBase64: false, events: ["MESSAGES_UPSERT"] } }),
   });
-  return json(r.ok ? 200 : 502, { instancia: inst, url: alvo, status: r.status, resposta: (await r.text()).slice(0, 300) });
+  return json(r.ok ? 200 : 502, { instancia: inst, url: alvo.replace(/token=[^&]+/, "token=***"), status: r.status, resposta: (await r.text()).slice(0, 300) });
 }
 
 Deno.serve(async (req) => {
@@ -83,6 +86,8 @@ Deno.serve(async (req) => {
 
   let payload: any;
   try { payload = await req.json(); } catch { return json(400, { error: "json" }); }
+  // so a Evolution (URL cadastrada com ?token=) pode entregar mensagens: sem isso qualquer um se passava por sindico ou pelo Jeferson
+  if (!(await webhookEvolutionOk(req, "nando", String(payload?.instance || "")))) return json(401, { error: "nao autorizado" });
   const evento = String(payload.event || "").toLowerCase();
   if (evento && !evento.includes("messages.upsert") && !evento.includes("messages_upsert")) return json(200, { ignorado: "evento" });
 
