@@ -6,4 +6,6 @@ export const VERSAO_PLAYER = 'tela-1.0';
 /** Foz do Iguaçu */
 export const LAT = -25.5163;
 export const LON = -54.5854;
-export const FUSO = 'America/Sao_Paulo';
+// Hora de Brasília fixa (UTC−3; o Brasil não tem horário de verão desde 2019). Não usar 'America/Sao_Paulo':
+// TV box com Android/tzdata antigo ainda aplica o horário de verão do 1º domingo de novembro e a tela fica 1 h adiantada.
+export const FUSO = 'Etc/GMT+3';

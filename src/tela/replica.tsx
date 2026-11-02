@@ -85,6 +85,17 @@ export function ReplicaElevador({ predioId, alternativa }: { predioId: string; a
       try {
         const doc = ref.current?.contentDocument;
         const vp = doc?.getElementById('video-propaganda') as HTMLVideoElement | null;
+        // erros de dentro da tela do elevador (antes ficavam só no console do iframe): play() recusado, vídeo com erro
+        const jan: any = ref.current?.contentWindow;
+        if (jan && !jan.__exaEspia) {
+          jan.__exaEspia = true;
+          let n = 0; const janela = () => { if (Date.now() - (jan.__exaT || 0) > 60000) { jan.__exaT = Date.now(); n = 0; } return ++n <= 6; };
+          const txt = (a: any) => { try { return a instanceof Error || (a && a.name && a.message) ? `${a.name}: ${a.message}` : typeof a === 'object' ? JSON.stringify(a).slice(0, 160) : String(a); } catch { return String(a); } };
+          const ce = jan.console && jan.console.error;
+          if (ce) jan.console.error = function (...args: any[]) { try { if (janela()) registrarErro(`réplica: ${args.map(txt).join(' ').slice(0, 300)}`); } catch { /* nada */ } return ce.apply(jan.console, args); };
+          jan.addEventListener('unhandledrejection', (ev: any) => { if (janela()) registrarErro(`réplica (promessa): ${txt(ev.reason)}`); });
+          if (vp) vp.addEventListener('error', () => { const er = vp.error; if (janela()) registrarErro(`réplica vídeo: código ${er ? er.code : '?'} ${er && (er as any).message ? (er as any).message : ''} ${String(vp.currentSrc).split('/cache/')[1] || ''}`.slice(0, 300)); });
+        }
         saude.seg++;
         if (!vp || !vp.currentSrc) saude.preto++;
         else if (vp.paused || vp.readyState < 3) saude.parado++;
