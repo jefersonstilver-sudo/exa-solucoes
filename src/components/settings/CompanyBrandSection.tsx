@@ -33,7 +33,8 @@ export const CompanyBrandSection: React.FC<CompanyBrandSectionProps> = ({ isEdit
   const targetUserId: string | null = userId || (isImpersonating ? effectiveUserProfile?.id : null) || null;
   const resolveUser = async (): Promise<any> => {
     if (targetUserId) return { id: targetUserId, user_metadata: {} };
-    const user: any = await resolveUser();
+    // (antes chamava a si mesma aqui: recursão infinita ao salvar o próprio perfil)
+    const { data: { user } } = await supabase.auth.getUser();
     return user;
   };
   const { consultCNPJ, isLoading: isLoadingCNPJ } = useCNPJConsult();

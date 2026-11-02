@@ -10,10 +10,24 @@ import { AnuncianteAppTopo, AnuncianteNavInferior } from './AnuncianteAppChrome'
 import ConviteAvisos from '@/components/avisos/ConviteAvisos';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
 import { DentroDoLayout } from '@/components/loading/MarcaCarregando';
-import { ImpersonationProvider } from '@/contexts/ImpersonationContext';
+import { ImpersonationProvider, useImpersonation } from '@/contexts/ImpersonationContext';
+import { Navigate } from 'react-router-dom';
 import ImpersonationTopBar from '@/components/impersonation/ImpersonationTopBar';
 import { useAuth } from '@/hooks/useAuth';
 import { useFimAbertura } from '@/lib/fimAbertura';
+
+/**
+ * Conta de super_admin abrindo a área do anunciante SEM estar "vendo como cliente" (impersonação):
+ * volta para o painel administrativo. Antes o link "Meus pedidos" do site (e o app instalado) levava o CEO
+ * para /anunciante/pedidos e ele via a própria conta como se fosse cliente.
+ */
+const VoltaAdmin: React.FC<{ papel?: string | null; embutido: boolean; children: React.ReactNode }> = ({ papel, embutido, children }) => {
+  const { isImpersonating, impersonationRequested } = useImpersonation() as any;
+  if (!embutido && papel === 'super_admin' && !isImpersonating && !impersonationRequested) {
+    return <Navigate to="/super_admin" replace />;
+  }
+  return <>{children}</>;
+};
 
 const CompleteResponsiveLayout = () => {
   useFimAbertura();
@@ -44,6 +58,7 @@ const CompleteResponsiveLayout = () => {
 
   return (
     <ImpersonationProvider fallbackUserId={(userProfile as any)?.user_id || (userProfile as any)?.id || null}>
+      <VoltaAdmin papel={(userProfile as any)?.role} embutido={isEmbedded}>
       {!isEmbedded && <ImpersonationTopBar />}
       <div className="exa-admin exa-anunciante min-h-screen bg-[#f3f1f2] flex w-full relative">
         {!celular && <ResponsiveAdvertiserSidebar
@@ -92,6 +107,7 @@ const CompleteResponsiveLayout = () => {
       {celular && <AnuncianteNavInferior />}
       <ConviteAvisos publico="cliente" />
       </div>
+      </VoltaAdmin>
     </ImpersonationProvider>
   );
 };
