@@ -7350,6 +7350,7 @@ export type Database = {
           id: string
           session_id: string | null
           telefone: string
+          tentativas: number
           tipo_verificacao: string | null
           user_id: string | null
           verificado: boolean | null
@@ -7362,6 +7363,7 @@ export type Database = {
           id?: string
           session_id?: string | null
           telefone: string
+          tentativas?: number
           tipo_verificacao?: string | null
           user_id?: string | null
           verificado?: boolean | null
@@ -7374,6 +7376,7 @@ export type Database = {
           id?: string
           session_id?: string | null
           telefone?: string
+          tentativas?: number
           tipo_verificacao?: string | null
           user_id?: string | null
           verificado?: boolean | null
@@ -19835,6 +19838,114 @@ export type Database = {
       process_mercadopago_webhook_with_cleanup: {
         Args: { p_payment_data: Json }
         Returns: Json
+      }
+      proposta_publica: {
+        Args: { p_id: string }
+        Returns: {
+          access_token: string
+          cancelamento_ate_virada_mes: boolean
+          cancelamento_aviso_dias: number
+          cash_total_value: number
+          cash_value_manual: boolean
+          cc_emails: string[] | null
+          chosen_plan: string | null
+          client_address: string | null
+          client_cnpj: string | null
+          client_company_name: string | null
+          client_country: string | null
+          client_email: string | null
+          client_first_name: string | null
+          client_last_name: string | null
+          client_latitude: number | null
+          client_logo_url: string | null
+          client_longitude: number | null
+          client_name: string
+          client_phone: string | null
+          cliente_escolheu_exclusividade: boolean | null
+          cobranca_futura: boolean | null
+          contract_accepted_at: string | null
+          contract_accepted_ip: string | null
+          contract_accepted_user_agent: string | null
+          contract_terms_version: string | null
+          converted_order_id: string | null
+          cortesia_fim: string | null
+          cortesia_inicio: string | null
+          created_at: string | null
+          created_by: string | null
+          custom_days: number | null
+          custom_days_end_date: string | null
+          custom_days_start_date: string | null
+          custom_installments: Json | null
+          data_inicio_cobranca: string | null
+          descricao_contrapartida: string | null
+          discount_percent: number | null
+          duration_months: number | null
+          exclusividade_disponivel: boolean | null
+          exclusividade_percentual: number | null
+          exclusividade_segmento: boolean | null
+          exclusividade_valor_extra: number | null
+          exigir_contrato: boolean | null
+          expires_at: string | null
+          fidel_monthly_value: number
+          first_viewed_at: string | null
+          id: string
+          is_custom_days: boolean | null
+          is_viewing: boolean | null
+          itens_permuta: Json | null
+          last_heartbeat_at: string | null
+          last_modified_at: string | null
+          last_viewed_at: string | null
+          meses_cortesia: number | null
+          metadata: Json | null
+          metodo_pagamento_alternativo: string | null
+          modalidade_proposta: string | null
+          modified_by: string | null
+          multa_rescisao_ativa: boolean | null
+          multa_rescisao_exa_ativa: boolean | null
+          multa_rescisao_exa_percentual: number | null
+          multa_rescisao_percentual: number | null
+          needs_reacceptance: boolean | null
+          number: string
+          ocultar_valores_publico: boolean | null
+          payment_type: string | null
+          pdf_url: string | null
+          predios_contratados: number | null
+          predios_instalados_no_fechamento: number | null
+          predios_pendentes: number | null
+          quantidade_posicoes: number
+          rejection_reason: string | null
+          responded_at: string | null
+          segmento_exclusivo: string | null
+          selected_buildings: Json
+          seller_email: string | null
+          seller_name: string | null
+          seller_phone: string | null
+          sent_at: string | null
+          status: string | null
+          tipo_produto: string | null
+          titulo: string | null
+          total_impressions_month: number
+          total_panels: number
+          total_time_spent_seconds: number | null
+          travamento_modo_calculo: string | null
+          travamento_preco_ativo: boolean | null
+          travamento_preco_por_tela: number | null
+          travamento_preco_valor: number | null
+          travamento_telas_atuais: number | null
+          travamento_telas_limite: number | null
+          updated_at: string | null
+          valor_referencia_monetaria: number | null
+          valor_total_permuta: number | null
+          venda_futura: boolean | null
+          view_count: number | null
+          viewed_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "proposals"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       record_asaas_webhook_event: {
         Args: { p_event_id: string; p_event_type: string; p_payload: Json }
