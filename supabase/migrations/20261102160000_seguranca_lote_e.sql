@@ -31,3 +31,9 @@ alter table public.exa_alerts_verification_codes add column if not exists tentat
 -- 4) Funções da área do cliente conferem o dono (activate_video, set_base_video, safe_set_base_video, log_client_activity,
 --    sync_auth_user_to_public) e rotinas de manutenção deixam de ser chamáveis por anônimo. Aplicado por bloco DO no editor
 --    (injeta IF NOT (exa_eh_equipe() OR dono) após o BEGIN de cada função).
+
+-- 5) Depois de publicar o site com a página lendo pela RPC (02/11 11:22): a política antiga deixa de liberar a leitura pública.
+alter policy "Acesso público via token" on public.proposals using (false);
+
+-- 6) Crons monitor-panels-auto e manychat-auto-sync passam a mandar x-exa2-cron (aplicado com cron.alter_job:
+--    headers := ('{...}'::jsonb || jsonb_build_object('x-exa2-cron', (select valor from public.exa2_config where chave = 'cron_token')))).
