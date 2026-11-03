@@ -5,7 +5,7 @@
  *   /cache/<arquivo>      -> o mesmo arquivo no S3 do predio (telas-clientes/<pasta_s3>/<arquivo>)
  *   /cache/cotacao.json   -> cotacoes ao vivo (AwesomeAPI)
  *   /cache/noticias.json  -> noticias do ExaSistema
- *   /cache/live(s).json   -> lista vazia (a tela usa as cameras padrao dela)
+ *   /cache/live(s).json   -> TV do predio: as cameras escolhidas para a TV (exa-tela); sindico: lista vazia (padrao da tela)
  * Duas origens de acesso (gravadas em /painel-web/__cfg pela pagina de fora):
  *   { sessao } -> painel do sindico (nando-painel)
  *   { tela }   -> TV vertical num predio (player /tela): o token da tela, lido pela funcao exa-tela
@@ -118,7 +118,13 @@ self.addEventListener("fetch", (e) => {
       if (arq === "updates.json") return resp(await updates(predio));
       if (arq === "cotacao.json") return resp(await cotacao());
       if (arq === "noticias.json") return resp(await noticias());
-      if (arq === "live.json" || arq === "lives.json") return resp({ lives: [] });
+      if (arq === "live.json" || arq === "lives.json") {
+        // TV do prédio: as câmeras escolhidas para essa TV (uma só = fixa). Síndico ou falha: lista vazia (padrão da tela).
+        if ((await cfg()).tela) {
+          try { const r = await postar({ arq: "cameras" }); if (r.ok) { const j = await r.json(); if (j && Array.isArray(j.lives)) return resp({ lives: j.lives, escolhidas: !!j.escolhidas }); } } catch (er) { /* usa o padrão */ }
+        }
+        return resp({ lives: [] });
+      }
       // midia: o mesmo arquivo que o NUC baixou, direto do S3 do predio
       const d = await updates(predio);
       const pasta = String(d.pasta_s3 || "").replace(/^\/+|\/+$/g, "");

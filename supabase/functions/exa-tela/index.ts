@@ -509,6 +509,15 @@ Deno.serve(async (req) => {
         const ns = await noticias();
         return json({ ok: true, linhas: ns.map((n: any) => ({ titulo: n.titulo, link: n.link, categoria: n.categoria, origem: n.origem })) });
       }
+      if (arq === 'cameras') {
+        // 03/11/2026: a réplica (TV vertical em prédio) passa a respeitar as câmeras escolhidas para a TV
+        // (antes tocava a lista padrão da tela dos NUCs, com Argentina e Ponte da Integração, mesmo com uma câmera fixa)
+        const { data: cfgTela } = await admin.from('exa_telas').select('config').eq('id', tela.id).maybeSingle();
+        const cfgC = ((cfgTela?.config || {}) as any).cameras;
+        const escolhidas = Array.isArray(cfgC?.ids) && cfgC.ids.length > 0;
+        const cs = camerasDaTela(await cameras(), cfgC);
+        return json({ ok: true, escolhidas, lives: cs.map((c: any) => ({ url: c.url, nome: c.nome, timing: c.segundos })) });
+      }
       if (arq === 'clima') {
         const r = await fetch('http://18.228.252.149:8000/api/clima', { signal: AbortSignal.timeout(12000) });
         return new Response(await r.text(), { status: r.status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' } });

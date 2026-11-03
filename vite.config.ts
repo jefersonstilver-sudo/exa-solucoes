@@ -90,7 +90,15 @@ export default defineConfig(() => ({
           const pastaJs = path.join(ui, "scripts");
           for (const f of fs.readdirSync(pastaJs).filter((x: string) => x.endsWith(".js"))) {
             const p = path.join(pastaJs, f);
-            const r = await esb.transform(fs.readFileSync(p, "utf8"), { loader: "js", target: "chrome51", charset: "utf8" });
+            let fonte = fs.readFileSync(p, "utf8");
+            if (f === "lives.js") {
+              // só na cópia web (TV do prédio): com câmeras escolhidas para a TV, não soma as câmeras extras (Argentina,
+              // Ponte da Integração). O NUC nunca recebe "escolhidas", então nele nada muda.
+              const de = "if (Array.isArray(lista)) return comExtras(lista.filter(x => x && x.url));";
+              if (fonte.includes(de)) fonte = fonte.replace(de, "if (Array.isArray(lista)) return (data && data.escolhidas) ? lista.filter(x => x && x.url) : comExtras(lista.filter(x => x && x.url));");
+              else console.warn("[painel-web-legado] lives.js mudou: câmeras escolhidas da TV não aplicadas");
+            }
+            const r = await esb.transform(fonte, { loader: "js", target: "chrome51", charset: "utf8" });
             fs.writeFileSync(p, r.code);
           }
           for (const f of fs.readdirSync(ui).filter((x: string) => x.endsWith(".css"))) {
