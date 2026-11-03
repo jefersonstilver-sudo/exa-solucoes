@@ -17,8 +17,8 @@ Acesso ao terminal: console AWS → EC2 → Conectar → EC2 Instance Connect (u
   `sudo journalctl -u telas-api --since '-24h' -o cat | grep EXA-CHAVE | awk '{print $4,$5,$6}' | sort | uniq -c | sort -rn`
 
 ## Antes de passar para `exigir`
-1. A Sofia apaga vídeo direto na API (`/propagandas/admin/delete-propaganda/`) no cancelamento de pedido: acrescentar `x-exa-key` nela (editor do dashboard, com autorização).
-2. Descobrir o chamador do IP 177.71.x (Paraná) que publica notícias (`/noticias/upload`, `/noticias/deletar`) e faz `PATCH /master` — provavelmente uma automação local; precisa da chave.
+1. Sofia: feito em 02/11 (v110 manda `x-exa-key` no DELETE).
+2. As automações do computador do Jeferson (`C:\Users\jefer\exa-solucoes\scripts\noticias-dooh`, `cinema-dooh`) NÃO falam direto com a API: entram no site com e-mail e senha (puppeteer) e usam as funções do Supabase (`delete-video-from-external-api`, `exa2-agenda-sync`, RPC `safe_set_base_video`), que já mandam a chave. As escritas diretas do IP 177.71.x (casa/escritório) parecem testes manuais; depois do `exigir` passam a receber 401.
 3. Ficar alguns dias sem nenhuma linha `[EXA-CHAVE]` que não seja conhecida.
 4. `printf exigir > /home/ubuntu/ServerIndexa/config/exa_api_modo` e conferir as funções e as telas.
 
@@ -26,3 +26,6 @@ Acesso ao terminal: console AWS → EC2 → Conectar → EC2 Instance Connect (u
 - Porta 22: só 18.228.70.32/29 (EC2 Instance Connect sa-east-1) e 54.232.160.240/32. Antes era o mundo inteiro (~280 tentativas de invasão por semana).
 - Portas 8000, 80 e 443 seguem abertas (as telas e as funções usam a 8000 por HTTP).
 - Próximo passo: domínio `api.examidia.com.br` com HTTPS no nginx e mover os chamadores; depois fechar a 8000 para o mundo.
+
+## Captcha (decisão de 02/11)
+Os robôs de notícias e do Cine Cataratas fazem login no site com e-mail e senha num navegador automático. Captcha na tela de login ou o captcha do Supabase Auth (que vale para login, cadastro e troca de senha de uma vez) quebraria esses robôs e o `verify-report-access`. Por isso o Turnstile vai só no cadastro, no formulário de síndico e na recuperação de senha, conferido por função do servidor com o segredo `TURNSTILE_SECRET_KEY` (o Jeferson cola em Edge Functions → Secrets).
