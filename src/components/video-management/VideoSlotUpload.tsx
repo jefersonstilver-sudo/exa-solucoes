@@ -12,6 +12,7 @@ import { getOrderDurationOverride } from '@/services/orderVideoDuration';
 import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal';
 import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
 import { useEffectiveAuth } from '@/hooks/useEffectiveAuth';
+import { useImpersonation } from '@/contexts/ImpersonationContext';
 interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
@@ -33,6 +34,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
   const navigate = useNavigate();
   const { userProfile } = useEffectiveAuth();
+  const { isImpersonating, logAction } = useImpersonation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [titleError, setTitleError] = useState('');
@@ -202,8 +204,17 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       await onUpload(slotPosition, selectedFile, videoTitle, undefined, qrConfig);
       console.log('✅ [VideoSlotUpload] onUpload completado com sucesso');
 
-      // Enviar email de confirmação de recebimento (não-bloqueante)
-      try {
+      // Publicado pela administração ("acessar como cliente"): aprovação direta no banco,
+      // sem e-mail/aviso ao cliente; fica só o registro (admin e histórico do pedido).
+      if (isImpersonating) {
+        await logAction('video_publicado_admin', {
+          pedido_id: orderId,
+          payload: { slot_position: slotPosition, video_title: videoTitle || null }
+        });
+      }
+
+      // Enviar email de confirmação de recebimento (não-bloqueante) — só quando é o próprio cliente
+      if (!isImpersonating) try {
         console.log('📧 [VideoSlotUpload] Tentando enviar email de confirmação...');
         const {
           data: {

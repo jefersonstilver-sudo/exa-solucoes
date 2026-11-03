@@ -219,6 +219,21 @@ const OrderDetailsV2 = () => {
   useVideoScheduleMonitor({ orderId: id || '', enabled: true, intervalMinutes: 45, enableRealtime: false, onDataChange: refreshSlots });
 
   const agenda = usePedidoAgenda(id || '', order?.client_id, videoSlots);
+
+  // Registro de vídeos publicados pela administração EXA (aprovação direta), visível ao cliente
+  const [eventosAdmin, setEventosAdmin] = useState<{ id: string; video_nome: string | null; created_at: string }[]>([]);
+  useEffect(() => {
+    if (!id) return;
+    let vivo = true;
+    (supabase.from('pedido_videos_eventos' as any) as any)
+      .select('id, video_nome, created_at')
+      .eq('pedido_id', id)
+      .eq('evento', 'publicado_pela_administracao')
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .then(({ data }: any) => { if (vivo && data) setEventosAdmin(data); });
+    return () => { vivo = false; };
+  }, [id, videoSlots]);
   // Vídeo da vez segundo o motor de agenda (o mesmo que monta a programação das telas): só ele aparece "em exibição"
   const [minutoAgenda, setMinutoAgenda] = useState(() => Math.floor(Date.now() / 60000));
   useEffect(() => { const t = setInterval(() => setMinutoAgenda(Math.floor(Date.now() / 60000)), 20000); return () => clearInterval(t); }, []);
@@ -483,6 +498,28 @@ const OrderDetailsV2 = () => {
                   </section>
                 )}
               </div>
+              {eventosAdmin.length > 0 && (
+                <section className={`${CARD} mt-5 p-4`}>
+                  <div className="mb-2 flex items-end justify-between gap-2">
+                    <h3 className="text-base font-extrabold text-[#1b1719]">Registro de publicações</h3>
+                    <span className="text-[11px] font-semibold text-[#8b8285]">feitas pela EXA</span>
+                  </div>
+                  <div className="divide-y divide-[#f1edee]">
+                    {eventosAdmin.map((e) => (
+                      <div key={e.id} className="flex items-center gap-3 py-2">
+                        <div className="flex h-10 w-14 items-center justify-center rounded-lg bg-[#f7f5f6]"><Check className="h-4 w-4 text-[#9C1E1E]" /></div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-bold text-[#1b1719]">{e.video_nome || 'Vídeo'}</div>
+                          <div className="truncate text-xs text-[#8b8285]">Publicado pela administração da EXA Mídia</div>
+                        </div>
+                        <div className="text-right text-[10.5px] text-[#8b8285]">
+                          {new Date(e.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
               {agenda.historico.length > 0 && (
                 <section className={`${CARD} mt-5 p-4`}>
                   <div className="mb-2 flex items-end justify-between gap-2">

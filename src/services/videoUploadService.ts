@@ -429,6 +429,26 @@ export const uploadVideo = async (
 
     console.log('✅ Slot salvo/atualizado com sucesso');
 
+    // PUBLICAÇÃO PELA ADMINISTRAÇÃO: o banco aprova direto quando quem envia é super_admin/admin
+    // no pedido de um cliente ("acessar como cliente"). Confere o status gravado para rodar
+    // o mesmo pipeline de vídeo aprovado (base + sincronização dos prédios).
+    if (approvalStatus === 'pending') {
+      try {
+        const { data: savedSlot } = await supabase
+          .from('pedido_videos')
+          .select('approval_status')
+          .eq('pedido_id', orderId)
+          .eq('slot_position', slotPosition)
+          .maybeSingle();
+        if (savedSlot?.approval_status === 'approved') {
+          approvalStatus = 'approved';
+          console.log('🛡️ [ADMIN] Vídeo publicado pela administração — aprovado direto');
+        }
+      } catch (e) {
+        console.warn('⚠️ Erro ao conferir aprovação direta da administração:', e);
+      }
+    }
+
     // MASTER: Verificar e forçar status approved + ativar pipeline
     let isMasterApproved = false;
     let isBaseActivated = false;
