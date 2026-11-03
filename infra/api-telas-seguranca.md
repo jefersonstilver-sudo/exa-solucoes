@@ -29,3 +29,10 @@ Acesso ao terminal: console AWS → EC2 → Conectar → EC2 Instance Connect (u
 
 ## Captcha (decisão de 02/11)
 Os robôs de notícias e do Cine Cataratas fazem login no site com e-mail e senha num navegador automático. Captcha na tela de login ou o captcha do Supabase Auth (que vale para login, cadastro e troca de senha de uma vez) quebraria esses robôs e o `verify-report-access`. Por isso o Turnstile vai só no cadastro, no formulário de síndico e na recuperação de senha, conferido por função do servidor com o segredo `TURNSTILE_SECRET_KEY` (o Jeferson cola em Edge Functions → Secrets).
+
+### Como ficou (no ar em 02/11/2026)
+- Widget Cloudflare "EXA Mídia" (modo Managed), hostnames examidia.com.br e www. Site Key pública em `src/components/seguranca/Turnstile.tsx`.
+- `/esqueci-senha` e `/cadastro`: o site chama `turnstile-verificar` antes de `resetPasswordForEmail` / `signUp`. **Limite honesto:** o Supabase Auth continua aceitando chamada direta à API (/auth/v1/signup e /recover) com a chave pública; o captcha barra robô que usa a página, não quem ataca a API. Fechar de verdade exigiria o captcha do Supabase Auth, que também vale para o login e quebraria os robôs.
+- Formulário do síndico (`/interessesindico/formulario`): passa pela função `formulario-sindico`, que confere o captcha e chama `submit_sindico_interesse` com a chave de serviço. A RPC foi revogada de anon/authenticated: aqui o captcha é obrigatório de verdade.
+- `_shared/turnstile.ts` deixa passar (com log) se o segredo faltar ou a Cloudflare cair, para o captcha nunca derrubar cadastro. Token ausente ou recusado bloqueia.
+- Fora do domínio (preview do Lovable) o widget não carrega: os três formulários não enviam no preview.
