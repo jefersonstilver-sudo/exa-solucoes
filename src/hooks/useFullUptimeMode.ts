@@ -206,16 +206,21 @@ export const useFullUptimeMode = () => {
   useEffect(() => {
     checkUptimeStatus();
 
-    // Subscribe to device changes
+    // 03/11/2026 (custo): cada mudança em `devices` disparava 4 leituras na hora; várias mudanças juntas
+    // (o sync atualiza dezenas de painéis de uma vez) viravam dezenas de leituras. Agora junta tudo em uma
+    // conferência 5 s depois da última mudança.
+    let agendado: ReturnType<typeof setTimeout> | null = null;
+    const conferirEmBreve = () => {
+      if (agendado) clearTimeout(agendado);
+      agendado = setTimeout(() => { agendado = null; checkUptimeStatus(); }, 5000);
+    };
     const devicesChannel = supabase
       .channel('uptime_devices_monitor')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'devices'
-      }, () => {
-        checkUptimeStatus();
-      })
+      }, conferirEmBreve)
       .subscribe();
 
     // Subscribe to uptime records changes
@@ -225,15 +230,14 @@ export const useFullUptimeMode = () => {
         event: '*',
         schema: 'public',
         table: 'uptime_records'
-      }, () => {
-        checkUptimeStatus();
-      })
+      }, conferirEmBreve)
       .subscribe();
 
-    // Refresh every 30 seconds
-    const refreshInterval = setInterval(checkUptimeStatus, 30000);
+    // Refresh every 60 seconds (a contagem na tela segue de segundo em segundo sozinha)
+    const refreshInterval = setInterval(checkUptimeStatus, 60000);
 
     return () => {
+      if (agendado) clearTimeout(agendado);
       supabase.removeChannel(devicesChannel);
       supabase.removeChannel(uptimeChannel);
       clearInterval(refreshInterval);
