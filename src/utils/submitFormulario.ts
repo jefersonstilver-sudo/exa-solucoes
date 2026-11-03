@@ -27,6 +27,7 @@ export interface SubmitResult {
 export async function submitFormulario(
   predio: PredioState,
   sindico: SindicoState,
+  captchaToken = '',
 ): Promise<SubmitResult> {
   try {
     // 1. Evidências
@@ -99,16 +100,22 @@ export async function submitFormulario(
 
     // Usa RPC security definer para contornar a policy de SELECT (restrita a admins)
     // que bloqueava o retorno do .insert().select() para usuários anônimos.
-    const { data: rpcData, error: insertErr } = await (supabase as any).rpc(
-      'submit_sindico_interesse',
-      { payload: insertPayload },
+    // 02/11/2026: passa pela função formulario-sindico, que confere o captcha (Turnstile) no servidor.
+    const { data: rpcData, error: insertErr } = await supabase.functions.invoke(
+      'formulario-sindico',
+      { body: { payload: insertPayload, cf_token: captchaToken } },
     );
 
     const inserted = Array.isArray(rpcData) ? rpcData[0] : rpcData;
 
     if (insertErr || !inserted?.id) {
       console.error('[submitFormulario] insert failed:', insertErr);
-      return { success: false, error: insertErr?.message || 'Falha ao registrar' };
+      let msg = insertErr?.message || 'Falha ao registrar';
+      try {
+        const j = await (insertErr as any)?.context?.json?.();
+        if (j?.error) msg = j.error;
+      } catch { /* mantém a mensagem padrão */ }
+      return { success: false, error: msg };
     }
 
     const recordId: string = inserted.id;

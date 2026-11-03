@@ -660,3 +660,9 @@ verify_jwt = false
 
 [functions.exa-autopromo-qr]
 verify_jwt = false
+
+[functions.turnstile-verificar]
+verify_jwt = false
+
+[functions.formulario-sindico]
+verify_jwt = false

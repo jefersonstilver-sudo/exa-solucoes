@@ -6,6 +6,7 @@ import { stepPredioSchema, stepSindicoSchema } from './schema';
 import { submitFormulario } from '@/utils/submitFormulario';
 import TermosIntegrais from './TermosIntegrais';
 import { toast } from 'sonner';
+import Turnstile from '@/components/seguranca/Turnstile';
 
 interface Props {
   onPrev: () => void;
@@ -20,6 +21,8 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
   const [enviando, setEnviando] = useState(false);
   const [overlayMsg, setOverlayMsg] = useState('');
   const [justUnlocked, setJustUnlocked] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReinicio, setCaptchaReinicio] = useState(0);
 
   // Validação das etapas anteriores
   const etapasValidas =
@@ -45,7 +48,7 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
   }, [scrollCompleto]);
 
   const handleEnviar = async () => {
-    if (!aceito || !etapasValidas || enviando) return;
+    if (!aceito || !etapasValidas || enviando || !captchaToken) return;
     setEnviando(true);
     setOverlayMsg('Registrando interesse...');
 
@@ -59,9 +62,11 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
     }, 20000);
 
     try {
-      const result = await submitFormulario(predio, sindico);
+      const result = await submitFormulario(predio, sindico, captchaToken);
       if (!result.success) {
         clearTimeout(watchdog);
+        setCaptchaToken('');
+        setCaptchaReinicio((n) => n + 1);
         toast.error(
           result.error ||
             'Erro ao registrar. Tente novamente. Contato: suporte@examidia.com.br',
@@ -79,13 +84,15 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
       navigate(`/interessesindico/sucesso?protocolo=${encodeURIComponent(result.protocolo!)}`);
     } catch (e: any) {
       clearTimeout(watchdog);
+      setCaptchaToken('');
+      setCaptchaReinicio((n) => n + 1);
       toast.error('Erro ao registrar. Tente novamente. Contato: suporte@examidia.com.br');
       setEnviando(false);
       setOverlayMsg('');
     }
   };
 
-  const podeEnviar = aceito && etapasValidas && !enviando;
+  const podeEnviar = aceito && etapasValidas && !enviando && !!captchaToken;
 
   return (
     <div className="space-y-5 relative">
@@ -161,6 +168,8 @@ export const StepTermos: React.FC<Props> = ({ onPrev }) => {
           Etapas anteriores incompletas. Volte e revise os campos obrigatórios.
         </p>
       )}
+
+      {aceito && <Turnstile onToken={setCaptchaToken} reiniciar={captchaReinicio} tema="dark" />}
 
       <div className="pt-2 flex flex-col sm:flex-row gap-2">
         <button

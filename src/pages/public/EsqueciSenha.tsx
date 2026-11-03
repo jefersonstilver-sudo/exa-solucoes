@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCorNavegador } from '@/lib/corNavegador';
 import { useFonteSite, useTituloPagina, waSofia } from '@/site/comum';
+import Turnstile, { conferirCaptcha } from '@/components/seguranca/Turnstile';
 
 /**
  * /esqueci-senha — envia o link de redefinição (que abre /reset-password).
@@ -13,12 +14,18 @@ const EsqueciSenha = () => {
   useTituloPagina('Esqueci minha senha · EXA Mídia');
   useCorNavegador({ topo: '#0B0B0D', fundo: '#0B0B0D' });
   const [email, setEmail] = useState('');
-  const [estado, setEstado] = useState<'livre' | 'enviando' | 'enviado' | 'erro'>('livre');
+  const [estado, setEstado] = useState<'livre' | 'enviando' | 'enviado' | 'erro' | 'robo'>('livre');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReinicio, setCaptchaReinicio] = useState(0);
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !captchaToken) return;
     setEstado('enviando');
+    const captchaOk = await conferirCaptcha(captchaToken, 'esqueci-senha');
+    setCaptchaToken('');
+    setCaptchaReinicio((n) => n + 1);
+    if (!captchaOk) { setEstado('robo'); return; }
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
@@ -45,6 +52,7 @@ const EsqueciSenha = () => {
             <p className="el-p">Digite o e-mail da conta. Mandamos um link para você criar uma senha nova.</p>
           </div>
           {estado === 'erro' && <div className="el-msg" role="alert">Não consegui enviar agora. Tente de novo em alguns minutos.</div>}
+          {estado === 'robo' && <div className="el-msg" role="alert">Não consegui confirmar que você não é um robô. Marque a caixa de novo.</div>}
           <div className="el-campo">
             <label htmlFor="email">E-mail</label>
             <input
@@ -59,7 +67,8 @@ const EsqueciSenha = () => {
               disabled={estado === 'enviando'}
             />
           </div>
-          <button className="el-b" type="submit" disabled={estado === 'enviando' || !email.trim()}>
+          <Turnstile onToken={setCaptchaToken} reiniciar={captchaReinicio} tema="dark" />
+          <button className="el-b" type="submit" disabled={estado === 'enviando' || !email.trim() || !captchaToken}>
             {estado === 'enviando' ? <><span className="el-gira" aria-hidden="true" />Enviando</> : 'Enviar link'}
           </button>
           <Link className="el-lnk" to="/login" style={{ textAlign: 'center' }}>Lembrei · Voltar ao login</Link>

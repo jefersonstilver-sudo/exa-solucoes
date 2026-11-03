@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import Turnstile, { conferirCaptcha } from '@/components/seguranca/Turnstile';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone as PhoneIcon, AlertCircle, LogIn, KeyRound } from 'lucide-react';
 import DocumentInput from '@/components/auth/DocumentInput';
@@ -43,6 +44,8 @@ const Cadastro: React.FC = () => {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReinicio, setCaptchaReinicio] = useState(0);
   const [emailExists, setEmailExists] = useState<boolean>(false);
   const [emailConfirmed, setEmailConfirmed] = useState<boolean>(false);
   const [emailExistsMessage, setEmailExistsMessage] = useState<string>('');
@@ -196,6 +199,19 @@ const Cadastro: React.FC = () => {
           title: "Verificação necessária",
           description: "Por favor, verifique seu WhatsApp antes de criar a conta"
         });
+        return;
+      }
+
+      // Captcha (Cloudflare Turnstile) conferido no servidor antes de criar a conta
+      if (!captchaToken) {
+        setError('Confirme que você não é um robô (caixa acima do botão).');
+        return;
+      }
+      const captchaOk = await conferirCaptcha(captchaToken, 'cadastro');
+      setCaptchaToken('');
+      setCaptchaReinicio((n) => n + 1);
+      if (!captchaOk) {
+        setError('Não consegui confirmar que você não é um robô. Marque a caixa de novo e tente outra vez.');
         return;
       }
 
@@ -528,10 +544,12 @@ const Cadastro: React.FC = () => {
                 />
               </div>
 
+              <Turnstile onToken={setCaptchaToken} reiniciar={captchaReinicio} tema="light" />
+
               {/* Botão de Criar Conta */}
               <Button 
                 type="submit"
-                disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely || (emailExists && emailConfirmed) || isCheckingEmail}
+                disabled={!captchaToken || isLoading || !acceptedTerms || !hasReadTermsCompletely || (emailExists && emailConfirmed) || isCheckingEmail}
                 className="w-full h-12 bg-gradient-to-r from-exa-red to-exa-highlight-red hover:from-exa-highlight-red hover:to-exa-red text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? (
