@@ -8,8 +8,8 @@ Acesso ao terminal: console AWS → EC2 → Conectar → EC2 Instance Connect (u
 - O `server.py` tem o middleware `_exa_chave_escrita` (bloco "EXA seguranca"). Backup do original: `server.py.bak_20261102`.
 - Escrita (POST/PUT/PATCH/DELETE) confere o header `x-exa-key` contra `config/exa_api_key` (chmod 600).
 - `config/exa_api_modo`:
-  - `observar` (atual): chamada sem chave passa e fica no log como `[EXA-CHAVE] sem chave: ... ip=... ua=...`;
-  - `exigir`: chamada sem chave recebe 401.
+  - `observar`: chamada sem chave passa e fica no log como `[EXA-CHAVE] sem chave: ... ip=... ua=...`;
+  - `exigir` (**atual, desde 03/11/2026 16:17**): chamada sem chave recebe 401. Nas 24 h antes da troca, a única escrita sem chave foi um teste local. Para voltar: `printf observar > /home/ubuntu/ServerIndexa/config/exa_api_modo`.
   - Trocar o modo não precisa reiniciar (o arquivo é lido a cada chamada).
 - Livre de chave: `/geral/confirm-update/` (os NUCs chamam) e toda leitura (GET).
 - No Supabase a chave fica em `exa2_config.aws_api_key`. As funções que escrevem na API importam `_shared/aws-chave.ts`, que acrescenta o header.
