@@ -357,6 +357,21 @@ serve(async (req) => {
         if (existingDevice) {
           const providerChanged = existingDevice.provider !== parsed.provider && parsed.provider !== 'Sem provedor';
 
+          // 03/11/2026 (custo): sem mudança de verdade, não regrava a linha a cada 5 min. Cada gravação em `devices`
+          // vira uma mensagem de tempo real para cada tela do admin aberta (e um recarregamento da lista inteira).
+          // A linha ainda é renovada a cada 10 min para manter last_online_at e online_time frescos.
+          const semMudanca = existingDevice.status === finalStatus
+            && (existingDevice.consecutive_offline_count || 0) === newOfflineCount
+            && existingDevice.name === deviceData.name
+            && existingDevice.condominio_name === deviceData.condominio_name
+            && JSON.stringify(existingDevice.tags ?? null) === JSON.stringify(deviceData.tags ?? null)
+            && (existingDevice.comments || '') === (deviceData.comments || '')
+            && existingDevice.provider === deviceData.provider
+            && existingDevice.address === deviceData.address
+            && !wasStale && !providerChanged && !shouldRecordStatusChange;
+          const ultimaGravacao = Date.parse(String((existingMetadata as any).parsed_at || '')) || 0;
+          if (semMudanca && Date.now() - ultimaGravacao < 10 * 60000) continue;
+
           const { error: updateError } = await supabase
             .from('devices')
             .update(deviceData)
