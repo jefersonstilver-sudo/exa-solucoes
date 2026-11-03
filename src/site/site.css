@@ -245,6 +245,10 @@
    usa 100vh, que no iPhone é a altura com a barra do Safari recolhida. A diferença aparecia como faixa branca
    embaixo. Nas telas escuras de login/senha o invólucro fica escuro também. */
 body:has(.exa-login),body:has(.exa-login) #root,body:has(.exa-login) #root>.bg-background{background:#0B0B0D}
+/* e a tela não "sobra" para rolar: o invólucro não força 100vh (a página fica exatamente da altura do cartão,
+   100dvh) e o iPhone não estica a página além do topo/fim (sem faixa preta lisa acima ou abaixo do degradê). */
+html:has(.exa-login),body:has(.exa-login){overscroll-behavior:none}
+body:has(.exa-login) #root>.min-h-screen{min-height:0}
 .exa-login .el-amb{position:absolute;inset:-10%;width:120%;height:120%;object-fit:cover;filter:blur(60px) saturate(1.4) brightness(.6);pointer-events:none}
 .exa-login .el-veu{position:absolute;inset:0;background:radial-gradient(70% 55% at 50% -5%,rgba(234,37,29,.55),rgba(234,37,29,0) 70%),radial-gradient(60% 45% at 50% 108%,rgba(158,16,20,.6),rgba(158,16,20,0) 70%),linear-gradient(180deg,rgba(40,6,8,.55),rgba(11,11,13,.7));pointer-events:none}
 .exa-login .el-marca{position:relative;display:flex;justify-content:center;margin-bottom:28px}
