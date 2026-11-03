@@ -39,6 +39,7 @@ const UsersPage = () => {
   const [searchParams] = useSearchParams();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fotoQuebrada, setFotoQuebrada] = useState<Set<string>>(new Set()); // foto que não abre vira a inicial do nome
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('team');
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,7 +222,7 @@ const UsersPage = () => {
               return (
                 <button key={u.id} type="button" onClick={() => handleViewDetails(u)} className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-black/[0.03]">
                   <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#9C1E1E]/10 text-[15px] font-extrabold text-[#9C1E1E]">
-                    {u.avatar_url ? <img src={u.avatar_url} alt="" className="h-full w-full object-cover" /> : nome.trim().charAt(0).toUpperCase()}
+                    {u.avatar_url && !fotoQuebrada.has(u.avatar_url) ? <img src={u.avatar_url} alt="" className="h-full w-full object-cover" onError={() => setFotoQuebrada((q) => new Set(q).add(u.avatar_url!))} /> : nome.trim().charAt(0).toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">

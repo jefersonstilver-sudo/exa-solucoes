@@ -234,7 +234,9 @@ const PropostasPage = () => {
 
   // Query para stats dos 3 vendedores fixos
   const { data: sellersData } = useQuery({
-    queryKey: ['sellers-stats-fixed'],
+    // 02/11/2026: os cartões dos vendedores seguem o mesmo período do topo (antes somavam todas as propostas
+    // de sempre e mostravam 47/86 enviadas num mês com zero propostas)
+    queryKey: ['sellers-stats-fixed', selectedPeriod.startDate.toISOString(), selectedPeriod.endDate.toISOString()],
     queryFn: async () => {
       const sellerIds = Object.values(SELLER_IDS);
 
@@ -247,8 +249,10 @@ const PropostasPage = () => {
       // Buscar propostas por vendedor
       const { data: proposalsData } = await supabase
         .from('proposals')
-        .select('id, created_by, status, cash_total_value')
-        .in('created_by', sellerIds);
+        .select('id, created_by, status, cash_total_value, created_at')
+        .in('created_by', sellerIds)
+        .gte('created_at', selectedPeriod.startDate.toISOString())
+        .lte('created_at', selectedPeriod.endDate.toISOString());
 
       // Calcular stats por vendedor
       const calculateStats = (userId: string) => {
