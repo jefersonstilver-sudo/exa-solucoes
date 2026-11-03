@@ -229,7 +229,7 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
 
   const passos = etapa === 'tel' ? 1 : 2;
   return (
-    <div className="relative flex min-h-[100svh] flex-col text-white" style={{ ...FONTE, backgroundColor: '#0c0a0b', backgroundImage: 'radial-gradient(900px 420px at 50% -10%, rgba(156,30,30,.22), transparent 70%)' }}>
+    <div className="relative flex min-h-[100dvh] flex-col text-white" style={{ ...FONTE, backgroundColor: '#0c0a0b', backgroundImage: 'radial-gradient(900px 420px at 50% -10%, rgba(156,30,30,.22), transparent 70%)' }}>
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:px-8">
         <img src={LOGO} alt="EXA Mídia" className="h-7 w-auto sm:h-8" />
       </header>
@@ -246,7 +246,7 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 shadow-[0_20px_60px_rgba(0,0,0,.45)] backdrop-blur-xl sm:p-7">
+          <div className="exa-vidro p-6 sm:p-7">
             <div className="mb-5 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-white/40">
               <span className={passos === 1 ? 'text-white' : ''}>1. Celular</span><span className="h-px w-6 bg-white/15" /><span className={passos === 2 ? 'text-white' : ''}>2. Código</span>
             </div>
@@ -257,11 +257,11 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
                     <span className="mb-1.5 block text-xs font-medium text-white/60">Celular com DDD</span>
                     <input inputMode="tel" autoComplete="tel" placeholder="(45) 99999-9999" value={tel} onChange={(e) => setTel(mascaraTel(e.target.value))}
                       onKeyDown={(e) => e.key === 'Enter' && pedir()}
-                      className="w-full rounded-lg border border-white/10 bg-black/30 px-3.5 py-3 text-base text-white outline-none transition placeholder:text-white/30 focus:border-white/30 focus:ring-2 focus:ring-white/10" />
+                      className="w-full rounded-[14px] border border-white/15 bg-white/[0.07] px-4 py-3.5 text-base text-white outline-none transition placeholder:text-white/35 focus:border-white/60 focus:ring-2 focus:ring-white/10" />
                   </label>
                 )}
                 <button onClick={pedir} disabled={carregando || (!carteira && tel.replace(/\D/g, '').length < 10)}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#C7141A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#d61b21] disabled:cursor-not-allowed disabled:opacity-40">
+                  className="exa-vidro-botao mt-5 w-full">
                   {carregando && <Loader2 className="h-4 w-4 animate-spin" />} Receber código pelo WhatsApp
                 </button>
               </>
@@ -273,7 +273,7 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
                   Manter conectado neste aparelho por 30 dias
                 </label>
                 <button onClick={() => verificar()} disabled={carregando || cod.length !== 6}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#C7141A] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#d61b21] disabled:cursor-not-allowed disabled:opacity-40">
+                  className="exa-vidro-botao mt-5 w-full">
                   {carregando && <Loader2 className="h-4 w-4 animate-spin" />} Entrar
                 </button>
                 <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-xs text-white/45 hover:text-white/80">Reenviar código ou trocar número</button>
@@ -371,7 +371,8 @@ export default function NandoPainel() {
     if (!metas.length) { const m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); metas.push(m); antes.push(''); }
     metas.forEach((m) => { m.content = '#0d0b0c'; });
     document.documentElement.style.backgroundColor = '#0d0b0c';
-    return () => { metas.forEach((m, i) => { m.content = antes[i]; }); };
+    document.body.style.backgroundColor = '#0d0b0c'; // sem faixa branca ao fechar o teclado ou puxar além do fim
+    return () => { metas.forEach((m, i) => { m.content = antes[i]; }); document.body.style.backgroundColor = ''; };
   }, []);
 
   const carregar = useCallback(async (s = sessao) => {

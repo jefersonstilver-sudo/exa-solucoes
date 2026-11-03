@@ -9,6 +9,7 @@ import ConviteAvisos from '@/components/avisos/ConviteAvisos';
 import AdminMenuButton from './AdminMenuButton';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
+import { useCorNavegador } from '@/lib/corNavegador';
 import AdminMasterWelcomeDialog from '@/components/impersonation/AdminMasterWelcomeDialog';
 import { useFimAbertura } from '@/lib/fimAbertura';
 
@@ -25,6 +26,8 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
   useTecladoCelular(isMobile);
   const location = useLocation();
   const isConversation = /\/crm-evolution\/conversas\//.test(location.pathname);
+  // Topo do Safari/Chrome no celular na cor do cabeçalho vermelho (antes ficava uma faixa preta acima dele)
+  useCorNavegador({ topo: isMobile && !isConversation ? '#A8261F' : '#F4F1EC', fundo: '#F4F1EC' });
 
   const isFullscreenMode = FULLSCREEN_ROUTES.some(route => location.pathname.includes(route.split('/').pop() || ''));
   const sidebarDefaultOpen = isFullscreenMode ? false : !isMobile;

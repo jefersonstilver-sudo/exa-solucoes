@@ -248,7 +248,7 @@ body:has(.exa-login),body:has(.exa-login) #root,body:has(.exa-login) #root>.bg-b
 /* e a tela não "sobra" para rolar: o invólucro não força 100vh (a página fica exatamente da altura do cartão, 100dvh).
    A mola do iPhone (puxar e soltar, puxar para atualizar) continua: o fundo (foto + degradê) fica preso na tela e
    passa 25% para fora em cima e embaixo, então o que aparece ao esticar é o próprio degradê, não preto liso. */
-body:has(.exa-login) #root>.min-h-screen{min-height:0}
+body:has(.exa-login) #root>.exa-raiz{min-height:0}
 .exa-login .el-amb{position:fixed;top:-25vh;left:-10vw;width:120vw;height:150vh;object-fit:cover;filter:blur(60px) saturate(1.4) brightness(.6);pointer-events:none}
 .exa-login .el-veu{position:fixed;top:-25vh;left:0;right:0;height:150vh;background:radial-gradient(70% 37% at 50% 13%,rgba(234,37,29,.55),rgba(234,37,29,0) 70%),radial-gradient(60% 30% at 50% 89%,rgba(158,16,20,.6),rgba(158,16,20,0) 70%),linear-gradient(180deg,rgba(40,6,8,.55) 16.7%,rgba(11,11,13,.7) 83.3%);pointer-events:none}
 .exa-login .el-marca{position:relative;display:flex;justify-content:center;margin-bottom:28px}

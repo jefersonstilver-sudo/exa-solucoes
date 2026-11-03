@@ -8,11 +8,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { Loader2, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import Layout from '@/components/layout/Layout';
-import { useCorNavegador } from '@/lib/corNavegador';
+import PaginaVidro from '@/components/vidro/PaginaVidro';
 
 const ResetPassword = () => {
-  useCorNavegador({ fundo: '#F4F3F0' }); // fundo claro da página também atrás da barra do Safari (o topo escuro vem do cabeçalho)
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -146,29 +144,29 @@ const ResetPassword = () => {
   // Mostrar loading enquanto verifica sessão
   if (isCheckingSession) {
     return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center py-12 px-4">
+      <PaginaVidro>
+        <div className="flex items-center justify-center py-6">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary mb-4" />
             <p className="text-muted-foreground">Verificando link de redefinição...</p>
           </div>
         </div>
-      </Layout>
+      </PaginaVidro>
     );
   }
 
   // Mostrar erro se não houver sessão válida
   if (hasValidSession === false) {
     return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center py-12 px-4">
+      <PaginaVidro>
+        <div className="flex items-center justify-center py-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="w-full max-w-md"
           >
-            <Card className="shadow-2xl border-0">
+            <Card className="exa-vidro border-0 bg-transparent shadow-none">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
@@ -191,7 +189,7 @@ const ResetPassword = () => {
 
                 <Button
                   onClick={handleRequestNewLink}
-                  className="w-full"
+                  className="exa-vidro-botao w-full h-[54px]"
                   size="lg"
                 >
                   Solicitar Novo Link
@@ -200,21 +198,20 @@ const ResetPassword = () => {
             </Card>
           </motion.div>
         </div>
-      </Layout>
+      </PaginaVidro>
     );
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-background via-background to-muted/20">
+    <PaginaVidro>
+      <div className="flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <Card className="shadow-2xl border">
-            <div className="h-2 bg-gradient-to-r from-primary via-primary/80 to-primary" />
+          <Card className="exa-vidro border-0 bg-transparent shadow-none">
             <CardContent className="p-8">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
@@ -311,7 +308,7 @@ const ResetPassword = () => {
                 <Button
                   type="submit"
                   disabled={isLoading || !isPasswordValid || !passwordsMatch}
-                  className="w-full font-semibold py-6 text-lg shadow-lg"
+                  className="exa-vidro-botao w-full h-[54px]"
                   size="lg"
                 >
                   {isLoading ? (
@@ -328,7 +325,7 @@ const ResetPassword = () => {
           </Card>
         </motion.div>
       </div>
-    </Layout>
+    </PaginaVidro>
   );
 };
 

@@ -261,7 +261,7 @@ const AppContent = () => {
   // Normal app routes with page transitions
   return (
     <>
-      <div className={isInteresseSindicoRoute ? 'bg-background' : 'min-h-screen bg-background'}>
+      <div className={isInteresseSindicoRoute ? 'bg-background' : 'exa-raiz bg-background'}>
         {/* Global Activity Tracker - tracks login/logout */}
         <GlobalActivityTracker />
         

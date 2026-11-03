@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import Layout from '@/components/layout/Layout';
+import { useCorNavegador } from '@/lib/corNavegador';
+import { useFonteSite } from '@/site/comum';
 import SEO from '@/components/seo/SEO';
 import { organizationSchema, createBreadcrumbSchema } from '@/components/seo/schemas';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,6 +57,8 @@ const Cadastro: React.FC = () => {
   // Hooks
   const navigate = useNavigate();
   const { toast } = useToast();
+  useFonteSite();
+  useCorNavegador({ topo: '#0B0B0D', fundo: '#0B0B0D' });
   const location = useLocation();
   const { formatDocument, validateDocument } = useDocumentValidation();
 
@@ -305,7 +308,7 @@ const Cadastro: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <div className="exa-vidro-pagina dark">
       <SEO 
         title="Criar Conta - EXA Publicidade Inteligente" 
         description="Crie sua conta gratuita na EXA e comece a anunciar em painéis digitais de elevadores em Foz do Iguaçu. Cadastro rápido e seguro." 
@@ -321,13 +324,16 @@ const Cadastro: React.FC = () => {
         ]} 
       />
       
+      <header className="flex justify-center pt-[calc(env(safe-area-inset-top,0px)+28px)] pb-2">
+        <Link to="/" aria-label="EXA, início"><img src="/site/exa-branco.svg" alt="EXA" width={96} height={42} style={{ height: 42, width: 'auto' }} /></Link>
+      </header>
       <motion.div 
-        className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-[#3B1E1E]/10 flex items-center justify-center p-4 pt-24" 
+        className="flex items-start justify-center px-4 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+32px)]" 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
+        <Card className="exa-vidro w-full max-w-4xl border-0 shadow-none bg-transparent">
           <CardContent className="p-4 sm:p-6 lg:p-8">
             <RegistrationHeader />
             
@@ -417,7 +423,7 @@ const Cadastro: React.FC = () => {
                               size="sm"
                               variant="outline"
                               className="border-amber-600 text-amber-700 hover:bg-amber-100"
-                              onClick={() => navigate('/recuperar-senha')}
+                              onClick={() => navigate('/esqueci-senha')}
                             >
                               <KeyRound className="h-4 w-4 mr-1" />
                               Recuperar Senha
@@ -544,13 +550,14 @@ const Cadastro: React.FC = () => {
                 />
               </div>
 
-              <Turnstile onToken={setCaptchaToken} reiniciar={captchaReinicio} tema="light" />
+              <Turnstile onToken={setCaptchaToken} reiniciar={captchaReinicio} tema="dark" />
 
               {/* Botão de Criar Conta */}
               <Button 
                 type="submit"
+                data-vidro="principal"
                 disabled={!captchaToken || isLoading || !acceptedTerms || !hasReadTermsCompletely || (emailExists && emailConfirmed) || isCheckingEmail}
-                className="w-full h-12 bg-gradient-to-r from-exa-red to-exa-highlight-red hover:from-exa-highlight-red hover:to-exa-red text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="exa-vidro-botao w-full h-[54px]"
               >
                 {isLoading ? (
                   <div className="flex items-center">
@@ -567,14 +574,14 @@ const Cadastro: React.FC = () => {
               <p className="text-gray-600 mb-2">
                 Já tem uma conta?
               </p>
-              <Link to="/login" className="text-exa-red hover:text-exa-highlight-red font-semibold transition-colors">
+              <Link to="/login" className="font-extrabold text-white underline-offset-4 hover:underline">
                 Fazer Login
               </Link>
             </div>
           </CardContent>
         </Card>
       </motion.div>
-    </Layout>
+    </div>
   );
 };
 

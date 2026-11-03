@@ -195,3 +195,8 @@ body.teclado-aberto .exa-main-nav { padding-bottom: 0; }
   [role="tablist"].grid::-webkit-scrollbar { display: none; }
   [role="tablist"].grid > [role="tab"] { flex: 1 0 auto; white-space: nowrap; }
 }
+
+/* 02/11/2026: invólucro de todas as páginas (App.tsx). Antes era min-h-screen (100vh): no iPhone 100vh é a altura
+   com a barra do Safari recolhida, maior que a tela visível, e a sobra aparecia como faixa branca embaixo das
+   páginas escuras. 100dvh acompanha a barra. */
+.exa-raiz { min-height: 100vh; min-height: 100dvh; }

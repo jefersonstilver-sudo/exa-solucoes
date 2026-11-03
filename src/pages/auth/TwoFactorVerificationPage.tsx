@@ -6,6 +6,7 @@ import { WhatsAppCodeInput } from '@/components/auth/WhatsAppCodeInput';
 import { Loader2, Shield, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import PaginaVidro from '@/components/vidro/PaginaVidro';
 
 export const TwoFactorVerificationPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -160,44 +161,29 @@ export const TwoFactorVerificationPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#3B1E1E] via-[#5C2A2A] to-[#9C1E1E] flex items-center justify-center p-4">
+    <PaginaVidro>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full"
       >
-        {/* Logo EXA */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="inline-block"
-          >
-            <div className="w-20 h-20 mx-auto bg-white rounded-2xl flex items-center justify-center mb-4 shadow-2xl">
-              <Shield className="h-10 w-10 text-[#9C1E1E]" />
-            </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Autenticação de Dois Fatores</h1>
-            <p className="text-white/80">EXA Publicidade Inteligente</p>
-          </motion.div>
-        </div>
 
         {/* Card de Verificação */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl"
+          className="exa-vidro p-8"
         >
           <div className="text-center space-y-4 mb-8">
-            <div className="w-16 h-16 mx-auto bg-[#9C1E1E]/10 rounded-full flex items-center justify-center">
-              <Shield className="h-8 w-8 text-[#9C1E1E]" />
+            <div className="w-14 h-14 mx-auto bg-white/10 rounded-full flex items-center justify-center shadow-[inset_0_0_0_1px_rgba(255,255,255,.2)]">
+              <Shield className="h-7 w-7 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Digite o Código</h2>
+            <h2 className="text-[30px] font-extrabold tracking-tight text-gray-900">Digite o código</h2>
             <p className="text-sm text-gray-600">
               Enviamos um código de verificação para<br />
-              <span className="font-semibold text-[#9C1E1E]">{maskPhone(userPhone)}</span>
+              <span className="font-semibold text-white">{maskPhone(userPhone)}</span>
             </p>
           </div>
 
@@ -210,13 +196,13 @@ export const TwoFactorVerificationPage: React.FC = () => {
 
             <div className="text-center text-sm">
               <p className="text-gray-500">
-                Código expira em: <span className="font-semibold text-[#9C1E1E]">{formatTime(timer)}</span>
+                Código expira em: <span className="font-semibold text-white">{formatTime(timer)}</span>
               </p>
               {canResend && (
                 <Button
                   variant="link"
                   onClick={handleResend}
-                  className="text-[#9C1E1E] mt-2"
+                  className="text-white mt-2"
                   disabled={isLoading}
                 >
                   Reenviar código
@@ -227,7 +213,7 @@ export const TwoFactorVerificationPage: React.FC = () => {
             <Button
               onClick={handleVerifyCode}
               disabled={isLoading || code.length !== 6}
-              className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] h-12 text-lg font-semibold"
+              className="exa-vidro-botao w-full h-[54px]"
             >
               {isLoading ? (
                 <>
@@ -265,7 +251,7 @@ export const TwoFactorVerificationPage: React.FC = () => {
           <p>🔒 Sua segurança é nossa prioridade</p>
         </motion.div>
       </motion.div>
-    </div>
+    </PaginaVidro>
   );
 };
 

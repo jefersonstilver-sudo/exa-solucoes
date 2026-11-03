@@ -14,6 +14,7 @@
 @import './styles/crm-conversations.css';
 @import './styles/pwa-native.css';
 @import './styles/apple-mobile.css';
+@import './styles/exa-vidro.css';
 
 /* Import EXA Glassmorphism System */
 @import './modules/monitoramento-ia/styles/exa-glassmorphism.css';

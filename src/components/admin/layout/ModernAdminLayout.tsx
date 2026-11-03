@@ -10,6 +10,7 @@ import MobileBottomNav from './MobileBottomNav';
 import ConviteAvisos from '@/components/avisos/ConviteAvisos';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useTecladoCelular } from '@/hooks/useTecladoCelular';
+import { useCorNavegador } from '@/lib/corNavegador';
 import { useRealtimePanelAlerts } from '@/hooks/useRealtimePanelAlerts';
 import { useFimAbertura } from '@/lib/fimAbertura';
 
@@ -23,6 +24,8 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
   useTecladoCelular(isMobile);
   const location = useLocation();
   const isConversation = /\/crm-evolution\/conversas\//.test(location.pathname);
+  // Topo do Safari/Chrome no celular na cor do cabeçalho vermelho (antes ficava uma faixa preta acima dele)
+  useCorNavegador({ topo: isMobile && !isConversation ? '#A8261F' : '#F4F1EC', fundo: '#F4F1EC' });
   
   useRealtimePanelAlerts();
   

@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const RegistrationHeader: React.FC = () => {
@@ -12,8 +11,8 @@ const RegistrationHeader: React.FC = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.5 }}
       >
-        <CardTitle className="text-2xl font-bold text-exa-red flex items-center justify-center gap-2">
-          <UserPlus size={24} /> Crie sua conta
+        <CardTitle className="font-extrabold tracking-tight text-gray-900 flex items-center justify-center gap-2" style={{ fontSize: 30, lineHeight: 1.1 }}>
+          Criar conta
         </CardTitle>
         <CardDescription className="text-gray-600">
           Preencha os dados abaixo para começar a usar a plataforma

@@ -1,0 +1,110 @@
+/*
+ * EXA Vidro (02/11/2026) — padrão visual único das telas de conta e públicas escuras
+ * (o mesmo do login: fundo escuro com degradê vermelho, cartão Liquid Glass, botão com mola).
+ *
+ * Uso:
+ *   <div className="exa-vidro-pagina dark">      fundo escuro em tela cheia (preso à tela, mola do iPhone sem faixa)
+ *     <div className="exa-vidro">…</div>          cartão de vidro
+ *   </div>
+ * A classe `dark` liga as cores escuras dos componentes padrão (Input, Card, Alert…).
+ * Dentro de `.exa-vidro-pagina`, as classes claras fixas mais comuns (text-gray-*, bg-white, border-gray-*)
+ * são convertidas para o tema escuro, para não ter de reescrever cada formulário antigo.
+ * Junto, a página chama useCorNavegador({ topo: '#0B0B0D', fundo: '#0B0B0D' }).
+ */
+
+.exa-vidro-pagina {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: #fff;
+  background-color: #0B0B0D;
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  isolation: isolate;
+}
+/* degradê preso à tela e maior que ela: ao esticar (mola do iPhone) aparece o degradê, não cor lisa */
+.exa-vidro-pagina::before {
+  content: "";
+  position: fixed;
+  top: -25vh; left: 0; right: 0; height: 150vh;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 37% at 50% 13%, rgba(234, 37, 29, .45), rgba(234, 37, 29, 0) 70%),
+    radial-gradient(60% 30% at 50% 89%, rgba(158, 16, 20, .5), rgba(158, 16, 20, 0) 70%),
+    linear-gradient(180deg, #1c0809 16.7%, #0B0B0D 50%, #120708 83.3%);
+}
+body:has(.exa-vidro-pagina), body:has(.exa-vidro-pagina) #root, body:has(.exa-vidro-pagina) #root > .bg-background { background: #0B0B0D; }
+
+/* cartão Liquid Glass */
+.exa-vidro {
+  position: relative;
+  border-radius: 28px;
+  background: linear-gradient(140deg, rgba(255,255,255,.15), rgba(255,255,255,.05) 42%, rgba(255,255,255,.03) 60%, rgba(255,255,255,.09));
+  -webkit-backdrop-filter: blur(26px) saturate(1.9) brightness(1.04);
+  backdrop-filter: blur(26px) saturate(1.9) brightness(1.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 0 rgba(255,255,255,.06), inset 0 0 22px rgba(255,255,255,.04), 0 30px 70px -24px rgba(0,0,0,.75), 0 2px 8px rgba(0,0,0,.18);
+  color: #fff;
+}
+.exa-vidro::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: -1;
+  background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,.08) 30%, rgba(255,255,255,0) 55%, rgba(255,255,255,.22) 85%, rgba(255,255,255,.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.exa-vidro::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(120% 60% at 20% -10%, rgba(255,255,255,.14), rgba(255,255,255,0) 55%);
+}
+@media (max-width: 640px) { .exa-vidro { border-radius: 24px; } }
+
+/* botão principal com mola (branco, como no login) */
+.exa-vidro-botao {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 54px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 800 16px Manrope, system-ui, sans-serif; color: #0B0B0D; background: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 6px rgba(0,0,0,.08), 0 10px 24px -10px rgba(0,0,0,.6);
+  transition: background .2s, transform .45s cubic-bezier(.34,1.56,.64,1);
+  text-decoration: none;
+}
+.exa-vidro-botao:hover { background: #EFEEEB; }
+.exa-vidro-botao:active:not(:disabled) { transform: scale(.96); transition-duration: .12s; }
+.exa-vidro-botao:disabled { opacity: .55; cursor: default; }
+
+/* ---- conversão das classes claras fixas dentro das páginas de vidro ---- */
+.exa-vidro-pagina .text-gray-900, .exa-vidro-pagina .text-gray-800, .exa-vidro-pagina .text-black,
+.exa-vidro-pagina .text-slate-900, .exa-vidro-pagina .text-foreground { color: #fff; }
+.exa-vidro-pagina .text-gray-700, .exa-vidro-pagina .text-gray-600, .exa-vidro-pagina .text-slate-600,
+.exa-vidro-pagina .text-slate-700 { color: rgba(255,255,255,.75); }
+.exa-vidro-pagina .text-gray-500, .exa-vidro-pagina .text-gray-400, .exa-vidro-pagina .text-muted-foreground { color: rgba(255,255,255,.6); }
+.exa-vidro-pagina .bg-white, .exa-vidro-pagina .bg-gray-50, .exa-vidro-pagina .bg-gray-100,
+.exa-vidro-pagina .bg-slate-50, .exa-vidro-pagina .bg-card { background-color: rgba(255,255,255,.06); }
+.exa-vidro-pagina .border-gray-100, .exa-vidro-pagina .border-gray-200, .exa-vidro-pagina .border-gray-300,
+.exa-vidro-pagina .border-input, .exa-vidro-pagina .border { border-color: rgba(255,255,255,.14); }
+.exa-vidro-pagina .bg-amber-50 { background-color: rgba(245,165,36,.12); }
+.exa-vidro-pagina .text-amber-800, .exa-vidro-pagina .text-amber-700 { color: #FFD28A; }
+.exa-vidro-pagina .bg-blue-50 { background-color: rgba(96,165,250,.12); }
+.exa-vidro-pagina .text-blue-800, .exa-vidro-pagina .text-blue-700 { color: #BFDBFE; }
+.exa-vidro-pagina .bg-green-50 { background-color: rgba(52,199,89,.12); }
+.exa-vidro-pagina .text-green-600, .exa-vidro-pagina .text-green-700, .exa-vidro-pagina .text-green-800 { color: #7EE2A0; }
+.exa-vidro-pagina .bg-red-50 { background-color: rgba(234,37,29,.14); }
+.exa-vidro-pagina .text-red-600, .exa-vidro-pagina .text-red-700, .exa-vidro-pagina .text-red-800 { color: #FFB3AE; }
+
+/* campos de texto em vidro (Input padrão e os do formulário) */
+.exa-vidro-pagina input:not([type=checkbox]):not([type=radio]):not([type=file]),
+.exa-vidro-pagina textarea,
+.exa-vidro-pagina select,
+.exa-vidro-pagina button[role=combobox] {
+  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+  border-color: rgba(255,255,255,.14);
+  color: #fff;
+  border-radius: 14px;
+  font-size: 16px; /* evita o zoom do iPhone ao tocar no campo */
+}
+.exa-vidro-pagina input::placeholder, .exa-vidro-pagina textarea::placeholder { color: rgba(255,255,255,.4); }
+.exa-vidro-pagina input:focus, .exa-vidro-pagina textarea:focus, .exa-vidro-pagina select:focus {
+  outline: none; border-color: rgba(255,255,255,.7); box-shadow: 0 0 0 1px rgba(255,255,255,.35);
+}
+.exa-vidro-pagina input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 100px #2a1012 inset; caret-color: #fff; }
+
+@media (prefers-reduced-motion: reduce) { .exa-vidro-botao { transition: none; } }

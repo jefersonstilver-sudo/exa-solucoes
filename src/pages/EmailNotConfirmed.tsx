@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
-import Layout from '@/components/layout/Layout';
+import PaginaVidro from '@/components/vidro/PaginaVidro';
 import { motion } from 'framer-motion';
 import { useEmailConfirmation } from '@/hooks/useEmailConfirmation';
 
@@ -15,15 +15,15 @@ export default function EmailNotConfirmed() {
   const navigate = useNavigate();
 
   return (
-    <Layout>
-      <div className="min-h-screen flex items-center justify-center p-4 pt-32 bg-gradient-to-br from-background via-background to-muted/20">
+    <PaginaVidro largura="max-w-2xl">
+      <div className="flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-2xl"
         >
-          <Card className="border-2 shadow-xl">
+          <Card className="exa-vidro border-0 bg-transparent shadow-none">
             <CardHeader className="text-center space-y-4 pb-4">
               <motion.div
                 initial={{ scale: 0 }}
@@ -92,7 +92,7 @@ export default function EmailNotConfirmed() {
                 <Button
                   onClick={() => resendConfirmationEmail(email)}
                   disabled={isResending}
-                  className="w-full"
+                  className="exa-vidro-botao w-full h-[54px]"
                   size="lg"
                 >
                   {isResending ? (
@@ -111,7 +111,7 @@ export default function EmailNotConfirmed() {
                 <Button
                   variant="outline"
                   onClick={() => navigate('/login')}
-                  className="w-full"
+                  className="w-full h-[54px] rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10"
                   size="lg"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -129,6 +129,6 @@ export default function EmailNotConfirmed() {
           </Card>
         </motion.div>
       </div>
-    </Layout>
+    </PaginaVidro>
   );
 }
