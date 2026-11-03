@@ -108,3 +108,6 @@ body:has(.exa-vidro-pagina), body:has(.exa-vidro-pagina) #root, body:has(.exa-vi
 .exa-vidro-pagina input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 100px #2a1012 inset; caret-color: #fff; }
 
 @media (prefers-reduced-motion: reduce) { .exa-vidro-botao { transition: none; } }
+
+/* título principal do cartão (vence a escala de títulos do celular em apple-mobile.css) */
+.exa-vidro-pagina .exa-titulo { font-size: 30px !important; line-height: 1.1 !important; letter-spacing: -.035em !important; font-weight: 800; color: #fff; }

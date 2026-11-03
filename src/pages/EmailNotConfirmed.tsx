@@ -35,7 +35,7 @@ export default function EmailNotConfirmed() {
               </motion.div>
               
               <div>
-                <CardTitle className="text-2xl font-bold">
+                <CardTitle className="exa-titulo">
                   Confirme seu Email
                 </CardTitle>
                 <CardDescription className="mt-2 text-base">

@@ -261,7 +261,7 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
                   </label>
                 )}
                 <button onClick={pedir} disabled={carregando || (!carteira && tel.replace(/\D/g, '').length < 10)}
-                  className="exa-vidro-botao mt-5 w-full">
+                  className="exa-vidro-botao mt-5 w-full !px-4 !text-[15px]">
                   {carregando && <Loader2 className="h-4 w-4 animate-spin" />} Receber código pelo WhatsApp
                 </button>
               </>
@@ -273,7 +273,7 @@ function Entrar({ link, aoEntrar }: { link: string | null; aoEntrar: (token: str
                   Manter conectado neste aparelho por 30 dias
                 </label>
                 <button onClick={() => verificar()} disabled={carregando || cod.length !== 6}
-                  className="exa-vidro-botao mt-5 w-full">
+                  className="exa-vidro-botao mt-5 w-full !px-4 !text-[15px]">
                   {carregando && <Loader2 className="h-4 w-4 animate-spin" />} Entrar
                 </button>
                 <button onClick={() => { setEtapa('tel'); setErro(''); }} className="mt-3 w-full text-center text-xs text-white/45 hover:text-white/80">Reenviar código ou trocar número</button>

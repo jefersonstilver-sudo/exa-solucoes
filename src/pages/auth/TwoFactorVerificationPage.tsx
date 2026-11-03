@@ -180,7 +180,7 @@ export const TwoFactorVerificationPage: React.FC = () => {
             <div className="w-14 h-14 mx-auto bg-white/10 rounded-full flex items-center justify-center shadow-[inset_0_0_0_1px_rgba(255,255,255,.2)]">
               <Shield className="h-7 w-7 text-white" />
             </div>
-            <h2 className="text-[30px] font-extrabold tracking-tight text-gray-900">Digite o código</h2>
+            <h2 className="exa-titulo">Digite o código</h2>
             <p className="text-sm text-gray-600">
               Enviamos um código de verificação para<br />
               <span className="font-semibold text-white">{maskPhone(userPhone)}</span>

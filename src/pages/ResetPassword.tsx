@@ -172,7 +172,7 @@ const ResetPassword = () => {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
                     <AlertCircle className="w-8 h-8 text-red-600" />
                   </div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h1 className="exa-titulo mb-2">
                     Link Expirado ou Inválido
                   </h1>
                   <p className="text-gray-600 mb-6">
@@ -217,7 +217,7 @@ const ResetPassword = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                   <Lock className="w-8 h-8 text-primary" />
                 </div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">
+                <h1 className="exa-titulo mb-2">
                   Nova Senha
                 </h1>
                 <p className="text-muted-foreground">
