@@ -116,6 +116,7 @@ const ContactsLogsPage = lazy(() => import('@/pages/admin/contatos/ContactsLogsP
 
 // Financeiro
 const CategoriasFinanceirasPage = lazy(() => import('@/pages/admin/financeiro/CategoriasFinanceirasPage'));
+const CustosSistemaPage = lazy(() => import('@/pages/admin/financeiro/CustosSistemaPage'));
 const FinanceiroDashboard = lazy(() => import('@/pages/admin/financeiro/DashboardFinanceiroV2'));
 const ContasPagarPage = lazy(() => import('@/pages/admin/financeiro/ContasPagarPage'));
 const ContasReceberPage = lazy(() => import('@/pages/admin/financeiro/ContasReceberPage'));
@@ -624,6 +625,13 @@ const AdminRoutes = () => {
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Categorias..." />}>
             <CategoriasFinanceirasPage />
+          </Suspense>
+        </ProtectedModuleRoute>
+      } />
+      <Route path="financeiro/custos-sistema" element={
+        <ProtectedModuleRoute moduleKey={MODULE_KEYS.financeiro}>
+          <Suspense fallback={<GlobalLoadingPage message="Carregando custos..." />}>
+            <CustosSistemaPage />
           </Suspense>
         </ProtectedModuleRoute>
       } />

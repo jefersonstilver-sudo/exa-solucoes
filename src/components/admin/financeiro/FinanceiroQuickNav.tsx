@@ -30,7 +30,8 @@ import {
   Loader2,
   Target,
   AlertTriangle,
-  Landmark
+  Landmark,
+  Server
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
@@ -119,6 +120,12 @@ const FinanceiroQuickNav: React.FC = () => {
       title: 'Relatórios',
       icon: <FileBarChart className="h-5 w-5 text-gray-600" />,
       href: buildPath('financeiro/relatorios')
+    },
+    {
+      id: 'custos-sistema',
+      title: 'Custos do sistema',
+      icon: <Server className="h-5 w-5 text-gray-600" />,
+      href: buildPath('financeiro/custos-sistema')
     },
     {
       id: 'categorias',
