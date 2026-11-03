@@ -36,7 +36,6 @@ import { useVersionWatcher } from '@/hooks/useVersionWatcher';
 const TwoFactorVerificationPage = lazy(() => import('@/pages/auth/TwoFactorVerificationPage'));
 
 // Importação direta APENAS para a homepage (rota /)
-const Exa = lazy(() => import('./pages/Exa'));
 // Site público novo (Opção 2, 28/10/2026). As páginas antigas ficam em /*-antiga até 27/11/2026.
 const SiteHome = lazy(() => import('./site/SiteHome'));
 // Páginas carregadas sob demanda. Ficam FORA do componente: criar lazy() dentro do render
@@ -274,7 +273,7 @@ const AppContent = () => {
         <Routes>
           {/* Rotas principais */}
           <Route path="/" element={<Suspense fallback={null}><SiteHome /></Suspense>} />
-          <Route path="/home-antiga" element={<Suspense fallback={<GlobalLoadingPage />}><Exa /></Suspense>} />
+          <Route path="/home-antiga" element={<Navigate to="/" replace />} /> {/* 03/11: a home antiga puxava um vídeo de 78 MB por visita */}
           <Route path="/catalogo-clientes" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Mídia Kit..." />}>
               <CatalogoClientes />

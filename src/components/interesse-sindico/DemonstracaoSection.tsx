@@ -1,3 +1,4 @@
+import { VideoLeve } from '@/site/comum';
 import React from 'react';
 import Reveal from './Reveal';
 import DividerGlow from './DividerGlow';
@@ -51,13 +52,8 @@ const DemonstracaoSection: React.FC = () => {
             <div className="flex justify-center lg:justify-end">
               <div className="w-full max-w-[260px] md:max-w-[300px] lg:max-w-[320px] xl:max-w-[360px] aspect-[9/16] rounded-2xl overflow-hidden bg-black/40 ring-1 ring-white/10 shadow-2xl">
                 {/* Vídeo autoplay puro: sem controles, sem possibilidade de pausa — comportamento de GIF */}
-                <video
+                <VideoLeve
                   src={VIDEO_2}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
                   disablePictureInPicture
                   controlsList="nodownload nofullscreen noremoteplayback"
                   className="w-full h-full object-cover pointer-events-none select-none"

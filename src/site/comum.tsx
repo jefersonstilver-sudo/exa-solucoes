@@ -42,15 +42,23 @@ export const VideoLeve: React.FC<React.VideoHTMLAttributes<HTMLVideoElement> & {
     let reduz = false;
     try { reduz = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { /* sem suporte */ }
     if (reduz || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
+    // 03/11/2026 (economia de banda): perto da tela só busca o começo do vídeo (primeiro quadro); o vídeo inteiro
+    // só baixa e toca quando pelo menos 60% dele está visível. Antes, todos os vídeos a 200 px da tela baixavam
+    // inteiros (16–19 MB cada) — era o maior gasto de tráfego do Supabase depois do vídeo da home antiga.
+    const perto = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !v.getAttribute('src')) { v.preload = 'metadata'; v.setAttribute('src', videoSite(src) + (/#t=/.test(src) ? '' : '#t=0.1')); }
+    }, { rootMargin: '300px' });
+    const visivel = new IntersectionObserver(([e]) => {
+      if (e.intersectionRatio >= 0.6) {
         if (!v.getAttribute('src')) v.setAttribute('src', videoSite(src));
+        v.preload = 'auto';
         v.muted = true;
         v.play().catch(() => {});
       } else if (!v.paused) v.pause();
-    }, { rootMargin: '200px' });
-    io.observe(v);
-    return () => io.disconnect();
+    }, { threshold: [0, 0.6] });
+    perto.observe(v);
+    visivel.observe(v);
+    return () => { perto.disconnect(); visivel.disconnect(); };
   }, [src]);
   return <video ref={ref} poster={poster} muted loop playsInline preload="none" {...rest} />;
 };
