@@ -245,15 +245,20 @@
    usa 100vh, que no iPhone é a altura com a barra do Safari recolhida. A diferença aparecia como faixa branca
    embaixo. Nas telas escuras de login/senha o invólucro fica escuro também. */
 body:has(.exa-login),body:has(.exa-login) #root,body:has(.exa-login) #root>.bg-background{background:#0B0B0D}
-/* e a tela não "sobra" para rolar: o invólucro não força 100vh (a página fica exatamente da altura do cartão,
-   100dvh) e o iPhone não estica a página além do topo/fim (sem faixa preta lisa acima ou abaixo do degradê). */
-html:has(.exa-login),body:has(.exa-login){overscroll-behavior:none}
+/* e a tela não "sobra" para rolar: o invólucro não força 100vh (a página fica exatamente da altura do cartão, 100dvh).
+   A mola do iPhone (puxar e soltar, puxar para atualizar) continua: o fundo (foto + degradê) fica preso na tela e
+   passa 25% para fora em cima e embaixo, então o que aparece ao esticar é o próprio degradê, não preto liso. */
 body:has(.exa-login) #root>.min-h-screen{min-height:0}
-.exa-login .el-amb{position:absolute;inset:-10%;width:120%;height:120%;object-fit:cover;filter:blur(60px) saturate(1.4) brightness(.6);pointer-events:none}
-.exa-login .el-veu{position:absolute;inset:0;background:radial-gradient(70% 55% at 50% -5%,rgba(234,37,29,.55),rgba(234,37,29,0) 70%),radial-gradient(60% 45% at 50% 108%,rgba(158,16,20,.6),rgba(158,16,20,0) 70%),linear-gradient(180deg,rgba(40,6,8,.55),rgba(11,11,13,.7));pointer-events:none}
+.exa-login .el-amb{position:fixed;top:-25vh;left:-10vw;width:120vw;height:150vh;object-fit:cover;filter:blur(60px) saturate(1.4) brightness(.6);pointer-events:none}
+.exa-login .el-veu{position:fixed;top:-25vh;left:0;right:0;height:150vh;background:radial-gradient(70% 37% at 50% 13%,rgba(234,37,29,.55),rgba(234,37,29,0) 70%),radial-gradient(60% 30% at 50% 89%,rgba(158,16,20,.6),rgba(158,16,20,0) 70%),linear-gradient(180deg,rgba(40,6,8,.55) 16.7%,rgba(11,11,13,.7) 83.3%);pointer-events:none}
 .exa-login .el-marca{position:relative;display:flex;justify-content:center;margin-bottom:28px}
 .exa-login .el-marca img{height:42px;width:auto;display:block}
 .exa-login .el-cartao{position:relative;width:100%;max-width:400px;border-radius:28px;padding:36px 32px 30px;background:rgba(255,255,255,.07);backdrop-filter:blur(28px) saturate(1.4);-webkit-backdrop-filter:blur(28px) saturate(1.4);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.18),0 40px 80px -30px rgba(0,0,0,.7);display:flex;flex-direction:column;gap:20px}
+.exa-login .el-cartao{background:linear-gradient(140deg,rgba(255,255,255,.15),rgba(255,255,255,.05) 42%,rgba(255,255,255,.03) 60%,rgba(255,255,255,.09));backdrop-filter:blur(26px) saturate(1.9) brightness(1.04);-webkit-backdrop-filter:blur(26px) saturate(1.9) brightness(1.04);box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(255,255,255,.06),inset 0 0 22px rgba(255,255,255,.04),0 30px 70px -24px rgba(0,0,0,.75),0 2px 8px rgba(0,0,0,.18)}
+/* Liquid Glass: borda que reflete a luz (mais forte no canto de cima à esquerda e no de baixo à direita) e brilho suave no topo */
+.exa-login .el-cartao:before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(255,255,255,.55),rgba(255,255,255,.08) 30%,rgba(255,255,255,0) 55%,rgba(255,255,255,.22) 85%,rgba(255,255,255,.4));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1}
+.exa-login .el-cartao:after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 60% at 20% -10%,rgba(255,255,255,.14),rgba(255,255,255,0) 55%);pointer-events:none;z-index:-1}
+.exa-login .el-espera:before,.exa-login .el-espera:after{display:none}
 .exa-login .el-t{font-weight:800;letter-spacing:-.035em;line-height:1.05;margin:0;font-size:34px;text-align:center}
 .exa-login .el-p{margin:0;color:rgba(255,255,255,.7);font-size:15px}
 .exa-login .el-campo{display:flex;flex-direction:column;gap:8px}
@@ -262,6 +267,7 @@ body:has(.exa-login) #root>.min-h-screen{min-height:0}
 .exa-login .el-inp{position:relative}
 .exa-login input{width:100%;min-height:54px;border-radius:14px;border:0;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);padding:0 16px;font:500 16px Manrope,sans-serif;color:#fff;transition:box-shadow .2s,background .2s;-webkit-appearance:none;appearance:none}
 .exa-login input::placeholder{color:rgba(255,255,255,.4)}
+.exa-login input:not([type=checkbox]){background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.05));box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.12)}
 .exa-login input:focus{outline:none;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7)}
 .exa-login input.erro{box-shadow:inset 0 0 0 1.5px #FF5A4F;background:rgba(234,37,29,.12)}
 .exa-login input:-webkit-autofill{-webkit-text-fill-color:#fff;-webkit-box-shadow:0 0 0 100px #2a1012 inset;caret-color:#fff}
@@ -269,6 +275,9 @@ body:has(.exa-login) #root>.min-h-screen{min-height:0}
 .exa-login .el-olho:hover{color:#fff}
 .exa-login .el-b{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;border-radius:999px;font:800 16px Manrope,sans-serif;border:0;cursor:pointer;background:#fff;color:#0B0B0D;transition:background .2s;margin-top:4px}
 .exa-login .el-b:hover{background:#EFEEEB}
+/* toque com mola, como botão do iOS */
+.exa-login .el-b{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -2px 6px rgba(0,0,0,.08),0 10px 24px -10px rgba(0,0,0,.6);transition:background .2s,transform .45s cubic-bezier(.34,1.56,.64,1)}
+.exa-login .el-b:active:not(:disabled){transform:scale(.96);transition-duration:.12s}
 .exa-login .el-b:disabled{cursor:default;opacity:.85}
 .exa-login .el-lnk{background:none;border:0;padding:0;min-width:0;min-height:0;font:800 13px Manrope,sans-serif;color:rgba(255,255,255,.75);cursor:pointer}
 .exa-login .el-lnk:hover{color:#fff}
