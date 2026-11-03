@@ -199,7 +199,8 @@ export const useLoginForm = (redirectPath: string = '/') => {
       }
       
       setError(errorMessage);
-      toast.error(errorMessage);
+      // Sem toast aqui: o erro já aparece no cartão do login. O toast empilhava um aviso branco a cada
+      // tentativa no iPhone e deixava uma faixa branca no rodapé da tela escura (02/11/2026).
     } finally {
       setIsLoading(false);
     }
