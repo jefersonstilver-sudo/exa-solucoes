@@ -60,7 +60,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
   if (!atual && carregando) {
     return (
       <div className={`${CARD} space-y-3 p-4`} role="status" aria-label="Carregando o que está no ar">
-        <span className="block aspect-[1080/890] w-full animate-pulse rounded-2xl bg-[#e9e4e6]" />
+        <span className={`block w-full animate-pulse rounded-2xl bg-[#e9e4e6] ${vertical ? 'mx-auto aspect-[9/16] max-w-[280px] sm:max-w-[320px]' : 'aspect-[1080/890]'}`} />
         <span className="block h-4 w-1/2 animate-pulse rounded-lg bg-[#e9e4e6]" />
         <span className="block h-3 w-3/4 animate-pulse rounded-lg bg-[#e9e4e6]" />
       </div>
