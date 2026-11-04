@@ -319,6 +319,11 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
 
   if (ctx.registros.length) await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "sistema", conteudo: { texto: ctx.registros.join("\n") } });
   if (!resposta) return;
+  // 👍 / "ok" / "obrigado" depois de a conversa ja ter fechado: gente nao responde, o Nando tambem nao
+  if (/^\s*\[sil[eê]ncio\]\s*$/i.test(resposta)) {
+    await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "sistema", conteudo: { texto: "(sem resposta: só um agradecimento/confirmação depois de a conversa já ter fechado)", ate: minhaMsg } });
+    return;
+  }
   // ate 3 mensagens curtas, com "digitando" entre elas
   const partes = resposta.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
   const envio = partes.length > 3 ? [partes.slice(0, partes.length - 2).join("\n\n"), ...partes.slice(-2)] : partes;
