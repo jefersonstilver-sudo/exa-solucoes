@@ -5,7 +5,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   Predio, nomeBase, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
-  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos, enviarImagem, enviarDocumento,
+  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos, enviarImagem, enviarDocumento, enviarVideo, VIDEO_APRESENTACAO_URL,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 import { FERRAMENTAS_CADASTRO, NOMES_CADASTRO, executarCadastro, contextoCadastroParaPrompt, roteiroCadastro } from "./nando-cadastro.ts";
@@ -407,6 +407,11 @@ export const FERRAMENTAS = [
     name: "enviar_imagem_whatsapp",
     description: "Manda para a pessoa, aqui no WhatsApp, a versão em IMAGEM do aviso (vertical, formato de celular, com o nome do prédio) para ela encaminhar nos grupos de WhatsApp do condomínio. Só use quando a pessoa ACEITAR (depois de perguntar). Série: manda todos os cartões em ordem. Aviso que é imagem/PDF do síndico: manda o próprio arquivo. A imagem do Nando chega em 1 a 3 minutos.",
     input_schema: { type: "object", properties: { aviso: { type: "string" } }, required: ["aviso"] },
+  },
+  {
+    name: "enviar_video_apresentacao",
+    description: "Manda aqui no WhatsApp o vídeo de apresentação do Nando (uns 3 minutos) que mostra como tudo funciona: criar avisos por mensagem ou áudio, prévia, agendar, repetir, tirar do ar, imagem para os grupos e o painel do síndico. Só use quando a pessoa ACEITAR ou pedir o vídeo.",
+    input_schema: { type: "object", properties: {} },
   },
   {
     name: "listar_repeticoes",
@@ -1002,6 +1007,11 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       c.registros.push(`imagem para WhatsApp pedida (${itens.length}) do aviso ${idCurto(a.id)}: ${ok ? "ok" : "falhou"}`);
       return ok ? `Pedido feito: ${itens.length > 1 ? `as ${itens.length} imagens chegam` : "a imagem chega"} aqui em 1 a 3 minutos. Avise isso em poucas palavras.` : "Não consegui gerar a imagem agora. Peça desculpas e diga para tentar de novo daqui a pouco.";
     }
+    case "enviar_video_apresentacao": {
+      await enviarVideo(sb, c.tel, VIDEO_APRESENTACAO_URL, "🎬 Nando · a nova EXA — como funciona");
+      c.registros.push("vídeo de apresentação enviado");
+      return "Vídeo enviado agora (pode levar alguns segundos para carregar no celular dela). Diga em poucas palavras que mandou, e que qualquer dúvida é só perguntar aqui, inclusive por áudio. Não repita o conteúdo do vídeo.";
+    }
     case "listar_repeticoes": {
       const lista = e.todos ? (c.admin ? await todosPredios(sb) : c.predios) : (c.predioAtual ? [c.predioAtual] : []);
       if (!lista.length) return "Escolha o prédio primeiro (escolher_predio) ou use todos=true.";
@@ -1201,6 +1211,11 @@ LINK DOS AVISOS DO PRÉDIO
 - VÁRIOS PRÉDIOS (gestor/administradora ou o Jeferson): o mesmo aviso pode ir para vários prédios de uma vez. Crie o rascunho UMA vez já passando 'predios' (assim a prévia mostra todos os prédios de destino e a assinatura de cada um), mostre a prévia e, aprovado, publique com publicar_aviso passando 'predios' (nomes ou códigos, ou ['todos']) e 'exceto' se ela disser "menos o X". Cada prédio recebe a assinatura dele automaticamente. Antes de publicar em vários, confirme em uma frase a lista de prédios ("Vou colocar no A, B e C, pode ser?").
 - Aviso publicado junto em vários prédios fica no mesmo grupo: para "tirar de todos", "mudar a data em todos" etc., use remover_aviso/alterar_aviso com todos_os_predios=true (UM pedido resolve todos; para série, faça para cada cartão). Se ela pedir só para um prédio, mexa só naquele e avise que nos outros continua. Responda prédio por prédio o que deu certo.
 - AVISO QUE SE REPETE (coleta de lixo toda terça, dedetização todo dia 10, limpeza da caixa d'água...): crie o rascunho uma vez, mostre a prévia e publique com publicar_aviso + 'repetir' (frequência, dias, hora de aparecer e de sumir). Confirme a regra em uma frase antes ("Vai aparecer toda terça das 7h às 20h, pode ser?"). Para ver ou parar: listar_repeticoes / parar_repeticao. Quando a pessoa disser "todo/toda/sempre/todo mês", ofereça a repetição.
+- APRESENTAÇÃO AOS SÍNDICOS: a EXA está apresentando você aos síndicos aos poucos. Se no histórico houver a sua mensagem de apresentação (começa com "[apresentação]") e a pessoa responder:
+  • aceitou o vídeo ("sim", "pode mandar", "quero") → enviar_video_apresentacao;
+  • prefere por mensagem ("explica aqui", "não tenho tempo de ver vídeo") → explique em 3 ou 4 mensagens curtas e naturais, uma ideia por vez: (1) ela me manda o aviso por mensagem ou áudio e eu monto; (2) ela vê a prévia antes e só vai para a tela quando disser "pode publicar"; (3) dá para agendar, repetir (ex.: coleta toda terça) e tirar do ar sozinho na data; (4) pelo painel ${SITE_URL}/paineldosindico ela vê a tela do elevador ao vivo e todos os avisos. Termine oferecendo fazer o primeiro aviso junto agora;
+  • tem dúvida ou desconfiança → responda com calma, sem pressionar, e ofereça o vídeo.
+  Qualquer síndico também pode pedir o vídeo a qualquer momento. Nunca mande o vídeo sem a pessoa aceitar.
 - IMAGEM PARA GRUPOS DE WHATSAPP: depois de publicar, SEMPRE pergunte uma vez se a pessoa quer a versão em imagem para encaminhar nos grupos do condomínio. Nunca mande sem ela aceitar (para não lotar o WhatsApp). Aceitou → enviar_imagem_whatsapp. Ela também pode pedir a imagem de qualquer aviso no ar a qualquer momento.
 - Para corrigir o TEXTO de um aviso do Nando já publicado ("troca a data para sábado", "corrige o horário"), use editar_aviso (não crie outro). Datas de quando aparece/sai continuam em alterar_aviso.
 - PAINEL DO SÍNDICO — endereço oficial: ${SITE_URL}/paineldosindico . O síndico tem DOIS canais: este WhatsApp (comigo) e o painel no site. Explique o painel sempre que for útil e tire QUALQUER dúvida sobre ele com calma, passo a passo, em frases curtas:

@@ -81,6 +81,22 @@ Deno.serve(async (req) => {
     if (imagens.length) await sbF.from("nando_mensagens").insert({ telefone: telF, papel: "nando", conteudo: { texto: `(enviei ${imagens.length} imagem(ns) do aviso no formato de celular, para encaminhar nos grupos)` } });
     return json(200, { ok: true, enviadas: imagens.length });
   }
+  // apresentacao do Nando a um sindico (so com a chave de servico): manda a mensagem como o Nando e registra no historico,
+  // para ele saber responder ("sim" -> video, "explica aqui" -> explica). Nao muda o modo da conversa (nao pausa o Nando).
+  if (url.searchParams.get("action") === "apresentar") {
+    if ((req.headers.get("Authorization") || "") !== `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`) return json(401, { erro: "nao autorizado" });
+    const b = await req.json().catch(() => ({}));
+    const sbA = db();
+    const telA = telefoneCanonico(String(b.telefone || ""));
+    const texto = String(b.texto || "").trim();
+    if (telA.replace(/\D/g, "").length < 12 || texto.length < 20) return json(400, { erro: "telefone e texto obrigatorios" });
+    const { predios } = await prediosDoTelefone(sbA, telA);
+    if (!predios.length) return json(400, { erro: "esse numero nao esta cadastrado em nenhum predio ativo" });
+    const partes = texto.split(/\n{2,}---\n{2,}/).map((x) => x.trim()).filter(Boolean).slice(0, 3);
+    for (const parte of partes) { await enviarTexto(sbA, telA, parte); await new Promise((r) => setTimeout(r, 1800)); }
+    await sbA.from("nando_mensagens").insert({ telefone: telA, building_id: predios[0].id, papel: "nando", conteudo: { texto: "[apresentação] " + partes.join("\n\n") } });
+    return json(200, { ok: true, enviadas: partes.length, predios: predios.map((p) => p.nome) });
+  }
   if (url.searchParams.get("action") === "versao") return json(200, { versao: NANDO_VERSAO, modo_teste: MODO_TESTE, cobranca: (Deno.env.get("NANDO_COBRANCA") || "false").toLowerCase() === "true" });
   if (req.method !== "POST") return json(405, { error: "metodo" });
 

@@ -22,7 +22,7 @@ export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCa
 export const CADASTRO_ABERTO = (Deno.env.get("NANDO_CADASTRO_ABERTO") || "false").toLowerCase() === "true";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-10-26.34-crm";
+export const NANDO_VERSAO = "2026-11-04.35-apresentacao";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -145,6 +145,17 @@ export async function enviarImagem(sb: SupabaseClient, tel: string, urlImagem: s
     body: JSON.stringify({ number: telefoneCanonico(tel), mediatype: "image", mimetype: "image/png", media: urlImagem, caption: legenda, fileName: "aviso.png" }),
   });
   if (!r.ok) throw new Error(`Evolution sendMedia ${r.status}: ${(await r.text()).slice(0, 200)}`);
+}
+// video de apresentacao do Nando para os sindicos (versao leve para WhatsApp, ~16 MB, 720x1280)
+export const VIDEO_APRESENTACAO_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/nando-midia/apresentacao/nando_apresentacao.mp4";
+export async function enviarVideo(sb: SupabaseClient, tel: string, urlVideo: string, legenda = "") {
+  const { url, key } = evo();
+  const inst = await instanciaNando(sb);
+  const r = await fetch(`${url}/message/sendMedia/${inst}`, {
+    method: "POST", headers: { "Content-Type": "application/json", apikey: key },
+    body: JSON.stringify({ number: telefoneCanonico(tel), mediatype: "video", mimetype: "video/mp4", media: urlVideo, caption: legenda, fileName: "nando-exa.mp4" }),
+  });
+  if (!r.ok) throw new Error(`Evolution sendMedia(video) ${r.status}: ${(await r.text()).slice(0, 200)}`);
 }
 // pede ao robo do GitHub (render-nando.yml) a foto dos avisos do Nando, que chega no WhatsApp em 1-3 min
 export async function enviarDocumento(sb: SupabaseClient, tel: string, urlArquivo: string, nome: string, legenda = "") {

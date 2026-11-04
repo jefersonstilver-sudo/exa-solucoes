@@ -1,0 +1,27 @@
+name: subir-video-nando
+# sobe o video de apresentacao do Nando (anexo de uma release do repo) para o Storage publico nando-midia/apresentacao/
+on:
+  workflow_dispatch:
+    inputs:
+      tag: { description: release com o video, required: true, default: "nando-video-apresentacao" }
+      arquivo: { description: nome do anexo, required: true, default: "nando_apresentacao.mp4" }
+permissions:
+  contents: read
+jobs:
+  subir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      URL: ${{ secrets.SUPABASE_URL }}
+      KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: |
+          gh release download "${{ inputs.tag }}" -R "${{ github.repository }}" -p "${{ inputs.arquivo }}" -D /tmp/v
+          ls -la /tmp/v
+          code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$URL/storage/v1/object/nando-midia/apresentacao/${{ inputs.arquivo }}" \
+            -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: video/mp4" -H "x-upsert: true" -H "Cache-Control: 3600" \
+            --data-binary @"/tmp/v/${{ inputs.arquivo }}")
+          echo "::notice title=upload::HTTP $code $(head -c 200 /tmp/r.txt)"
+          test "$code" = "200"
+          curl -sI "$URL/storage/v1/object/public/nando-midia/apresentacao/${{ inputs.arquivo }}" | tr -d '\r' | grep -i -E "^HTTP|content-type|content-length" | tr '\n' ' ' | sed 's/^/::notice title=publico::/'
