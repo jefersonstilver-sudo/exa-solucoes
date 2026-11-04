@@ -33,7 +33,6 @@ import { winnerAt } from '@/lib/agenda/agendaEngine';
 import { usePedidoEmpresas } from '@/hooks/exa2/usePedidoEmpresas';
 import { OnAirCard } from '@/components/pedido-v2/OnAirCard';
 import { AgendaTab } from '@/components/pedido-v2/AgendaTab';
-import { EntregaResumo } from '@/components/pedido-v2/EntregaResumo';
 import { PrediosTab } from '@/components/pedido-v2/PrediosTab';
 import { EmpresaTab } from '@/components/pedido-v2/EmpresaTab';
 import { CARD, EYEBROW } from '@/components/pedido-v2/ui';
