@@ -447,6 +447,7 @@ const OrderDetailsV2 = () => {
                     </div>
                     <OnAirCard
                       carregando={agenda.loading || videosCarregando}
+                      vertical={tipoProduto === 'vertical_premium'}
                       slots={agenda.slots}
                       rules={agenda.rules}
                       totalPredios={buildings.length}
