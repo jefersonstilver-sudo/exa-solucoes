@@ -50,7 +50,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
   const [aberto, setAberto] = useState<PredioInfo | null>(null);
   const { atual } = useNoArAgora(slots, rules, serverActiveSlotId, 30000);
   const noAr = bloqueado ? null : atual?.slot || null;
-  const saude = useSaudePredios(visaoInterna ? predios.map((p) => p.id) : []);
 
   const lista = useMemo(
     () =>
