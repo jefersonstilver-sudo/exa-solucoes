@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       url: { description: endereco, required: true }
-      subir_video: { description: "1 = subir o video do Nando", required: false, default: "" }
+      subir_video: { description: "1 = subir nando_apresentacao.mp4; ou o nome de outro .mp4 da branch midia-nando", required: false, default: "" }
 jobs:
   ver:
     runs-on: ubuntu-latest
@@ -15,13 +15,17 @@ jobs:
       KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - if: ${{ inputs.subir_video == '1' }}
+      - if: ${{ inputs.subir_video != '' }}
+        env:
+          ARQ: ${{ inputs.subir_video }}
         run: |
+          if [ "$ARQ" = "1" ]; then ARQ=nando_apresentacao.mp4; fi
+          echo "$ARQ" | grep -Eq '^[a-z0-9_]+\.mp4$' || { echo "nome invalido"; exit 1; }
           git clone -q --depth 1 -b midia-nando "https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}.git" /tmp/m
           ls -la /tmp/m
-          code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$SURL/storage/v1/object/nando-midia/apresentacao/nando_apresentacao.mp4" \
+          code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$SURL/storage/v1/object/nando-midia/apresentacao/$ARQ" \
             -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: video/mp4" -H "x-upsert: true" -H "Cache-Control: 3600" \
-            --data-binary @/tmp/m/nando_apresentacao.mp4)
+            --data-binary @"/tmp/m/$ARQ")
           echo "::notice title=upload::HTTP $code $(head -c 200 /tmp/r.txt)"
           test "$code" = "200"
       - run: |
