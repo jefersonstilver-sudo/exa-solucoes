@@ -41,7 +41,7 @@ interface Props {
   serverActiveSlotId?: string | null;
   /** Pedido bloqueado: nada no ar. */
   bloqueado?: boolean;
-  /** Equipe EXA: mostra a confirmação de entrega por prédio e a fila completa da tela. */
+  /** Equipe EXA: mostra a fila completa da tela. */
   visaoInterna?: boolean;
 }
 
