@@ -16148,6 +16148,56 @@ export type Database = {
           },
         ]
       }
+      sofia_envio_semanal: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          mensagem: string | null
+          nome: string | null
+          nome_regex: string | null
+          pedido_id: string
+          so_principal: boolean
+          telefone: string
+          ultimo_envio_em: string | null
+          ultimo_video_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          mensagem?: string | null
+          nome?: string | null
+          nome_regex?: string | null
+          pedido_id: string
+          so_principal?: boolean
+          telefone: string
+          ultimo_envio_em?: string | null
+          ultimo_video_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          mensagem?: string | null
+          nome?: string | null
+          nome_regex?: string | null
+          pedido_id?: string
+          so_principal?: boolean
+          telefone?: string
+          ultimo_envio_em?: string | null
+          ultimo_video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_envio_semanal_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sofia_erros: {
         Row: {
           contact_id: string | null
@@ -16335,6 +16385,7 @@ export type Database = {
         Row: {
           aberta_em: string | null
           concluida_em: string | null
+          conta_cadastro: boolean
           contato_id: string | null
           contatos: Json
           conversa_id: string | null
@@ -16355,6 +16406,7 @@ export type Database = {
         Insert: {
           aberta_em?: string | null
           concluida_em?: string | null
+          conta_cadastro?: boolean
           contato_id?: string | null
           contatos?: Json
           conversa_id?: string | null
@@ -16375,6 +16427,7 @@ export type Database = {
         Update: {
           aberta_em?: string | null
           concluida_em?: string | null
+          conta_cadastro?: boolean
           contato_id?: string | null
           contatos?: Json
           conversa_id?: string | null
