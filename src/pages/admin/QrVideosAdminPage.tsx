@@ -94,7 +94,7 @@ export default function QrVideosAdminPage() {
   const abrirNovo = () => {
     setNovo(true); setQrImg('');
     const f: Partial<Link> = { codigo: '', cliente: '', campanha: '', titulo: '', formato: 'vertical 15 s', whatsapp: '', destino_url: '', ativo: true,
-      mensagem: 'Olá! Vi seu anúncio na tela da EXA e quero saber mais. (cód. {codigo})' };
+      mensagem: 'Olá! Vi seu anúncio na tela da EXA e quero saber mais.' };
     setForm(f); setAberto(f as Link);
   };
   const salvar = async () => {
@@ -217,7 +217,7 @@ export default function QrVideosAdminPage() {
             {campo('Título do vídeo', 'titulo', 'Ex.: Vídeo 3 · Hall')}
             {campo('WhatsApp do anunciante (com DDI)', 'whatsapp', 'Ex.: 5545999990000', { inputMode: 'numeric' })}
             <label className="block">
-              <span className="mb-1 block text-[12.5px] font-bold text-[#6A6B70]">Mensagem pronta do WhatsApp ({'{codigo}'} vira o código)</span>
+              <span className="mb-1 block text-[12.5px] font-bold text-[#6A6B70]">Mensagem pronta do WhatsApp</span>
               <textarea value={form.mensagem || ''} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} rows={3}
                 className="w-full rounded-2xl border border-black/[0.08] bg-white px-4 py-3 text-[16px] outline-none focus:border-[#9C1E1E]/50" />
             </label>

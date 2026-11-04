@@ -15,7 +15,7 @@ async function sha(s: string) {
 function destinoDe(l: { codigo: string; whatsapp: string | null; mensagem: string | null; destino_url: string | null }) {
   const num = (l.whatsapp || "").replace(/\D/g, "");
   if (num.length >= 10) {
-    const texto = (l.mensagem || "Olá! Vi seu anúncio na tela da EXA e quero saber mais. (cód. {codigo})").replaceAll("{codigo}", l.codigo);
+    const texto = (l.mensagem || "Olá! Vi seu anúncio na tela da EXA e quero saber mais.").replaceAll("{codigo}", l.codigo);
     return `https://wa.me/${num}?text=${encodeURIComponent(texto)}`;
   }
   const u = l.destino_url || "";
