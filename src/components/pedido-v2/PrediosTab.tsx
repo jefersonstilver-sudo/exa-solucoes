@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, CheckCircle2, ChevronRight, Clock, MapPin, Monitor, Search, Users, WifiOff, X } from 'lucide-react';
+import { Building2, ChevronRight, MapPin, Monitor, Search, Users, X } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
