@@ -2,7 +2,7 @@
 # Monta o pacote do painel v34 (faixa "Nesta tela") a partir do pacote no ar (ui_v33_nando.zip). Rodar no CloudShell.
 # Só ACRESCENTA: o bloco CSS v34 no fim do style.css, o scripts/marcas.js e 1 linha <script> no index.html.
 set -euo pipefail
-C=01faa53   # commit conferido
+C=${1:?passe o commit conferido}
 RAW=https://raw.githubusercontent.com/jefersonstilver-sudo/exa-solucoes/$C/painel-nuc/v34
 rm -rf ~/ui/pkg_v34 && mkdir -p ~/ui/pkg_v34 && cd ~/ui/pkg_v34
 aws s3 cp s3://sistema-update/ui_v33_nando.zip base.zip --only-show-errors
