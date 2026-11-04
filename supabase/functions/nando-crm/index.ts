@@ -4,7 +4,7 @@
 // Só admin / super_admin. Nunca apaga avisos (nando_avisos) — só o histórico da conversa.
 // =====================================================================
 import {
-  chavesTelefone, clienteIdDoPredio, db, enviarTexto, prediosDoTelefone, telefoneCanonico,
+  chavesTelefone, clienteIdDoPredio, db, enviarTexto, enviarDigitando, prediosDoTelefone, telefoneCanonico,
 } from "../_shared/nando-core.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
@@ -171,6 +171,21 @@ Deno.serve(async (req) => {
       if (error) throw error;
       await sb.from("nando_mensagens").insert({ telefone: tel, papel: "sistema", conteudo: { texto: modo === "humano" ? `${autor} assumiu o atendimento pelo CRM (Nando pausado por ${horas}h nesta conversa).` : `${autor} devolveu o atendimento ao Nando.` } });
       return json(200, { ok: true, modo });
+    }
+
+    // ---------------- apresentar o Nando a um sindico (manda como o Nando, NAO pausa) ----------------
+    // texto em mensagens curtas separadas por linha em branco; fica no historico com "[apresentação]" para o Nando continuar
+    if (action === "apresentar") {
+      const texto = String(body.texto || "").trim();
+      if (!tel || texto.length < 5) return json(400, { error: "telefone e texto obrigatorios" });
+      const partes = texto.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean).slice(0, 3);
+      for (let i = 0; i < partes.length; i++) {
+        if (i) { await enviarDigitando(sb, tel, 1500); await new Promise((r) => setTimeout(r, 1600)); }
+        await enviarTexto(sb, tel, partes[i]);
+      }
+      await sb.from("nando_mensagens").insert({ telefone: tel, building_id: body.building_id || null, papel: "nando", conteudo: { texto: "[apresentação] " + partes.join("\n\n"), autor } });
+      await sb.from("nando_atendimento").upsert({ telefone: tel, modo: "auto", humano_ate: null, assumido_por: null, assumido_por_nome: null, atualizado_em: new Date().toISOString() }, { onConflict: "telefone" });
+      return json(200, { ok: true, enviadas: partes.length });
     }
 
     // ---------------- enviar como EXA (pausa o Nando nesta conversa) ----------------
