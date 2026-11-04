@@ -195,7 +195,6 @@ const PredioAoVivo: React.FC<{
             <div className="flex flex-wrap items-center gap-x-2 text-xs text-[#8b8285]">
               <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{predio.bairro || 'Foz do Iguaçu'}</span>
               {(predio.quantidade_telas || predio.numero_elevadores) ? <span>· {predio.quantidade_telas || predio.numero_elevadores} tela(s)</span> : null}
-              {sd && <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold ${sd.c}`}><sd.i className="h-3 w-3" />{sd.t}</span>}
             </div>
           </div>
         </div>
