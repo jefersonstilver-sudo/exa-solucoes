@@ -8,6 +8,7 @@ import {
   b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos, enviarImagem, enviarDocumento, enviarVideo, VIDEO_APRESENTACAO_URL,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
+import { prepararLogo, conferenciaLogo } from "./nando-logo.ts";
 import { FERRAMENTAS_CADASTRO, NOMES_CADASTRO, executarCadastro, contextoCadastroParaPrompt, roteiroCadastro } from "./nando-cadastro.ts";
 
 const BUCKET = "nando-midia";
@@ -211,7 +212,7 @@ async function criarSerie(c: Contexto, p: Predio, e: any, v: Visual, extra: Reco
     const ultimo = k === total - 1;
     const dados: any = {
       v: 1, titulo, quando, texto: !itensBrutos.length ? (String(cartoes[k]?.texto || "").slice(0, 160) || undefined) : undefined,
-      itens, assinatura: e.assinatura || `Administração do ${p.nome}`, cor, icone: await v.icone(tema), foto: v.foto || undefined,
+      itens, assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p), cor, icone: await v.icone(tema), foto: v.foto || undefined,
       fundo, fundo_nitido: nitido || undefined, parte: total > 1 ? `${k + 1}/${total}` : undefined,
       qr: ultimo ? v.qr : undefined, qr_legenda: ultimo ? v.qrLegenda : undefined,
     };
@@ -409,6 +410,15 @@ export const FERRAMENTAS = [
     input_schema: { type: "object", properties: { aviso: { type: "string" } }, required: ["aviso"] },
   },
   {
+    name: "logo_do_predio",
+    description: "Logo do condomínio nos avisos animados. acao='salvar': usa a imagem que o síndico mandou (midia_id), tira o fundo, corta e guarda para TODOS os próximos avisos do prédio (ou dos 'predios' indicados). Devolve uma imagem de conferência (à esquerda como vai sair no aviso, à direita sobre xadrez = recorte): OLHE com atenção antes de dizer que ficou bom. acao='remover': para de usar a logo. acao='ver': diz se o prédio tem logo guardada.",
+    input_schema: { type: "object", properties: {
+      acao: { type: "string", enum: ["salvar", "remover", "ver"] },
+      midia_id: { type: "string", description: "id da imagem da logo (para salvar)" },
+      predios: { type: "array", items: { type: "string" }, description: "Opcional: nomes/códigos dos prédios que usam essa logo (ex: a administradora com vários prédios). Vazio = prédio atual." },
+    }, required: ["acao"] },
+  },
+  {
     name: "enviar_video_apresentacao",
     description: "Manda aqui no WhatsApp o vídeo de apresentação do Nando (uns 3 minutos) que mostra como tudo funciona: criar avisos por mensagem ou áudio, prévia, agendar, repetir, tirar do ar, imagem para os grupos e o painel do síndico. Só use quando a pessoa ACEITAR ou pedir o vídeo.",
     input_schema: { type: "object", properties: {} },
@@ -468,6 +478,14 @@ async function avisosAtivos(c: Contexto, buildingId: string) {
   return count || 0;
 }
 
+// logo do condominio guardada no perfil do predio (preferencias.logo). usar_logo = "nao" desliga.
+async function logoDe(c: Contexto, p: Predio): Promise<{ url: string; placa: string } | undefined> {
+  const { data } = await c.sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle();
+  const pref: any = data?.preferencias || {};
+  if (!pref.logo?.url || String(pref.usar_logo || "").toLowerCase() === "nao") return undefined;
+  return { url: pref.logo.url, placa: pref.logo.placa === "escura" ? "escura" : "clara" };
+}
+
 // prédios-alvo a partir de nomes/códigos (aceita "todos") menos os "exceto"
 async function resolverAlvos(c: Contexto, lista: unknown, exceto: unknown): Promise<Predio[]> {
   const nomes = (Array.isArray(lista) ? lista : []).map((x) => String(x));
@@ -501,8 +519,13 @@ async function ajustarAssinatura(c: Contexto, copia: any, origemNome: string, p:
   // assinatura sem o nome do predio (ex: "Síndica Michelli") fica como esta
   const ass = String(dados.assinatura || "");
   const esc = origemNome.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  if (!origemNome.trim() || !new RegExp(esc, "i").test(ass)) return copia;
-  dados.assinatura = ass.replace(new RegExp(esc, "ig"), p.nome);
+  // cada predio leva a logo DELE (ou nenhuma)
+  const logoNovo = await logoDe(c, p);
+  const trocaLogo = JSON.stringify(logoNovo || null) !== JSON.stringify(dados.logo || null);
+  const trocaNome = !!origemNome.trim() && new RegExp(esc, "i").test(ass);
+  if (!trocaNome && !trocaLogo) return copia;
+  if (trocaNome) dados.assinatura = ass.replace(new RegExp(esc, "ig"), p.nome);
+  if (logoNovo) dados.logo = logoNovo; else delete dados.logo;
   const url = await salvarArquivo(c, `avisos/${copia.id}.nando.json`, new TextEncoder().encode(JSON.stringify(dados)), "application/json");
   const conteudo = { ...copia.conteudo, arquivo_url: url, campos: { ...(copia.conteudo.campos || {}), assinatura: dados.assinatura } };
   await c.sb.from("nando_avisos").update({ conteudo }).eq("id", copia.id);
@@ -735,7 +758,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         const cor = /^#[0-9a-f]{6}$/i.test(v.cor || e.cor || "") ? (v.cor || e.cor) : ICONES[tema].cor;
         const dados: any = {
           v: 1, titulo: String(v.titulo || e.titulo || "").slice(0, 60), quando: (v.quando || e.quando) ? String(v.quando || e.quando).slice(0, 60) : undefined,
-          texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`,
+          texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p),
           cor, icone: await icone(tema), foto: foto || undefined, itens: itensUnico, qr, qr_legenda: qrLegenda,
         };
         if (!foto && n === 2) {
@@ -967,6 +990,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           if (e.quando !== undefined) dados.quando = String(e.quando).slice(0, 60) || undefined;
           if (e.texto !== undefined) dados.texto = String(e.texto).slice(0, 160) || undefined;
           if (e.assinatura) dados.assinatura = String(e.assinatura).slice(0, 60);
+          { const lg = await logoDe(c, p); if (lg) dados.logo = lg; else delete dados.logo; }  // sempre a logo atual do predio
           if (Array.isArray(e.itens)) {
             const icones = (dados.itens || []).map((x: any) => x?.icone);
             dados.itens = e.itens.map((t: unknown, i: number) => ({ icone: icones[i] || icones[0] || dados.icone, texto: String(t).slice(0, 90) }));
@@ -1006,6 +1030,36 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const ok = await pedirFotos(c.tel, itens, legenda);
       c.registros.push(`imagem para WhatsApp pedida (${itens.length}) do aviso ${idCurto(a.id)}: ${ok ? "ok" : "falhou"}`);
       return ok ? `Pedido feito: ${itens.length > 1 ? `as ${itens.length} imagens chegam` : "a imagem chega"} aqui em 1 a 3 minutos. Avise isso em poucas palavras.` : "Não consegui gerar a imagem agora. Peça desculpas e diga para tentar de novo daqui a pouco.";
+    }
+    case "logo_do_predio": {
+      const alvos = Array.isArray(e.predios) && e.predios.length ? await resolverAlvos(c, e.predios, []) : (c.predioAtual ? [c.predioAtual] : []);
+      if (!alvos.length) return "Escolha o prédio primeiro (ou diga para quais prédios é a logo).";
+      const prefs = async (p: Predio) => ((await sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle()).data?.preferencias || {}) as any;
+      if (e.acao === "ver") {
+        const r = await Promise.all(alvos.map(async (p) => { const pr = await prefs(p); return `${p.nome}: ${pr.logo?.url ? `tem logo (placa ${pr.logo.placa})${pr.usar_logo === "nao" ? ", mas está DESLIGADA" : ""}` : "sem logo"}`; }));
+        return r.join("\n");
+      }
+      if (e.acao === "remover") {
+        for (const p of alvos) { const pr = await prefs(p); await sb.from("nando_predio_perfil").upsert({ building_id: p.id, preferencias: { ...pr, usar_logo: "nao" } }); }
+        c.registros.push(`logo desligada: ${alvos.map((p) => p.nome).join(", ")}`);
+        return "Pronto: os próximos avisos saem sem a logo (os que já estão no ar continuam como estão).";
+      }
+      const m = c.midias[e.midia_id] || await midiaSalva(c, String(e.midia_id || ""));
+      if (!m) return "Não encontrei a imagem da logo (midia_id). Peça para mandar de novo, de preferência o arquivo PNG original.";
+      if (!m.mime.startsWith("image/") || /svg/.test(m.mime)) return "A logo precisa vir como imagem (PNG ou JPG). Se ela tiver em PDF ou SVG, peça um print ou o PNG.";
+      const r = await fetch(m.url); if (!r.ok) return "Não consegui abrir a imagem agora.";
+      let l;
+      try { l = await prepararLogo(new Uint8Array(await r.arrayBuffer())); }
+      catch (er) { return `Não consegui preparar a logo: ${(er as Error).message}. Peça a logo em PNG (de preferência sem fundo) ou uma imagem maior e mais nítida.`; }
+      const caminho = `logos/${alvos[0].id}-${Date.now()}.png`;  // nome novo a cada troca (o painel guarda por nome)
+      const url = await salvarArquivo(c, caminho, l.png, "image/png");
+      const info = { url, placa: l.placa, tom: l.tom, fundo: l.fundo, largura: l.largura, altura: l.altura, original: m.url, em: new Date().toISOString(), por: quem(c) };
+      for (const p of alvos) { const pr = await prefs(p); const { usar_logo: _u, ...resto } = pr; await sb.from("nando_predio_perfil").upsert({ building_id: p.id, preferencias: { ...resto, logo: info } }); }
+      c.registros.push(`logo guardada (${l.fundo}, placa ${l.placa}) para ${alvos.map((p) => p.nome).join(", ")}: ${url}`);
+      const conf = await conferenciaLogo(l).catch(() => null);
+      const texto = `Logo guardada para ${alvos.map((p) => p.nome).join(", ")} e vai sair nos PRÓXIMOS avisos, ao lado da assinatura, numa placa ${l.placa} (a logo não é recolorida). Fundo: ${l.fundo === "removido" ? "tirado" : l.fundo === "ja_transparente" ? "já vinha sem fundo" : "mantido (imagem com fundo complexo)"}.${l.aviso ? " ATENÇÃO: " + l.aviso + "." : ""}
+CONFIRA a imagem acima: a logo tem que estar inteira, nítida, sem pedaço comido e sem sobra de fundo/serrilhado em volta. Se ficou boa, diga em uma frase curta que guardou e que vai nos próximos avisos. Se NÃO ficou perfeita (ou veio com fundo complexo), diga com gentileza e peça o arquivo original em PNG (de preferência sem fundo) — e use logo_do_predio acao='remover' até chegar uma melhor.`;
+      return conf ? { texto, blocos: [{ type: "image", source: { type: "base64", media_type: "image/png", data: bytesParaB64(conf) } }] } : texto;
     }
     case "enviar_video_apresentacao": {
       await enviarVideo(sb, c.tel, VIDEO_APRESENTACAO_URL, "🎬 Nando · a nova EXA — como funciona");
@@ -1204,6 +1258,7 @@ COMO TRABALHAR COM AVISOS
 - O aviso é lido de LONGE no elevador: textos curtos (título até 30 caracteres, "quando" até 35, texto até 110). Menos texto = letra maior.
 - Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data no aviso, pergunte UMA vez, de forma natural: "Ele fica sem data para sair? Se quiser, eu te lembro daqui a 30 dias para ver se ainda vale." Se não quiser lembrete, fica por tempo indeterminado. Faça as perguntas que faltarem juntas, numa mensagem só, e não repita perguntas já respondidas. (3) tempo na tela: SÓ pergunte/mencione se o prédio já tiver outro aviso no ar (aí o rodízio alterna entre eles; padrão 15 s). Se este for o ÚNICO aviso, não fale de segundos: ele fica o tempo todo na tela.
 - Confirme datas por extenso com dia da semana e hora exata (ex: "fica até *domingo, 27/10, às 23h59*, certo?").
+- LOGO DO CONDOMÍNIO: se o síndico mandar a logo do condomínio (ou disser "essa é nossa logo", "coloca nossa logo"), use logo_do_predio acao='salvar' com o midia_id e CONFIRA a imagem de conferência antes de responder. Se só chegou uma imagem que parece logo e você não tem certeza do que ele quer, pergunte em uma frase: "Essa é a logo do condomínio? Quer que eu coloque nos avisos?". Nunca invente nem desenhe logo, nunca mude as cores dela. A logo sai ao lado da assinatura em todos os avisos novos; os que já estão no ar só mudam se ele pedir (refaça com editar_aviso). Para parar de usar: acao='remover'.
 - Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine e informe busca_foto (palavras em inglês) para a foto de fundo, que aparece desfocada atrás do texto. Temas: ${listaTemas()}.
 - Se mandarem uma foto de um lugar (ex: o portão), você pode usar a foto em destaque no aviso do Nando (midia_id).
 

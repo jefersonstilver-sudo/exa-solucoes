@@ -6,7 +6,7 @@
  * nunca distorce, nunca corta texto. As sobras sao preenchidas com o fundo desfocado.
  *
  * Dados (arquivo .nando.json):
- * { v:1, titulo, quando, texto, assinatura, cor, icone (dataURL/URL), fundo (dataURL/URL),
+ * { v:1, titulo, quando, texto, assinatura, logo {url, placa: clara|escura}, cor, icone (dataURL/URL), fundo (dataURL/URL),
  *   foto (dataURL/URL, opcional: foto enviada pelo sindico, aparece nitida em destaque),
  *   selo (texto do selo no topo, padrao "AVISO DO CONDOMINIO"),
  *   itens [{icone, texto}] (v30: lista de regras com icone, ate 6), parte ("1/3", cartao de uma serie),
@@ -131,7 +131,16 @@
     }
 
     if (d.credito) palco.appendChild(el("div", "na-credito", String(d.credito).slice(0, 60)));
-    palco.appendChild(el("div", "na-assina na-entra", d.assinatura || "Administração do Condomínio"));
+    // v35: logo do condominio ao lado da assinatura, numa placa de contraste (a logo NUNCA e recolorida)
+    var logo = d.logo && seguro(d.logo.url);
+    var ass = el("div", "na-assina na-entra" + (logo ? " na-com-logo" : ""));
+    if (logo) {
+      var pl = el("div", "na-logo " + (d.logo.placa === "escura" ? "na-logo-escura" : "na-logo-clara"));
+      var li = el("img"); li.src = logo; li.alt = ""; pl.appendChild(li);
+      ass.appendChild(pl);
+    }
+    ass.appendChild(el("span", "na-assina-tx", d.assinatura || "Administração do Condomínio"));
+    palco.appendChild(ass);
     raiz.appendChild(palco);
 
     caixa.appendChild(raiz);
