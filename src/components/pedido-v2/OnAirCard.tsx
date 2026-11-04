@@ -41,9 +41,11 @@ interface Props {
   onEnviar?: () => void;
   /** Agenda ainda chegando: mostra o esqueleto em vez de "Nenhum vídeo no ar" (que piscava errado). */
   carregando?: boolean;
+  /** Pedido Vertical Premium: o vídeo é 9:16 e precisa aparecer em pé, sem esticar. */
+  vertical?: boolean;
 }
 
-export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar, onVerTela, onEnviar, carregando }) => {
+export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar, onVerTela, onEnviar, carregando, vertical }) => {
   const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId);
 
   // Progresso da janela atual (do início do trecho de hoje até a próxima troca).
