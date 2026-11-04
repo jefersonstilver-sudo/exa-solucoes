@@ -91,7 +91,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
       <div className={`${CARD} divide-y divide-[#f1edee] overflow-hidden md:grid md:grid-cols-2 md:divide-y-0 md:gap-px md:bg-[#f1edee]`}>
         {lista.map((b) => {
           const img = imgUrl(b);
-          const sd = visaoInterna && saude[b.id] ? SAUDE[saude[b.id]] : null;
           const nTelas = b.quantidade_telas || b.numero_elevadores;
           return (
             <button key={b.id} onClick={() => setAberto(b)} className="flex w-full items-center gap-3 bg-white px-3 py-2.5 text-left transition active:bg-[#f7f5f6] md:hover:bg-[#fdf6f7]">
