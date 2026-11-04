@@ -1,10 +1,9 @@
 name: subir-video-nando
-# sobe o video de apresentacao do Nando (anexo de uma release do repo) para o Storage publico nando-midia/apresentacao/
+# sobe o video de apresentacao do Nando (guardado no branch midia-nando, fora da main) para o Storage publico nando-midia/apresentacao/
 on:
   workflow_dispatch:
     inputs:
-      tag: { description: release com o video, required: true, default: "nando-video-apresentacao" }
-      arquivo: { description: nome do anexo, required: true, default: "nando_apresentacao.mp4" }
+      arquivo: { description: nome do arquivo no branch midia-nando, required: true, default: "nando_apresentacao.mp4" }
 permissions:
   contents: read
 jobs:
@@ -17,7 +16,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - run: |
-          gh release download "${{ inputs.tag }}" -R "${{ github.repository }}" -p "${{ inputs.arquivo }}" -D /tmp/v
+          mkdir -p /tmp/v && git clone -q --depth 1 -b midia-nando "https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}.git" /tmp/m && cp "/tmp/m/${{ inputs.arquivo }}" /tmp/v/
           ls -la /tmp/v
           code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$URL/storage/v1/object/nando-midia/apresentacao/${{ inputs.arquivo }}" \
             -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: video/mp4" -H "x-upsert: true" -H "Cache-Control: 3600" \
