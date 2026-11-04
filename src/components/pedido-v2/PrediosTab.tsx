@@ -165,7 +165,6 @@ const PredioAoVivo: React.FC<{
   const segsHoje = useMemo(() => daySegments(slots, rules, now), [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const minAgora = now.getHours() * 60 + now.getMinutes();
   const img = imgUrl(predio);
-  const sd = saude ? SAUDE[saude] : null;
 
   return (
     <div className="grid gap-5 p-4 sm:p-6 md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
