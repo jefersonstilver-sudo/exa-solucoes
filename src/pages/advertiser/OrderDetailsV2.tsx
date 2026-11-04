@@ -445,12 +445,6 @@ const OrderDetailsV2 = () => {
                   <section>
                     <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 px-0.5">
                       <h2 className="text-lg font-extrabold tracking-tight text-[#1b1719]">No ar agora</h2>
-                      {/* Confirmação por prédio (vigia das telas): só para a equipe EXA */}
-                      {visaoInterna && (
-                        <div className="[&>*]:!m-0 [&>*]:!shadow-none [&>*]:!bg-transparent [&>*]:!p-0 text-xs">
-                          <EntregaResumo buildingIds={predioIdsAtivos} />
-                        </div>
-                      )}
                     </div>
                     <OnAirCard
                       carregando={agenda.loading || videosCarregando}
