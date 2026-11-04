@@ -1,14 +1,29 @@
 name: diag-http
 # diagnostico: mostra os cabecalhos que um endereco publico devolve (aparece nas anotacoes da execucao)
+# com subir_video=1: sobe o video de apresentacao do Nando (branch midia-nando) para o Storage nando-midia/apresentacao/
 on:
   workflow_dispatch:
     inputs:
       url: { description: endereco, required: true }
+      subir_video: { description: "1 = subir o video do Nando", required: false, default: "" }
 jobs:
   ver:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 6
+    env:
+      SURL: ${{ secrets.SUPABASE_URL }}
+      KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - if: ${{ inputs.subir_video == '1' }}
+        run: |
+          git clone -q --depth 1 -b midia-nando "https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}.git" /tmp/m
+          ls -la /tmp/m
+          code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$SURL/storage/v1/object/nando-midia/apresentacao/nando_apresentacao.mp4" \
+            -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: video/mp4" -H "x-upsert: true" -H "Cache-Control: 3600" \
+            --data-binary @/tmp/m/nando_apresentacao.mp4)
+          echo "::notice title=upload::HTTP $code $(head -c 200 /tmp/r.txt)"
+          test "$code" = "200"
       - run: |
-          H=$(curl -sS -I --max-time 30 "${{ inputs.url }}" | tr -d '\r' | grep -i -E '^(HTTP|content-type|content-security|x-frame|cache-control|server)' | tr '\n' ' ' | cut -c1-3500)
+          H=$(curl -sS -I --max-time 30 "${{ inputs.url }}" | tr -d '\r' | grep -i -E '^(HTTP|content-type|content-length|content-security|x-frame|cache-control|server)' | tr '\n' ' ' | cut -c1-3500)
           echo "::notice title=cabecalhos::$H"
