@@ -430,7 +430,7 @@ export const FERRAMENTAS = [
   },
   {
     name: "registrar_ocorrencia",
-    description: "Avisa o Jeferson (responsável da EXA) de um problema: numero_desconhecido (com nome, se é síndico/gestor e de qual prédio), recusa, erro, dificuldade, reclamacao. NÃO use para síndico que quer a EXA num prédio novo: isso é o cadastro (anotar_cadastro_interessado / salvar_cadastro_interessado), que já avisa o Jeferson.",
+    description: "Avisa o Jeferson (responsável da EXA) NA HORA, pelo WhatsApp, de um problema: painel_problema (tela travada, desligada, não atualiza…), reclamacao, numero_desconhecido (com nome, se é síndico/gestor e de qual prédio), recusa, erro, dificuldade. NÃO use para síndico que quer a EXA num prédio novo: isso é o cadastro (anotar_cadastro_interessado / salvar_cadastro_interessado), que já avisa o Jeferson.",
     input_schema: { type: "object", properties: { tipo: { type: "string" }, descricao: { type: "string" } }, required: ["tipo", "descricao"] },
   },
   {
@@ -1096,9 +1096,18 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         const parecidos = await cadastrosParecidos(sb, c.tel).catch(() => []);
         if (parecidos.length) descricao += `\n\n⚠️ Cadastro parecido (mesmo final, DDD/dígito diferente — provável erro de digitação no cadastro): ${parecidos.join("; ")}.`;
       }
-      await registrarOcorrencia(sb, { tipo: e.tipo, telefone: c.tel, nome: c.nomePessoa, building_id: c.predioAtual?.id || null, descricao });
+      // problema na tela: junta o estado atual do(s) painel(is) do predio, para o Jeferson ja ver o que esta acontecendo
+      const predioOc = c.predioAtual || (c.predios.length === 1 ? c.predios[0] : null);
+      if (/painel|tela|reclama/i.test(String(e.tipo)) && predioOc) {
+        const { data: devs } = await sb.from("devices").select("name,status,last_online_at,is_deleted").eq("building_id", predioOc.id);
+        const vivos = (devs || []).filter((d: any) => !d.is_deleted);
+        if (vivos.length) descricao += `\n\n*Painel(is) do ${predioOc.nome} agora:* ` + vivos.map((d: any) => `${d.name}: ${d.status === "online" ? "🟢 online" : "🔴 offline"}${d.last_online_at ? ` (visto ${fmtData(d.last_online_at)})` : ""}`).join(" · ");
+        else descricao += `\n\n(Nenhum painel cadastrado em devices para o ${predioOc.nome}.)`;
+      }
+      if (predioOc && !descricao.includes(predioOc.nome)) descricao = `*Prédio:* ${predioOc.nome}\n` + descricao;
+      await registrarOcorrencia(sb, { tipo: e.tipo, telefone: c.tel, nome: c.nomePessoa, building_id: predioOc?.id || null, descricao });
       c.registros.push(`ocorrência ${e.tipo} registrada`);
-      return "Jeferson avisado.";
+      return "Jeferson avisado agora no WhatsApp. Diga à pessoa, em uma frase, que já avisou a equipe da EXA e que eles vão verificar (não prometa prazo nem que você mesmo vai voltar a falar).";
     }
     case "enviar_contato_sofia": {
       await enviarContatoSofia(sb, c.tel);
@@ -1239,6 +1248,7 @@ O QUE NÃO PODE (recuse com educação e explique em 1 frase)
 - Avisos pessoais, que citem, exponham ou denigram alguém; conteúdo ofensivo, político-partidário ou discriminatório.
 - Lista de inadimplentes ou qualquer aviso com nome/apartamento de devedores: explique que expõe moradores e pode gerar problema com a LGPD; sugira um aviso geral ("regularize suas taxas com a administração").
 - Em recusas relevantes ou problemas, registre com registrar_ocorrencia.
+- PROBLEMA NA TELA OU RECLAMAÇÃO (prioridade máxima): se a pessoa disser que o painel/tela travou, está desligado, apagado, preto, sem som/imagem, congelado, não atualiza, aviso não apareceu na tela, câmera parada, ou qualquer reclamação do serviço da EXA → use registrar_ocorrencia NA HORA (tipo "painel_problema" ou "reclamacao"), com o que ela disse (desde quando, qual elevador/bloco, se é sempre ou às vezes). Não tente resolver sozinho nem dizer que está tudo certo; não peça para ela reiniciar nada. Depois diga em 1–2 frases curtas que já avisou a equipe da EXA, que vão verificar, e agradeça o aviso. Se faltar um detalhe importante (qual bloco/elevador), pergunte depois de registrar.
 
 ${c.admin || c.predios.length ? "Se a pessoa (já cadastrada) quiser a EXA em OUTRO prédio que ainda não é da rede, use o roteiro abaixo para cadastrar esse prédio novo.\n" : ""}${roteiroCadastro()}
 
