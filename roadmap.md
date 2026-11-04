@@ -79,3 +79,6 @@
 # Fila atual (04/11/2026)
 - [x] "No ar agora" em formato vertical para pedidos vertical_premium (OnAirCard + OrderDetailsV2); build OK, site não publicado.
 - [ ] Deploy nando-webhook, nando-painel, nando-cron (commit ff13a23) — BLOQUEADO: commit ainda não sincronizou no projeto (HEAD f377b2cbd); aguardando push do usuário.
+
+# Nando .45 (commit 4f50799)
+- [ ] Deploy nando-webhook, nando-crm, nando-painel, nando-cron e conferir versao 2026-11-04.45-logo-js — BLOQUEADO: commit 4f50799 existe no repositório mas não está no HEAD (d0b9e2028); disco difere em _shared/nando-core.ts e _shared/nando-logo.ts. Aguardando push vazio na main.
