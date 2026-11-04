@@ -63,6 +63,7 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
       { title: 'Contratos', path: 'juridico', icon: Scale, moduleKey: MODULE_KEYS.juridico, badge: 'contratos', badgeTooltip: 'Contratos aguardando assinatura' },
       { title: 'Produtos', path: 'produtos', icon: MonitorPlay, moduleKey: MODULE_KEYS.produtos },
       { title: 'Cupons', path: 'cupons', icon: Ticket, moduleKey: MODULE_KEYS.cupons },
+      { title: 'QRs dos vídeos', path: 'qr-videos', icon: QrCode, moduleKey: MODULE_KEYS.pedidos },
     ],
   },
   {
