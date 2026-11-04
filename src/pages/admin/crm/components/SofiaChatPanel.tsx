@@ -9,6 +9,7 @@ import { canDeleteSofiaContact } from '@/lib/deleteContactRules';
 import DeleteContactDialog, { type DeleteContactTarget } from './DeleteContactDialog';
 import { ChatEXA, CxGaveta, CxNotas, cxQuando, type CxConversa, type CxMsg } from './chat/ChatEXA';
 import { IndicacaoDialog, PAPEIS_INDICACAO } from './IndicacaoDialog';
+import { SofiaRetornos, carregarResumoRetornos, quandoRetorno, type RetornoResumo } from './SofiaRetornos';
 
 /**
  * CRM da Sofia (clientes). Conversas, modo, envio de texto e contato pela sofia-panel (código só do painel);
@@ -69,6 +70,7 @@ const FILTROS = [
   { v: 'cliente', l: 'Clientes' },
   { v: 'lead', l: 'Leads' },
   { v: 'sindico', l: 'Síndicos' },
+  { v: 'retornos', l: 'Retornos' },
 ] as const;
 
 export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: string | null; telefoneAgente?: string | null }> = ({ onVoltar, fotoAgente, telefoneAgente }) => {
@@ -98,6 +100,8 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]['v']>('todas');
   const [busca, setBusca] = useState('');
   const alvoResolvido = useRef(false);
+  const [retornos, setRetornos] = useState<Record<string, RetornoResumo>>({});
+  const carregarRetornos = useCallback(() => { carregarResumoRetornos().then(setRetornos).catch(() => { /* asterisco é extra */ }); }, []);
 
   const openDelete = async (c: Conv) => {
     if (contact?.id && contactConversationId === c.id) {
@@ -122,6 +126,7 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
     try {
       const d = await call('list');
       setConvs(d.conversations || []);
+      carregarRetornos();
       if (telefoneAlvo && !alvoResolvido.current) {
         alvoResolvido.current = true;
         const l8 = telefoneAlvo.slice(-8);
@@ -229,11 +234,18 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
   const lista = listaTodas.filter((c) => {
     if (filtro === 'comigo' && c.mode !== 'humano') return false;
     if ((filtro === 'cliente' || filtro === 'lead' || filtro === 'sindico') && c.role !== filtro) return false;
+    if (filtro === 'retornos' && !retornos[c.id]) return false;
     return !q || [c.name, c.phone, c.preview].some((v) => (v || '').toLowerCase().includes(q));
   });
   const sel = listaTodas.find((c) => c.id === selId) || null;
-  const contagem = (v: string) => v === 'todas' ? 0 : v === 'comigo' ? listaTodas.filter((c) => c.mode === 'humano').length : listaTodas.filter((c) => c.role === v).length;
+  const contagem = (v: string) => v === 'todas' ? 0 : v === 'retornos' ? listaTodas.filter((c) => retornos[c.id]).length : v === 'comigo' ? listaTodas.filter((c) => c.mode === 'humano').length : listaTodas.filter((c) => c.role === v).length;
 
+  const agendaDe = (id: string): CxConversa['agenda'] => {
+    const r = retornos[id];
+    if (!r) return null;
+    if (r.falhas > 0) return { texto: `Retorno falhou${r.proximo ? ` · próximo ${quandoRetorno(r.proximo)}` : ''}`, falha: true };
+    return r.proximo ? { texto: `Retorno ${quandoRetorno(r.proximo)}` } : null;
+  };
   const paraCx = (c: Conv): CxConversa => ({
     id: c.id,
     titulo: c.name,
@@ -244,6 +256,7 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
     naoLidas: 0,
     humano: c.mode === 'humano',
     foto: c.avatar_url,
+    agenda: agendaDe(c.id),
   });
   const cxConversas = lista.map(paraCx);
   if (sel && !cxConversas.some((c) => c.id === sel.id)) cxConversas.push(paraCx(sel));
@@ -318,13 +331,17 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
             </div>
           ),
         },
+        { v: 'retornos', l: retornos[sel.id] ? 'Retornos *' : 'Retornos', conteudo: <SofiaRetornos conversationId={sel.id} onMudou={carregarRetornos} /> },
         { v: 'notas', l: 'Notas', conteudo: <CxNotas agente="sofia" alvo={sel.id} /> },
       ]}
     />
   ) : null;
 
+  const agSel = sel ? retornos[sel.id] : undefined;
   const aviso = semConversa
     ? <>Não consegui abrir a conversa ({semConversa}). <button style={{ textDecoration: 'underline', fontWeight: 800 }} onClick={() => setSemConversa(null)}>Fechar</button></>
+    : agSel && (agSel.proximo || agSel.falhas)
+      ? <><b style={{ color: agSel.falhas ? '#9E1014' : '#C2410C' }}>* {agSel.falhas ? 'Um retorno agendado falhou.' : `Retorno agendado: ${quandoRetorno(agSel.proximo!)}.`}</b> {agSel.falhas ? 'Veja o erro e reagende.' : 'A Sofia chama sozinha nesse horário.'} <button style={{ textDecoration: 'underline', fontWeight: 800 }} onClick={() => setFichaAberta(true)}>Ver na ficha</button></>
     : sel?.role === 'sindico'
       ? <><b>Síndico:</b> assuntos do prédio (avisos, telas, problemas) são do <b>Nando</b> (WhatsApp 45 9113-2351). A Sofia só deve encaminhar.</>
       : sel?.mode === 'humano' && sel.human_until

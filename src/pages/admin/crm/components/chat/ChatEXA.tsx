@@ -13,6 +13,8 @@ export type CxAgente = 'nando' | 'sofia';
 export type CxConversa = {
   id: string; titulo: string; sub: string; subMarca?: boolean; hora: string; preview: string;
   naoLidas: number; humano: boolean; foto?: string | null;
+  /** retorno agendado (asterisco na lista): texto curto e se falhou */
+  agenda?: { texto: string; falha?: boolean } | null;
 };
 export type CxMsg = {
   id: string; tipo: 'in' | 'bot' | 'humano' | 'sistema'; texto: string; autor?: string | null; criada: string;
@@ -430,10 +432,14 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
                   <CxFoto url={fotoDe(c)} tamanho={50} />
                   <span className="txt">
                     <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
-                      <b style={{ fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.titulo}</b>
+                      <b style={{ fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {c.titulo}
+                        {c.agenda && <span style={{ color: c.agenda.falha ? '#EA251D' : '#EA580C', fontWeight: 900, marginLeft: 3 }} title={c.agenda.texto} aria-label={c.agenda.texto}>*</span>}
+                      </b>
                       <span style={{ fontSize: 12, color: c.naoLidas && !on ? '#EA251D' : '#9C9A96', fontWeight: 700, flex: 'none' }}>{c.hora}</span>
                     </span>
                     <span style={{ display: 'block', marginTop: 1, fontSize: 12, fontWeight: 700, color: c.subMarca ? '#9E1014' : '#9C9A96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.sub}</span>
+                    {c.agenda && <span style={{ display: 'block', marginTop: 1, fontSize: 12, fontWeight: 800, color: c.agenda.falha ? '#EA251D' : '#C2410C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.agenda.texto}</span>}
                     <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginTop: 2 }}>
                       <span style={{ color: '#77756F', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.preview}</span>
                       {c.naoLidas > 0 && !on ? <span className="cx-badge">{c.naoLidas}</span> : c.humano ? <span className="cx-dot" style={{ background: '#0B0B0D' }} title="Você está atendendo" /> : null}
