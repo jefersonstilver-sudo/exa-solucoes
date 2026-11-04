@@ -1433,6 +1433,27 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_transferencia_20261103: {
+        Row: {
+          criado_em: string | null
+          dados: Json | null
+          id: string | null
+          tabela: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          dados?: Json | null
+          id?: string | null
+          tabela?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          dados?: Json | null
+          id?: string | null
+          tabela?: string | null
+        }
+        Relationships: []
+      }
       blocked_ips: {
         Row: {
           blocked_at: string | null
@@ -5568,6 +5589,69 @@ export type Database = {
         }
         Relationships: []
       }
+      custos_sistema: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          categoria: string
+          cobranca: string
+          criado_em: string
+          fonte: string
+          forma_pagamento: string | null
+          fornecedor: string
+          id: string
+          link_painel: string | null
+          moeda: string
+          observacao: string | null
+          ordem: number
+          para_que_serve: string | null
+          quem_depende: string | null
+          servico: string
+          status: string
+          valor_mensal: number | null
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          categoria: string
+          cobranca?: string
+          criado_em?: string
+          fonte?: string
+          forma_pagamento?: string | null
+          fornecedor: string
+          id?: string
+          link_painel?: string | null
+          moeda?: string
+          observacao?: string | null
+          ordem?: number
+          para_que_serve?: string | null
+          quem_depende?: string | null
+          servico: string
+          status?: string
+          valor_mensal?: number | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          categoria?: string
+          cobranca?: string
+          criado_em?: string
+          fonte?: string
+          forma_pagamento?: string | null
+          fornecedor?: string
+          id?: string
+          link_painel?: string | null
+          moeda?: string
+          observacao?: string | null
+          ordem?: number
+          para_que_serve?: string | null
+          quem_depende?: string | null
+          servico?: string
+          status?: string
+          valor_mensal?: number | null
+        }
+        Relationships: []
+      }
       daily_report_config: {
         Row: {
           created_at: string | null
@@ -7390,6 +7474,186 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exa_autopromo_eventos: {
+        Row: {
+          agente: string | null
+          codigo: string | null
+          contato_id: string | null
+          conversa_id: string | null
+          criado_em: string
+          dados: Json | null
+          id: number
+          ip_hash: string | null
+          origem: string | null
+          tipo: string
+        }
+        Insert: {
+          agente?: string | null
+          codigo?: string | null
+          contato_id?: string | null
+          conversa_id?: string | null
+          criado_em?: string
+          dados?: Json | null
+          id?: never
+          ip_hash?: string | null
+          origem?: string | null
+          tipo: string
+        }
+        Update: {
+          agente?: string | null
+          codigo?: string | null
+          contato_id?: string | null
+          conversa_id?: string | null
+          criado_em?: string
+          dados?: Json | null
+          id?: never
+          ip_hash?: string | null
+          origem?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      exa_autopromo_videos: {
+        Row: {
+          angulo: string | null
+          codigo: string
+          criado_em: string
+          data: string
+          faixa_horario: string | null
+          gancho: string | null
+          id: string
+          no_ar_ate: string | null
+          no_ar_de: string | null
+          oferta: string | null
+          pedido_id: string | null
+          pedido_video_id: string | null
+          roteiro: Json | null
+          status: string
+          titulo: string | null
+          video_id: string | null
+          visual: string | null
+        }
+        Insert: {
+          angulo?: string | null
+          codigo: string
+          criado_em?: string
+          data: string
+          faixa_horario?: string | null
+          gancho?: string | null
+          id?: string
+          no_ar_ate?: string | null
+          no_ar_de?: string | null
+          oferta?: string | null
+          pedido_id?: string | null
+          pedido_video_id?: string | null
+          roteiro?: Json | null
+          status?: string
+          titulo?: string | null
+          video_id?: string | null
+          visual?: string | null
+        }
+        Update: {
+          angulo?: string | null
+          codigo?: string
+          criado_em?: string
+          data?: string
+          faixa_horario?: string | null
+          gancho?: string | null
+          id?: string
+          no_ar_ate?: string | null
+          no_ar_de?: string | null
+          oferta?: string | null
+          pedido_id?: string | null
+          pedido_video_id?: string | null
+          roteiro?: Json | null
+          status?: string
+          titulo?: string | null
+          video_id?: string | null
+          visual?: string | null
+        }
+        Relationships: []
+      }
+      exa_qr_leituras: {
+        Row: {
+          codigo: string
+          dispositivo: string | null
+          id: number
+          ip_hash: string | null
+          lido_em: string
+          ua: string | null
+        }
+        Insert: {
+          codigo: string
+          dispositivo?: string | null
+          id?: never
+          ip_hash?: string | null
+          lido_em?: string
+          ua?: string | null
+        }
+        Update: {
+          codigo?: string
+          dispositivo?: string | null
+          id?: never
+          ip_hash?: string | null
+          lido_em?: string
+          ua?: string | null
+        }
+        Relationships: []
+      }
+      exa_qr_links: {
+        Row: {
+          arquivo: string | null
+          ativo: boolean
+          atualizado_em: string
+          campanha: string | null
+          cliente: string
+          codigo: string
+          criado_em: string
+          destino_url: string | null
+          formato: string | null
+          id: string
+          mensagem: string | null
+          pedido_id: string | null
+          titulo: string
+          video_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          arquivo?: string | null
+          ativo?: boolean
+          atualizado_em?: string
+          campanha?: string | null
+          cliente: string
+          codigo: string
+          criado_em?: string
+          destino_url?: string | null
+          formato?: string | null
+          id?: string
+          mensagem?: string | null
+          pedido_id?: string | null
+          titulo: string
+          video_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          arquivo?: string | null
+          ativo?: boolean
+          atualizado_em?: string
+          campanha?: string | null
+          cliente?: string
+          codigo?: string
+          criado_em?: string
+          destino_url?: string | null
+          formato?: string | null
+          id?: string
+          mensagem?: string | null
+          pedido_id?: string | null
+          titulo?: string
+          video_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
       }
       exa_radar_conteudo: {
         Row: {
@@ -12795,6 +13059,50 @@ export type Database = {
           },
         ]
       }
+      pedido_videos_eventos: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          evento: string
+          id: string
+          origem: string
+          pedido_id: string
+          pedido_video_id: string | null
+          video_id: string | null
+          video_nome: string | null
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          evento: string
+          id?: string
+          origem?: string
+          pedido_id: string
+          pedido_video_id?: string | null
+          video_id?: string | null
+          video_nome?: string | null
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          evento?: string
+          id?: string
+          origem?: string
+          pedido_id?: string
+          pedido_video_id?: string | null
+          video_id?: string | null
+          video_nome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_videos_eventos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedido_videos_historico: {
         Row: {
           arquivo_excluido: boolean
@@ -16023,6 +16331,77 @@ export type Database = {
           },
         ]
       }
+      sofia_missoes: {
+        Row: {
+          aberta_em: string | null
+          concluida_em: string | null
+          contato_id: string | null
+          contatos: Json
+          conversa_id: string | null
+          created_at: string
+          criado_por: string | null
+          empresa: string
+          id: string
+          idx: number
+          lembrete_em: string | null
+          log: Json
+          objetivo: string | null
+          pedido_id: string | null
+          resultado: string | null
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          aberta_em?: string | null
+          concluida_em?: string | null
+          contato_id?: string | null
+          contatos?: Json
+          conversa_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          empresa: string
+          id?: string
+          idx?: number
+          lembrete_em?: string | null
+          log?: Json
+          objetivo?: string | null
+          pedido_id?: string | null
+          resultado?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          aberta_em?: string | null
+          concluida_em?: string | null
+          contato_id?: string | null
+          contatos?: Json
+          conversa_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          empresa?: string
+          id?: string
+          idx?: number
+          lembrete_em?: string | null
+          log?: Json
+          objetivo?: string | null
+          pedido_id?: string | null
+          resultado?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_missoes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sofia_ofertas: {
         Row: {
           ativa: boolean
@@ -18705,6 +19084,25 @@ export type Database = {
           panels_online: number | null
           panels_total: number | null
           unread_messages: number | null
+        }
+        Relationships: []
+      }
+      exa_autopromo_placar: {
+        Row: {
+          angulo: string | null
+          codigo: string | null
+          conversas: number | null
+          conversas_provaveis: number | null
+          data: string | null
+          faixa_horario: string | null
+          gancho: string | null
+          leads: number | null
+          leituras_qr: number | null
+          oferta: string | null
+          status: string | null
+          titulo: string | null
+          vendas: number | null
+          visual: string | null
         }
         Relationships: []
       }
