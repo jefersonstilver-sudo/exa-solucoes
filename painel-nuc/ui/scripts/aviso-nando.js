@@ -69,7 +69,8 @@
     d = d || {};
     var itens = Array.isArray(d.itens) ? d.itens.slice(0, 6) : [];
     var qr = seguro(d.qr);
-    var raiz = el("div", "na-raiz" + (itens.length ? " na-com-itens" : "") + (qr ? " na-com-qr" : ""));
+    var claro = d.estilo === "claro";   // v35: fundo branco (pedido do sindico)
+    var raiz = el("div", "na-raiz" + (itens.length ? " na-com-itens" : "") + (qr ? " na-com-qr" : "") + (claro ? " na-claro" : ""));
     raiz.style.setProperty("--na-cor", cor(d.cor));
 
     var bg = el("div", "na-bg");
@@ -135,6 +136,7 @@
     var logo = d.logo && seguro(d.logo.url);
     var ass = el("div", "na-assina na-entra" + (logo ? " na-com-logo" : ""));
     if (logo) {
+      raiz.classList.add("na-tem-logo");
       var pl = el("div", "na-logo " + (d.logo.placa === "escura" ? "na-logo-escura" : "na-logo-clara"));
       var li = el("img"); li.src = logo; li.alt = ""; pl.appendChild(li);
       ass.appendChild(pl);
@@ -183,7 +185,7 @@
       if (bloco.scrollHeight > bloco.clientHeight + 2) bloco.style.overflow = "hidden";
     }
 
-    var fsrc = seguro(d.fundo) || foto;   // nunca usar o icone ampliado como fundo
+    var fsrc = claro ? "" : (seguro(d.fundo) || foto);   // nunca usar o icone ampliado como fundo; fundo branco = sem foto atras
     if (fsrc && d.fundo_nitido && seguro(d.fundo)) {   // wallpaper: nitido, sem desfoque
       raiz.classList.add("na-nitido");
       fundo.style.backgroundImage = "url(" + seguro(d.fundo) + ")";
@@ -198,5 +200,5 @@
     return { raiz: raiz, escalar: escalar, remover: function () { if (vigia) { try { vigia.disconnect(); } catch (e) {} } if (raiz.parentNode) raiz.parentNode.removeChild(raiz); } };
   }
 
-  window.NandoAviso = { montar: montar, W: W, H: H, versao: 33 };
+  window.NandoAviso = { montar: montar, W: W, H: H, versao: 35 };
 })();

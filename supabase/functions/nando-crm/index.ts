@@ -6,6 +6,10 @@
 import {
   chavesTelefone, clienteIdDoPredio, db, enviarTexto, enviarDigitando, prediosDoTelefone, telefoneCanonico,
 } from "../_shared/nando-core.ts";
+import { executar, type Contexto } from "../_shared/nando-agente.ts";
+
+// ferramentas do Nando que a equipe pode usar pelo CRM na conversa de um sindico (nunca publica nem remove: isso so com o sindico)
+const FERRAMENTAS_CRM = ["logo_do_predio", "criar_aviso_nando", "criar_opcoes_documento", "listar_avisos", "salvar_preferencia", "ver_arquivo"];
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (status: number, b: unknown) => new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -185,6 +189,36 @@ Deno.serve(async (req) => {
       }
       await sb.from("nando_mensagens").insert({ telefone: tel, building_id: body.building_id || null, papel: "nando", conteudo: { texto: "[apresentação] " + partes.join("\n\n"), autor } });
       await sb.from("nando_atendimento").upsert({ telefone: tel, modo: "auto", humano_ate: null, assumido_por: null, assumido_por_nome: null, atualizado_em: new Date().toISOString() }, { onConflict: "telefone" });
+      return json(200, { ok: true, enviadas: partes.length });
+    }
+
+    // ---------------- usar uma ferramenta do Nando na conversa do sindico (prepara; nao envia nada a ele) ----------------
+    // ex.: preparar um aviso para o CEO aprovar antes de mandar ao sindico. O que foi feito fica no historico (papel sistema)
+    if (action === "ferramenta") {
+      const nome = String(body.nome || "");
+      if (!tel || !FERRAMENTAS_CRM.includes(nome)) return json(400, { error: "telefone e ferramenta permitida obrigatorios", permitidas: FERRAMENTAS_CRM });
+      const { predios, nome: nomePessoa } = await prediosDoTelefone(sb, tel);
+      const predioAtual = predios.find((p) => p.id === body.building_id) || (predios.length === 1 ? predios[0] : null);
+      if (!predioAtual) return json(400, { error: "building_id do sindico obrigatorio", predios: predios.map((p) => ({ id: p.id, nome: p.nome })) });
+      const c: Contexto = { sb, tel, nomePessoa: nomePessoa || "", admin: false, predios, predioAtual, midias: {}, registros: [], inicio: Date.now() };
+      const saida: any = await executar(c, nome, body.entrada || {});
+      const texto = typeof saida === "string" ? saida : saida?.texto;
+      const imagens = typeof saida === "string" ? [] : (saida?.blocos || []).filter((x: any) => x.type === "image").map((x: any) => `data:${x.source.media_type};base64,${x.source.data}`);
+      await sb.from("nando_mensagens").insert({ telefone: tel, building_id: predioAtual.id, papel: "sistema", conteudo: { texto: `(preparado pela equipe EXA — ${autor} — ainda NÃO mostrado ao síndico)\n${c.registros.join("\n")}\n${nome}(${JSON.stringify(body.entrada || {}).slice(0, 600)}) → ${String(texto || "").slice(0, 1500)}` } });
+      return json(200, { ok: true, texto, registros: c.registros, imagens });
+    }
+
+    // ---------------- falar como o Nando (NAO pausa; conta como resposta do Nando as mensagens que ja chegaram) ----------------
+    if (action === "falar") {
+      const texto = String(body.texto || "").trim();
+      if (!tel || texto.length < 2) return json(400, { error: "telefone e texto obrigatorios" });
+      const { data: ult } = await sb.from("nando_mensagens").select("id").eq("telefone", tel).eq("papel", "sindico").order("id", { ascending: false }).limit(1);
+      const partes = texto.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean).slice(0, 3);
+      for (let i = 0; i < partes.length; i++) {
+        if (i) { await enviarDigitando(sb, tel, 1500); await new Promise((r) => setTimeout(r, 1600)); }
+        await enviarTexto(sb, tel, partes[i]);
+      }
+      await sb.from("nando_mensagens").insert({ telefone: tel, building_id: body.building_id || null, papel: "nando", conteudo: { texto: partes.join("\n\n"), autor, ate: ult?.[0]?.id || null } });
       return json(200, { ok: true, enviadas: partes.length });
     }
 

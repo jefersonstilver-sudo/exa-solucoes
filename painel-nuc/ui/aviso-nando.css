@@ -83,10 +83,36 @@
 .na-raiz>.na-veu{z-index:0}
 .na-palco{z-index:1;border-radius:0;background:transparent}
 
-/* ===== v35: logo do condominio junto da assinatura (placa de contraste; a logo nunca muda de cor) ===== */
-.na-assina.na-com-logo{display:flex;align-items:center;justify-content:center;gap:30px;padding:0 56px;bottom:30px;font-size:36px}
-.na-com-logo .na-assina-tx{max-width:470px;line-height:1.15;text-align:left}
-.na-logo{flex:0 0 auto;display:flex;align-items:center;justify-content:center;height:150px;min-width:150px;max-width:470px;padding:20px 30px;box-sizing:border-box;border-radius:26px}
-.na-logo img{display:block;max-height:110px;max-width:410px;width:auto;height:auto;object-fit:contain}
-.na-logo-clara{background:rgba(255,255,255,.96);box-shadow:0 14px 36px rgba(0,0,0,.35)}
-.na-logo-escura{background:rgba(12,10,16,.78);border:2px solid rgba(255,255,255,.22);box-shadow:0 14px 36px rgba(0,0,0,.35)}
+/* ===== v35: logo do condominio no canto de baixo, pequena e discreta (placa de contraste; a logo nunca muda de cor) ===== */
+.na-assina.na-com-logo{display:flex;align-items:center;justify-content:space-between;gap:28px;left:56px;right:56px;bottom:40px;text-align:left;font-size:34px}
+.na-com-logo .na-assina-tx{flex:1 1 auto;min-width:0;line-height:1.15}
+.na-logo{order:2;flex:0 0 auto;display:flex;align-items:center;justify-content:center;height:118px;max-width:340px;padding:14px 22px;box-sizing:border-box;border-radius:22px}
+.na-logo img{display:block;max-height:90px;max-width:296px;width:auto;height:auto;object-fit:contain}
+.na-logo-clara{background:rgba(255,255,255,.96);box-shadow:0 10px 28px rgba(0,0,0,.30)}
+.na-logo-escura{background:rgba(12,10,16,.78);border:2px solid rgba(255,255,255,.22);box-shadow:0 10px 28px rgba(0,0,0,.30)}
+.na-tem-logo.na-com-qr .na-qr{bottom:176px}
+.na-tem-logo.na-com-qr .na-bloco{bottom:496px}
+.na-tem-logo:not(.na-com-qr) .na-bloco{bottom:180px}
+
+/* ===== v35: estilo claro (fundo branco), texto escuro, cor do condominio nos destaques ===== */
+.na-raiz.na-claro{background:#f7f5f3;color:#1b1416}
+.na-claro>.na-fundo{animation:none;background-color:#f7f5f3;background-image:
+  radial-gradient(circle at 12% 0%,color-mix(in srgb,var(--na-cor) 16%,transparent),transparent 45%),
+  radial-gradient(circle at 100% 100%,color-mix(in srgb,var(--na-cor) 12%,transparent),transparent 50%),
+  linear-gradient(180deg,#ffffff,#f1eeeb)}
+.na-claro>.na-veu{display:none}
+.na-claro .na-brilho{opacity:.22}
+.na-claro .na-titulo,.na-claro .na-texto,.na-claro .na-item-tx,.na-claro .na-qr-tx{text-shadow:none;color:#1b1416}
+.na-claro .na-titulo{color:var(--na-cor)}
+@supports (color:color-mix(in srgb,red,blue)){.na-claro .na-titulo{color:color-mix(in srgb,var(--na-cor) 82%,#000)}}
+.na-claro .na-quando{color:#fff;box-shadow:0 10px 26px rgba(0,0,0,.14)}
+.na-claro .na-item{background:#fff;border:2px solid rgba(0,0,0,.08);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.na-claro .na-item-ic{filter:drop-shadow(0 6px 10px rgba(0,0,0,.18))}
+.na-claro .na-icone{filter:drop-shadow(0 26px 30px rgba(0,0,0,.18))}
+.na-claro .na-parte{background:#fff;color:#1b1416;border-color:rgba(0,0,0,.12)}
+.na-claro .na-assina{color:rgba(27,20,22,.72)}
+.na-claro .na-credito{color:rgba(27,20,22,.45)}
+.na-claro .na-qr-img{box-shadow:0 10px 30px rgba(0,0,0,.14);border:2px solid rgba(0,0,0,.08)}
+.na-claro .na-foto{border-color:#fff;box-shadow:0 24px 50px rgba(0,0,0,.18)}
+/* no fundo branco a logo vai sem placa (a placa clara sumiria); logo branca continua com placa escura */
+.na-claro .na-logo-clara{background:transparent;box-shadow:none;padding:6px 0}

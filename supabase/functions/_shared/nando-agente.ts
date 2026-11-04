@@ -212,7 +212,7 @@ async function criarSerie(c: Contexto, p: Predio, e: any, v: Visual, extra: Reco
     const ultimo = k === total - 1;
     const dados: any = {
       v: 1, titulo, quando, texto: !itensBrutos.length ? (String(cartoes[k]?.texto || "").slice(0, 160) || undefined) : undefined,
-      itens, assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p), cor, icone: await v.icone(tema), foto: v.foto || undefined,
+      itens, assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p), estilo: await estiloDe(c, p, e.estilo), cor, icone: await v.icone(tema), foto: v.foto || undefined,
       fundo, fundo_nitido: nitido || undefined, parte: total > 1 ? `${k + 1}/${total}` : undefined,
       qr: ultimo ? v.qr : undefined, qr_legenda: ultimo ? v.qrLegenda : undefined,
     };
@@ -295,6 +295,7 @@ export const FERRAMENTAS = [
     input_schema: {
       type: "object",
       properties: { predios: { type: "array", items: { type: "string" }, description: "SE o aviso vai para mais de um prédio: nomes/códigos (ou ['todos']). A prévia já mostra todos os prédios de destino e a assinatura de cada um." }, exceto: { type: "array", items: { type: "string" } }, 
+        estilo: { type: "string", enum: ["escuro", "claro"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto de fundo). Vazio = o estilo guardado do prédio (padrão escuro)." }, 
         titulo: { type: "string", description: "Curto e forte, ATÉ 30 caracteres (letras grandes, lido de longe). Ex: 'Falta d'água no sábado'" },
         quando: { type: "string", description: "Data/horário/local em uma linha, ATÉ 35 caracteres. Ex: 'Sáb 26/10 · 8h às 14h'" },
         texto: { type: "string", description: "Frase curta e amigável, ATÉ 110 caracteres (o aviso é lido de longe no elevador)" },
@@ -343,7 +344,7 @@ export const FERRAMENTAS = [
         midia_id: { type: "string", description: "midia_id da imagem/PDF recebido" },
         titulo: { type: "string", description: "Título curto dos cartões, SEM numeração (ex: 'Regras da piscina')" },
         quando: { type: "string", description: "Linha curta de destaque (ex: 'Aberta das 8h às 22h')" },
-        tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, assinatura: { type: "string" },
+        tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, assinatura: { type: "string" }, estilo: { type: "string", enum: ["escuro", "claro"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto de fundo). Vazio = o estilo guardado do prédio (padrão escuro)." }, 
         itens: { type: "array", description: "TODOS os itens/regras do documento, na ordem, cada um com tema de ícone e texto curto (até 70 caracteres). Não deixe nenhum de fora.", items: { type: "object", properties: { tema: { type: "string" }, texto: { type: "string" } }, required: ["texto"] } },
         resumo: { type: "object", description: "Opcional: resumo para o cartão com QR (comunicados). titulo até 30, quando até 35, texto até 110.", properties: { titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" } } },
         titulo_original: { type: "string", description: "Título do aviso do arquivo original (só para a lista)" },
@@ -402,7 +403,7 @@ export const FERRAMENTAS = [
     name: "editar_aviso",
     description: "Muda o TEXTO de um aviso animado do Nando já publicado (ou rascunho) sem criar outro: título, quando/onde, texto, itens ou assinatura. Republica no painel e tira a versão antiga. Com todos_os_predios=true muda em todos os prédios do mesmo grupo (cada um mantém a assinatura dele). Num cartão de série, muda só aquele cartão.",
     input_schema: { type: "object", properties: { aviso: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" },
-      itens: { type: "array", items: { type: "string" }, description: "a lista completa nova de itens deste cartão" }, assinatura: { type: "string" }, todos_os_predios: { type: "boolean" } }, required: ["aviso"] },
+      itens: { type: "array", items: { type: "string" }, description: "a lista completa nova de itens deste cartão" }, assinatura: { type: "string" }, estilo: { type: "string", enum: ["escuro", "claro"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto de fundo). Vazio = o estilo guardado do prédio (padrão escuro)." }, todos_os_predios: { type: "boolean" } }, required: ["aviso"] },
   },
   {
     name: "enviar_imagem_whatsapp",
@@ -484,6 +485,15 @@ async function logoDe(c: Contexto, p: Predio): Promise<{ url: string; placa: str
   const pref: any = data?.preferencias || {};
   if (!pref.logo?.url || String(pref.usar_logo || "").toLowerCase() === "nao") return undefined;
   return { url: pref.logo.url, placa: pref.logo.placa === "escura" ? "escura" : "clara" };
+}
+
+// estilo do aviso: o pedido da vez (e.estilo) ou a preferencia do predio ("estilo" = "claro" -> fundo branco)
+async function estiloDe(c: Contexto, p: Predio, pedido?: unknown): Promise<"claro" | undefined> {
+  const q = String(pedido || "").toLowerCase();
+  if (q === "claro") return "claro";
+  if (q === "escuro") return undefined;
+  const { data } = await c.sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle();
+  return String((data?.preferencias as any)?.estilo || "").toLowerCase() === "claro" ? "claro" : undefined;
 }
 
 // prédios-alvo a partir de nomes/códigos (aceita "todos") menos os "exceto"
@@ -758,7 +768,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         const cor = /^#[0-9a-f]{6}$/i.test(v.cor || e.cor || "") ? (v.cor || e.cor) : ICONES[tema].cor;
         const dados: any = {
           v: 1, titulo: String(v.titulo || e.titulo || "").slice(0, 60), quando: (v.quando || e.quando) ? String(v.quando || e.quando).slice(0, 60) : undefined,
-          texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p),
+          texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p), estilo: await estiloDe(c, p, e.estilo),
           cor, icone: await icone(tema), foto: foto || undefined, itens: itensUnico, qr, qr_legenda: qrLegenda,
         };
         if (!foto && n === 2) {
@@ -991,6 +1001,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           if (e.texto !== undefined) dados.texto = String(e.texto).slice(0, 160) || undefined;
           if (e.assinatura) dados.assinatura = String(e.assinatura).slice(0, 60);
           { const lg = await logoDe(c, p); if (lg) dados.logo = lg; else delete dados.logo; }  // sempre a logo atual do predio
+          if (e.estilo) { const es = await estiloDe(c, p, e.estilo); if (es) dados.estilo = es; else delete dados.estilo; }
           if (Array.isArray(e.itens)) {
             const icones = (dados.itens || []).map((x: any) => x?.icone);
             dados.itens = e.itens.map((t: unknown, i: number) => ({ icone: icones[i] || icones[0] || dados.icone, texto: String(t).slice(0, 90) }));
@@ -1258,7 +1269,8 @@ COMO TRABALHAR COM AVISOS
 - O aviso é lido de LONGE no elevador: textos curtos (título até 30 caracteres, "quando" até 35, texto até 110). Menos texto = letra maior.
 - Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data no aviso, pergunte UMA vez, de forma natural: "Ele fica sem data para sair? Se quiser, eu te lembro daqui a 30 dias para ver se ainda vale." Se não quiser lembrete, fica por tempo indeterminado. Faça as perguntas que faltarem juntas, numa mensagem só, e não repita perguntas já respondidas. (3) tempo na tela: SÓ pergunte/mencione se o prédio já tiver outro aviso no ar (aí o rodízio alterna entre eles; padrão 15 s). Se este for o ÚNICO aviso, não fale de segundos: ele fica o tempo todo na tela.
 - Confirme datas por extenso com dia da semana e hora exata (ex: "fica até *domingo, 27/10, às 23h59*, certo?").
-- LOGO DO CONDOMÍNIO: se o síndico mandar a logo do condomínio (ou disser "essa é nossa logo", "coloca nossa logo"), use logo_do_predio acao='salvar' com o midia_id e CONFIRA a imagem de conferência antes de responder. Se só chegou uma imagem que parece logo e você não tem certeza do que ele quer, pergunte em uma frase: "Essa é a logo do condomínio? Quer que eu coloque nos avisos?". Nunca invente nem desenhe logo, nunca mude as cores dela. A logo sai ao lado da assinatura em todos os avisos novos; os que já estão no ar só mudam se ele pedir (refaça com editar_aviso). Para parar de usar: acao='remover'.
+- FUNDO BRANCO / VISUAL: se o síndico pedir fundo branco, claro ou "mais limpo", use estilo "claro" (refaça a prévia com ele) e guarde com salvar_preferencia (chave "estilo", valor "claro") para os próximos avisos do prédio; "volta pro escuro" = estilo "escuro" e salvar_preferencia estilo "escuro". Pedido de visual (logo menor, no canto, fundo branco, cor do condomínio) você MESMO resolve: nunca registre isso como ocorrência/dificuldade.
+- LOGO DO CONDOMÍNIO: a logo NUNCA vai como foto de destaque (midia_id) do aviso: ela fica pequena no canto de baixo, ao lado da assinatura, via logo_do_predio. Se o síndico mandar a logo do condomínio (ou disser "essa é nossa logo", "coloca nossa logo"), use logo_do_predio acao='salvar' com o midia_id e CONFIRA a imagem de conferência antes de responder. Se só chegou uma imagem que parece logo e você não tem certeza do que ele quer, pergunte em uma frase: "Essa é a logo do condomínio? Quer que eu coloque nos avisos?". Nunca invente nem desenhe logo, nunca mude as cores dela. A logo sai ao lado da assinatura em todos os avisos novos; os que já estão no ar só mudam se ele pedir (refaça com editar_aviso). Para parar de usar: acao='remover'.
 - Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine e informe busca_foto (palavras em inglês) para a foto de fundo, que aparece desfocada atrás do texto. Temas: ${listaTemas()}.
 - Se mandarem uma foto de um lugar (ex: o portão), você pode usar a foto em destaque no aviso do Nando (midia_id).
 
