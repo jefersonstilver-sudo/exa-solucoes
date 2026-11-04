@@ -666,3 +666,6 @@ verify_jwt = false
 
 [functions.formulario-sindico]
 verify_jwt = false
+
+[functions.exa2-marcas-tela]
+verify_jwt = false
