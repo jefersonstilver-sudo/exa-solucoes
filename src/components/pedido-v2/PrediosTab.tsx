@@ -120,7 +120,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
               rules={rules}
               serverActiveSlotId={serverActiveSlotId}
               bloqueado={bloqueado}
-              saude={visaoInterna ? saude[aberto.id] || null : null}
               visaoInterna={visaoInterna}
             />
           )}
