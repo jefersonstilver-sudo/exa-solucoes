@@ -13,7 +13,7 @@ import { exigirSistema, urlWebhookEvolution, webhookEvolutionOk } from "../_shar
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
-const ESPERA_MS = 6000;          // junta mensagens enviadas em sequencia
+const ESPERA_MS = 9000;          // junta mensagens enviadas em sequencia
 const BUCKET = "nando-midia";
 
 function textoDa(m: any): string {
@@ -319,6 +319,14 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
 
   if (ctx.registros.length) await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "sistema", conteudo: { texto: ctx.registros.join("\n") } });
   if (!resposta) return;
+  // a pessoa mandou outra mensagem enquanto o Nando pensava: nao manda esta resposta;
+  // a mensagem nova responde tudo junto (senao saem duas respostas seguidas para a mesma conversa)
+  const { data: depois } = await sb.from("nando_mensagens").select("id").eq("telefone", tel).eq("papel", "sindico")
+    .gt("id", minhaMsg).limit(1);
+  if (depois?.length) {
+    await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "sistema", conteudo: { texto: "(resposta descartada: chegou mensagem nova antes do envio; a próxima responde tudo junto)", ate: minhaMsg } });
+    return;
+  }
   // 👍 / "ok" / "obrigado" depois de a conversa ja ter fechado: gente nao responde, o Nando tambem nao
   if (/^\s*\[sil[eê]ncio\]\s*$/i.test(resposta)) {
     await sb.from("nando_mensagens").insert({ telefone: tel, building_id: ctx.predioAtual?.id || null, papel: "sistema", conteudo: { texto: "(sem resposta: só um agradecimento/confirmação depois de a conversa já ter fechado)", ate: minhaMsg } });
