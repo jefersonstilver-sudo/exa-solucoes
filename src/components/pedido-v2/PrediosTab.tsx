@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, CheckCircle2, ChevronRight, Clock, MapPin, Monitor, Search, Users, WifiOff, X } from 'lucide-react';
+import { Building2, ChevronRight, MapPin, Monitor, Search, Users, X } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,40 +32,6 @@ const imgUrl = (b: PredioInfo): string | null => {
   return supabase.storage.from('building-images').getPublicUrl(p).data.publicUrl;
 };
 
-/** Situação da entrega no prédio (vigia exa2_telas_saude). */
-type Saude = 'sincronizada' | 'aplicando' | 'offline' | 'sem_confirmacao';
-const SAUDE: Record<Saude, { t: string; c: string; i: React.ElementType }> = {
-  sincronizada: { t: 'Confirmado', c: BADGE.ar, i: CheckCircle2 },
-  aplicando: { t: 'Aplicando mudança', c: BADGE.agendado, i: Clock },
-  offline: { t: 'Sem internet agora', c: BADGE.parado, i: WifiOff },
-  sem_confirmacao: { t: 'Em atualização', c: BADGE.parado, i: Clock },
-};
-
-const useSaudePredios = (ids: string[]) => {
-  const [mapa, setMapa] = useState<Record<string, Saude>>({});
-  const chave = ids.join(',');
-  useEffect(() => {
-    if (!ids.length) return;
-    let vivo = true;
-    const ler = async () => {
-      const { data, error } = await (supabase as any).from('exa2_telas_saude').select('building_id, status').in('building_id', ids);
-      if (!vivo || error || !data) return;
-      const m: Record<string, Saude> = {};
-      // Pior estado do prédio vence: offline > aplicando > sem confirmação > confirmado.
-      const peso: Record<Saude, number> = { offline: 3, aplicando: 2, sem_confirmacao: 1, sincronizada: 0 };
-      for (const l of data as { building_id: string; status: string }[]) {
-        const s: Saude = l.status === 'atrasada' ? 'aplicando' : (['sincronizada', 'aplicando', 'offline', 'sem_confirmacao'].includes(l.status) ? (l.status as Saude) : 'sem_confirmacao');
-        if (!m[l.building_id] || peso[s] > peso[m[l.building_id]]) m[l.building_id] = s;
-      }
-      setMapa(m);
-    };
-    ler();
-    const t = setInterval(ler, 60000);
-    return () => { vivo = false; clearInterval(t); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chave]);
-  return mapa;
-};
 
 interface Props {
   /** Apenas prédios ATIVOS do pedido. */
@@ -75,7 +41,7 @@ interface Props {
   serverActiveSlotId?: string | null;
   /** Pedido bloqueado: nada no ar. */
   bloqueado?: boolean;
-  /** Equipe EXA: mostra a confirmação de entrega por prédio e a fila completa da tela. */
+  /** Equipe EXA: mostra a fila completa da tela. */
   visaoInterna?: boolean;
 }
 
@@ -84,7 +50,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
   const [aberto, setAberto] = useState<PredioInfo | null>(null);
   const { atual } = useNoArAgora(slots, rules, serverActiveSlotId, 30000);
   const noAr = bloqueado ? null : atual?.slot || null;
-  const saude = useSaudePredios(visaoInterna ? predios.map((p) => p.id) : []);
 
   const lista = useMemo(
     () =>
@@ -125,7 +90,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
       <div className={`${CARD} divide-y divide-[#f1edee] overflow-hidden md:grid md:grid-cols-2 md:divide-y-0 md:gap-px md:bg-[#f1edee]`}>
         {lista.map((b) => {
           const img = imgUrl(b);
-          const sd = visaoInterna && saude[b.id] ? SAUDE[saude[b.id]] : null;
           const nTelas = b.quantidade_telas || b.numero_elevadores;
           return (
             <button key={b.id} onClick={() => setAberto(b)} className="flex w-full items-center gap-3 bg-white px-3 py-2.5 text-left transition active:bg-[#f7f5f6] md:hover:bg-[#fdf6f7]">
@@ -138,11 +102,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
                 <span className="flex items-center gap-1 truncate text-[12.5px] text-[#8b8285]">
                   <MapPin className="h-3 w-3 flex-none" />{b.bairro || 'Foz do Iguaçu'}{nTelas ? ` · ${nTelas} ${nTelas === 1 ? 'tela' : 'telas'}` : ''}
                 </span>
-                {sd && (
-                  <span className={`mt-1 inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold ${sd.c}`}>
-                    <sd.i className="h-3 w-3" /> {sd.t}
-                  </span>
-                )}
               </span>
               <span className="flex flex-none items-center gap-0.5 text-[12px] font-semibold text-[#9C1E1E]">
                 <span className="hidden sm:inline">Ver tela</span><ChevronRight className="h-4 w-4 text-[#c9c1c3] sm:text-[#9C1E1E]" />
@@ -162,7 +121,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
               rules={rules}
               serverActiveSlotId={serverActiveSlotId}
               bloqueado={bloqueado}
-              saude={visaoInterna ? saude[aberto.id] || null : null}
               visaoInterna={visaoInterna}
             />
           )}
@@ -181,9 +139,8 @@ const PredioAoVivo: React.FC<{
   rules: AgendaRule[];
   serverActiveSlotId?: string | null;
   bloqueado?: boolean;
-  saude: Saude | null;
   visaoInterna?: boolean;
-}> = ({ predio, slots, rules, serverActiveSlotId, bloqueado, saude, visaoInterna }) => {
+}> = ({ predio, slots, rules, serverActiveSlotId, bloqueado, visaoInterna }) => {
   // Relógio ao vivo (segundo a segundo); o vídeo vencedor troca sozinho quando a agenda muda.
   const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId, 1000);
   const { weatherData } = useWeatherData();
@@ -207,7 +164,6 @@ const PredioAoVivo: React.FC<{
   const segsHoje = useMemo(() => daySegments(slots, rules, now), [slots, rules, minuteKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const minAgora = now.getHours() * 60 + now.getMinutes();
   const img = imgUrl(predio);
-  const sd = saude ? SAUDE[saude] : null;
 
   return (
     <div className="grid gap-5 p-4 sm:p-6 md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
@@ -237,7 +193,6 @@ const PredioAoVivo: React.FC<{
             <div className="flex flex-wrap items-center gap-x-2 text-xs text-[#8b8285]">
               <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{predio.bairro || 'Foz do Iguaçu'}</span>
               {(predio.quantidade_telas || predio.numero_elevadores) ? <span>· {predio.quantidade_telas || predio.numero_elevadores} tela(s)</span> : null}
-              {sd && <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-bold ${sd.c}`}><sd.i className="h-3 w-3" />{sd.t}</span>}
             </div>
           </div>
         </div>
