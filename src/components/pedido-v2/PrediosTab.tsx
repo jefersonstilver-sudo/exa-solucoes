@@ -139,9 +139,8 @@ const PredioAoVivo: React.FC<{
   rules: AgendaRule[];
   serverActiveSlotId?: string | null;
   bloqueado?: boolean;
-  saude: Saude | null;
   visaoInterna?: boolean;
-}> = ({ predio, slots, rules, serverActiveSlotId, bloqueado, saude, visaoInterna }) => {
+}> = ({ predio, slots, rules, serverActiveSlotId, bloqueado, visaoInterna }) => {
   // Relógio ao vivo (segundo a segundo); o vídeo vencedor troca sozinho quando a agenda muda.
   const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId, 1000);
   const { weatherData } = useWeatherData();
