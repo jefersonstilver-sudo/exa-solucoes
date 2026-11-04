@@ -1,0 +1,18 @@
+
+/* ===== v34: faixa "Marcas nesta tela" no rodape (so liga quando ha marcas: body.com-marcas).
+   Tira 60 px da grade: avisos 990->930, camera 400->340. Player 1080x890 nao muda.
+   Animacao so com transform (leve para o NUC); velocidade fixa calculada no marcas.js ===== */
+body.com-marcas footer{display:flex!important;flex:0 0 60px;height:60px;padding:0;gap:0;background:rgba(10,4,14,.72);border-top:1px solid rgba(255,255,255,.12)}
+body.com-marcas .main{flex:0 0 970px;height:970px}
+body.com-marcas .widget-avisos{height:930px}
+body.com-marcas .widget-camera{height:340px;flex:0 0 340px}
+.marcas-rotulo{position:relative;z-index:2;flex:0 0 auto;height:100%;display:flex;align-items:center;gap:10px;padding:0 20px 0 22px;
+  background:linear-gradient(90deg,#c8141c,#9e1014);font-size:15px;font-weight:800;letter-spacing:2.4px;text-transform:uppercase;color:#fff;
+  box-shadow:14px 0 24px rgba(10,4,14,.9)}
+.marcas-rotulo i{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff}
+.marcas-janela{flex:1;min-width:0;height:100%;overflow:hidden;position:relative;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 40px,#000 calc(100% - 60px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 40px,#000 calc(100% - 60px),transparent)}
+.marcas-trilho{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;white-space:nowrap;will-change:transform;animation:marcasAnda linear infinite}
+.marca-it{display:inline-flex;align-items:center;font-size:25px;font-weight:800;letter-spacing:-.2px;color:#fff;padding:0 26px}
+.marca-it::after{content:"";width:7px;height:7px;border-radius:50%;background:#e5243b;box-shadow:0 0 8px rgba(229,36,59,.9);margin-left:52px}
+@keyframes marcasAnda{from{transform:translateX(0)}to{transform:translateX(-50%)}}
