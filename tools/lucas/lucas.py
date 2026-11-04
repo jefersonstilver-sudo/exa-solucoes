@@ -378,15 +378,32 @@ class Diretor:
         self.msgs = []
         self.uso = {"input": 0, "output": 0, "chamadas": 0}
 
-    def perguntar(self, content, max_tokens=24000):
+    def perguntar(self, content, max_tokens=64000):
+        # 04/11/2026: o modelo novo usa parte do limite antes do texto; com 24000 o codigo vinha CORTADO
+        # (sem o ``` final) e o diretor "nao entregava" nada. Agora: limite maior e, se cortar, pede a continuacao.
         self.msgs.append({"role": "user", "content": content})
-        with self.cli.messages.stream(model=MODEL, max_tokens=max_tokens, system=self.sys, messages=self.msgs) as s:
-            msg = s.get_final_message()
-        txt = "".join(c.text for c in msg.content if getattr(c, "type", "") == "text")
+        partes = []
+        for volta in range(4):
+            with self.cli.messages.stream(model=MODEL, max_tokens=max_tokens, system=self.sys, messages=self.msgs) as s:
+                msg = s.get_final_message()
+            pedaco = "".join(c.text for c in msg.content if getattr(c, "type", "") == "text")
+            partes.append(pedaco)
+            self.uso["input"] += msg.usage.input_tokens
+            self.uso["output"] += msg.usage.output_tokens
+            self.uso["chamadas"] += 1
+            print("[diretor] volta", volta, "stop", msg.stop_reason, "saida", msg.usage.output_tokens, "texto", len(pedaco), flush=True)
+            if msg.stop_reason != "max_tokens":
+                break
+            # cortou no limite: guarda o pedaco e pede para continuar exatamente de onde parou
+            self.msgs.append({"role": "assistant", "content": pedaco or "(...)"})
+            self.msgs.append({"role": "user", "content": "Sua resposta foi cortada no limite. Continue EXATAMENTE de onde parou, sem repetir nada e sem comentarios."})
+        txt = "".join(partes)
+        # no historico fica a resposta inteira, como uma unica mensagem
+        while len(self.msgs) and self.msgs[-1]["role"] == "user" and self.msgs[-1]["content"] != content:
+            self.msgs.pop()
+            if self.msgs and self.msgs[-1]["role"] == "assistant":
+                self.msgs.pop()
         self.msgs.append({"role": "assistant", "content": txt.strip() or "(sem resposta)"})
-        self.uso["input"] += msg.usage.input_tokens
-        self.uso["output"] += msg.usage.output_tokens
-        self.uso["chamadas"] += 1
         # quadros de rodadas anteriores saem do historico (o material da marca, na 1a mensagem, fica)
         for m in self.msgs[1:-2]:
             if m["role"] == "user" and isinstance(m["content"], list):
@@ -398,6 +415,10 @@ def extrair_codigo(txt):
     blocos = re.findall(r"```([A-Za-z]*)[ \t]*\n([\s\S]*?)```", txt or "")
     cand = [c for lang, c in blocos if "renderAt" in c] or [c for lang, c in blocos if lang.lower() in ("js", "javascript")]
     code = max(cand, key=len).strip() if cand else ""
+    if not code:  # 04/11/2026: bloco aberto e nao fechado (resposta cortada): aproveita se tiver o codigo inteiro
+        m = re.search(r"```(?:js|javascript)?[ \t]*\n([\s\S]*)$", txt or "")
+        if m and "renderAt" in m.group(1):
+            code = m.group(1).strip()
     con = re.search(r"CONCEITO:\s*(.+)", txt)
     return code, (con.group(1).strip()[:300] if con else "")
 
