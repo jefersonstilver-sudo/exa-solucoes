@@ -102,6 +102,7 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
                 <span className="flex items-center gap-1 truncate text-[12.5px] text-[#8b8285]">
                   <MapPin className="h-3 w-3 flex-none" />{b.bairro || 'Foz do Iguaçu'}{nTelas ? ` · ${nTelas} ${nTelas === 1 ? 'tela' : 'telas'}` : ''}
                 </span>
+              </span>
               <span className="flex flex-none items-center gap-0.5 text-[12px] font-semibold text-[#9C1E1E]">
                 <span className="hidden sm:inline">Ver tela</span><ChevronRight className="h-4 w-4 text-[#c9c1c3] sm:text-[#9C1E1E]" />
               </span>
