@@ -33,7 +33,6 @@ import { winnerAt } from '@/lib/agenda/agendaEngine';
 import { usePedidoEmpresas } from '@/hooks/exa2/usePedidoEmpresas';
 import { OnAirCard } from '@/components/pedido-v2/OnAirCard';
 import { AgendaTab } from '@/components/pedido-v2/AgendaTab';
-import { EntregaResumo } from '@/components/pedido-v2/EntregaResumo';
 import { PrediosTab } from '@/components/pedido-v2/PrediosTab';
 import { EmpresaTab } from '@/components/pedido-v2/EmpresaTab';
 import { CARD, EYEBROW } from '@/components/pedido-v2/ui';
@@ -445,12 +444,6 @@ const OrderDetailsV2 = () => {
                   <section>
                     <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 px-0.5">
                       <h2 className="text-lg font-extrabold tracking-tight text-[#1b1719]">No ar agora</h2>
-                      {/* Confirmação por prédio (vigia das telas): só para a equipe EXA */}
-                      {visaoInterna && (
-                        <div className="[&>*]:!m-0 [&>*]:!shadow-none [&>*]:!bg-transparent [&>*]:!p-0 text-xs">
-                          <EntregaResumo buildingIds={predioIdsAtivos} />
-                        </div>
-                      )}
                     </div>
                     <OnAirCard
                       carregando={agenda.loading || videosCarregando}
