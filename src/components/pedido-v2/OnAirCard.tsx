@@ -84,9 +84,9 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
   return (
     <div className={`${CARD} overflow-hidden`}>
       <div className="md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-        {/* Vídeo atual tocando (mudo, em loop) */}
-        <div className="relative aspect-[1080/890] bg-black">
-          <LoopVideo url={atual.slot.url} nome={nomeDe(atual.slot)} fit="fill" />
+        {/* Vídeo atual tocando (mudo, em loop) — vertical premium aparece em pé (9:16), sem esticar */}
+        <div className={vertical ? 'relative mx-auto aspect-[9/16] w-full max-w-[280px] bg-black sm:max-w-[320px] md:my-6' : 'relative aspect-[1080/890] bg-black'}>
+          <LoopVideo url={atual.slot.url} nome={nomeDe(atual.slot)} fit={vertical ? 'contain' : 'fill'} />
           <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-white backdrop-blur">
             <span className="relative h-2 w-2 rounded-full bg-[#2fe17a]">
               <span className="absolute -inset-1 animate-ping rounded-full border-2 border-[#2fe17a]" />
