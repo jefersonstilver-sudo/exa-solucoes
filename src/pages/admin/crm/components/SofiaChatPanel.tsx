@@ -20,6 +20,7 @@ type Conv = {
   name: string;
   phone: string | null;
   role: string | null;
+  company?: string | null;
   avatar_url: string | null;
   mode: 'auto' | 'humano';
   human_until: string | null;
@@ -235,7 +236,7 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
     if (filtro === 'comigo' && c.mode !== 'humano') return false;
     if ((filtro === 'cliente' || filtro === 'lead' || filtro === 'sindico') && c.role !== filtro) return false;
     if (filtro === 'retornos' && !retornos[c.id]) return false;
-    return !q || [c.name, c.phone, c.preview].some((v) => (v || '').toLowerCase().includes(q));
+    return !q || [c.name, c.company, c.phone, c.preview].some((v) => (v || '').toLowerCase().includes(q));
   });
   const sel = listaTodas.find((c) => c.id === selId) || null;
   const contagem = (v: string) => v === 'todas' ? 0 : v === 'retornos' ? listaTodas.filter((c) => retornos[c.id]).length : v === 'comigo' ? listaTodas.filter((c) => c.mode === 'humano').length : listaTodas.filter((c) => c.role === v).length;
@@ -248,7 +249,8 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
   };
   const paraCx = (c: Conv): CxConversa => ({
     id: c.id,
-    titulo: c.name,
+    // empresa sempre visível ao lado do nome (pedido do Jeferson, 04/11)
+    titulo: c.company && !c.name.toLowerCase().includes(c.company.toLowerCase()) ? `${c.name} · ${c.company}` : c.name,
     sub: [roleLabel(c.role), fone(c.phone)].filter(Boolean).join(' · '),
     subMarca: c.role === 'cliente',
     hora: cxQuando(c.last_message_at),

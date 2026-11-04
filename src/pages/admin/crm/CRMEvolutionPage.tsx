@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageCircle, UserPlus, Users, RefreshCw } from 'lucide-react';
+import { MessageCircle, UserPlus, Users, RefreshCw, Radio } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { AddCollaboratorDialog } from './components/AddCollaboratorDialog';
 import { CollaboratorCard, type CollaboratorRow } from './components/CollaboratorCard';
+import { MonitorAoVivo } from './components/MonitorAoVivo';
 import { toast } from 'sonner';
 
 const callEvolution = async (
@@ -28,6 +29,7 @@ const CRMEvolutionPage: React.FC = () => {
     : '/admin';
 
   const [addOpen, setAddOpen] = useState(false);
+  const [aoVivo, setAoVivo] = useState(false);
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -152,6 +154,16 @@ const CRMEvolutionPage: React.FC = () => {
                 </p>
               </div>
             </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => setAoVivo(true)}
+              className="rounded-full md:rounded-md h-10 px-4 border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-red-50"
+              title="Acompanhar as conversas da Sofia e do Nando ao mesmo tempo, em tela cheia"
+            >
+              <Radio className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Ao vivo</span>
+            </Button>
             <Button
               onClick={() => setAddOpen(true)}
               className="bg-[#9C1E1E] hover:bg-[#7D1818] text-white flex-shrink-0 rounded-full md:rounded-md h-10 px-4"
@@ -160,6 +172,7 @@ const CRMEvolutionPage: React.FC = () => {
               <span className="hidden sm:inline">Adicionar colaborador</span>
               <span className="sm:hidden">Adicionar</span>
             </Button>
+            </div>
           </div>
         </div>
 
@@ -231,6 +244,8 @@ const CRMEvolutionPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <MonitorAoVivo aberto={aoVivo} onFechar={() => setAoVivo(false)} colaboradores={collaborators} />
 
       <AddCollaboratorDialog
         open={addOpen}
