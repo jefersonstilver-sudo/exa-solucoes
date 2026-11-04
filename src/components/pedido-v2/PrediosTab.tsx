@@ -96,6 +96,7 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
               <span className="relative h-12 w-12 flex-none overflow-hidden rounded-[12px] bg-gradient-to-br from-[#5b6b8c] to-[#2d3a56]">
                 {img ? <img src={img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" /> : <Building2 className="absolute inset-0 m-auto h-5 w-5 text-white/50" />}
                 {noAr && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#2fe17a] shadow-[0_0_0_2px_rgba(0,0,0,.35)]" />}
+                </span>
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-bold text-[#1b1719]">{b.nome}</span>
