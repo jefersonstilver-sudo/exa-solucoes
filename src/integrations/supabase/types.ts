@@ -16504,6 +16504,72 @@ export type Database = {
           },
         ]
       }
+      sofia_retornos: {
+        Row: {
+          contact_id: string
+          conversation_id: string | null
+          created_at: string
+          criado_por: string | null
+          erro: string | null
+          executado_em: string | null
+          id: string
+          mensagem: string | null
+          motivo: string | null
+          origem: string
+          quando: string
+          status: string
+          tentativas: number
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          conversation_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          erro?: string | null
+          executado_em?: string | null
+          id?: string
+          mensagem?: string | null
+          motivo?: string | null
+          origem?: string
+          quando: string
+          status?: string
+          tentativas?: number
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          erro?: string | null
+          executado_em?: string | null
+          id?: string
+          mensagem?: string | null
+          motivo?: string | null
+          origem?: string
+          quando?: string
+          status?: string
+          tentativas?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_retornos_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sofia_retornos_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sofia_video_jobs: {
         Row: {
           briefing: Json
@@ -20446,6 +20512,67 @@ export type Database = {
           kind: string
           label: string
           ref_id: string
+        }[]
+      }
+      sofia_retorno_cancelar: { Args: { p_id: string }; Returns: undefined }
+      sofia_retorno_criar: {
+        Args: { p_conversation: string; p_motivo: string; p_quando: string }
+        Returns: {
+          contact_id: string
+          conversation_id: string | null
+          created_at: string
+          criado_por: string | null
+          erro: string | null
+          executado_em: string | null
+          id: string
+          mensagem: string | null
+          motivo: string | null
+          origem: string
+          quando: string
+          status: string
+          tentativas: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "sofia_retornos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      sofia_retornos_conversa: {
+        Args: { p_conversation: string }
+        Returns: {
+          contact_id: string
+          conversation_id: string | null
+          created_at: string
+          criado_por: string | null
+          erro: string | null
+          executado_em: string | null
+          id: string
+          mensagem: string | null
+          motivo: string | null
+          origem: string
+          quando: string
+          status: string
+          tentativas: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "sofia_retornos"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      sofia_retornos_resumo: {
+        Args: never
+        Returns: {
+          contact_id: string
+          conversation_id: string
+          falhas: number
+          pendentes: number
+          proximo: string
         }[]
       }
       submit_lead_produtora: {
