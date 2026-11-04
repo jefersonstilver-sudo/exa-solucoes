@@ -32,40 +32,6 @@ const imgUrl = (b: PredioInfo): string | null => {
   return supabase.storage.from('building-images').getPublicUrl(p).data.publicUrl;
 };
 
-/** Situação da entrega no prédio (vigia exa2_telas_saude). */
-type Saude = 'sincronizada' | 'aplicando' | 'offline' | 'sem_confirmacao';
-const SAUDE: Record<Saude, { t: string; c: string; i: React.ElementType }> = {
-  sincronizada: { t: 'Confirmado', c: BADGE.ar, i: CheckCircle2 },
-  aplicando: { t: 'Aplicando mudança', c: BADGE.agendado, i: Clock },
-  offline: { t: 'Sem internet agora', c: BADGE.parado, i: WifiOff },
-  sem_confirmacao: { t: 'Em atualização', c: BADGE.parado, i: Clock },
-};
-
-const useSaudePredios = (ids: string[]) => {
-  const [mapa, setMapa] = useState<Record<string, Saude>>({});
-  const chave = ids.join(',');
-  useEffect(() => {
-    if (!ids.length) return;
-    let vivo = true;
-    const ler = async () => {
-      const { data, error } = await (supabase as any).from('exa2_telas_saude').select('building_id, status').in('building_id', ids);
-      if (!vivo || error || !data) return;
-      const m: Record<string, Saude> = {};
-      // Pior estado do prédio vence: offline > aplicando > sem confirmação > confirmado.
-      const peso: Record<Saude, number> = { offline: 3, aplicando: 2, sem_confirmacao: 1, sincronizada: 0 };
-      for (const l of data as { building_id: string; status: string }[]) {
-        const s: Saude = l.status === 'atrasada' ? 'aplicando' : (['sincronizada', 'aplicando', 'offline', 'sem_confirmacao'].includes(l.status) ? (l.status as Saude) : 'sem_confirmacao');
-        if (!m[l.building_id] || peso[s] > peso[m[l.building_id]]) m[l.building_id] = s;
-      }
-      setMapa(m);
-    };
-    ler();
-    const t = setInterval(ler, 60000);
-    return () => { vivo = false; clearInterval(t); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chave]);
-  return mapa;
-};
 
 interface Props {
   /** Apenas prédios ATIVOS do pedido. */
