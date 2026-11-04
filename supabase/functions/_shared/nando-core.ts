@@ -22,7 +22,7 @@ export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCa
 export const CADASTRO_ABERTO = (Deno.env.get("NANDO_CADASTRO_ABERTO") || "false").toLowerCase() === "true";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-11-04.45-logo-js";
+export const NANDO_VERSAO = "2026-11-04.46-video-painel";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -148,6 +148,9 @@ export async function enviarImagem(sb: SupabaseClient, tel: string, urlImagem: s
 }
 // video de apresentacao do Nando para os sindicos (versao leve para WhatsApp, ~16 MB, 720x1280)
 export const VIDEO_APRESENTACAO_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/nando-midia/apresentacao/nando_apresentacao.mp4";
+// tutorial do Painel do Sindico (site, sem WhatsApp): ~1 min, vertical 720p. Bom para quem cuida de varios predios
+export const VIDEO_PAINEL_URL = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/nando-midia/apresentacao/nando_tutorial_painel.mp4";
+export const LEGENDA_VIDEO_PAINEL = "🎬 Painel do Síndico · examidia.com.br/paineldosindico\nAlém do WhatsApp, você também pode ver a tela ao vivo e cuidar dos avisos pelo painel. Ótimo para quem tem mais de um prédio.";
 export async function enviarVideo(sb: SupabaseClient, tel: string, urlVideo: string, legenda = "") {
   const { url, key } = evo();
   const inst = await instanciaNando(sb);

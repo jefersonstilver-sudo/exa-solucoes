@@ -5,6 +5,7 @@
 // =====================================================================
 import {
   chavesTelefone, clienteIdDoPredio, db, enviarTexto, enviarDigitando, prediosDoTelefone, telefoneCanonico,
+  enviarVideo, VIDEO_PAINEL_URL, LEGENDA_VIDEO_PAINEL, VIDEO_APRESENTACAO_URL,
 } from "../_shared/nando-core.ts";
 import { executar, type Contexto } from "../_shared/nando-agente.ts";
 
@@ -206,6 +207,17 @@ Deno.serve(async (req) => {
       const imagens = typeof saida === "string" ? [] : (saida?.blocos || []).filter((x: any) => x.type === "image").map((x: any) => `data:${x.source.media_type};base64,${x.source.data}`);
       await sb.from("nando_mensagens").insert({ telefone: tel, building_id: predioAtual.id, papel: "sistema", conteudo: { texto: `(preparado pela equipe EXA — ${autor} — ainda NÃO mostrado ao síndico)\n${c.registros.join("\n")}\n${nome}(${JSON.stringify(body.entrada || {}).slice(0, 600)}) → ${String(texto || "").slice(0, 1500)}` } });
       return json(200, { ok: true, texto, registros: c.registros, imagens });
+    }
+
+    // ---------------- mandar um video do Nando (painel | apresentacao) como o Nando, sem pausar ----------------
+    if (action === "video") {
+      if (!tel) return json(400, { error: "telefone obrigatorio" });
+      const painel = body.qual !== "apresentacao";
+      const legenda = String(body.legenda || (painel ? LEGENDA_VIDEO_PAINEL : "🎬 Nando · a nova EXA — como funciona"));
+      await enviarVideo(sb, tel, painel ? VIDEO_PAINEL_URL : VIDEO_APRESENTACAO_URL, legenda);
+      const { data: ult } = await sb.from("nando_mensagens").select("id").eq("telefone", tel).eq("papel", "sindico").order("id", { ascending: false }).limit(1);
+      await sb.from("nando_mensagens").insert({ telefone: tel, building_id: body.building_id || null, papel: "nando", conteudo: { texto: `(enviei o vídeo ${painel ? "do Painel do Síndico" : "de apresentação"}) ${legenda}`, autor, ate: ult?.[0]?.id || null } });
+      return json(200, { ok: true });
     }
 
     // ---------------- falar como o Nando (NAO pausa; conta como resposta do Nando as mensagens que ja chegaram) ----------------

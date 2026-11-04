@@ -5,7 +5,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   Predio, nomeBase, ehAdmin, prediosDoTelefone, todosPredios, sincronizarLegado, listarArquivosPainel, enviarAoPainel, removerDoPainel,
   tituloPainel, dataApi, registrarOcorrencia, enviarContatoSofia, historico, fmtData, slug, carimbo,
-  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos, enviarImagem, enviarDocumento, enviarVideo, VIDEO_APRESENTACAO_URL,
+  b64ParaBytes, bytesParaB64, telefoneCanonico, pngComAviso, primeiroNome, SITE_URL, MODO_TESTE, horaLocalIso, qrDataUrl, tokenPredio, tokenCarteira, pedirFotos, enviarImagem, enviarDocumento, enviarVideo, VIDEO_APRESENTACAO_URL, VIDEO_PAINEL_URL, LEGENDA_VIDEO_PAINEL,
 } from "./nando-core.ts";
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 import { prepararLogo, conferenciaLogo } from "./nando-logo.ts";
@@ -418,6 +418,11 @@ export const FERRAMENTAS = [
       midia_id: { type: "string", description: "id da imagem da logo (para salvar)" },
       predios: { type: "array", items: { type: "string" }, description: "Opcional: nomes/códigos dos prédios que usam essa logo (ex: a administradora com vários prédios). Vazio = prédio atual." },
     }, required: ["acao"] },
+  },
+  {
+    name: "enviar_video_painel",
+    description: "Manda o vídeo curto (~1 min) que ensina a usar o PAINEL DO SÍNDICO no site (examidia.com.br/paineldosindico): entrar com o celular, ver a tela ao vivo, ver e trocar os avisos de todos os prédios. Ofereça a quem cuida de vários prédios (administradora, gestor) ou pergunta do painel/site. Só mande se a pessoa aceitar ou pedir.",
+    input_schema: { type: "object", properties: {} },
   },
   {
     name: "enviar_video_apresentacao",
@@ -1071,6 +1076,11 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const texto = `Logo guardada para ${alvos.map((p) => p.nome).join(", ")} e vai sair nos PRÓXIMOS avisos, ao lado da assinatura, numa placa ${l.placa} (a logo não é recolorida). Fundo: ${l.fundo === "removido" ? "tirado" : l.fundo === "ja_transparente" ? "já vinha sem fundo" : "mantido (imagem com fundo complexo)"}.${l.aviso ? " ATENÇÃO: " + l.aviso + "." : ""}
 CONFIRA a imagem acima: a logo tem que estar inteira, nítida, sem pedaço comido e sem sobra de fundo/serrilhado em volta. Se ficou boa, diga em uma frase curta que guardou e que vai nos próximos avisos. Se NÃO ficou perfeita (ou veio com fundo complexo), diga com gentileza e peça o arquivo original em PNG (de preferência sem fundo) — e use logo_do_predio acao='remover' até chegar uma melhor.`;
       return conf ? { texto, blocos: [{ type: "image", source: { type: "base64", media_type: "image/png", data: bytesParaB64(conf) } }] } : texto;
+    }
+    case "enviar_video_painel": {
+      await enviarVideo(sb, c.tel, VIDEO_PAINEL_URL, LEGENDA_VIDEO_PAINEL);
+      c.registros.push("vídeo do painel do síndico enviado");
+      return "Vídeo do painel enviado agora. Diga em poucas palavras que mandou e que o link é examidia.com.br/paineldosindico (entra com o celular, o código chega aqui no WhatsApp).";
     }
     case "enviar_video_apresentacao": {
       await enviarVideo(sb, c.tel, VIDEO_APRESENTACAO_URL, "🎬 Nando · a nova EXA — como funciona");
