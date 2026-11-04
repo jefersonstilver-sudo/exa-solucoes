@@ -376,7 +376,40 @@ class Diretor:
         self.cli = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"], max_retries=3, timeout=900)
         self.sys = (HERE / "diretor.md").read_text(encoding="utf-8")
         self.msgs = []
-        self.uso = {"input": 0, "output": 0, "chamadas": 0}
+        self.uso = {"input": 0, "output": 0, "chamadas": 0, "cache_escrita": 0, "cache_lida": 0}
+        self.cache = True
+
+    def _envio(self):
+        """04/11/2026: CACHE DE PROMPT. O conteudo enviado e o MESMO; so marca 3 pontos de cache (instrucoes do diretor,
+        fim do material da marca na 1a mensagem, fim da ultima mensagem). Cada rodada relê o que ja foi enviado a 10% do preco."""
+        if not self.cache:
+            return self.sys, self.msgs
+        cc = {"type": "ephemeral"}
+        def marcar(m):
+            c = m["content"]
+            c = [{"type": "text", "text": c}] if isinstance(c, str) else [dict(x) for x in c]
+            if c:
+                c[-1]["cache_control"] = cc
+            return {"role": m["role"], "content": c}
+        msgs = list(self.msgs)
+        if msgs:
+            msgs[0] = marcar(msgs[0])
+        if len(msgs) > 1:
+            msgs[-1] = marcar(msgs[-1])
+        return [{"type": "text", "text": self.sys, "cache_control": cc}], msgs
+
+    def _chamar(self, max_tokens):
+        import anthropic
+        sys_, msgs = self._envio()
+        try:
+            with self.cli.messages.stream(model=MODEL, max_tokens=max_tokens, system=sys_, messages=msgs) as s:
+                return s.get_final_message()
+        except anthropic.BadRequestError as e:
+            if self.cache and "cache" in str(e).lower():
+                print("[diretor] cache recusado, seguindo sem:", str(e)[:200], flush=True)
+                self.cache = False
+                return self._chamar(max_tokens)
+            raise
 
     def perguntar(self, content, max_tokens=64000):
         # 04/11/2026: o modelo novo usa parte do limite antes do texto; com 24000 o codigo vinha CORTADO
@@ -384,14 +417,18 @@ class Diretor:
         self.msgs.append({"role": "user", "content": content})
         partes = []
         for volta in range(4):
-            with self.cli.messages.stream(model=MODEL, max_tokens=max_tokens, system=self.sys, messages=self.msgs) as s:
-                msg = s.get_final_message()
+            msg = self._chamar(max_tokens)
             pedaco = "".join(c.text for c in msg.content if getattr(c, "type", "") == "text")
             partes.append(pedaco)
             self.uso["input"] += msg.usage.input_tokens
             self.uso["output"] += msg.usage.output_tokens
             self.uso["chamadas"] += 1
-            print("[diretor] volta", volta, "stop", msg.stop_reason, "saida", msg.usage.output_tokens, "texto", len(pedaco), flush=True)
+            cw = getattr(msg.usage, "cache_creation_input_tokens", 0) or 0
+            cr = getattr(msg.usage, "cache_read_input_tokens", 0) or 0
+            self.uso["cache_escrita"] += cw
+            self.uso["cache_lida"] += cr
+            print("[diretor] volta", volta, "stop", msg.stop_reason, "saida", msg.usage.output_tokens, "texto", len(pedaco),
+                  "entrada", msg.usage.input_tokens, "cache_escrita", cw, "cache_lida", cr, flush=True)
             if msg.stop_reason != "max_tokens":
                 break
             # cortou no limite: guarda o pedaco e pede para continuar exatamente de onde parou
@@ -423,6 +460,22 @@ def extrair_codigo(txt):
     return code, (con.group(1).strip()[:300] if con else "")
 
 
+def aplicar_trocas(codigo, txt):
+    """04/11/2026: correcao cirurgica. O diretor pode mandar so os trechos que mudam:
+    <<<<\n(trecho atual exato)\n====\n(trecho novo)\n>>>>. Devolve o codigo novo, None se nao houver trocas,
+    ou "" se alguma troca nao bateu (o trecho nao existe ou aparece mais de uma vez)."""
+    trocas = re.findall(r"<<<<[ \t]*\n([\s\S]*?)\n====[ \t]*\n([\s\S]*?)\n?>>>>", txt or "")
+    if not trocas or not codigo:
+        return None
+    novo = codigo
+    for antes, depois in trocas:
+        if novo.count(antes) != 1:
+            print("[diretor] troca nao bateu (%d ocorrencias): %s" % (novo.count(antes), antes[:80]), flush=True)
+            return ""
+        novo = novo.replace(antes, depois)
+    return novo if "renderAt" in novo else ""
+
+
 def extrair_veredito(txt):
     m = re.search(r"\{[\s\S]*?\"aprovado\"[\s\S]*?\}", txt)
     if not m:
@@ -445,7 +498,11 @@ REVISAO = (
     "(11) QR rastreado na tela por pelo menos 5 s, sem tapar rosto/produto/texto, grande no cartao final."
     "\nResponda PRIMEIRO com um JSON numa linha: {{\"nota\": 0-10, \"aprovado\": true|false, \"problemas\": [\"...\"]}}. "
     "Aprove (nota >= 8) somente se voce colocaria isso no ar hoje e o relatorio automatico nao tiver erro. "
-    "Se NAO aprovar, depois do JSON escreva CONCEITO: e o codigo COMPLETO corrigido num unico bloco ```js (nao um trecho)."
+    "Se NAO aprovar, depois do JSON escreva CONCEITO: e a correcao, de UM destes dois jeitos: "
+    "(A) se os problemas forem pontuais (posicao, tamanho, cor, tempo, area segura, um texto), mande SO as trocas, cada uma assim:\n<<<<\n(trecho atual, copiado EXATAMENTE do seu codigo, e que aparece uma unica vez)\n====\n(trecho novo)\n>>>>\n"
+    "quantas trocas precisar e nada de bloco ```js; "
+    "(B) se a correcao mudar o conceito ou a estrutura, mande o codigo COMPLETO corrigido num unico bloco ```js. "
+    "A exigencia de qualidade e a mesma nos dois jeitos: corrija TUDO o que reprovou."
 )
 
 
@@ -744,6 +801,7 @@ def dirigir(work, spec, fontes_css, intro, vertical):
 
     try:
         pendente = True  # 'codigo' ainda nao foi revisado
+        via_troca = False  # a ultima correcao veio por trocas: mostra o codigo atual inteiro na proxima revisao
         for r in range(1, ROUNDS + 1):
             if not codigo:
                 codigo, conceito = extrair_codigo(dr.perguntar([{"type": "text", "text": "Nao encontrei o bloco ```js. Envie o codigo COMPLETO num unico bloco ```js."}]))
@@ -757,6 +815,8 @@ def dirigir(work, spec, fontes_css, intro, vertical):
             conteudo = []
             for i, f in enumerate(fl):
                 conteudo += [{"type": "text", "text": "Quadros %d-%d:" % (i * 4 + 1, i * 4 + 4)}, b64img(f)]
+            if via_troca:
+                conteudo.append({"type": "text", "text": "CODIGO ATUAL (com as suas trocas ja aplicadas; copie os trechos daqui):\n```js\n" + codigo + "\n```"})
             conteudo.append({"type": "text", "text": REVISAO.format(r=r, auto=("; ".join(auto) or "sem problemas detectados"), fmt=fmt)})
             txt = dr.perguntar(conteudo)
             v = extrair_veredito(txt) or {}
@@ -771,6 +831,14 @@ def dirigir(work, spec, fontes_css, intro, vertical):
             if v.get("aprovado") and nota >= 8 and not auto:
                 break
             novo, c2 = extrair_codigo(txt)
+            via_troca = False
+            if not novo:
+                trocado = aplicar_trocas(codigo, txt)
+                if trocado == "":  # trocas nao bateram: pede o codigo inteiro (mesma qualidade, so custa mais)
+                    novo, c2 = extrair_codigo(dr.perguntar([{"type": "text", "text": "Algum trecho de <<<< nao bateu exatamente com o codigo atual. Envie CONCEITO e o codigo COMPLETO corrigido num unico bloco ```js."}]))
+                elif trocado:
+                    novo, via_troca = trocado, True
+                    log("rodada", r, "correcao cirurgica aplicada")
             if not novo:
                 break
             codigo, conceito, pendente = novo, (c2 or conceito), True
