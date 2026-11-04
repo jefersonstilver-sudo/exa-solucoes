@@ -13059,6 +13059,60 @@ export type Database = {
           },
         ]
       }
+      pedido_videos_arquivo: {
+        Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          arquivado_em: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          is_base_video: boolean | null
+          pedido_id: string | null
+          qr_config: Json | null
+          rejection_reason: string | null
+          selected_for_display: boolean | null
+          slot_position: number | null
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          arquivado_em?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_base_video?: boolean | null
+          pedido_id?: string | null
+          qr_config?: Json | null
+          rejection_reason?: string | null
+          selected_for_display?: boolean | null
+          slot_position?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          arquivado_em?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_base_video?: boolean | null
+          pedido_id?: string | null
+          qr_config?: Json | null
+          rejection_reason?: string | null
+          selected_for_display?: boolean | null
+          slot_position?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: []
+      }
       pedido_videos_eventos: {
         Row: {
           autor_id: string | null
@@ -15708,6 +15762,60 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sofia_acoes: {
+        Row: {
+          contact_id: string
+          conversation_id: string | null
+          created_at: string
+          criado_por: string | null
+          id: string
+          instrucao: string
+          resultado: string | null
+          silencioso: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          conversation_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          instrucao: string
+          resultado?: string | null
+          silencioso?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          instrucao?: string
+          resultado?: string | null
+          silencioso?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sofia_acoes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sofia_acoes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sofia_conversations"
             referencedColumns: ["id"]
           },
         ]
