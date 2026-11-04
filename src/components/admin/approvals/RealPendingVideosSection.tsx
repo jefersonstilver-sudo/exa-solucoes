@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { checarFormatoVideo } from '@/lib/formatoVideo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,9 @@ interface PendingVideo {
   video_url: string;
   video_duracao: number;
   video_orientacao: string;
+  video_largura?: number | null;
+  video_altura?: number | null;
+  tipo_produto?: string | null;
 }
 
 interface RealPendingVideosSectionProps {
@@ -97,14 +101,17 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
             id,
             valor_total,
             client_id,
-            nome_pedido
+            nome_pedido,
+            tipo_produto
           ),
           videos (
             id,
             nome,
             url,
             duracao,
-            orientacao
+            orientacao,
+            largura,
+            altura
           )
         `)
         .eq('approval_status', 'pending')
@@ -144,7 +151,10 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           video_nome: pv.videos.nome,
           video_url: pv.videos.url,
           video_duracao: pv.videos.duracao,
-          video_orientacao: pv.videos.orientacao
+          video_orientacao: pv.videos.orientacao,
+          video_largura: (pv.videos as any).largura ?? null,
+          video_altura: (pv.videos as any).altura ?? null,
+          tipo_produto: (pv.pedidos as any)?.tipo_produto ?? null
         };
       });
       
@@ -594,7 +604,8 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                           <div className="text-sm text-muted-foreground space-y-1">
                             <p><strong>Valor:</strong> {formatCurrency(video.pedido_valor)}</p>
                             <p><strong>Arquivo:</strong> {video.video_nome}</p>
-                            <p><strong>Duração:</strong> {video.video_duracao}s • {video.video_orientacao}</p>
+                            <p><strong>Duração:</strong> {video.video_duracao}s • {video.video_orientacao}{video.video_largura ? ' • ' + video.video_largura + '×' + video.video_altura : ''}</p>
+                            {(() => { const f = checarFormatoVideo(video.video_largura, video.video_altura, /vertical/i.test(video.tipo_produto || '')); return f.conhecido && !f.ok ? <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-2 text-xs font-semibold text-red-700">Fora do formato: {f.real} (o painel exibe {f.esperado}). Vai aparecer distorcido; peça uma versão em {f.esperado}.</p> : null; })()}
                           </div>
                         </div>
 

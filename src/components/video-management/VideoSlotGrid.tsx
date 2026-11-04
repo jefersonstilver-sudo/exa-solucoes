@@ -27,6 +27,8 @@ interface VideoSlot {
     tem_audio: boolean;
     tamanho_arquivo?: number;
     formato?: string;
+    largura?: number | null;
+    altura?: number | null;
   };
   rejection_reason?: string;
   schedule_rules?: {

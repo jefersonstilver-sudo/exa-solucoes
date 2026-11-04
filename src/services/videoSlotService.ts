@@ -90,6 +90,8 @@ async function buscar(orderId: string, safeMaxSlots: number): Promise<VideoSlot[
         tem_audio: video.tem_audio,
         tamanho_arquivo: video.tamanho_arquivo,
         formato: video.formato,
+        largura: video.largura ?? null,
+        altura: video.altura ?? null,
       },
       schedule_rules: regrasPorVideo.get(video.id) || [],
     } as VideoSlot;

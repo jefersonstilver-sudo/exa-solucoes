@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { videoLogger } from '@/services/logger/VideoActionLogger';
 import { useForceCleanup } from '@/hooks/useForceCleanup';
+import { checarFormatoVideo } from '@/lib/formatoVideo';
 import type { VideoQRConfigData } from './VideoQRConfig';
 interface VideoSlot {
   id?: string;
@@ -32,6 +33,8 @@ interface VideoSlot {
     tem_audio: boolean;
     tamanho_arquivo?: number;
     formato?: string;
+    largura?: number | null;
+    altura?: number | null;
   };
   rejection_reason?: string;
   qr_config?: VideoQRConfigData | null;
@@ -80,6 +83,18 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   tipoProduto
 }) => {
   const isVertical = tipoProduto === 'vertical_premium' || tipoProduto === 'vertical';
+  // Formato real do painel: o painel estica o video para preencher a area; proporcao diferente = distorcido
+  const fmt = checarFormatoVideo(slot.video_data?.largura, slot.video_data?.altura, isVertical);
+  const foraFormato = !!slot.video_data && fmt.conhecido && !fmt.ok;
+  const avisoFormato = foraFormato ? (
+    <div role="alert" className="mt-2 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-2.5">
+      <AlertCircle className="mt-0.5 h-4 w-4 flex-none text-red-600" />
+      <div className="min-w-0 text-xs leading-snug text-red-800">
+        <p className="font-bold">Vídeo fora do formato: aparece distorcido no painel</p>
+        <p className="mt-0.5">Este vídeo tem {fmt.real}; o painel exibe {fmt.esperado}. Na tela ele fica {Math.abs(fmt.distorcao || 0)}% {(fmt.distorcao || 0) < 0 ? 'mais estreito (achatado)' : 'mais largo (esticado)'}. Envie uma versão em {fmt.esperado}.</p>
+      </div>
+    </div>
+  ) : null;
   const [showQRView, setShowQRView] = React.useState(false);
   const [settingBase, setSettingBase] = React.useState(false);
   const {
@@ -197,7 +212,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const isPendingWithVideo = slot.video_data && slot.approval_status === 'pending';
   // Card limpo (fundo branco, sem vídeo desfocado atrás): só a borda indica o estado
-  const cardClasses = `transition-all duration-200 rounded-2xl bg-white shadow-[0_1px_2px_rgba(30,15,18,.04)] ${slot.is_base_video ? 'border-2 border-amber-300' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-emerald-300' : hasActiveSchedule ? 'border border-sky-200' : isPendingWithVideo ? 'border-2 border-amber-200 bg-amber-50/30' : isBlocked ? 'border border-red-200' : 'border border-[#ece6e8]'}`;
+  const cardClasses = `transition-all duration-200 rounded-2xl bg-white shadow-[0_1px_2px_rgba(30,15,18,.04)] ${foraFormato ? 'border-2 border-red-300' : slot.is_base_video ? 'border-2 border-amber-300' : hasActiveSchedule && isScheduledActiveNow() ? 'border-2 border-emerald-300' : hasActiveSchedule ? 'border border-sky-200' : isPendingWithVideo ? 'border-2 border-amber-200 bg-amber-50/30' : isBlocked ? 'border border-red-200' : 'border border-[#ece6e8]'}`;
   const getScheduleTooltipContent = () => {
     if (!hasActiveSchedule || !slot.schedule_rules) return null;
     return <div className="p-2 space-y-2">
@@ -380,8 +395,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 onClick={() => window.open(slot.video_data!.url, '_blank')}
                 className="flex w-full items-center gap-3 rounded-xl bg-[#f7f4f5] p-2 text-left active:scale-[.99]"
               >
-                <span className={`relative flex-none overflow-hidden rounded-lg bg-[#1b1719] ${isVertical ? 'h-16 w-9' : 'h-12 w-[76px]'}`}>
-                  <video src={`${slot.video_data.url}#t=0.5`} preload="metadata" muted playsInline aria-hidden="true" className="h-full w-full object-cover" />
+                <span className={`relative flex-none overflow-hidden rounded-lg bg-[#1b1719] ${isVertical ? 'h-16 w-9' : 'h-12 w-[58px]'} ${foraFormato ? 'ring-2 ring-red-500' : ''}`}>
+                  <video src={`${slot.video_data.url}#t=0.5`} preload="metadata" muted playsInline aria-hidden="true" className="h-full w-full object-fill" />
                   <span className="absolute inset-0 flex items-center justify-center bg-black/15">
                     <svg className="h-5 w-5 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>
                   </span>
@@ -391,6 +406,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                   <span className="mt-0.5 block text-xs text-[#8b8285]">{formatDuration(slot.video_data.duracao)} · {slot.video_data.orientacao} · toque para ver</span>
                 </span>
               </button>
+              {avisoFormato}
 
               {/* Motivo de Rejeição - Mobile Compacto */}
               {slot.approval_status === 'rejected' && slot.rejection_reason && (
@@ -423,7 +439,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                   muted={true} 
                   controls={true} 
                   onDownload={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)} 
+                  fit="fill"
                 />
+                {foraFormato && (
+                  <span className="pointer-events-none absolute left-2 top-2 z-10 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white shadow">Fora do formato · {fmt.real}</span>
+                )}
                 {isBlocked && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                     <div className="text-center text-white">
@@ -434,6 +454,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 )}
               </div>
 
+              {avisoFormato}
               <div className="space-y-2 mt-4">
                 <h4 className="font-medium text-sm truncate text-gray-900" title={slot.video_data.nome}>
                   {slot.video_data.nome}

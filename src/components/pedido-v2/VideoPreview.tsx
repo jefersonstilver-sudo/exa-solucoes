@@ -42,7 +42,7 @@ export const VideoPoster: React.FC<{ nome?: string; className?: string; small?: 
 );
 
 /** Vídeo mudo em loop (autoPlay) com fallback para pôster. */
-export const LoopVideo: React.FC<{ url?: string; nome?: string; className?: string; fit?: 'cover' | 'contain' }> = ({
+export const LoopVideo: React.FC<{ url?: string; nome?: string; className?: string; fit?: 'cover' | 'contain' | 'fill' }> = ({
   url,
   nome,
   className = '',
@@ -61,7 +61,7 @@ export const LoopVideo: React.FC<{ url?: string; nome?: string; className?: stri
       <video
         key={url}
         src={url}
-        className={`absolute inset-0 h-full w-full ${fit === 'contain' ? 'object-contain' : 'object-cover'} ${className}`}
+        className={`absolute inset-0 h-full w-full ${fit === 'contain' ? 'object-contain' : fit === 'fill' ? 'object-fill' : 'object-cover'} ${className}`}
         autoPlay
         muted
         loop

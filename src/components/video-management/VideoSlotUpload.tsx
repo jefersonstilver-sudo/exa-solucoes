@@ -13,6 +13,7 @@ import { VideoTrimmerModal } from '@/components/video-trimmer/VideoTrimmerModal'
 import { VideoQRConfig, VideoQRConfigData } from './VideoQRConfig';
 import { useEffectiveAuth } from '@/hooks/useEffectiveAuth';
 import { useImpersonation } from '@/contexts/ImpersonationContext';
+import { checarFormatoVideo, lerDimensoesArquivo, type ChecagemFormato } from '@/lib/formatoVideo';
 interface VideoSlotUploadProps {
   slotPosition: number;
   uploading: boolean;
@@ -36,6 +37,14 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const { userProfile } = useEffectiveAuth();
   const { isImpersonating, logAction } = useImpersonation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // Aviso de formato: o painel estica o video para a area dele; proporcao diferente fica distorcida
+  const [formatoArquivo, setFormatoArquivo] = useState<ChecagemFormato | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    setFormatoArquivo(null);
+    if (selectedFile) lerDimensoesArquivo(selectedFile).then((d) => { if (vivo && d) setFormatoArquivo(checarFormatoVideo(d.largura, d.altura, isVertical)); });
+    return () => { vivo = false; };
+  }, [selectedFile, isVertical]);
   const [videoTitle, setVideoTitle] = useState('');
   const [titleError, setTitleError] = useState('');
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -294,6 +303,9 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         {selectedFile && <div className="text-xs sm:text-xs text-green-800 bg-green-100 p-2.5 sm:p-2 rounded-xl sm:rounded border border-green-300">
             <div className="truncate"><strong>Arquivo:</strong> {selectedFile.name}</div>
             <div><strong>Tamanho:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
+          </div>}
+        {selectedFile && formatoArquivo && formatoArquivo.conhecido && !formatoArquivo.ok && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-2.5 text-xs leading-snug text-red-800">
+            <strong>Atenção: formato errado ({formatoArquivo.real}).</strong> O painel exibe {formatoArquivo.esperado}, então este vídeo vai aparecer distorcido na tela. O ideal é enviar uma versão em {formatoArquivo.esperado}.
           </div>}
       </div>
 

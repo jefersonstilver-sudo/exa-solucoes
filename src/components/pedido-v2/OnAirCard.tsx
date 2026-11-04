@@ -58,7 +58,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
   if (!atual && carregando) {
     return (
       <div className={`${CARD} space-y-3 p-4`} role="status" aria-label="Carregando o que está no ar">
-        <span className="block aspect-[16/9] w-full animate-pulse rounded-2xl bg-[#e9e4e6]" />
+        <span className="block aspect-[1080/890] w-full animate-pulse rounded-2xl bg-[#e9e4e6]" />
         <span className="block h-4 w-1/2 animate-pulse rounded-lg bg-[#e9e4e6]" />
         <span className="block h-3 w-3/4 animate-pulse rounded-lg bg-[#e9e4e6]" />
       </div>
@@ -84,7 +84,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
       <div className="md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         {/* Vídeo atual tocando (mudo, em loop) */}
         <div className="relative aspect-[1080/890] bg-black">
-          <LoopVideo url={atual.slot.url} nome={nomeDe(atual.slot)} fit="contain" />
+          <LoopVideo url={atual.slot.url} nome={nomeDe(atual.slot)} fit="fill" />
           <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-white backdrop-blur">
             <span className="relative h-2 w-2 rounded-full bg-[#2fe17a]">
               <span className="absolute -inset-1 animate-ping rounded-full border-2 border-[#2fe17a]" />

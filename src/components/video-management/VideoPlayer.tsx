@@ -15,6 +15,8 @@ interface VideoPlayerProps {
   controls?: boolean;
   onDownload?: () => void;
   title?: string;
+  /** 'fill' mostra como o painel exibe (estica para a area); padrao 'contain' */
+  fit?: 'contain' | 'fill';
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -25,7 +27,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   muted = true,
   controls = true,
   onDownload,
-  title
+  title,
+  fit = 'contain'
 }) => {
   const {
     videoRef,
@@ -109,7 +112,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         autoPlay={autoPlay}
         muted={muted}
         className={cn(
-          "w-full h-full object-contain",
+          "w-full h-full", fit === 'fill' ? "object-fill" : "object-contain",
           // Esconder visualmente se estiver loading/error, mas manter no DOM
           (isLoading || hasError || !isValidUrl) && "opacity-0 absolute inset-0"
         )}
