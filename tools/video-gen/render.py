@@ -80,7 +80,8 @@ wa = ''.join(ch for ch in str(b.get('whatsapp_qr', '')) if ch.isdigit())
 qr = None; whats = ''
 if wa:
     if len(wa) <= 11: wa = '55' + wa
-    q = segno.make('https://wa.me/%s?text=%s' % (wa, urllib.parse.quote(b.get('qr_texto', 'Oi! Vi o video de voces no elevador'))), error='m', micro=False)
+    # QR RASTREADO (exa-qr) quando o worker criou o codigo; wa.me direto so de reserva
+    q = segno.make(b.get('qr_url') or ('https://wa.me/%s?text=%s' % (wa, urllib.parse.quote(b.get('qr_texto', 'Olá! Vi o anúncio nas telas da EXA, no elevador do meu prédio, e quero saber mais.')))), error='m', micro=False)
     qr = [[1 if c else 0 for c in row] for row in q.matrix]
     d = wa[2:] if wa.startswith('55') else wa
     whats = '(%s) %s-%s' % (d[:2], d[2:-4], d[-4:]) if len(d) >= 10 else d

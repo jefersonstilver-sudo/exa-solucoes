@@ -15,6 +15,7 @@ HERE = Path(__file__).resolve().parent
 FPS = 30
 MODEL = os.environ.get("LUCAS_MODEL") or "claude-opus-5-5"
 ROUNDS = int(os.environ.get("LUCAS_ROUNDS") or "3")
+MB = int(os.environ.get("LUCAS_MB") or "6")  # subquadros de motion blur no export (1 = desliga)
 FONTES_PADRAO = ["Inter", "Oswald", "Playfair Display", "Montserrat", "Poppins", "Bebas Neue", "DM Serif Display", "Archivo Black", "Fraunces", "Nunito"]
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
@@ -129,15 +130,46 @@ def baixar_fontes(familias, fontdir):
     return "\n".join(css_out), ok
 
 
-def gerar_qr(numero, dest):
-    import segno
+def so_digitos_wa(numero):
     d = re.sub(r"\D", "", numero or "")
     if len(d) < 10:
-        return False
-    if not d.startswith("55"):
-        d = "55" + d
-    segno.make("https://wa.me/" + d, error="m").save(str(dest), scale=16, border=2, dark="#000000", light="#ffffff")
+        return ""
+    return d if d.startswith("55") else "55" + d
+
+
+def gerar_qr(numero, dest, url=None):
+    """QR do video. Com `url` (QR rastreado exa-qr) usa ela; senao cai no wa.me direto (reserva)."""
+    import segno
+    if not url:
+        d = so_digitos_wa(numero)
+        if not d:
+            return False
+        url = "https://wa.me/" + d
+    segno.make(url, error="m").save(str(dest), scale=16, border=2, dark="#000000", light="#ffffff")
     return True
+
+
+def qr_rastreado(sb, job_id, numero, empresa, titulo, formato, pedido_id=None):
+    """Regra do Jeferson (04/11/2026): todo QR de video da EXA e RASTREADO. Cria/atualiza o codigo em exa_qr_links
+    (um por video) e devolve (codigo, url da funcao exa-qr). A funcao conta a leitura e abre o WhatsApp do anunciante
+    com a mensagem dizendo que viu nas telas da EXA - SEM codigo na mensagem."""
+    d = so_digitos_wa(numero)
+    if not d:
+        return None, None
+    codigo = "S" + re.sub(r"[^A-Za-z0-9]", "", job_id)[:9].upper()
+    emp = (empresa or "").strip() or "anunciante"
+    linha = {"codigo": codigo, "cliente": emp[:120], "campanha": "Sofia / Lucas", "titulo": (titulo or "Video da Sofia")[:160],
+             "formato": "vertical 15 s" if "vertical" in (formato or "") else "horizontal 10 s", "whatsapp": d,
+             "mensagem": "Olá! Vi o anúncio da %s nas telas da EXA, no elevador do meu prédio, e quero saber mais." % emp,
+             "arquivo": "%s.mp4" % job_id, "ativo": True}
+    if pedido_id:
+        linha["pedido_id"] = pedido_id
+    try:
+        sb.req("POST", "/rest/v1/exa_qr_links?on_conflict=codigo", linha, headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
+    except Exception as e:
+        log("QR rastreado falhou, uso wa.me direto:", e)
+        return None, None
+    return codigo, sb.url + "/functions/v1/exa-qr?c=" + codigo
 
 
 # ---------------------------------------------------------------- harness e render
@@ -176,8 +208,8 @@ class Render:
         pg.evaluate("L.ready")
         return pg, erros
 
-    def quadro(self, pg, t, qualidade=92):
-        lay = pg.evaluate("t => window.__frame(t)", t)
+    def quadro(self, pg, t, qualidade=92, mb=0):
+        lay = pg.evaluate("([t, n]) => window.__frameMB(t, n)", [t, mb]) if mb > 1 else pg.evaluate("t => window.__frame(t)", t)
         img = pg.locator("#c").screenshot(type="jpeg", quality=qualidade)
         return img, lay
 
@@ -208,7 +240,7 @@ def validar(rd, dur):
             except Exception as e:
                 return [], ["erro ao desenhar t=%.2fs: %s" % (t, str(e)[:300])]
             quadros.append((t, img))
-            lay += ["t=%.1fs %s" % (t, x) for x in l]
+            lay += ["t=%.1fs %s" % (t, x) for x in l if not str(x).startswith("\u00a7")]
         js = pg.evaluate("window.ERRS || []")
         if js:
             probs.append("erro de JavaScript: " + " | ".join(js[:4]))
@@ -220,14 +252,24 @@ def validar(rd, dur):
         if vazios:
             probs.append("quadro quase vazio/liso em " + ", ".join("%.1fs" % t for t in vazios))
         # varredura de movimento a cada 0,25 s
-        amostras, t = [], 0.1
+        amostras, t, qr_t, qr_max = [], 0.1, 0.0, 0
         while t < dur - 0.1:
             try:
-                img, _ = rd.quadro(pg, round(t, 2), 60)
+                img, l2 = rd.quadro(pg, round(t, 2), 60)
             except Exception as e:
                 return [], ["erro ao desenhar t=%.2fs: %s" % (t, str(e)[:300])]
+            qs = [int(str(x)[4:]) for x in (l2 or []) if str(x).startswith("\u00a7QR:")]
+            if qs:
+                qr_t += 0.25
+                qr_max = max(qr_max, max(qs))
             amostras.append((t, Image.open(io.BytesIO(img)).convert("L").resize((160, int(160 * rd.H / rd.W)))))
             t += 0.25
+        if pg.evaluate("!!(window.L && L.img && L.img.qr)"):
+            # regra fixa da EXA: QR rastreado na tela por pelo menos 5 s e grande no cartao final
+            if qr_t < 5.0:
+                probs.append("QR na tela so %.1f s (minimo 5 s): use L.qrCard(ctx, t, {t0: ~1.8, final: {...}}) do inicio da prova ate o fim" % qr_t)
+            if qr_max and qr_max < (300 if rd.H > rd.W else 260):
+                probs.append("QR do cartao final pequeno (%d px; minimo %d)" % (qr_max, 300 if rd.H > rd.W else 260))
         parado, ini = [], None
         for i in range(1, len(amostras)):
             d = ImageStat.Stat(ImageChops.difference(amostras[i][1], amostras[i - 1][1])).mean[0]
@@ -273,7 +315,7 @@ def exportar(rd, dur, saida):
         raise RuntimeError("cena com erro no export: " + " | ".join(erros[:3]))
     try:
         for i in range(int(round(dur * FPS))):
-            img, _ = rd.quadro(pg, i / FPS, 94)
+            img, _ = rd.quadro(pg, i / FPS, 94, MB)
             (fd / ("f_%05d.jpg" % i)).write_bytes(img)
     finally:
         pg.close()
@@ -376,7 +418,10 @@ REVISAO = (
     "\nSeja o diretor de arte mais exigente da agencia. Confira quadro a quadro: (1) parece feito a mao para ESTA marca (paleta, fontes, elementos da marca) ou parece template? "
     "(2) fotos/videos do cliente grandes e bonitos, sem texto em cima de rosto/produto; (3) leitura em 2 segundos a 1 metro: tamanho, contraste, poucas palavras; "
     "(4) logo nitida, sem deformar, presente no inicio e no final; (5) cartao final completo e parado tempo suficiente; (6) nada cortado, fora da area segura ou sobreposto; "
-    "(7) composicao nativa do formato ({fmt}); (8) nada inventado e nada do que e PROIBIDO; (9) movimento continuo e transicoes ligando as cenas."
+    "(7) composicao nativa do formato ({fmt}); (8) nada inventado e nada do que e PROIBIDO; (9) movimento continuo e transicoes ligando as cenas; "
+    "(10) NIVEL DE ESTUDIO (padrao prompt-motion.com): pelo menos uma TRANSFORMACAO entre atos (um elemento vira o proximo, sem corte seco), transicoes DIFERENTES entre as cenas, "
+    "um elemento 'pintado' por ato (fio que se desenha, anel, selo girando, brilho que varre), tipografia com carater e texto entrando palavra por palavra; video 'simples' (foto + faixa + zoom) e REPROVADO; "
+    "(11) QR rastreado na tela por pelo menos 5 s, sem tapar rosto/produto/texto, grande no cartao final."
     "\nResponda PRIMEIRO com um JSON numa linha: {{\"nota\": 0-10, \"aprovado\": true|false, \"problemas\": [\"...\"]}}. "
     "Aprove (nota >= 8) somente se voce colocaria isso no ar hoje e o relatorio automatico nao tiver erro. "
     "Se NAO aprovar, depois do JSON escreva CONCEITO: e o codigo COMPLETO corrigido num unico bloco ```js (nao um trecho)."
@@ -555,8 +600,12 @@ def rodar_job():
             except Exception as e:
                 log("copia para a pasta falhou", a.get("id"), e)
     qrnum = marca.get("whatsapp_qr") or b.get("whatsapp_qr")
-    if qrnum and b.get("usar_qr", True) and gerar_qr(qrnum, A / "qr.png"):
-        assets["qr"] = {"src": "assets/qr.png"}
+    if qrnum and b.get("usar_qr", True):
+        cod, qurl = qr_rastreado(sb, JOB, qrnum, marca.get("empresa") or b.get("empresa"), b.get("tema") or b.get("mensagem"), job.get("formato"), job.get("pedido_id"))
+        if cod:
+            b["qr_codigo"], b["qr_url"] = cod, qurl
+        if gerar_qr(qrnum, A / "qr.png", qurl):
+            assets["qr"] = {"src": "assets/qr.png"}
     # referencias: videos finais anteriores desta marca (consistencia de serie)
     refs = [a for a in arqs if a["tipo"] == "video_final" and (a.get("meta") or {}).get("folha_url") and (a.get("meta") or {}).get("job_id") != JOB][:2]
     for a in refs:

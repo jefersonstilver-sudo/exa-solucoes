@@ -87,6 +87,19 @@ def main():
     brief0 = dict(job.get("briefing") or {})
     if brief0.get("gen_scene") and not brief0.get("scene_js"):
         brief0 = gerar_cena(job)
+    # QR rastreado (regra EXA 04/11/2026): um codigo por video em exa_qr_links; a mensagem nao leva codigo
+    wa = "".join(ch for ch in str(brief0.get("whatsapp_qr") or "") if ch.isdigit())
+    if wa and not brief0.get("qr_url"):
+        if not wa.startswith("55"): wa = "55" + wa
+        cod = "S" + "".join(ch for ch in JOB if ch.isalnum())[:9].upper()
+        emp = (brief0.get("empresa") or "anunciante").strip()
+        try:
+            req("POST", "/rest/v1/exa_qr_links?on_conflict=codigo", {"codigo": cod, "cliente": emp[:120], "campanha": "Sofia / v8", "titulo": str(brief0.get("tema") or brief0.get("mensagem") or "Video da Sofia")[:160],
+                "formato": "vertical 15 s" if "vertical" in (job.get("formato") or "") else "horizontal 10 s", "whatsapp": wa, "ativo": True, "arquivo": JOB + ".mp4",
+                "mensagem": "Olá! Vi o anúncio da %s nas telas da EXA, no elevador do meu prédio, e quero saber mais." % emp}, headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
+            brief0["qr_codigo"], brief0["qr_url"] = cod, URL + "/functions/v1/exa-qr?c=" + cod
+        except Exception as e:
+            print("QR rastreado falhou, uso wa.me", e)
     spec = {"formato": job.get("formato") or "horizontal", "briefing": brief0}
     json.dump(spec, open(jp, "w"))
     pr = subprocess.run([sys.executable, os.path.join(HERE, "render.py"), jp, out], check=True, stdout=subprocess.PIPE, text=True)
