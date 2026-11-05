@@ -206,6 +206,12 @@ export default function App() {
             if (r.comando.tipo === 'limpar_cache') { await limparTudo(); recarregar(); return; }
             if (r.comando.tipo === 'reiniciar_app') { reiniciarApp(); return; }
             if (r.comando.tipo === 'gravar') gravarTela(r.comando);
+            {
+              const p: any = (window as any).ExaTela;
+              if (r.comando.tipo === 'sair_app' && p?.sairDoApp) p.sairDoApp();
+              if (r.comando.tipo === 'abrir_configuracoes' && p?.abrirConfiguracoes) p.abrirConfiguracoes();
+              if (r.comando.tipo === 'atualizar_app' && p?.atualizarApp) p.atualizarApp();
+            }
             recarregar(); return;
           }
           if (!r.comando) apagar(K_CMD);

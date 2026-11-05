@@ -753,6 +753,23 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun podeGravar(): Boolean = Build.VERSION.SDK_INT >= 26
 
+        /** Comandos remotos do admin para nunca precisar de alguém "caçando" a saída do app na TV. */
+        @JavascriptInterface
+        fun sairDoApp() { h.post { sair() } }
+
+        @JavascriptInterface
+        fun abrirConfiguracoes() { h.post { abrirTela(Settings.ACTION_SETTINGS) } }
+
+        /** Abre o download do APK novo no navegador do aparelho (instala por cima, mesma assinatura). */
+        @JavascriptInterface
+        fun atualizarApp() {
+            h.post {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/jefersonstilver-sudo/exa-solucoes/releases/download/tela-android/exa-tela.apk")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (_: Throwable) { abrirTela(Settings.ACTION_SETTINGS) }
+            }
+        }
+
         /** O app desenha a intro: a página não precisa desenhar a dela. */
         @JavascriptInterface
         fun temIntro(): Boolean = true
