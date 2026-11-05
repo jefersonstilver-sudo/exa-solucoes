@@ -53,6 +53,15 @@ async function mapaDePedidos(): Promise<Map<string, { pedido: string | null; nom
   return m;
 }
 
+/** Nome do arquivo do anúncio a partir do endereço do vídeo: /cache/<arquivo> ou a versão leve da TV box (tv-versoes/<pasta>/<arquivo>). */
+const nomeDoVideo = (src: string): string => {
+  try {
+    if (src.includes('/cache/')) return decodeURIComponent(src.split('/cache/')[1].split('?')[0]);
+    const m = src.match(/\/tv-versoes\/[^/]+\/(.+?)(\?|$)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  } catch { return ''; }
+};
+
 const Aviso = ({ texto }: { texto: string }) => (
   <div className="cheio fundo-exa" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, textAlign: 'center', fontSize: 34, fontWeight: 700, lineHeight: 1.35, color: 'rgba(255,255,255,.8)' }}>{texto}</div>
 );
@@ -94,7 +103,7 @@ export function ReplicaElevador({ predioId, alternativa, camera = true }: { pred
           const ce = jan.console && jan.console.error;
           if (ce) jan.console.error = function (...args: any[]) { try { if (janela()) registrarErro(`réplica: ${args.map(txt).join(' ').slice(0, 300)}`); } catch { /* nada */ } return ce.apply(jan.console, args); };
           jan.addEventListener('unhandledrejection', (ev: any) => { if (janela()) registrarErro(`réplica (promessa): ${txt(ev.reason)}`); });
-          if (vp) vp.addEventListener('error', () => { const er = vp.error; if (janela()) registrarErro(`réplica vídeo: código ${er ? er.code : '?'} ${er && (er as any).message ? (er as any).message : ''} ${String(vp.currentSrc).split('/cache/')[1] || ''}`.slice(0, 300)); });
+          if (vp) vp.addEventListener('error', () => { const er = vp.error; if (janela()) registrarErro(`réplica vídeo: código ${er ? er.code : '?'} ${er && (er as any).message ? (er as any).message : ''} ${nomeDoVideo(String(vp.currentSrc))}`.slice(0, 300)); });
         }
         saude.seg++;
         if (!vp || !vp.currentSrc) saude.preto++;
@@ -104,7 +113,7 @@ export function ReplicaElevador({ predioId, alternativa, camera = true }: { pred
           const d = Number(q.droppedVideoFrames || 0), t = Number(q.totalVideoFrames || 0);
           if (t >= qAnt.t) { saude.perdidos += d - qAnt.d; saude.quadros += t - qAnt.t; }
           qAnt = { d, t };
-          const nomeV = vp.currentSrc.includes('/cache/') ? decodeURIComponent(vp.currentSrc.split('/cache/')[1].split('?')[0]).slice(-40) : '';
+          const nomeV = nomeDoVideo(vp.currentSrc).slice(-40);
           if (nomeV && vp.videoWidth && !saude.arquivos[nomeV]) saude.arquivos[nomeV] = `${vp.videoWidth}x${vp.videoHeight}`;
         }
         const cam = doc?.getElementById('live-video') as HTMLVideoElement | null;
@@ -118,7 +127,7 @@ export function ReplicaElevador({ predioId, alternativa, camera = true }: { pred
       try {
         const v = ref.current?.contentDocument?.getElementById('video-propaganda') as HTMLVideoElement | null;
         const src = v?.currentSrc || v?.src || '';
-        const nome = src.includes('/cache/') ? decodeURIComponent(src.split('/cache/')[1].split('?')[0]) : '';
+        const nome = nomeDoVideo(src);
         if (nome && nome !== atual) {
           fechar();
           atual = nome; desde = Date.now(); saude.trocas++;
