@@ -11,6 +11,7 @@ import {
 } from "../_shared/nando-core.ts";
 import { avisosDoPredio } from "../_shared/nando-site.ts";
 import { executar, type Contexto } from "../_shared/nando-agente.ts";
+import { ABERTOS as PEDIDOS_ABERTOS, avisarJeferson } from "../_shared/predio-contratos.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -156,6 +157,11 @@ async function contratos(sb: ReturnType<typeof db>, b: any) {
     : { data: [] as any[] };
   const porPredio = new Map<string, any>();
   for (const r of rows || []) if (!porPredio.has(r.building_id)) porPredio.set(r.building_id, r);
+  // pedido de contrato em andamento (para o cartão mostrar "pedido feito" / "enviado para assinatura")
+  const { data: peds } = ids.length
+    ? await sb.from("predio_contrato_pedidos").select("building_id,status,enviado_em,signatario_email,criado_em").in("building_id", ids).in("status", PEDIDOS_ABERTOS)
+    : { data: [] as any[] };
+  const pedPor = new Map<string, any>((peds || []).map((x: any) => [x.building_id, x]));
   const itens = await Promise.all(lista.map(async (p) => {
     const r = porPredio.get(p.id);
     let contrato = null;
@@ -167,10 +173,40 @@ async function contratos(sb: ReturnType<typeof db>, b: any) {
       ]);
       if (ver?.signedUrl) contrato = { titulo: r.titulo, assinado_em: r.assinado_em, assinante: r.assinante_nome, ver: ver.signedUrl, baixar: baixar?.signedUrl || ver.signedUrl };
     }
-    return { id: p.id.slice(0, 8), predio: p.nome, codigo: p.codigo, contrato };
+    const pd = !contrato ? pedPor.get(p.id) : null;
+    const pedido = pd ? { situacao: pd.status === "enviado" || pd.status === "enviando" ? "assinatura" : "pedido", desde: pd.enviado_em || pd.criado_em, email: pd.status === "enviado" ? mascararEmail(pd.signatario_email) : null } : null;
+    return { id: p.id.slice(0, 8), predio: p.nome, codigo: p.codigo, contrato, pedido };
   }));
   itens.sort((x, y) => Number(!!y.contrato) - Number(!!x.contrato) || x.predio.localeCompare(y.predio, "pt-BR"));
   return json(200, { ok: true, contratos: itens });
+}
+
+function mascararEmail(e: string | null | undefined) {
+  const [u, d] = String(e || "").split("@");
+  return u && d ? `${u.slice(0, 2)}${"•".repeat(Math.max(2, Math.min(6, u.length - 2)))}@${d}` : null;
+}
+
+// PEDIR CONTRATO: sindico toca "Pedir ao Nando" num predio sem contrato -> pedido aguardando os dados e o Jeferson e avisado.
+async function pedirContrato(sb: ReturnType<typeof db>, b: any) {
+  const s = await sessaoValida(sb, String(b.sessao || ""));
+  if (!s) return json(401, { ok: false, erro: "Seu acesso expirou. Entre de novo.", precisa_login: true });
+  const { lista, nome, admin } = await predios(sb, s.telefone);
+  const alvo = String(b.predio || "").replace(/[^0-9a-f]/gi, "").slice(0, 8);
+  const p = lista.find((x) => x.id.startsWith(alvo));
+  if (!alvo || !p) return json(404, { ok: false, erro: "Prédio não encontrado na sua lista." });
+  const { count } = await sb.from("predio_contratos").select("id", { count: "exact", head: true }).eq("building_id", p.id).eq("ativo", true);
+  if (count) return json(200, { ok: true, situacao: "disponivel", texto: "O contrato deste prédio já está disponível. Atualize a página." });
+  const { data: aberto } = await sb.from("predio_contrato_pedidos").select("id,status").eq("building_id", p.id).in("status", PEDIDOS_ABERTOS).maybeSingle();
+  if (aberto) return json(200, { ok: true, situacao: aberto.status === "enviado" ? "assinatura" : "pedido", texto: aberto.status === "enviado" ? "O contrato já foi enviado para assinatura. Confira o e-mail da ClickSign." : "Já recebemos o pedido. A equipe da EXA está providenciando." });
+  const quemNome = admin ? "Jeferson" : (p.nome_pessoa || nome || "Síndico");
+  const { error } = await sb.from("predio_contrato_pedidos").insert({
+    building_id: p.id, origem: "sindico", status: "aguardando_dados", pedido_por_tel: telefoneCanonico(s.telefone), pedido_por_nome: quemNome,
+    signatario_telefone: telefoneCanonico(s.telefone), criado_por: "painel do síndico",
+  });
+  if (error && !/duplicate|unique/i.test(error.message)) throw error;
+  await avisarJeferson(sb, `📄 *Pedido de contrato pelo Painel do Síndico*\n*Prédio:* ${p.nome}\n*Pediu:* ${quemNome} (+${telefoneCanonico(s.telefone)})\n\nAbra o prédio no admin › Ver › *Contrato*, confirme os dados de quem assina e toque em "Pedir contrato". Eu envio pela ClickSign e acompanho a assinatura.`);
+  try { await sb.from("nando_mensagens").insert({ telefone: telefoneCanonico(s.telefone), building_id: p.id, papel: "nando", conteudo: { texto: `(pelo painel do site) Pedido do contrato do ${p.nome} registrado; a equipe da EXA foi avisada.` } }); } catch { /* so registro */ }
+  return json(200, { ok: true, situacao: "pedido", texto: "Pedido enviado! A equipe da EXA vai preparar o contrato e você recebe por e-mail para assinar." });
 }
 
 // alteracoes pelo site usam as MESMAS regras e ferramentas do Nando (confere o painel, historico, grupo de predios)
@@ -300,6 +336,7 @@ Deno.serve(async (req) => {
       case "dados": return await dados(sb, b);
       case "alterar": return await alterar(sb, b);
       case "contratos": return await contratos(sb, b);
+      case "pedir_contrato": return await pedirContrato(sb, b);
       case "sair": return await sair(sb, b);
       case "replica": return await replica(sb, b, ehServico(req));
       default: return json(400, { ok: false, erro: "ação inválida" });

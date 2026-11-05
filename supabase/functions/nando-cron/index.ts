@@ -7,6 +7,7 @@
 // 5) resumo semanal para o Jeferson (segunda-feira, 8h)
 // 6) limpeza de previas vencidas
 // 7) vigia dos paineis: queda real -> Jeferson + tecnicos com diagnostico; voltou; resumo da noite (nando-paineis.ts)
+// 8) contratos dos predios: envia os pedidos agendados pela ClickSign e guarda os assinados (predio-contratos.ts)
 // =====================================================================
 import {
   db, removerDoPainel, enviarTexto, fmtData, primeiroNome, horaLocalIso, ALERTA_NUMERO, MODO_TESTE, telefoneCanonico,
@@ -14,6 +15,7 @@ import {
 } from "../_shared/nando-core.ts";
 import { gerarOcorrencias } from "../_shared/nando-agente.ts";
 import { vigiarPaineis, diagnosticarPainel } from "../_shared/nando-paineis.ts";
+import { rotinaContratos } from "../_shared/predio-contratos.ts";
 
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
 
@@ -134,6 +136,9 @@ Deno.serve(async (req) => {
 
   // 7) vigia dos paineis (falha aqui nao derruba o resto da rotina)
   try { await vigiarPaineis(sb, log); } catch (e) { log.push(`vigia dos painéis falhou: ${(e as Error).message.slice(0, 160)}`); }
+
+  // 8) contratos dos predios (pedidos agendados -> ClickSign; assinados -> Painel do Sindico)
+  try { log.push(...await rotinaContratos(sb)); } catch (e) { log.push(`contratos falharam: ${(e as Error).message.slice(0, 160)}`); }
 
   return json(200, { ok: true, log });
 });

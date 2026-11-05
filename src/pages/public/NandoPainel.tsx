@@ -21,7 +21,7 @@ type Dados = {
   alterar_ate: string | null; aparelhos: number; foco: string | null; predios: Grupo[]; whatsapp_nando: string;
 };
 type Contrato = { titulo: string; assinado_em: string | null; assinante: string | null; ver: string; baixar: string };
-type ItemContrato = { id: string; predio: string; codigo?: string; contrato: Contrato | null };
+type ItemContrato = { id: string; predio: string; codigo?: string; contrato: Contrato | null; pedido?: { situacao: 'pedido' | 'assinatura'; desde?: string; email?: string | null } | null };
 type Acao =
   | { op: 'remover' } | { op: 'datas'; fim: string; sem_fim: boolean } | { op: 'tempo'; segundos: number }
   | { op: 'texto'; titulo: string; quando: string; texto: string; itens: string[] };
@@ -343,14 +343,24 @@ function ConfirmarCodigo({ sessao, aoConfirmar, aoFechar }: { sessao: string; ao
 
 // ------------------------------------------------------------------------- painel
 // ---------- Configurações › Contratos: o contrato assinado de cada prédio que a pessoa administra ----------
-function CartaoContrato({ it, destaque = false, whats }: { it: ItemContrato; destaque?: boolean; whats: string }) {
+function CartaoContrato({ it, destaque = false, sessao }: { it: ItemContrato; destaque?: boolean; sessao: string }) {
   const c = it.contrato;
-  const pedir = `https://wa.me/${whats}?text=${encodeURIComponent(`Olá, Nando! Preciso do contrato do ${it.predio} com a EXA.`)}`;
+  const [pedido, setPedido] = useState(it.pedido || null);
+  const [enviando, setEnviando] = useState(false);
+  const [msg, setMsg] = useState('');
+  const pedir = async () => {
+    setEnviando(true); setMsg('');
+    const r = await api('pedir_contrato', { sessao, predio: it.id });
+    setEnviando(false);
+    if (!r?.ok) return setMsg(r?.erro || 'Não consegui enviar o pedido. Tente de novo.');
+    if (r.situacao === 'pedido' || r.situacao === 'assinatura') setPedido({ situacao: r.situacao });
+    setMsg(r.texto || '');
+  };
   return (
     <div className={`rounded-2xl p-4 ${destaque ? 'border border-[#E0282E]/40 bg-gradient-to-b from-[#E0282E]/[0.10] to-white/[0.03] shadow-[0_10px_34px_rgba(200,30,36,.18)]' : 'border border-white/10 bg-white/[0.04]'}`}>
       <div className="flex items-start gap-3">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${c ? 'bg-emerald-400/10 text-emerald-300' : 'bg-white/[0.06] text-white/40'}`}>
-          {c ? <FileText className="h-5 w-5" /> : <FileX2 className="h-5 w-5" />}
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${c ? 'bg-emerald-400/10 text-emerald-300' : pedido ? 'bg-violet-400/10 text-violet-300' : 'bg-white/[0.06] text-white/40'}`}>
+          {c ? <FileText className="h-5 w-5" /> : pedido ? <Clock className="h-5 w-5" /> : <FileX2 className="h-5 w-5" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -365,6 +375,15 @@ function CartaoContrato({ it, destaque = false, whats }: { it: ItemContrato; des
                 {c.assinante ? <> · por {c.assinante}</> : null}
               </div>
             </>
+          ) : pedido ? (
+            <>
+              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-violet-400/10 px-2 py-0.5 text-[11px] font-semibold text-violet-200">{pedido.situacao === 'assinatura' ? 'Aguardando assinatura' : 'Contrato pedido'}</span>
+              <div className="mt-1.5 text-xs leading-relaxed text-white/55">
+                {pedido.situacao === 'assinatura'
+                  ? <>Enviamos o contrato pela ClickSign{pedido.email ? <> para <b className="text-white/75">{pedido.email}</b></> : null}. Assim que assinar, ele aparece aqui.</>
+                  : 'A equipe da EXA está preparando o contrato. Você vai receber por e-mail para assinar.'}
+              </div>
+            </>
           ) : (
             <>
               <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold text-white/55">Contrato indisponível</span>
@@ -373,15 +392,18 @@ function CartaoContrato({ it, destaque = false, whats }: { it: ItemContrato; des
           )}
         </div>
       </div>
+      {msg && <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white/75">{msg}</div>}
       <div className="mt-3.5 flex flex-col gap-2 sm:flex-row">
         {c ? (
           <>
             <a href={c.ver} target="_blank" rel="noopener noreferrer" className={`${BTN} flex-1 !py-2.5`}><Eye className="h-4 w-4" /> Ver contrato</a>
             <a href={c.baixar} className={`${BTN2} flex-1`}><Download className="h-4 w-4" /> Baixar PDF</a>
           </>
-        ) : (
-          <a href={pedir} target="_blank" rel="noopener noreferrer" className={`${BTN2} flex-1`}><MessageCircle className="h-4 w-4" /> Pedir ao Nando</a>
-        )}
+        ) : !pedido ? (
+          <button onClick={pedir} disabled={enviando} className={`${BTN2} flex-1 disabled:opacity-50`}>
+            {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />} Pedir ao Nando
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -415,7 +437,7 @@ function Contratos({ sessao, selecionado, whats, aoFechar, aoExpirar }: { sessao
             {atual && (
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#FF6B6B]">Prédio selecionado</div>
-                <CartaoContrato it={atual} destaque whats={whats} />
+                <CartaoContrato it={atual} destaque sessao={sessao} />
               </div>
             )}
             {itens.length > 1 && (
@@ -430,7 +452,7 @@ function Contratos({ sessao, selecionado, whats, aoFechar, aoExpirar }: { sessao
                   )}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {resto.map((it) => <CartaoContrato key={it.id} it={it} whats={whats} />)}
+                  {resto.map((it) => <CartaoContrato key={it.id} it={it} sessao={sessao} />)}
                 </div>
                 {!resto.length && <div className="py-6 text-center text-sm text-white/45">Nenhum prédio encontrado.</div>}
               </div>

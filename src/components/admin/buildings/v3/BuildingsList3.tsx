@@ -2,6 +2,8 @@ import React from 'react';
 import { Building2 } from 'lucide-react';
 import BuildingCard3 from './BuildingCard3';
 import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BuildingsList3Props {
   buildings: any[];
@@ -22,6 +24,16 @@ const BuildingsList3: React.FC<BuildingsList3Props> = ({
 }) => {
   const buildingIds = buildings.map(b => b.id);
   const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);
+  // selo do contrato em cada card (contrato assinado / pedido em andamento / sem contrato)
+  const { data: contratos } = useQuery({
+    queryKey: ['predios-contratos-resumo'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('exa2-contratos-predio', { body: { acao: 'resumo' } });
+      if (error || !data?.ok) return null;
+      return data.predios as Record<string, { contrato: boolean; pedido: string | null }>;
+    },
+    staleTime: 60_000,
+  });
 
   if (buildings.length === 0) {
     return (
@@ -47,6 +59,7 @@ const BuildingsList3: React.FC<BuildingsList3Props> = ({
           onDelete={onDelete}
           onViewCampaigns={onViewCampaigns}
           videoCount={videoCounts[building.id] ?? 0}
+          contrato={contratos ? (contratos[building.id] || null) : undefined}
         />
       ))}
     </div>
