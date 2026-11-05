@@ -132,7 +132,7 @@
 
   const vigiar = () => {
     const v = st.video;
-    if (!v || st.carregando || !st.hls) return;
+    if (!v || st.carregando || !st.hls || st.pausadaPorCheia) return;
     if (v.currentTime !== st.ultimoTempo) {
       st.ultimoTempo = v.currentTime;
       st.ultimoAvanco = Date.now();
@@ -361,6 +361,15 @@
   const api = {
     start: () => {
       if (SEM_CAMERA) { document.documentElement.classList.add("sem-camera"); return; }
+      // TV box: anúncio premium em tela cheia cobre a câmera — pausa a câmera enquanto isso (sobra placa de vídeo para ele)
+      if (TV) setInterval(() => {
+        const ad = document.getElementById("video-propaganda");
+        const cheia = !!(ad && ad.getAttribute("data-fullscreen") === "true");
+        const v = st.video;
+        if (!v) return;
+        if (cheia && !v.paused) { st.pausadaPorCheia = true; v.pause(); }
+        else if (!cheia && st.pausadaPorCheia) { st.pausadaPorCheia = false; v.play().catch(() => {}); }
+      }, 400);
       carregarLives(); setInterval(carregarLives, RECARREGAR_LISTA);
     },
     reload: () => carregarLives(),

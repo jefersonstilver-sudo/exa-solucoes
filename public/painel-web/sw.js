@@ -24,11 +24,48 @@ async function tvVersao(pasta, arq) {
     let m = tvListas.get(pasta);
     if (!m || Date.now() - m.t > 10 * 60000) {
       const r = await fetch(`${TVV}/${pasta}/lista.json?t=${Date.now()}`, { cache: "no-store" });
-      m = { t: Date.now(), set: new Set(r.ok ? (await r.json()) || [] : []) };
+      const d = r.ok ? await r.json() : null;
+      // v2 (05/11): {v, itens}; a lista antiga (array) é de versões que serão refeitas — ainda serve enquanto isso
+      m = { t: Date.now(), set: new Set(Array.isArray(d) ? d : (d && Array.isArray(d.itens) ? d.itens : [])) };
       tvListas.set(pasta, m);
     }
     return m.set.has(arq) ? `${TVV}/${pasta}/${arq.split("/").map(encodeURIComponent).join("/")}` : null;
   } catch (e) { return null; }
+}
+// TV box: os vídeos ficam guardados no aparelho (Cache Storage) e tocam do disco, com resposta por faixas (Range/206).
+// Primeira vez: toca direto da rede e baixa inteiro em segundo plano; a partir da segunda, sem rede no meio.
+const CX_VIDEOS = "tv-videos-v1";
+let ultimaLimpeza = 0;
+const baixando = new Set();
+async function videoGuardado(url, req) {
+  const caixa = await caches.open(CX_VIDEOS);
+  const r = await caixa.match(url);
+  if (!r) {
+    if (!baixando.has(url)) {
+      baixando.add(url);
+      fetch(url, { mode: "cors", credentials: "omit" }).then(async (x) => {
+        if (x.ok && x.status === 200) await caixa.put(url, new Response(await x.blob(), { headers: { "Content-Type": "video/mp4" } }));
+      }).catch(() => {}).finally(() => baixando.delete(url));
+    }
+    return null;
+  }
+  const blob = await r.blob();
+  const faixa = req.headers.get("range");
+  const total = blob.size;
+  if (!faixa) return new Response(blob, { status: 200, headers: { "Content-Type": "video/mp4", "Content-Length": String(total), "Accept-Ranges": "bytes" } });
+  const m = /bytes=(\d*)-(\d*)/.exec(faixa) || [];
+  let ini = m[1] ? Number(m[1]) : 0;
+  let fim = m[2] ? Math.min(Number(m[2]), total - 1) : total - 1;
+  if (!m[1] && m[2]) { ini = Math.max(0, total - Number(m[2])); fim = total - 1; }
+  if (ini >= total) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${total}` } });
+  return new Response(blob.slice(ini, fim + 1), { status: 206, headers: { "Content-Type": "video/mp4", "Content-Length": String(fim - ini + 1), "Content-Range": `bytes ${ini}-${fim}/${total}`, "Accept-Ranges": "bytes" } });
+}
+/** Apaga do aparelho os vídeos que saíram da programação (chamado quando a programação é lida). */
+async function limparVideos(validos) {
+  try {
+    const caixa = await caches.open(CX_VIDEOS);
+    for (const k of await caixa.keys()) if (!validos.has(k.url)) await caixa.delete(k);
+  } catch (e) { /* segue */ }
 }
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -65,6 +102,20 @@ async function updates(predio) {
     const { status, j } = await chamar({ acao: "replica", arq: "updates", predio });
     if (status !== 200 || !j.updates) throw Object.assign(new Error(j.erro || "falhou"), { status });
     memo.set(predio, { t: Date.now(), dados: j.updates });
+    // TV box: de tempos em tempos, apaga do aparelho os vídeos que saíram da programação
+    if (Date.now() - ultimaLimpeza > 30 * 60000 && (await cfg()).tela) {
+      ultimaLimpeza = Date.now();
+      (async () => {
+        const pasta = String(j.updates.pasta_s3 || "").replace(/^\/+|\/+$/g, "");
+        const validos = new Set();
+        for (const it of [...(j.updates.Propagandas || []), ...(j.updates.PlaylistPronta || [])]) {
+          if (!it || !it.video) continue;
+          const u = await tvVersao(pasta, String(it.video));
+          if (u) validos.add(u);
+        }
+        if (validos.size) await limparVideos(validos);
+      })();
+    }
     // avisa a pagina de fora (nome do predio, hora da ultima leitura)
     self.clients.matchAll({ includeUncontrolled: true }).then((cs) => cs.forEach((c) => c.postMessage({ tipo: "replica-lida", predio, nome: j.predio, em: Date.now() })));
     return j.updates;
@@ -144,7 +195,12 @@ self.addEventListener("fetch", (e) => {
       const pasta = String(d.pasta_s3 || "").replace(/^\/+|\/+$/g, "");
       const alvo = `${S3}/${pasta}/${arq.split("/").map(encodeURIComponent).join("/")}`;
       if (/\.(mp4|webm|mov|m4v)$/i.test(arq) || e.request.destination === "video") {
-        if ((await cfg()).tela) { const leve = await tvVersao(pasta, arq); if (leve) return Response.redirect(leve, 302); }
+        if ((await cfg()).tela) {
+          const leve = await tvVersao(pasta, arq);
+          const fonte = leve || alvo;
+          if (leve) { const g = await videoGuardado(fonte, e.request); if (g) return g; }
+          return Response.redirect(fonte, 302);
+        }
         return Response.redirect(alvo, 302);
       }
       // imagens, PDFs e avisos do Nando: o S3 nao libera o navegador, entao vem pelo nando-painel (e ficam guardados aqui;

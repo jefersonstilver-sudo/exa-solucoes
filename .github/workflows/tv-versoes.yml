@@ -1,7 +1,7 @@
 name: tv-versoes
 # Versões leves dos anúncios para as TV boxes dos prédios (réplica do elevador):
 # os arquivos dos NUCs (1310x1080, 1920x1080, 608x1080) pesam no TV box; aqui viram no máximo 720 px de altura
-# (o tamanho real em que a TV box desenha a réplica), H.264 main, sem áudio, e vão para o bucket público
+# (o tamanho real em que a TV box desenha a réplica; vertical, que toca em tela cheia, até 1280), H.264 main, sem áudio, e vão para o bucket público
 # tv-versoes/<pasta_s3>/<mesmo caminho>. O sw.js da réplica (só TV) troca para a versão leve quando ela existe
 # (tv-versoes/<pasta>/lista.json). Os NUCs continuam com os originais.
 on:
@@ -44,7 +44,8 @@ jobs:
           mkdir -p /tmp/v
           while read -r pasta; do
             curl -s "$SURL/storage/v1/object/public/tv-versoes/$pasta/lista.json?t=$(date +%s)" -o /tmp/v/lista.json
-            python3 -c "import json,sys; d=json.load(open('/tmp/v/lista.json')); print('\n'.join(d) if isinstance(d,list) else '')" > /tmp/v/feitos.txt 2>/dev/null || : > /tmp/v/feitos.txt
+            # v2: verticais (tela cheia premium) ficam com a altura original; lista antiga (array, v1) = refazer tudo
+            python3 -c "import json,sys; d=json.load(open('/tmp/v/lista.json')); print('\n'.join(d.get('itens',[])) if isinstance(d,dict) and d.get('v')==2 else '')" > /tmp/v/feitos.txt 2>/dev/null || : > /tmp/v/feitos.txt
             novos=0
             while IFS=$'\t' read -r p v; do
               [ "$p" = "$pasta" ] || continue
@@ -53,8 +54,8 @@ jobs:
               url="https://telas-clientes.s3.sa-east-1.amazonaws.com/$enc"
               curl -s -f --max-time 120 -o /tmp/v/in "$url" || { echo "sem original: $v"; continue; }
               ffmpeg -nostdin -loglevel error -y -i /tmp/v/in -an \
-                -vf "scale=-2:'min(720,ih)':flags=lanczos,fps='min(30,source_fps)',format=yuv420p" \
-                -c:v libx264 -preset slow -crf 21 -profile:v main -level 3.1 -maxrate 2500k -bufsize 5000k -g 60 \
+                -vf "scale=-2:'if(gt(ih,iw),min(1280,ih),min(720,ih))':flags=lanczos,fps='min(30,source_fps)',format=yuv420p" \
+                -c:v libx264 -preset slow -crf 19 -profile:v main -level 3.1 -maxrate 2500k -bufsize 5000k -g 60 \
                 -movflags +faststart /tmp/v/out.mp4 || { echo "falhou: $v"; continue; }
               h=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SURL/storage/v1/object/tv-versoes/$enc" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" \
                 -H "Content-Type: video/mp4" -H "x-upsert: true" -H "Cache-Control: max-age=31536000" --max-time 120 --data-binary @/tmp/v/out.mp4)
@@ -64,7 +65,7 @@ jobs:
               else echo "upload $h: $v"; fi
             done < /tmp/itens.tsv
             if [ "$novos" -gt 0 ]; then
-              python3 -c "import json; print(json.dumps(sorted(set(l.strip() for l in open('/tmp/v/feitos.txt') if l.strip()))))" > /tmp/v/lista_nova.json
+              python3 -c "import json; print(json.dumps({'v': 2, 'itens': sorted(set(l.strip() for l in open('/tmp/v/feitos.txt') if l.strip()))}))" > /tmp/v/lista_nova.json
               curl -s -o /dev/null -w "lista $pasta: %{http_code}\n" -X POST "$SURL/storage/v1/object/tv-versoes/$pasta/lista.json" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" \
                 -H "Content-Type: application/json" -H "x-upsert: true" -H "Cache-Control: no-cache" --data-binary @/tmp/v/lista_nova.json
             fi
