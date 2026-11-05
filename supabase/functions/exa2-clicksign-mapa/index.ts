@@ -190,8 +190,14 @@ Deno.serve(async (req) => {
         try {
           const e = await getJson(`${BASE}/api/v3/envelopes/${id}`, h);
           if (e?.data?.attributes?.status !== "running") { res.push({ id, ok: false, motivo: "não está em andamento: " + e?.data?.attributes?.status }); continue; }
-          const r = await fetch(`${BASE}/api/v3/envelopes/${id}/cancel`, { method: "PATCH", headers: h });
-          res.push({ id, nome: e?.data?.attributes?.name, ok: r.ok, motivo: r.ok ? null : (await r.text()).slice(0, 200) });
+          // v3: cancela-se cada DOCUMENTO do envelope (PATCH documents/{id} status "canceled")
+          const docs = await getJson(`${BASE}/api/v3/envelopes/${id}/documents`, h);
+          const erros: string[] = [];
+          for (const d of docs?.data || []) {
+            const r = await fetch(`${BASE}/api/v3/envelopes/${id}/documents/${d.id}`, { method: "PATCH", headers: h, body: JSON.stringify({ data: { type: "documents", id: d.id, attributes: { status: "canceled" } } }) });
+            if (!r.ok) erros.push((await r.text()).slice(0, 200));
+          }
+          res.push({ id, nome: e?.data?.attributes?.name, ok: !erros.length && (docs?.data || []).length > 0, motivo: erros.join(" | ") || null });
         } catch (er) { res.push({ id, ok: false, motivo: (er as Error).message }); }
       }
       return json(200, { ok: true, itens: res });

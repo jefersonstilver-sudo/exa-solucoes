@@ -155,9 +155,11 @@ Deno.serve(async (req) => {
         let aviso = null;
         if (p.status === "enviado" && p.clicksign_envelope_id) {
           const t = Deno.env.get("CLICKSIGN_ACCESS_TOKEN") || "";
-          const r = await fetch(`https://app.clicksign.com/api/v3/envelopes/${p.clicksign_envelope_id}/cancel`, {
-            method: "PATCH", headers: { "Content-Type": "application/vnd.api+json", Accept: "application/vnd.api+json", Authorization: t },
-          }).catch(() => null);
+          const hh = { "Content-Type": "application/vnd.api+json", Accept: "application/vnd.api+json", Authorization: t };
+          const doc = p.clicksign_documento_id;
+          const r = doc ? await fetch(`https://app.clicksign.com/api/v3/envelopes/${p.clicksign_envelope_id}/documents/${doc}`, {
+            method: "PATCH", headers: hh, body: JSON.stringify({ data: { type: "documents", id: doc, attributes: { status: "canceled" } } }),
+          }).catch(() => null) : null;
           if (!r?.ok) aviso = "Não consegui cancelar o envelope na ClickSign; cancele por lá também.";
         }
         await sb.from("predio_contrato_pedidos").update({ status: "cancelado", atualizado_em: new Date().toISOString(), erro: aviso }).eq("id", id);
