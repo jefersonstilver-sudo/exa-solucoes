@@ -18,6 +18,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = join(__dirname, "output");
 const LOGO_PATH = join(__dirname, "logo-cinecataratas.png");
+const LOGO_RECORTE = join(__dirname, "logo-cine-recortada.png"); // logo sem a margem transparente (cabeçalho)
 const QR_PATH = join(__dirname, "qr-cine.png"); // QR rastreado CINE1 (destino trocado no admin "QRs dos videos")
 const FONTS = join(__dirname, "fonts-v2");
 
@@ -71,6 +72,7 @@ function horarios(m, max = 4) {
  */
 export function generateVerticalHtml(movies, options = {}) {
   const logo = b64(LOGO_PATH, "image/png");
+  const logoTopo = b64(LOGO_RECORTE, "image/png") || logo;
   const qr = b64(QR_PATH, "image/png");
   const novosSet = new Set((options.estreias || []).map((t) => String(t).toUpperCase().trim()));
   let destaque = movies.filter((m) => novosSet.has(String(m.title).toUpperCase().trim()));
@@ -132,7 +134,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#07070a;font-fam
 .times span.semh{font-family:'InterV2',Inter,sans-serif;font-weight:800;font-size:40px;letter-spacing:4px;background:#e3122b;border-color:#e3122b}
 .meta{position:absolute;top:1690px;left:0;right:0;text-align:center;font-weight:500;font-size:34px;color:rgba(255,255,255,.85)}
 #hdr{position:absolute;top:0;left:0;right:0;height:120px;display:flex;justify-content:center;align-items:center;gap:26px;z-index:20}
-#hdr img{height:92px;margin:-10px 0}
+#hdr img{height:74px}
 #hdr .sep{width:2px;height:58px;background:rgba(255,255,255,.35)}
 #hdr .t{font-family:'MonoV2',monospace;font-size:26px;letter-spacing:7px;line-height:1.25;color:rgba(255,255,255,.9)}
 #grid{background:radial-gradient(ellipse 80% 60% at 50% 30%,#3a0810 0%,#12060a 60%,#07070a 100%)}
@@ -155,14 +157,16 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#07070a;font-fam
 #qr .l{color:#111;text-align:center;font-weight:800;font-size:17px;letter-spacing:3px;padding:6px 0 4px}
 #flash{position:absolute;inset:0;background:#fff;z-index:40;opacity:0;pointer-events:none}
 ${IG ? `/* Reels: legenda e botões do Instagram cobrem a parte de baixo — conteúdo sobe */
-.pwrap{top:220px;width:600px;height:910px;margin-left:-300px}.ftitle{top:1160px}.times{top:1385px}.meta{top:1510px}
-#end .q{bottom:640px}#end .loc{bottom:575px}` : ""}
+.pwrap{top:470px;width:600px;height:880px;margin-left:-300px}.ftitle{top:1385px}.times{top:1620px}.meta{top:1735px}
+.ftag{top:395px}
+#hdr{top:95px;height:250px;flex-direction:column;gap:14px}#hdr img{height:150px;margin:0}#hdr .sep{display:none}#hdr .t{text-align:center;font-size:30px;letter-spacing:8px;line-height:1.3}#hdr .t br{display:none}#hdr .t i{font-style:normal;padding:0 10px;opacity:.6}
+#end .q{bottom:600px}#end .loc{bottom:535px}` : ""}
 </style></head><body>
 <div class="layer" id="intro"><div class="k">CINE CATARATAS</div><div class="n">${introNum}</div><div class="w">${introPal}</div><div class="s">${introSub}</div></div>
 ${feats}
 <div class="layer" id="grid"><div class="k">TAMBÉM EM CARTAZ</div><div class="h">+${nOutros} filme${nOutros === 1 ? "" : "s"}</div><div class="cards">${grid}</div></div>
 <div class="layer" id="end"><img class="logo" src="${logo}"/><div class="h">Escolha o seu<br/>filme agora</div><div class="s">e garanta o lugar</div><div class="q">${IG ? "Ingressos no site do Cine Cataratas" : "Ingressos pelo QR"}</div><div class="loc">JL SHOPPING · FOZ</div></div>
-<div id="hdr"><img src="${logo}"/><div class="sep"></div><div class="t">EM CARTAZ<br/>${periodo()}</div></div>
+<div id="hdr"><img src="${logoTopo}"/><div class="sep"></div><div class="t">EM CARTAZ<br/>${IG ? "<i>·</i>" : ""}${periodo()}</div></div>
 <div id="qr"${IG ? ' style="display:none"' : ""}><img src="${qr}"/><div class="l">INGRESSOS</div></div>
 <div id="flash"></div>
 <script>
