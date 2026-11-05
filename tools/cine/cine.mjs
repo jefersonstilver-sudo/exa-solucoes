@@ -91,6 +91,16 @@ async function programacaoDoPC(qui) {
   const j = await sb(`/rest/v1/cine_programacao?criado_em=gte.${qui.toISOString()}&order=criado_em.desc&limit=1&select=id,criado_em,filmes`);
   return j?.[0] || null;
 }
+// avisa SÓ o CEO (o cliente nunca fica sabendo de erro) — 05/11/2026
+async function avisarCeo(texto) {
+  if (!KEY || process.env.NOTICIAS_PUBLICAR === "0") return;
+  try {
+    const r = await fetch(`${SUPA}/functions/v1/zapi-send-message`, { method: "POST", signal: AbortSignal.timeout(30000),
+      headers: { "Content-Type": "application/json", apikey: KEY, Authorization: `Bearer ${KEY}` },
+      body: JSON.stringify({ agentKey: "sofia", phone: "45998090000", message: "Jeferson, aqui é a Sofia. 🎬 *Cine Cataratas (vídeo da semana)*\n\n" + texto }) });
+    log(`Aviso ao CEO: HTTP ${r.status}`);
+  } catch (e) { log(`Aviso ao CEO falhou: ${e.message}`); }
+}
 async function principalAtual() {
   const j = await sb(`/rest/v1/pedido_videos?pedido_id=eq.${PEDIDO}&is_base_video=eq.true&select=created_at,videos(nome)`);
   return j?.[0] ? { quando: new Date(j[0].created_at), nome: j[0].videos?.nome || "" } : null;
@@ -142,7 +152,7 @@ async function main() {
     try { filmes = await buscarFilmes(browser); } finally { await browser.close(); }
   }
   const comHorarios = filmes.some(f => f.showtimes?.length);
-  if (filmes.length < 2) { log(`ERRO: só ${filmes.length} filme(s) com cartaz — não gero (o vídeo atual continua).`); process.exit(3); }
+  if (filmes.length < 2) { log(`ERRO: só ${filmes.length} filme(s) com cartaz — não gero (o vídeo atual continua).`); await avisarCeo(`Não consegui gerar o vídeo novo (só ${filmes.length} filme com cartaz). O da semana passada continua no ar. O cliente não foi avisado.`); process.exit(3); }
 
   // semana anterior: estreias + completar classificação/formato
   let prev = null; for (const f of [ANTERIOR, SEMENTE]) { if (!prev && existsSync(f)) try { prev = JSON.parse(readFileSync(f, "utf-8")); } catch {} }
@@ -172,10 +182,11 @@ async function main() {
     log(`Publicando "${titulo}" (troca só o vídeo do Cine)...`);
     try {
       execSync(`node "${join(__dirname, "..", "noticias", "publish-video.mjs")}" "${mp4}" "${titulo}" "${PEDIDO}"`, { stdio: "inherit", env: { ...process.env, LIMPAR_SO: "cine|cinema" } });
-    } catch (e) { log(`ERRO na publicação (código ${e.status}).`); process.exit(2); }
+    } catch (e) { log(`ERRO na publicação (código ${e.status}).`); await avisarCeo(`O vídeo da semana foi gerado mas a publicação falhou (código ${e.status}). O cliente não foi avisado. Veja o GitHub Actions "Cine Cataratas".`); process.exit(2); }
+    if (!comHorarios) await avisarCeo(`Publiquei o vídeo da semana SEM horários: o PC do escritório não entregou a leitura do site de ingressos (estava desligado?). Ao ligar o PC, rode "ENVIAR PROGRAMACAO CINE AGORA.bat" (pasta cinema-dooh) que a repescagem refaz com horários. O cliente não foi avisado de nada.`);
   } else log("Teste: não publicado.");
   // guarda a semana para a próxima comparação
   writeFileSync(ANTERIOR, JSON.stringify({ timestamp: prevDaSemana ? prev.timestamp : new Date().toISOString(), base, movies: filmes.map(({ poster, trecho, ...r }) => r) }, null, 1));
   log("=== CINE CONCLUÍDO ===");
 }
-main().catch(e => { log(`ERRO: ${e.message}`); process.exit(1); });
+main().catch(async e => { log(`ERRO: ${e.message}`); await avisarCeo(`Erro ao gerar o vídeo da semana: ${String(e.message).slice(0, 200)}. O da semana passada continua no ar. O cliente não foi avisado.`); process.exit(1); });
