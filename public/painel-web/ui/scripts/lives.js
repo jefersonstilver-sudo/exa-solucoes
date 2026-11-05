@@ -148,6 +148,8 @@
   const desligar = () => {
     try { if (st.hls) st.hls.destroy(); } catch (_) {}
     st.hls = null;
+    st.clipeFim = null;
+    if (st.video) { st.video.onended = null; st.video.onerror = null; }
     if (st.video) {
       st.video.classList.remove("on");
       try { st.video.pause(); st.video.removeAttribute("src"); st.video.load(); } catch (_) {}
@@ -159,7 +161,60 @@
     st.timer = setTimeout(() => tentar(st.idx + 1, 0), ms);
   };
 
+  // ---------- TV box: clipes leves da câmera (workflow camera-clipes: 720x540, ~1 min de atraso) ----------
+  const CLIPES = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/camera-clipes/";
+  const chaveDe = (live) => { const m = String(live && live.url || "").match(/portaldacidade\/([a-z0-9]+)\.stream\//i); return m ? m[1] : null; };
+  const clipeAtual = async (chave) => {
+    try {
+      const r = await fetch(CLIPES + chave + "/atual.json?t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) return null;
+      const j = await r.json();
+      // clipe velho (gerador parado há mais de 20 min): usa o ao vivo
+      if (!j || !j.arquivo || Date.now() - new Date(j.em).getTime() > 20 * 60000) return null;
+      return j;
+    } catch (_) { return null; }
+  };
+  const tocarClipe = (index, ok, falhou) => {
+    const live = st.lives[index];
+    const chave = chaveDe(live);
+    st.carregando = true;
+    const v = st.video;
+    let fim = false, atual = "";
+    const limite = setTimeout(() => terminar(false, "clipe demorou"), TEMPO_MAX_CARREGAR);
+    const terminar = (sucesso, motivo) => {
+      if (fim) return; fim = true; clearTimeout(limite); st.carregando = false;
+      if (sucesso) ok(); else { desligar(); falhou(motivo); }
+    };
+    const proximo = async () => {
+      if (st.lives[st.idx] !== live && fim) return;
+      const j = await clipeAtual(chave);
+      if (j && j.arquivo !== atual) { atual = j.arquivo; v.src = CLIPES + j.arquivo; }
+      else { try { v.currentTime = 0; } catch (_) {} }
+      v.play().catch(() => {});
+    };
+    st.clipeFim = () => { guardarQuadro(); proximo(); };
+    v.onended = () => st.clipeFim && st.clipeFim();
+    v.addEventListener("playing", function uma() { v.removeEventListener("playing", uma); terminar(true); });
+    v.onerror = () => { if (!fim) terminar(false, "clipe com erro"); };
+    clipeAtual(chave).then((j) => {
+      if (!j) { clearTimeout(limite); fim = true; st.carregando = false; tocarAoVivo(index, ok, falhou); return; }
+      atual = j.arquivo; v.loop = false; v.src = CLIPES + j.arquivo; v.play().catch(() => {});
+    });
+  };
+
   const tocar = (index, ok, falhou) => {
+    if (TV && chaveDe(st.lives[index])) {
+      guardarQuadro();
+      const wrapT = document.querySelector(".camera-video-wrapper");
+      if (wrapT) wrapT.classList.add("trocando");
+      desligar();
+      tocarClipe(index, ok, falhou);
+      return;
+    }
+    tocarAoVivo(index, ok, falhou);
+  };
+
+  const tocarAoVivo = (index, ok, falhou) => {
     guardarQuadro();          // congela a imagem atual antes de trocar
     const wrapT = document.querySelector(".camera-video-wrapper");
     if (wrapT) wrapT.classList.add("trocando");

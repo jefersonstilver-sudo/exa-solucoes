@@ -1,0 +1,66 @@
+name: camera-clipes
+# Câmeras ao vivo do Portal da Cidade (1080p 25 qps, pesadas demais para TV box) viram clipes leves com ~1 min de atraso:
+# a cada ciclo grava 30 s de cada câmera, recorta no formato do quadro da câmera da réplica (4:3, sem perder os carros),
+# reduz para 720x540, H.264 main ~900 kbps, e sobe para o bucket público camera-clipes/<chave>/<hora>.mp4 + atual.json.
+# A TV (lives.js com ?tela=1) toca o clipe mais novo do próprio arquivo, como um anúncio. Os NUCs seguem no ao vivo.
+# Protótipo: roda até ~5h30 por execução e o agendamento emenda a próxima. Destino definitivo: servidor próprio (AWS).
+on:
+  workflow_dispatch:
+    inputs:
+      minutos: { description: "quanto tempo fica rodando (máx. 345)", required: false, default: "330" }
+  schedule:
+    - cron: "7 */5 * * *"
+concurrency:
+  group: camera-clipes-${{ github.run_id }}
+jobs:
+  clipes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      SURL: ${{ secrets.SUPABASE_URL }}
+      KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      MINUTOS: ${{ inputs.minutos || '330' }}
+    steps:
+      - name: ffmpeg
+        run: sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg >/dev/null && ffmpeg -version | head -1
+      - name: bucket
+        run: |
+          curl -s -X POST "$SURL/storage/v1/bucket" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d '{"id":"camera-clipes","name":"camera-clipes","public":true,"file_size_limit":20971520,"allowed_mime_types":["video/mp4","application/json"]}' | head -c 300; echo
+      - name: gerar clipes
+        run: |
+          set +e
+          CAMS="fozpontedaamizadesentidoparaguai fozpontedaamizadesentidobrasil fozsentidopontedaamizade01 fozaduanapontedaamizade fozpontetancredoneves fozpontedaintegracao"
+          BASE="https://video02.logicahost.com.br/portaldacidade"
+          FIM=$(( $(date +%s) + MINUTOS * 60 ))
+          mkdir -p /tmp/c
+          sobe() { # $1 arquivo local, $2 caminho no bucket, $3 content-type, $4 cache
+            curl -s -o /dev/null -w "%{http_code}" -X POST "$SURL/storage/v1/object/camera-clipes/$2" \
+              -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: $3" -H "x-upsert: true" -H "Cache-Control: $4" --data-binary @"$1"
+          }
+          um() { # grava, converte e publica um clipe de uma câmera
+            c=$1; t=$(date -u +%Y%m%dT%H%M%SZ); f=/tmp/c/$c-$t.mp4
+            timeout 75 ffmpeg -loglevel error -y -rw_timeout 15000000 -i "$BASE/$c.stream/playlist.m3u8" -t 30 -an \
+              -vf "crop=1440:1080,scale=720:540:flags=lanczos,fps=25,format=yuv420p" \
+              -c:v libx264 -preset veryfast -profile:v main -level 3.1 -b:v 900k -maxrate 1100k -bufsize 1800k -g 50 -keyint_min 50 \
+              -movflags +faststart "$f"
+            dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" 2>/dev/null | cut -d. -f1)
+            if [ -z "$dur" ] || [ "$dur" -lt 10 ]; then echo "$c: falhou"; rm -f "$f"; return; fi
+            h=$(sobe "$f" "$c/$t.mp4" video/mp4 "max-age=86400")
+            if [ "$h" = "200" ]; then
+              printf '{"arquivo":"%s/%s.mp4","em":"%s","seg":%s}' "$c" "$t" "$(date -u +%FT%TZ)" "$dur" > /tmp/c/$c.json
+              sobe /tmp/c/$c.json "$c/atual.json" application/json "no-cache" >/dev/null
+              echo "$c $t ${dur}s $(du -k "$f" | cut -f1)KB"
+              # apaga clipes antigos desta câmera (fica com os 4 últimos)
+              echo "$c/$t.mp4" >> /tmp/c/$c.lista
+              while [ "$(wc -l < /tmp/c/$c.lista)" -gt 4 ]; do
+                velho=$(head -1 /tmp/c/$c.lista); sed -i 1d /tmp/c/$c.lista
+                curl -s -o /dev/null -X DELETE "$SURL/storage/v1/object/camera-clipes/$velho" -H "Authorization: Bearer $KEY" -H "apikey: $KEY"
+              done
+            else echo "$c: upload HTTP $h"; fi
+            rm -f "$f"
+          }
+          while [ "$(date +%s)" -lt "$FIM" ]; do
+            for c in $CAMS; do um "$c" & done
+            wait
+          done
