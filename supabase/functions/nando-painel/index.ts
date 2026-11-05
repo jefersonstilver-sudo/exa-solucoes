@@ -144,6 +144,35 @@ async function dados(sb: ReturnType<typeof db>, b: any) {
   });
 }
 
+// CONTRATOS: o contrato assinado de cada predio que a pessoa administra (predio_contratos + bucket privado).
+// Link do PDF so com sessao valida, so dos predios dela, valido por 10 minutos.
+async function contratos(sb: ReturnType<typeof db>, b: any) {
+  const s = await sessaoValida(sb, String(b.sessao || ""));
+  if (!s) return json(401, { ok: false, erro: "Seu acesso expirou. Entre de novo.", precisa_login: true });
+  const { lista } = await predios(sb, s.telefone);
+  const ids = lista.map((p) => p.id);
+  const { data: rows } = ids.length
+    ? await sb.from("predio_contratos").select("building_id,titulo,arquivo_path,assinado_em,assinante_nome").in("building_id", ids).eq("ativo", true).order("criado_em", { ascending: false })
+    : { data: [] as any[] };
+  const porPredio = new Map<string, any>();
+  for (const r of rows || []) if (!porPredio.has(r.building_id)) porPredio.set(r.building_id, r);
+  const itens = await Promise.all(lista.map(async (p) => {
+    const r = porPredio.get(p.id);
+    let contrato = null;
+    if (r) {
+      const nomeArq = `Contrato EXA - ${p.nome}.pdf`.replace(/[\\/:*?"<>|]/g, "");
+      const [{ data: ver }, { data: baixar }] = await Promise.all([
+        sb.storage.from("contratos-predios").createSignedUrl(r.arquivo_path, 600),
+        sb.storage.from("contratos-predios").createSignedUrl(r.arquivo_path, 600, { download: nomeArq }),
+      ]);
+      if (ver?.signedUrl) contrato = { titulo: r.titulo, assinado_em: r.assinado_em, assinante: r.assinante_nome, ver: ver.signedUrl, baixar: baixar?.signedUrl || ver.signedUrl };
+    }
+    return { id: p.id.slice(0, 8), predio: p.nome, codigo: p.codigo, contrato };
+  }));
+  itens.sort((x, y) => Number(!!y.contrato) - Number(!!x.contrato) || x.predio.localeCompare(y.predio, "pt-BR"));
+  return json(200, { ok: true, contratos: itens });
+}
+
 // alteracoes pelo site usam as MESMAS regras e ferramentas do Nando (confere o painel, historico, grupo de predios)
 async function alterar(sb: ReturnType<typeof db>, b: any) {
   const s = await sessaoValida(sb, String(b.sessao || ""));
@@ -270,6 +299,7 @@ Deno.serve(async (req) => {
       case "verificar": return await verificar(sb, b);
       case "dados": return await dados(sb, b);
       case "alterar": return await alterar(sb, b);
+      case "contratos": return await contratos(sb, b);
       case "sair": return await sair(sb, b);
       case "replica": return await replica(sb, b, ehServico(req));
       default: return json(400, { ok: false, erro: "ação inválida" });

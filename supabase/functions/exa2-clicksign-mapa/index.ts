@@ -74,6 +74,47 @@ async function documentosV1(token: string, ini: number, paginas: number) {
   return { itens, fim, ultima_pagina: ultima };
 }
 
+// IMPORTAR o PDF assinado de um envelope para o Painel do Síndico (área Contratos): baixa o arquivo da ClickSign,
+// guarda no bucket privado contratos-predios e registra em predio_contratos (o anterior do prédio fica inativo).
+// Continua somente leitura na ClickSign. body: { acao: "importar", envelope_id, building_id }
+async function importar(sb: any, token: string, b: any, quem: string) {
+  const env = String(b.envelope_id || "").replace(/[^0-9a-f-]/gi, "");
+  const bid = String(b.building_id || "").replace(/[^0-9a-f-]/gi, "");
+  if (!env || !bid) return json(400, { error: "envelope_id e building_id obrigatórios" });
+  const { data: predio } = await sb.from("buildings").select("id,nome").eq("id", bid).maybeSingle();
+  if (!predio) return json(404, { error: "prédio não encontrado" });
+  const h = { Accept: "application/vnd.api+json", Authorization: token };
+  const e = await getJson(`${BASE}/api/v3/envelopes/${env}`, h);
+  const docs = await getJson(`${BASE}/api/v3/envelopes/${env}/documents`, h);
+  const sig = await getJson(`${BASE}/api/v3/envelopes/${env}/signers`, h).catch(() => ({ data: [] }));
+  const d = (docs?.data || [])[0];
+  if (!d) return json(404, { error: "envelope sem documento" });
+  // o link do arquivo assinado pode vir na lista ou no detalhe do documento
+  let det = d;
+  let url = d.links?.files?.signed || d.attributes?.links?.files?.signed;
+  if (!url) { det = (await getJson(`${BASE}/api/v3/envelopes/${env}/documents/${d.id}`, h))?.data || d; url = det.links?.files?.signed || det.attributes?.links?.files?.signed; }
+  const assinado = !!url;
+  if (!url) url = det.links?.files?.original || det.attributes?.links?.files?.original;
+  if (!url) return json(422, { error: "a ClickSign não devolveu o link do arquivo", chaves_doc: Object.keys(det || {}), links: det?.links || null });
+  const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
+  if (!r.ok) return json(502, { error: "não consegui baixar o PDF da ClickSign: " + r.status });
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  const caminho = `${bid}/${env}.pdf`;
+  const { error: up } = await sb.storage.from("contratos-predios").upload(caminho, bytes, { contentType: "application/pdf", upsert: true });
+  if (up) return json(500, { error: "falha ao guardar: " + up.message });
+  const parte = (sig?.data || []).map((x: any) => x.attributes || {}).find((x: any) => !/jeferson|exa ?m[ií]dia|eduardo/i.test(String(x.name || "")) && !/examidia\.com\.br|eduardogabriel/i.test(String(x.email || "")));
+  const ea = e?.data?.attributes || {};
+  await sb.from("predio_contratos").update({ ativo: false }).eq("building_id", bid).eq("ativo", true);
+  const { data: linha, error: ins } = await sb.from("predio_contratos").insert({
+    building_id: bid, titulo: String(ea.name || det.attributes?.filename || "Contrato").replace(/\s*\(\d+\)\s*$/g, "").trim(), arquivo_path: caminho,
+    assinado_em: ea.status === "closed" ? (ea.modified || ea.created || null) : null,
+    assinante_nome: parte?.name || null, assinante_email: parte?.email || null,
+    clicksign_envelope_id: env, clicksign_documento_id: d.id, ativo: true, criado_por: quem,
+  }).select("id,titulo,assinado_em,assinante_nome").single();
+  if (ins) return json(500, { error: "falha ao registrar: " + ins.message });
+  return json(200, { ok: true, predio: predio.nome, arquivo_assinado: assinado, bytes: bytes.length, envelope_status: ea.status, contrato: linha });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   try {
@@ -87,6 +128,7 @@ Deno.serve(async (req) => {
     if (!token) return json(500, { error: "CLICKSIGN_ACCESS_TOKEN não configurado" });
 
     const b = await req.json().catch(() => ({}));
+    if (b.acao === "importar") return await importar(sb, token, b, u.user.email || "admin");
     const fonte = ["v3", "v1"].includes(b.fonte) ? b.fonte : "v3";
     const ini = Math.max(1, Number(b.pagina_ini) || 1);
     const paginas = Math.min(10, Math.max(1, Number(b.paginas) || 4));
