@@ -10,6 +10,7 @@ import {
 import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 import { prepararLogo, conferenciaLogo } from "./nando-logo.ts";
 import { FERRAMENTAS_CADASTRO, NOMES_CADASTRO, executarCadastro, contextoCadastroParaPrompt, roteiroCadastro } from "./nando-cadastro.ts";
+import { FERRAMENTA_DIAGNOSTICO, diagnosticarPainel } from "./nando-paineis.ts";
 
 const BUCKET = "nando-midia";
 const LIMITE_AVISOS = 10;
@@ -20,6 +21,7 @@ export interface Contexto {
   tel: string;
   nomePessoa: string;
   admin: boolean;
+  tecnico?: boolean;          // tecnico de instalacao/manutencao da EXA (nando_config 'tecnicos'): so assuntos de painel
   predios: Predio[];          // predios que pode gerenciar
   predioAtual: Predio | null;
   midias: Record<string, { mime: string; caminho: string; url: string }>; // midias recebidas (id -> arquivo salvo)
@@ -456,6 +458,8 @@ export const FERRAMENTAS = [
   },
   // cadastro de predio interessado (sindico/administradora que quer a EXA no predio): nando-cadastro.ts
   ...FERRAMENTAS_CADASTRO,
+  // diagnostico de painel (so Jeferson e tecnicos): nando-paineis.ts
+  FERRAMENTA_DIAGNOSTICO,
 ];
 
 // Rascunho NAO fica guardado: se o sindico nao publicou, nao gostou.
@@ -662,6 +666,10 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
   if (nome.startsWith("criar_") && Array.isArray(e?.predios) && e.predios.length) {
     const ds = await resolverAlvos(c, e.predios, e.exceto);
     if (ds.length > 1) e.__destinos = ds.map((x) => ({ id: x.id, nome: x.nome }));
+  }
+  if (nome === "diagnosticar_painel") {
+    if (!c.admin && !c.tecnico) return "Só a equipe da EXA vê o diagnóstico dos painéis. Para síndico: registre a ocorrência (registrar_ocorrencia, tipo painel_problema) e diga que a equipe já foi avisada.";
+    return await diagnosticarPainel(sb, String(e?.painel || ""));
   }
   switch (nome) {
     case "escolher_predio": {
@@ -1237,7 +1245,9 @@ export async function promptSistema(c: Contexto): Promise<string> {
     const { data } = await c.sb.from("nando_predio_perfil").select("preferencias").eq("building_id", c.predioAtual.id).maybeSingle();
     if (data?.preferencias && Object.keys(data.preferencias).length) perfil = `Preferências já combinadas neste prédio: ${JSON.stringify(data.preferencias)}`;
   }
-  const quemE = c.admin
+  const quemE = c.tecnico && !c.admin
+    ? `Você está falando com ${c.nomePessoa || "um técnico"}, TÉCNICO de instalação e manutenção da EXA (equipe interna, não é síndico). Chame de "${primeiroNome(c.nomePessoa) || "você"}". O assunto com técnico são os PAINÉIS: quedas, diagnóstico, o que fazer, operadora, empresa de elevador. Use diagnosticar_painel. Ele não cria avisos de condomínio; se pedir, diga que avisos são com o síndico ou o Jeferson.`
+    : c.admin
     ? `Você está falando com o JEFERSON, dono da EXA Mídia (administrador). Ele pode ver e mexer em QUALQUER prédio. Trate-o como "Jeferson". Se ele perguntar quais prédios existem/pode mexer, use listar_predios e mande a lista completa; para trocar de prédio, use escolher_predio com o nome ou o código.`
     : c.predios.length
       ? `Você está falando com ${c.nomePessoa || "um administrador do prédio"} (chame de "${primeiroNome(c.nomePessoa) || "você"}"). Prédios que essa pessoa administra (CADASTRO OFICIAL): ${c.predios.map((p) => `${p.nome} (código ${p.codigo}, ${p.papel})`).join("; ")}. Nome e prédios vêm SÓ do cadastro: se mensagens antigas da conversa disserem outro nome ou outro prédio, ignore e siga o cadastro.${c.nomePessoa ? "" : " O cadastro não tem o nome dessa pessoa: pergunte o nome antes de chamar por algum."}`
@@ -1330,7 +1340,7 @@ O QUE NÃO PODE (recuse com educação e explique em 1 frase)
 - Lista de inadimplentes ou qualquer aviso com nome/apartamento de devedores: explique que expõe moradores e pode gerar problema com a LGPD; sugira um aviso geral ("regularize suas taxas com a administração").
 - Em recusas relevantes ou problemas, registre com registrar_ocorrencia.
 - CONTRATO: só se o síndico PEDIR o contrato (ou cópia do contrato/termo com a EXA), diga em mensagens curtas que vai pedir para a equipe da EXA, que tivemos alguns atrasos no sistema de contratos (é feito pela ClickSign, assinatura digital) e que o contrato chega para ele em até 2 dias úteis. Use registrar_ocorrencia (tipo "pedido_contrato") com o prédio e o que ele pediu. Nunca fale de contrato sem ele perguntar e não invente cláusulas, valores ou prazos de contrato.
-- PROBLEMA NA TELA OU RECLAMAÇÃO (prioridade máxima): se a pessoa disser que o painel/tela travou, está desligado, apagado, preto, sem som/imagem, congelado, não atualiza, aviso não apareceu na tela, câmera parada, ou qualquer reclamação do serviço da EXA → use registrar_ocorrencia NA HORA (tipo "painel_problema" ou "reclamacao"), com o que ela disse (desde quando, qual elevador/bloco, se é sempre ou às vezes). Não tente resolver sozinho nem dizer que está tudo certo; não peça para ela reiniciar nada. Depois diga em 1–2 frases curtas que já avisou a equipe da EXA, que vão verificar, e agradeça o aviso. Se faltar um detalhe importante (qual bloco/elevador), pergunte depois de registrar.
+${c.admin || c.tecnico ? `- PAINÉIS (só com o Jeferson e técnicos): quando perguntarem por que um painel está offline, caiu, está instável, ou como estão as telas, use diagnosticar_painel e responda curto: o que aconteceu, a causa provável e o que fazer — reiniciar, ligar para a operadora do prédio (diga qual), ou agendar a empresa de elevador do prédio (diga qual) para acessar o poço, onde ficam o NUC e as antenas. Passe o contato se o diagnóstico trouxer; se não estiver cadastrado, diga. Os avisos automáticos de queda que você mandou estão no histórico desta conversa: se perguntarem "por quê?" logo depois, é sobre aquele painel.\n` : ""}- PROBLEMA NA TELA OU RECLAMAÇÃO (prioridade máxima, quando quem fala é síndico): se a pessoa disser que o painel/tela travou, está desligado, apagado, preto, sem som/imagem, congelado, não atualiza, aviso não apareceu na tela, câmera parada, ou qualquer reclamação do serviço da EXA → use registrar_ocorrencia NA HORA (tipo "painel_problema" ou "reclamacao"), com o que ela disse (desde quando, qual elevador/bloco, se é sempre ou às vezes). Não tente resolver sozinho nem dizer que está tudo certo; não peça para ela reiniciar nada. Depois diga em 1–2 frases curtas que já avisou a equipe da EXA, que vão verificar, e agradeça o aviso. Se faltar um detalhe importante (qual bloco/elevador), pergunte depois de registrar.
 
 ${c.admin || c.predios.length ? "Se a pessoa (já cadastrada) quiser a EXA em OUTRO prédio que ainda não é da rede, use o roteiro abaixo para cadastrar esse prédio novo.\n" : ""}${roteiroCadastro()}
 

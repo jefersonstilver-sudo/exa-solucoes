@@ -6,12 +6,14 @@
 // 4) cobranca gentil de predio sem aviso ha 7+ dias (max 1x/semana, dia util, horario comercial)
 // 5) resumo semanal para o Jeferson (segunda-feira, 8h)
 // 6) limpeza de previas vencidas
+// 7) vigia dos paineis: queda real -> Jeferson + tecnicos com diagnostico; voltou; resumo da noite (nando-paineis.ts)
 // =====================================================================
 import {
   db, removerDoPainel, enviarTexto, fmtData, primeiroNome, horaLocalIso, ALERTA_NUMERO, MODO_TESTE, telefoneCanonico,
   chavesTelefone, historico,
 } from "../_shared/nando-core.ts";
 import { gerarOcorrencias } from "../_shared/nando-agente.ts";
+import { vigiarPaineis, diagnosticarPainel } from "../_shared/nando-paineis.ts";
 
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
 
@@ -23,6 +25,13 @@ Deno.serve(async (req) => {
   const { data: cfg } = await sb.from("nando_config").select("valor").eq("chave", "cron_token").maybeSingle();
   const okToken = !!cfg?.valor && tokenUrl === cfg.valor;
   if (!okToken && auth !== (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "-")) return json(401, { erro: "nao autorizado" });
+
+  // conferência (token do cron): ?diagnostico=<painel> devolve o diagnóstico sem mandar nada
+  const diag = new URL(req.url).searchParams.get("diagnostico");
+  if (diag !== null) {
+    try { return json(200, { ok: true, texto: await diagnosticarPainel(sb, diag) }); }
+    catch (e) { return json(500, { ok: false, erro: (e as Error).message }); }
+  }
 
   const agora = new Date();
   const log: string[] = [];
@@ -122,6 +131,9 @@ Deno.serve(async (req) => {
     .eq("status", "rascunho").lt("created_at", new Date(agora.getTime() - 2 * 3600000).toISOString());
   // 6) previas vencidas
   await sb.from("nando_previas").delete().lt("expira_em", new Date(agora.getTime() - 3600000).toISOString());
+
+  // 7) vigia dos paineis (falha aqui nao derruba o resto da rotina)
+  try { await vigiarPaineis(sb, log); } catch (e) { log.push(`vigia dos painéis falhou: ${(e as Error).message.slice(0, 160)}`); }
 
   return json(200, { ok: true, log });
 });

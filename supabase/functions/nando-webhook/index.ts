@@ -9,6 +9,7 @@ import {
   MODO_TESTE, registrarOcorrencia, primeiroNome, todosPredios, NANDO_VERSAO, enviarImagem, chavesTelefone, CADASTRO_ABERTO,
 } from "../_shared/nando-core.ts";
 import { Contexto, rodarAgente } from "../_shared/nando-agente.ts";
+import { tecnicoDoTelefone } from "../_shared/nando-paineis.ts";
 import { exigirSistema, urlWebhookEvolution, webhookEvolutionOk } from "../_shared/guarda.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
@@ -203,10 +204,11 @@ async function ehTestador(sb: ReturnType<typeof db>, tel: string): Promise<boole
 
 async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: number, pushName: string) {
   const admin = ehAdmin(tel);
+  const tecnico = admin ? null : await tecnicoDoTelefone(sb, tel);
   const { predios, nome } = await prediosDoTelefone(sb, tel);
   // modo teste: so admin e testadores; com NANDO_CADASTRO_ABERTO=true, numeros sem cadastro tambem (cadastro de predio interessado)
   const semCadastroLiberado = CADASTRO_ABERTO && !predios.length;
-  if (MODO_TESTE && !admin && !semCadastroLiberado && !(await ehTestador(sb, tel))) { console.log("[NANDO] modo teste: ignorando", tel); return; }
+  if (MODO_TESTE && !admin && !tecnico && !semCadastroLiberado && !(await ehTestador(sb, tel))) { console.log("[NANDO] modo teste: ignorando", tel); return; }
 
   // atendimento assumido por alguem da EXA pelo CRM: o Nando so registra, nao responde
   const { data: atend } = await sb.from("nando_atendimento").select("modo, humano_ate").eq("telefone", tel).maybeSingle()
@@ -233,12 +235,12 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
   }
 
   const ctx: Contexto = {
-    sb, tel, nomePessoa: admin ? "Jeferson" : (nome || pushName || ""), admin, predios, predioAtual, midias: {}, registros: [],
+    sb, tel, nomePessoa: admin ? "Jeferson" : tecnico ? tecnico.nome : (nome || pushName || ""), admin, tecnico: !!tecnico, predios, predioAtual, midias: {}, registros: [],
   };
 
   // historico recente (7 dias) -> mensagens para o Claude
   // numero sem cadastro: so a conversa recente (2 h), para nao tomar como verdade o que alguem disse antes
-  const desde = new Date(Date.now() - (admin || predios.length ? 7 * 86400000 : 2 * 3600000)).toISOString();
+  const desde = new Date(Date.now() - (admin || tecnico || predios.length ? 7 * 86400000 : 2 * 3600000)).toISOString();
   const { data: hist } = await sb.from("nando_mensagens").select("*").eq("telefone", tel).gte("created_at", desde)
     .order("id", { ascending: false }).limit(40);
   const linhas = (hist || []).reverse();
