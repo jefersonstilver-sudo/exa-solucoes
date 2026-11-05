@@ -154,3 +154,7 @@
   .cx-pop{bottom:calc(100% + 8px)}
 }
 @keyframes cx-sobe-cel{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+/* monitor ao vivo: mesmo chat dentro do painel de vidro */
+.cx.cx-monitor{display:block;background:transparent}
+.cx-monitor .cx-chat{display:block}
+.cx-monitor .cx-bub{max-width:min(540px,88%)}

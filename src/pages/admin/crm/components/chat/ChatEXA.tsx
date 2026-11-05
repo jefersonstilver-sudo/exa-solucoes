@@ -69,8 +69,8 @@ export const CxFoto: React.FC<{ url?: string | null; tamanho: number; alt?: stri
 
 // ---------------------------------------------------------------- datas
 const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-const rotuloDia = (iso: string) => {
+export const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+export const rotuloDia = (iso: string) => {
   const d = new Date(iso); const hoje = new Date(); const ontem = new Date(Date.now() - 86400e3);
   if (d.toDateString() === hoje.toDateString()) return 'Hoje';
   if (d.toDateString() === ontem.toDateString()) return 'Ontem';
@@ -103,10 +103,12 @@ const paraInputLocal = (d: Date) => {
 const TIPO_MIDIA: Record<string, 'imagem' | 'video' | 'audio' | 'documento'> = {
   imagem: 'imagem', foto: 'imagem', logo: 'imagem', figurinha: 'imagem', sticker: 'imagem',
   video: 'video', 'vídeo': 'video', audio: 'audio', 'áudio': 'audio', documento: 'documento', pdf: 'documento',
+  // marcas genéricas: o tipo real vem do arquivo ao abrir
+  midia: 'documento', 'mídia': 'documento', arquivo: 'documento', modelo: 'documento',
 };
 const cacheMidia = new Map<string, { url: string; mime: string; nome: string | null; tipo: string }>();
 
-const MidiaMsg: React.FC<{ agente: CxAgente; id: string; tipo: string }> = ({ agente, id, tipo }) => {
+export const MidiaMsg: React.FC<{ agente: CxAgente; id: string; tipo: string }> = ({ agente, id, tipo }) => {
   const chave = `${agente}:${id}`;
   const [m, setM] = useState(() => cacheMidia.get(chave) || null);
   const [erro, setErro] = useState('');
@@ -126,12 +128,12 @@ const MidiaMsg: React.FC<{ agente: CxAgente; id: string; tipo: string }> = ({ ag
 };
 
 /** Separa a marca de mídia do texto: "[imagem] legenda" → tipo imagem + "legenda". */
-function lerMidia(m: CxMsg): { tipo: string | null; texto: string; nota: string | null } {
+export function lerMidia(m: CxMsg): { tipo: string | null; texto: string; nota: string | null } {
   const texto = m.texto || '';
   const mt = /^\s*\[([^\]]{1,200})\]:?\s*/.exec(texto);
   const palavra = mt ? mt[1].toLowerCase().split(/[\s:]/)[0] : '';
   let tipo: string | null = m.midia ? (TIPO_MIDIA[m.midia] || 'documento') : null;
-  if (!tipo && mt) tipo = TIPO_MIDIA[palavra] || null;
+  if (!tipo && mt) tipo = TIPO_MIDIA[palavra] || (/\bpdf\b/i.test(mt[1]) ? 'documento' : null);
   if (!tipo) return { tipo: null, texto, nota: null };
   let resto = mt ? texto.slice(mt[0].length) : texto;
   let nota: string | null = null;
@@ -142,7 +144,7 @@ function lerMidia(m: CxMsg): { tipo: string | null; texto: string; nota: string 
 
 // ---------------------------------------------------------------- fotos de perfil do WhatsApp (cache 12 h no aparelho)
 const FOTO_TTL = 12 * 3600e3;
-function useFotosWhatsApp(agente: CxAgente, conversas: CxConversa[]) {
+export function useFotosWhatsApp(agente: CxAgente, conversas: CxConversa[]) {
   const chave = `cx-fotos-${agente}`;
   const [fotos, setFotos] = useState<Record<string, string | null>>(() => {
     try {
