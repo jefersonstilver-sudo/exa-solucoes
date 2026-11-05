@@ -18,6 +18,7 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -125,6 +126,7 @@ class MainActivity : Activity() {
         raiz.setBackgroundColor(Color.BLACK)
         setContentView(raiz)
 
+        if (prefs().getBoolean("giro_escolhido", false)) girarSistema()
         intro = Intro(this)
         raiz.addView(intro, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         aplicarGiroNativo(intro)
@@ -169,11 +171,47 @@ class MainActivity : Activity() {
     /** 0 = TV deitada; 90 / 270 = TV em pé (mesmo sentido do giro da página). */
     private fun giroSalvo(): Int = prefs().getInt("giro", 0).let { if (it == 90 || it == 270) it else 0 }
 
-    /** Gira uma camada nativa (intro, menu) para a TV em pé: troca largura/altura e roda em volta do centro. */
-    private fun aplicarGiroNativo(v: View, g: Int = giroSalvo()) {
+    /**
+     * TV em pé girada pelo próprio Android (muito mais leve: o vídeo não é redesenhado girado a cada quadro).
+     * Precisa de "modificar configurações do sistema" (o instalador libera com appops) e, nos TV box que forçam deitado,
+     * de `wm set-fix-to-user-rotation enabled`. Sem isso, segue o giro por software (página e camadas nativas).
+     * Zeta Plus (05/11/2026): TV girada 90 (página rotate(90deg)) = rotação do sistema ROTACAO_90.
+     */
+    private fun rotacaoDoSistema(g: Int): Int = when (g) {
+        90 -> prefs().getInt("rot90", ROTACAO_90)
+        270 -> (prefs().getInt("rot90", ROTACAO_90) + 2) % 4
+        else -> 0
+    }
+
+    private fun girarSistema(g: Int = giroSalvo()): Boolean = try {
+        if (Build.VERSION.SDK_INT >= 23 && !Settings.System.canWrite(this)) false
+        else {
+            Settings.System.putInt(contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0)
+            Settings.System.putInt(contentResolver, Settings.System.USER_ROTATION, rotacaoDoSistema(g))
+            true
+        }
+    } catch (_: Throwable) { false }
+
+    /** A janela do app já está em pé (o Android girou a tela): as camadas nativas não giram mais por conta própria. */
+    private fun sistemaJaEmPe(): Boolean {
         val dm = DisplayMetrics()
         @Suppress("DEPRECATION")
         windowManager.defaultDisplay.getRealMetrics(dm)
+        return dm.heightPixels > dm.widthPixels
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // a tela girou (rotação do sistema aplicada): refaz as camadas nativas no tamanho novo
+        try { aplicarGiroNativo(intro); aplicarGiroNativo(menu) } catch (_: Throwable) {}
+    }
+
+    /** Gira uma camada nativa (intro, menu) para a TV em pé: troca largura/altura e roda em volta do centro. */
+    private fun aplicarGiroNativo(v: View, g0: Int = giroSalvo()) {
+        val dm = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        windowManager.defaultDisplay.getRealMetrics(dm)
+        val g = if (dm.heightPixels > dm.widthPixels) 0 else g0
         val emPe = g == 90 || g == 270
         val lp = FrameLayout.LayoutParams(if (emPe) dm.heightPixels else ViewGroup.LayoutParams.MATCH_PARENT, if (emPe) dm.widthPixels else ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER)
         v.layoutParams = lp
@@ -189,6 +227,8 @@ class MainActivity : Activity() {
      */
     private fun mostrarEscolha(depois: () -> Unit) {
         escolha?.let { raiz.removeView(it) }
+        // a escolha é sempre mostrada com a tela na posição de fábrica (deitada); o giro escolhido é aplicado no fim
+        if (sistemaJaEmPe()) girarSistema(0)
         val dm = DisplayMetrics()
         @Suppress("DEPRECATION")
         windowManager.defaultDisplay.getRealMetrics(dm)
@@ -224,6 +264,7 @@ class MainActivity : Activity() {
                 feito = true
                 prefs().edit().putInt("giro", g).putBoolean("giro_escolhido", true).putBoolean("giro_pendente", true).apply()
                 raiz.removeView(fundo); escolha = null
+                girarSistema(g)
                 aplicarGiroNativo(intro, g); aplicarGiroNativo(menu, g)
                 depois()
             }
@@ -902,6 +943,7 @@ class MainActivity : Activity() {
                 if (prefs().getBoolean("giro_escolhido", false) && giroSalvo() == g) return@post
                 prefs().edit().putInt("giro", g).putBoolean("giro_escolhido", true).putBoolean("giro_pendente", false).apply()
                 escolha?.let { raiz.removeView(it); escolha = null }
+                girarSistema(g)
                 aplicarGiroNativo(intro, g); aplicarGiroNativo(menu, g)
                 intro.tocar(); focoSoNaFrente(true)
                 criarWeb()
@@ -969,6 +1011,8 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        /** Rotação do Android (Surface.ROTATION_*) para a TV girada 90 (confirmar no Zeta e ajustar se ficar de cabeça para baixo). */
+        private const val ROTACAO_90 = 1
         private const val FUNCAO = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/exa-tela"
         // chave pública (anon) — a mesma que o site e o player usam
         private const val ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk"
