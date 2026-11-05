@@ -7499,6 +7499,51 @@ export type Database = {
           },
         ]
       }
+      exa_assinatura_automatica: {
+        Row: {
+          admin_email: string
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          documento: string
+          email: string
+          erro: string | null
+          id: string
+          nascimento: string
+          nome: string
+          status: string
+          termo_id: string | null
+        }
+        Insert: {
+          admin_email: string
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          documento: string
+          email: string
+          erro?: string | null
+          id?: string
+          nascimento: string
+          nome: string
+          status?: string
+          termo_id?: string | null
+        }
+        Update: {
+          admin_email?: string
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string
+          email?: string
+          erro?: string | null
+          id?: string
+          nascimento?: string
+          nome?: string
+          status?: string
+          termo_id?: string | null
+        }
+        Relationships: []
+      }
       exa_autopromo_eventos: {
         Row: {
           agente: string | null
@@ -13724,6 +13769,7 @@ export type Database = {
           enviado_em: string | null
           erro: string | null
           id: string
+          lembrete_em: string | null
           modelo: string | null
           origem: string
           pdf_path: string | null
@@ -13751,6 +13797,7 @@ export type Database = {
           enviado_em?: string | null
           erro?: string | null
           id?: string
+          lembrete_em?: string | null
           modelo?: string | null
           origem?: string
           pdf_path?: string | null
@@ -13778,6 +13825,7 @@ export type Database = {
           enviado_em?: string | null
           erro?: string | null
           id?: string
+          lembrete_em?: string | null
           modelo?: string | null
           origem?: string
           pdf_path?: string | null
