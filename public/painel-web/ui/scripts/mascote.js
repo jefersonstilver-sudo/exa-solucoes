@@ -59,7 +59,7 @@
     const r = document.createElement("div");
     r.className = "mascote";
     r.innerHTML =
-      '<img class="mascote-parado" src="' + BASE + 'parado.jpg" alt="">' +
+      '<img class="mascote-parado" src="' + BASE + (ESTATICO ? 'nando-parado.jpg' : 'parado.jpg') + '" alt="">' +
       '<video class="mascote-video" muted playsinline preload="none"></video>' +
       '<div class="mascote-texto tx-vazio">' +
       '  <img class="mascote-logo" src="' + (window.MASCOTE_LOGO || "../assets/logo-exa-branca.png") + '" alt="" onerror="this.style.display=\'none\'">' +

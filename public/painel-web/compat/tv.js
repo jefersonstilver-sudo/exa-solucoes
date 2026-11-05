@@ -22,9 +22,14 @@
         configurable: true,
         get: function () { return desc.get.call(v); },
         set: function (u) {
+          // troca com dois players (duploBuffer): o próximo já está carregado no outro <video>, nada a fazer aqui
+          if (window.__tvDuplo) { desc.set.call(v, u); return; }
           try {
             // sem piscar preto entre anúncios: o último quadro fica por cima até o próximo vídeo começar a tocar
-            if (desc.get.call(v) && v.readyState >= 2 && v.videoWidth) {
+            // (só entre dois horizontais: saindo do vertical premium em tela cheia, o quadro ficava cortado lá em cima)
+            var formaDe = function (x) { return /vertical/i.test(String(x || '')) ? 'v' : 'h'; };
+            if (desc.get.call(v) && v.readyState >= 2 && v.videoWidth && v.getAttribute('data-fullscreen') !== 'true' &&
+                formaDe(desc.get.call(v)) === 'h' && formaDe(u) === 'h') {
               var c = document.getElementById('tv-ultimo-quadro');
               if (!c) {
                 c = document.createElement('canvas'); c.id = 'tv-ultimo-quadro';
@@ -61,5 +66,91 @@
     }, true);
     // roda antes do iniciar() do propagandas.js (este script está no <head>, o listener dele é registrado antes)
     document.addEventListener('DOMContentLoaded', preparar);
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(duploBuffer, 0); });
+
+    /*
+     * Troca sem engasgo: dois <video> se revezam. Uns 3 s antes do anúncio acabar, o próximo já é carregado no player
+     * escondido (decodificador pronto, primeiro quadro na memória). No fim, o escondido começa a tocar e só aparece
+     * quando já está rodando; o antigo é descarregado em seguida. Qualquer problema (erro de vídeo, player não ficou
+     * pronto a tempo) cai na troca normal do propagandas.js. Duas falhas seguidas desligam o revezamento.
+     */
+    function duploBuffer() {
+      try {
+        if (window.__tvSemDuplo || typeof tocarProximo !== 'function' || typeof applyVisualMode !== 'function') return;
+        var A = document.getElementById('video-propaganda');
+        if (!A || !A.parentNode) return;
+        var B = document.createElement('video');
+        B.muted = true; B.setAttribute('muted', ''); B.setAttribute('playsinline', ''); B.preload = 'auto';
+        B.className = A.className;
+        B.style.cssText = A.style.cssText; B.style.visibility = 'hidden';
+        A.parentNode.insertBefore(B, A);
+        window.__tvDuplo = true;
+        var pre = { el: B, src: '' };
+        var falhas = 0;
+        var fonteDe = function (it) { return '/cache/' + encodeURI(it.video); };
+        var plusDe = function (it) { return it && (it.isPlus === true || it.isPlus === 'true'); };
+        var errou = function () {
+          falhas++; pre.src = '';
+          if (falhas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; console.log('tv: revezamento desligado'); }
+        };
+        B.addEventListener('error', errou); A.addEventListener('error', function () { if (pre.el === A) errou(); });
+        var carregar = function () {
+          try {
+            if (!window.__tvDuplo || !playlist.length) return;
+            var i = currentIdx + 1; if (i >= playlist.length) i = 0;
+            var it = playlist[i]; if (!it || !it.video) return;
+            var src = fonteDe(it);
+            if (pre.src === src) return;
+            pre.src = src;
+            pre.el.preload = 'auto';
+            pre.el.src = src;
+            pre.el.load();
+          } catch (e) { /* segue */ }
+        };
+        setInterval(function () {
+          try {
+            var v = videoElement;
+            if (v && isFinite(v.duration) && v.duration > 0 && v.duration - v.currentTime < 3.2) carregar();
+          } catch (e) { /* segue */ }
+        }, 300);
+
+        var normal = window.tocarProximo;
+        var trocar = async function () {
+          try {
+            if (!window.__tvDuplo || !playlist.length) return normal();
+            var i = currentIdx + 1;
+            if (i >= playlist.length) return normal(); // fim do ciclo: o propagandas.js recarrega a programação
+            var it = playlist[i], el = pre.el, velho = videoElement;
+            if (!it || el === velho || pre.src !== fonteDe(it) || el.readyState < 2 || el.error) return normal();
+            currentIdx = i;
+            var plus = plusDe(it);
+            applyVisualMode(el, plus);
+            el.style.visibility = 'hidden';
+            el.onended = window.tocarProximo;
+            if (velho) velho.onended = null;
+            var feito = false;
+            var mostrar = function () {
+              if (feito) return; feito = true;
+              el.style.visibility = '';
+              if (velho) { velho.style.visibility = 'hidden'; velho.removeAttribute('id'); velho.removeAttribute('data-fullscreen'); }
+              el.id = 'video-propaganda';
+              videoElement = el;
+              try { applyQRCode(it, plus); } catch (e) { /* segue */ }
+              setTimeout(function () {
+                try { if (velho) { velho.pause(); velho.removeAttribute('src'); velho.load(); } } catch (e) { /* segue */ }
+                pre = { el: velho || B, src: '' };
+              }, 250);
+            };
+            el.addEventListener('playing', function um() { el.removeEventListener('playing', um); mostrar(); });
+            setTimeout(mostrar, 1500);
+            try { await el.play(); } catch (e) { feito = true; errou(); currentIdx = i - 1; el.style.visibility = 'hidden'; return normal(); }
+            if (el.currentTime > 0.05) mostrar();
+          } catch (e) { console.error('tv: revezamento falhou, troca normal', e); return normal(); }
+        };
+        window.tocarProximo = trocar;
+        if (A.onended) A.onended = trocar;
+        console.log('tv: revezamento de players ligado');
+      } catch (e) { window.__tvDuplo = false; }
+    }
   } catch (e) { /* segue sem o ajuste */ }
 })();
