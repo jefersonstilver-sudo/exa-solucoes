@@ -672,3 +672,6 @@ verify_jwt = false
 
 [functions.exa-qr]
 verify_jwt = false
+
+[functions.exa2-clicksign-mapa]
+verify_jwt = false
