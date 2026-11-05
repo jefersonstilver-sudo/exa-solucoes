@@ -236,7 +236,8 @@ export default function App() {
               if (r.comando.tipo === 'atualizar_app' && p?.atualizarApp) p.atualizarApp();
               if (r.comando.tipo === 'orientacao' && p?.escolherOrientacao) p.escolherOrientacao();
             }
-            recarregar(); return;
+            // gravar e orientação não recarregam a página (senão a gravação pega a recarga, não a tela)
+            if (r.comando.tipo !== 'gravar' && r.comando.tipo !== 'orientacao') { recarregar(); return; }
           }
           if (!r.comando) apagar(K_CMD);
         }
