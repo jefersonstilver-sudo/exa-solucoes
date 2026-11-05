@@ -13,12 +13,17 @@ mkdir -p $M
 for p in bootloader bootloader_a bootloader_b boot-resource; do
   [ -e /dev/block/by-name/$p ] || continue
   mount -t vfat -o rw /dev/block/by-name/$p $M 2>/dev/null || continue
-  if [ -f $M/bat/bootlogo.bmp ]; then
-    [ -f /data/local/tmp/bootlogo-zeta-original.bmp ] || cp $M/bat/bootlogo.bmp /data/local/tmp/bootlogo-zeta-original.bmp
-    cp /data/local/tmp/bootlogo-zeta-original.bmp /sdcard/Download/bootlogo-zeta-original.bmp 2>/dev/null
-    cp $B/bootlogo_$G.bmp $M/bat/bootlogo.bmp && sync
-    echo "logo em $p: $(ls -l $M/bat/bootlogo.bmp)"
-    echo "md5 novo: $(md5sum $M/bat/bootlogo.bmp | cut -c1-12)  esperado: $(md5sum $B/bootlogo_$G.bmp | cut -c1-12)"
+  # bat/bootlogo.bmp é o logo do modo carregando bateria: volta o original da fábrica se já foi trocado
+  if [ -f /data/local/tmp/bootlogo-zeta-original.bmp ] && [ -f $M/bat/bootlogo.bmp ]; then
+    cp /data/local/tmp/bootlogo-zeta-original.bmp $M/bat/bootlogo.bmp && echo "bat/bootlogo.bmp restaurado"
+  fi
+  # logo do começo (1280x720, 24 bits) fica na raiz da partição
+  if [ -f $M/bootlogo.bmp ]; then
+    [ -f /data/local/tmp/bootlogo-raiz-original.bmp ] || cp $M/bootlogo.bmp /data/local/tmp/bootlogo-raiz-original.bmp
+    cp /data/local/tmp/bootlogo-raiz-original.bmp /sdcard/Download/bootlogo-zeta-original.bmp 2>/dev/null
+    cp $B/logo1280_$G.bmp $M/bootlogo.bmp && sync
+    echo "logo em $p: $(ls -l $M/bootlogo.bmp)"
+    echo "md5 novo: $(md5sum $M/bootlogo.bmp | cut -c1-12)  esperado: $(md5sum $B/logo1280_$G.bmp | cut -c1-12)"
   fi
   umount $M
 done

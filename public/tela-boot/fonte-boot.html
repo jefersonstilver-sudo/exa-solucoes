@@ -24,7 +24,7 @@ const q=s=>document.querySelector(s);
 window.anims=[
  q('.a').animate([{opacity:0,transform:'scale(.8)'},{opacity:1,transform:'scale(1)'},{opacity:1,transform:'translate(5vmin,-3vmin) scale(1.1)'}],{duration:9000,easing:'ease-in-out',fill:'both',iterations:Infinity,direction:'alternate'}),
  q('.b').animate([{opacity:0,transform:'scale(.8)'},{opacity:1,transform:'scale(1)'},{opacity:1,transform:'translate(-4vmin,4vmin) scale(1.06)'}],{duration:11000,delay:200,easing:'ease-in-out',fill:'both',iterations:Infinity,direction:'alternate'}),
- q('.logo').animate([{opacity:0,transform:'translateY(4vmin) scale(.94)',filter:'blur(1.2vmin)'},{opacity:1,transform:'none',filter:'blur(0)'}],{duration:1400,delay:600,...e}),
+ q('.logo').animate([{opacity:1},{opacity:1}],{duration:100,fill:'both'}),
  q('.brilho i').animate([{left:'-60%',offset:0},{left:'130%',offset:.55},{left:'130%',offset:1}],{duration:2800,delay:1800,iterations:Infinity,easing:'cubic-bezier(.5,0,.2,1)',fill:'backwards'}),
  q('.trilho b').animate([{left:'-30%'},{left:'100%'}],{duration:1600,delay:2600,iterations:Infinity,easing:'cubic-bezier(.45,0,.25,1)',fill:'backwards'}),
  q('.logo').animate([{transform:'scale(1)'},{transform:'scale(1.025)'},{transform:'scale(1)'}],{duration:3600,delay:2000,iterations:Infinity,easing:'ease-in-out',composite:'add'}),
