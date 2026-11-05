@@ -3,9 +3,9 @@ name: Cine Cataratas (programacao da semana)
 on:
   # O PC lê o site de ingressos quinta 14h00 e grava em cine_programacao; a nuvem gera e publica.
   schedule:
-    - cron: "37 17 * * 4"   # quinta 14h37 (Brasília): espera até 40 min a leitura do PC; sem ela publica sem horários
-    - cron: "17 21 * * 4"   # quinta 18h17: repescagem (só se o vídeo no ar não for desta semana ou chegou leitura nova do PC)
-    - cron: "17 12 * * 5"   # sexta 09h17: repescagem (PC ligado mais tarde)
+    - cron: "*/10 17-19 * * 4"  # quinta 14h00–16h50 (Brasília), a cada 10 min: publica assim que a leitura do PC chega
+    - cron: "17 21 * * 4"       # quinta 18h17: repescagem
+    - cron: "17 12 * * 5"       # sexta 09h17: repescagem (PC ligado mais tarde)
   workflow_dispatch:
   push:
     branches: [main]
@@ -35,37 +35,57 @@ jobs:
           sparse-checkout: |
             tools/cine
             tools/noticias/publish-video.mjs
+      - name: Precisa publicar?
+        id: precisa
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "rodar=1" >> $GITHUB_OUTPUT; exit 0; fi
+          H="apikey: $SUPABASE_SERVICE_ROLE_KEY"; A="Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+          QUI=$(date -d "$(( ($(date +%u) - 4 + 7) % 7 )) days ago" +%Y-%m-%dT00:00:00%:z)
+          PC=$(curl -s "$SUPABASE_URL/rest/v1/cine_programacao?select=criado_em&order=criado_em.desc&limit=1" -H "$H" -H "$A" | grep -o '"criado_em":"[^"]*"' | cut -d'"' -f4)
+          BASE=$(curl -s "$SUPABASE_URL/rest/v1/pedido_videos?pedido_id=eq.b4b2f33a-d37d-40a8-98fb-77177fa0b35f&is_base_video=eq.true&select=created_at" -H "$H" -H "$A" | grep -o '"created_at":"[^"]*"' | cut -d'"' -f4)
+          s(){ [ -n "$1" ] && date -d "$1" +%s || echo 0; }
+          PCs=$(s "$PC"); Bs=$(s "$BASE"); Qs=$(date -d "$QUI" +%s); AGORA=$(date +%H%M)
+          echo "leitura do PC: ${PC:-nenhuma} · vídeo no ar desde: ${BASE:-?} · quinta: $QUI"
+          R=0
+          [ "$PCs" -gt "$Bs" ] && [ "$PCs" -ge "$Qs" ] && R=1                                   # leitura nova do PC desta semana
+          [ "$Bs" -lt "$Qs" ] && { [ "${{ github.event.schedule }}" != "*/10 17-19 * * 4" ] || [ "$AGORA" -ge 1630 ]; } && R=1   # sem PC: a partir de 16h30 publica sem horários
+          echo "rodar=$R" >> $GITHUB_OUTPUT; echo "rodar=$R"
       - uses: actions/setup-node@v4
+        if: steps.precisa.outputs.rodar == '1'
         with:
           node-version: 22
       - name: Programas
+        if: steps.precisa.outputs.rodar == '1'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg xvfb fonts-noto-color-emoji >/dev/null
       - name: Semana anterior (para achar as estreias)
+        if: steps.precisa.outputs.rodar == '1'
         uses: actions/cache/restore@v4
         with:
           path: tools/cine/output/_cine-semana-anterior.json
           key: cine-semana-${{ github.run_id }}
           restore-keys: cine-semana-
       - name: Dependências
+        if: steps.precisa.outputs.rodar == '1'
         run: npm install --no-audit --no-fund
       - name: Rodada
+        if: steps.precisa.outputs.rodar == '1'
         run: |
           MODO=$(grep -E '^modo=' disparo.txt | cut -d= -f2 | tr -d '\r'); echo "modo=$MODO"
           PUB=$(grep -E '^publicar=' disparo.txt | cut -d= -f2 | tr -d '\r')
           if [ "${{ github.event_name }}" = "schedule" ]; then
             MODO=cine; PUB=sim
-            if [ "${{ github.event.schedule }}" = "37 17 * * 4" ]; then export CINE_ESPERAR_PC=40; else export CINE_REPESCAGEM=1; fi
+            export CINE_ESPERAR_PC=0
           fi
           export NOTICIAS_PUBLICAR=$([ "$PUB" = "sim" ] && echo 1 || echo 0); echo "publicar=$NOTICIAS_PUBLICAR"
           if [ "$MODO" = "sonda" ]; then xvfb-run -a node sonda.mjs; else node cine.mjs; fi
       - name: Guardar semana
-        if: success()
+        if: success() && steps.precisa.outputs.rodar == '1'
         uses: actions/cache/save@v4
         with:
           path: tools/cine/output/_cine-semana-anterior.json
           key: cine-semana-${{ github.run_id }}
       - name: Guardar resultado no ramo cine-resultados
-        if: always()
+        if: always() && steps.precisa.outputs.rodar == '1'
         run: |
           R=$(mktemp -d); mkdir -p $R/$GITHUB_RUN_ID; cp -r output/* $R/$GITHUB_RUN_ID/ 2>/dev/null || true
           cd $R && git init -q && git checkout -q -b x && git add -A && git -c user.email=bot@examidia.com.br -c user.name="EXA cine" commit -qm "rodada $GITHUB_RUN_ID" || exit 0
