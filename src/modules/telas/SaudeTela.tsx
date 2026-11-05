@@ -57,6 +57,7 @@ export function SaudeTela({ tela, onFechar, onAtualizou }: Props) {
   const [pedindo, setPedindo] = useState(false);
   const [leve, setLeve] = useState<string>(typeof tela.config?.leve === 'boolean' ? (tela.config.leve ? 'sim' : 'nao') : 'auto');
   const [margem, setMargem] = useState<number>(Number(tela.config?.margem) || 0);
+  const [camera, setCamera] = useState<string>(typeof tela.config?.camera === 'boolean' ? (tela.config.camera ? 'sim' : 'nao') : 'auto');
 
   const dados = useQuery({
     queryKey: ['exa-tela-saude', tela.id],
@@ -79,7 +80,7 @@ export function SaudeTela({ tela, onFechar, onAtualizou }: Props) {
     else { toast.success(`Gravação de ${seg} s pedida`, { description: 'A TV começa em até 1 minuto; o vídeo aparece aqui uns segundos depois de terminar.' }); onAtualizou?.(); }
   };
   const salvarAjustes = async () => {
-    const config = { ...(tela.config || {}), margem: margem || undefined, leve: leve === 'auto' ? undefined : leve === 'sim' };
+    const config = { ...(tela.config || {}), margem: margem || undefined, leve: leve === 'auto' ? undefined : leve === 'sim', camera: camera === 'auto' ? undefined : camera === 'sim' };
     const { error } = await db.from('exa_telas').update({ config }).eq('id', tela.id);
     if (error) toast.error(error.message); else { toast.success('Ajustes salvos', { description: 'A TV aplica no próximo batimento (até 1 min).' }); onAtualizou?.(); }
   };
@@ -189,6 +190,14 @@ export function SaudeTela({ tela, onFechar, onAtualizou }: Props) {
             </label>
             <label className="text-[13px] font-semibold">Margem da TV (corta as bordas?) · {margem}%
               <input type="range" min={0} max={6} step={0.5} value={margem} onChange={(e) => setMargem(Number(e.target.value))} className="mt-3 block w-full" />
+            </label>
+            <label className="text-[13px] font-semibold md:col-span-2">Câmera ao vivo (réplica do elevador)
+              <select value={camera} onChange={(e) => setCamera(e.target.value)} className="mt-1 block h-10 w-full rounded-xl border border-black/10 bg-white px-3">
+                <option value="auto">Automático (desliga em aparelho fraco)</option>
+                <option value="sim">Sempre ligada</option>
+                <option value="nao">Desligada</option>
+              </select>
+              <span className="mt-1 block text-[12px] font-normal text-[#6A6B70]">No Zeta Plus, desligar a câmera levou a fluidez de 17 para 45 quadros/s e os quadros perdidos de ~25% para 3%. Sem câmera, as notícias ocupam o espaço.</span>
             </label>
           </div>
           <button type="button" onClick={salvarAjustes} className="mt-3 h-10 rounded-xl bg-[#17181A] px-4 text-[13px] font-bold text-white">Salvar ajustes</button>

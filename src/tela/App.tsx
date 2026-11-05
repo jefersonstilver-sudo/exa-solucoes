@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { apagar, gravar, iniciar, infoAparelho, ler, pedirEstado, plataforma, recarregar, reiniciarApp, versaoCompleta, type Estado } from './api';
 import { aquecer, estatisticas, limparTudo, sincronizar } from './cache';
-import { aplicarLeve, iniciarMedicao, retirarFluidez, saudeNativa } from './desempenho';
+import { aplicarLeve, iniciarMedicao, modoLeve, retirarFluidez, saudeNativa } from './desempenho';
 
 const abertoEm = Date.now();
 /** O que o monitor mostra sobre o aparelho: rede, cache de vídeos, há quanto tempo a tela está aberta, memória. */
@@ -138,7 +138,7 @@ function Programacao({ e }: { e: Estado }) {
   const C = COMPONENTES[layout.id] || (vertical ? COMPONENTES.V2 : COMPONENTES.H1);
   const conteudo = <Protecao e={e}><C e={e} f={faixas} layout={layout} /></Protecao>;
   // TV em pé num prédio: a mesma tela do elevador daquele prédio (avisos do síndico inclusos)
-  if (vertical && e.local && e.local.tipo !== 'comercio') return <ReplicaElevador predioId={e.local.id} alternativa={conteudo} camera={e.tela?.config?.camera !== false} />;
+  if (vertical && e.local && e.local.tipo !== 'comercio') return <ReplicaElevador predioId={e.local.id} alternativa={conteudo} camera={typeof e.tela?.config?.camera === 'boolean' ? e.tela.config.camera : !modoLeve()} />;
   return conteudo;
 }
 
