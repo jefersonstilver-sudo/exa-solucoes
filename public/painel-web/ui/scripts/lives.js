@@ -21,7 +21,7 @@
   const SEM_CAMERA = TV && /[?&]cam=0(&|$)/.test(location.search);
   // TV box: a câmera (1080p, 25 qps) não é desenhada direto — o vídeo fica escondido e um canvas 640x360 recebe
   // CAM_FPS quadros por segundo. A imagem continua ao vivo, com bem menos trabalho para a placa de vídeo.
-  const CAM_FPS = TV ? Math.max(0, Math.min(25, Number((location.search.match(/[?&]camfps=(\d+)/) || [])[1] || 8))) : 0;
+  const CAM_FPS = TV ? Math.max(0, Math.min(25, Number((location.search.match(/[?&]camfps=(\d+)/) || [])[1] || 0))) : 0;
   const HLS_CONFIG = {
     enableWorker: true,
     startLevel: TV ? 0 : -1,
