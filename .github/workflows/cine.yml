@@ -56,7 +56,11 @@ jobs:
           node-version: 22
       - name: Programas
         if: steps.precisa.outputs.rodar == '1'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg xvfb fonts-noto-color-emoji >/dev/null
+        timeout-minutes: 12
+        run: |
+          # 05/11/2026: o apt travou 30+ min uma vez — tenta 2x com limite de tempo
+          for t in 1 2; do timeout 300 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq ffmpeg xvfb fonts-noto-color-emoji >/dev/null && break; echo "apt demorou (tentativa $t)"; done
+          ffmpeg -version | head -1
       - name: Semana anterior (para achar as estreias)
         if: steps.precisa.outputs.rodar == '1'
         uses: actions/cache/restore@v4
