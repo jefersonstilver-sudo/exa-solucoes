@@ -66,7 +66,11 @@ async function listar(sb: any, bid: string) {
   for (const m of mesmos) { const k = String(m.assinante_nome).toLowerCase(); const v = porNome.get(k) || { nome: m.assinante_nome, email: m.assinante_email, predios: [] as string[] }; v.predios.push(String(m.predio || "").trim()); if (!v.email && m.assinante_email) v.email = m.assinante_email; porNome.set(k, v); }
   const mesmoSindico = [...porNome.values()].sort((a, b) => b.predios.length - a.predios.length);
   const s0 = mesmoSindico[0];
-  const telSind = dig(predio.contato_sindico) || dig(predio.contato_vice_sindico) || dig(predio.numero_contato_predio);
+  // WhatsApp de quem assina: o contato do prédio cujo nome bate com o primeiro nome de quem assina; senão, o do síndico
+  const prim = String(s0?.nome || "").split(/\s+/)[0]?.toLowerCase() || "";
+  const pares: [string | null, string | null][] = [[predio.nome_sindico, predio.contato_sindico], [predio.nome_vice_sindico, predio.contato_vice_sindico], [predio.nome_contato_predio, predio.numero_contato_predio]];
+  const casado = prim ? pares.find(([n, t]) => dig(t).length >= 10 && String(n || "").toLowerCase().includes(prim)) : null;
+  const telSind = dig(casado?.[1]) || dig(predio.contato_sindico) || dig(predio.contato_vice_sindico) || dig(predio.numero_contato_predio);
   const sugestao = ultimo ? limparDados(ultimo) : {
     condominio_nome: String(predio.nome || "").trim(),
     condominio_cnpj: "",

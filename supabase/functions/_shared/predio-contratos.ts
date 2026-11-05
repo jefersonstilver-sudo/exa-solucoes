@@ -55,13 +55,15 @@ export function dadosDoPedido(p: any, data?: Date): DadosContrato {
   };
 }
 
-let cabecalhoCache: Uint8Array | null | undefined;
+let cabecalhoCache: Uint8Array | null = null; // só guarda quando deu certo (se falhar, tenta de novo no próximo PDF)
 async function cabecalho(): Promise<Uint8Array | null> {
-  if (cabecalhoCache !== undefined) return cabecalhoCache;
+  if (cabecalhoCache) return cabecalhoCache;
   try {
     const r = await fetch(`${SITE_URL}/contratos/exa-cabecalho.png`, { signal: AbortSignal.timeout(10000) });
-    cabecalhoCache = r.ok && (r.headers.get("content-type") || "").includes("png") ? new Uint8Array(await r.arrayBuffer()) : null;
-  } catch { cabecalhoCache = null; }
+    const b = r.ok ? new Uint8Array(await r.arrayBuffer()) : null;
+    // confere a assinatura do PNG (o site devolve o index.html quando o arquivo não existe)
+    if (b && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) cabecalhoCache = b;
+  } catch { /* sem faixa desta vez */ }
   return cabecalhoCache;
 }
 export async function pdfDoPedido(p: any, data?: Date): Promise<Uint8Array> {
