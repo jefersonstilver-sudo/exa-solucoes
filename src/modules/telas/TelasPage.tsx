@@ -278,6 +278,9 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
   // celular: abrir direto a câmera para ler o QR da TV
   const celular = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 768);
   const [camera, setCamera] = useState(false);
+  // a TV já disse a posição (escolhida no próprio aparelho na primeira vez): não pergunta de novo
+  const [posicaoDaTV, setPosicaoDaTV] = useState(false);
+  const [trocarPosicao, setTrocarPosicao] = useState(false);
   const qrAndroid = useQr(LINKS.android);
 
   const filtrados = useMemo(() => {
@@ -301,8 +304,10 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
     setAchada(data); setPasso(3);
     // a TV já disse como está instalada (escolha na primeira vez que o app abriu): começa por ela
     const gf = Number((data as any)?.info?.giro_fisico);
-    if (gf === 0) setOrientacao('horizontal');
-    else if (gf === 90 || gf === 270) { setOrientacao('vertical'); setGiro(gf); }
+    if (gf === 0) { setOrientacao('horizontal'); setPosicaoDaTV(true); }
+    else if (gf === 90 || gf === 270) { setOrientacao('vertical'); setGiro(gf); setPosicaoDaTV(true); }
+    else setPosicaoDaTV(false);
+    setTrocarPosicao(false);
   };
 
   const salvar = async () => {
@@ -356,7 +361,7 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] w-[calc(100vw-24px)] min-w-0 overflow-y-auto overflow-x-hidden [&>*]:min-w-0 [overflow-wrap:anywhere] sm:max-w-[720px]">
         <DialogHeader>
           <DialogTitle>Adicionar tela · passo {passo} de 4</DialogTitle>
           <DialogDescription>{['Instale na TV', 'Digite o código da TV', 'Onde fica a tela', 'Layout e ritmo'][passo - 1]}</DialogDescription>
@@ -500,7 +505,18 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
 
         {passo === 4 && (
           <div className="space-y-4">
-            <EscolherOrientacao orientacao={orientacao} giro={giro} onOrientacao={setOrientacao} onGiro={setGiro} predio={ehPredio} />
+            {posicaoDaTV && !trocarPosicao ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-[#1E6B47]/20 bg-[#E3F4EA] p-3">
+                <Check className="h-5 w-5 shrink-0 text-[#1E6B47]" />
+                <div className="min-w-0 flex-1">
+                  <b className="block text-[14px] text-[#1E6B47]">{orientacao === 'vertical' ? 'TV em pé (vertical)' : 'TV deitada (horizontal)'}</b>
+                  <span className="block text-[12px] text-[#2F5D46]">Posição já escolhida na própria TV{orientacao === 'vertical' ? (giro === 270 ? ' · girada para a direita' : ' · girada para a esquerda') : ''}</span>
+                </div>
+                <button type="button" onClick={() => setTrocarPosicao(true)} className="shrink-0 rounded-lg px-2 py-1 text-[12.5px] font-bold text-[#1E6B47] underline">Alterar</button>
+              </div>
+            ) : (
+              <EscolherOrientacao orientacao={orientacao} giro={giro} onOrientacao={setOrientacao} onGiro={setGiro} predio={ehPredio} />
+            )}
             <GradeLayouts valor={layout} onEscolher={setLayout} vertical={orientacao === 'vertical'} predio={ehPredio} />
             {layout !== 'R' && <Ritmo casa={casaCada} ed={edCada} onCasa={setCasaCada} onEd={setEdCada} mostrarEd={layout === 'H6'} />}
             {ehPredio && orientacao === 'horizontal' && <p className="rounded-2xl bg-[#FFF9EE] p-3 text-[12.5px] text-[#5A3A00]">Prédio: os <b>avisos do síndico</b> entram intercalados no <b>H6</b> e na coluna vertical do <b>H2</b> e do <b>H5</b>.</p>}

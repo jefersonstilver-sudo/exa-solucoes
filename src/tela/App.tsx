@@ -154,6 +154,42 @@ function PareamentoEmPe({ codigo, cod, link, online, erro }: { codigo: string | 
   );
 }
 
+/** A tela já está rodando de verdade? (vídeo tocando; na réplica do prédio: o anúncio e a câmera). Sem programação: logo. */
+function telaRodando(comeco: number): boolean {
+  const tocando = (v: HTMLVideoElement | null) => !!v && !v.paused && v.readyState >= 3 && v.currentTime > 0.15;
+  try {
+    const e = ler<Estado | null>(K_ESTADO, null);
+    if (!e?.pareada) return Date.now() - comeco > 600;
+    const ifr = document.querySelector('iframe[title="Tela do elevador"]') as HTMLIFrameElement | null;
+    if (ifr) {
+      const d = ifr.contentDocument;
+      const ad = d?.getElementById('video-propaganda') as HTMLVideoElement | null;
+      const cam = d?.getElementById('live-video') as HTMLVideoElement | null;
+      const semCamera = !!d?.documentElement.classList.contains('sem-camera') || !d?.querySelector('.widget-camera');
+      return tocando(ad) && (semCamera || tocando(cam) || Date.now() - comeco > 14000);
+    }
+    return Array.prototype.some.call(document.querySelectorAll('video'), (v: HTMLVideoElement) => tocando(v)) || Date.now() - comeco > 12000;
+  } catch { return false; }
+}
+
+// ---------------------------------------------------------------- carregando (EXA) por cima da programação até tudo tocar
+const FRASES = ['Preparando a programação', 'Baixando os vídeos', 'Conectando as câmeras', 'Quase pronto'];
+function Carregando({ saindo }: { saindo: boolean }) {
+  const [i, setI] = useState(0);
+  useEffect(() => { const id = setInterval(() => setI((n) => Math.min(n + 1, FRASES.length - 1)), 2600); return () => clearInterval(id); }, []);
+  return (
+    <div className={`cheio exa-carregando${saindo ? ' sai' : ''}`}>
+      <i className="esp-luz a" />
+      <i className="esp-luz b" />
+      <div className="exa-carregando-meio">
+        <span className="esp-logo"><img src={LOGO} alt="EXA" /><span className="esp-brilho"><i /></span></span>
+        <div className="exa-barra"><i /></div>
+        <div key={i} className="exa-frase">{FRASES[i]}</div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- protege contra erro de layout
 class Protecao extends React.Component<{ e: Estado; children: React.ReactNode }, { erro: boolean }> {
   state = { erro: false };
@@ -330,22 +366,7 @@ export default function App() {
     // a intro (do app ou da página) só sai quando a tela já está rodando de verdade: o vídeo tocando
     // (na réplica do prédio: o anúncio e a câmera). Nunca passa de 25 s; sem programação (código), sai logo.
     const comeco = Date.now();
-    const tocando = (v: HTMLVideoElement | null) => !!v && !v.paused && v.readyState >= 3 && v.currentTime > 0.15;
-    const pronta = () => {
-      try {
-        const e = ler<Estado | null>(K_ESTADO, null);
-        if (!e?.pareada) return Date.now() - comeco > 600;
-        const ifr = document.querySelector('iframe[title="Tela do elevador"]') as HTMLIFrameElement | null;
-        if (ifr) {
-          const d = ifr.contentDocument;
-          const ad = d?.getElementById('video-propaganda') as HTMLVideoElement | null;
-          const cam = d?.getElementById('live-video') as HTMLVideoElement | null;
-          const semCamera = !!d?.documentElement.classList.contains('sem-camera') || !d?.querySelector('.widget-camera');
-          return tocando(ad) && (semCamera || tocando(cam) || Date.now() - comeco > 14000);
-        }
-        return Array.prototype.some.call(document.querySelectorAll('video'), (v: HTMLVideoElement) => tocando(v)) || Date.now() - comeco > 12000;
-      } catch { return false; }
-    };
+    const pronta = () => telaRodando(comeco);
     const vigiaPronta = setInterval(() => {
       if (pronta() || Date.now() - comeco > 25000) {
         clearInterval(vigiaPronta);
@@ -355,6 +376,23 @@ export default function App() {
     }, 300);
     return () => { clearInterval(vigiaPronta); document.removeEventListener('visibilitychange', vis); document.removeEventListener('contextmenu', menu); document.removeEventListener('click', cheia); try { lock?.release(); } catch { /* */ } };
   }, []);
+
+  // conectada: o "carregando" da EXA fica por cima até o anúncio (e a câmera) estarem tocando — nunca abre aos poucos
+  const pareada = !!estado?.pareada;
+  const [carga, setCarga] = useState<'nao' | 'sim' | 'saindo'>(pareada ? 'sim' : 'nao');
+  useEffect(() => {
+    if (!pareada) { setCarga('nao'); return; }
+    setCarga('sim');
+    const comeco = Date.now();
+    let fim: ReturnType<typeof setTimeout> | undefined;
+    const id = setInterval(() => {
+      if (telaRodando(comeco) || Date.now() - comeco > 25000) {
+        clearInterval(id);
+        fim = setTimeout(() => { setCarga('saindo'); fim = setTimeout(() => setCarga('nao'), 900); }, 600);
+      }
+    }, 300);
+    return () => { clearInterval(id); if (fim) clearTimeout(fim); };
+  }, [pareada]);
 
   const vert = ehVertical(estado);
   const giroAlvo = giroDaTela(estado);
@@ -379,6 +417,7 @@ export default function App() {
   return (
     <Palco vertical={vert || pePareamento} giro={giroAlvo || 90} margem={Number(estado?.tela?.config?.margem) || 0}>
       {estado?.pareada ? <Programacao e={estado} /> : <Pareamento codigo={codigo} online={online} erro={erro} vertical={pePareamento} />}
+      {estado?.pareada && carga !== 'nao' && <Carregando saindo={carga === 'saindo'} />}
     </Palco>
   );
 }
