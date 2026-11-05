@@ -226,6 +226,74 @@ function AnexarContrato({ predioId, nome, aberto, aoFechar, aoAnexar }: { predio
   );
 }
 
+// ------------------------------------------------------------------ assinatura automática da EXA
+// O Jeferson digita os próprios dados uma vez; a ClickSign manda o termo para ele e para o admin da conta assinarem.
+// Depois disso a EXA assina sozinha todos os contratos dos prédios (CPF + nascimento + e-mail têm de bater com o termo).
+function AssinaturaAutomatica() {
+  const [st, setSt] = useState<any>(null);
+  const [aberto, setAberto] = useState(false);
+  const [f, setF] = useState({ nome: '', email: '', cpf: '', nascimento: '', admin_email: '' });
+  const [salvando, setSalvando] = useState(false);
+  const carregar = useCallback(async () => { const r = await chamar('auto_status'); if (r?.ok) setSt(r); }, []);
+  useEffect(() => { carregar(); }, [carregar]);
+  const abrir = () => { setF({ nome: st?.auto?.nome || st?.padrao?.nome || '', email: st?.auto?.email || st?.padrao?.email || '', cpf: '', nascimento: '', admin_email: st?.auto?.admin_email || st?.padrao?.admin_email || '' }); setAberto(true); };
+  const salvar = async () => {
+    setSalvando(true);
+    const r = await chamar('auto_ativar', f);
+    setSalvando(false);
+    if (!r?.ok) return toast.error(r?.erro || 'Não deu certo.');
+    toast.success(r.ja_existia ? 'O termo já existia na ClickSign. Confira se você e o admin assinaram.' : 'Termo pedido! Assine o e-mail da ClickSign (você e o admin da conta).');
+    setF((x) => ({ ...x, cpf: '' })); setAberto(false); carregar();
+  };
+  const a = st?.auto;
+  const cpfMask = (v: string) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  return (
+    <Card className={a?.status === 'ativo' ? 'border-emerald-200' : 'border-dashed'}>
+      <CardContent className="flex flex-col gap-3 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className={`mt-0.5 h-5 w-5 shrink-0 ${a?.status === 'ativo' ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+          <div>
+            <div className="font-semibold">Assinatura automática da EXA {a?.status === 'ativo' ? <Badge className="ml-1 border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Ligada</Badge> : a ? <Badge className="ml-1 border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-100">Termo pedido</Badge> : <Badge variant="outline" className="ml-1">Desligada</Badge>}</div>
+            <div className="text-muted-foreground">
+              {a?.status === 'ativo' ? <>A EXA assina sozinha como <b>{a.nome}</b> ({a.email}, CPF final {a.cpf_final}). Vale para todos os contratos dos prédios.</>
+                : a ? <>Termo pedido para <b>{a.nome}</b>. Assine o e-mail da ClickSign (você e o admin {a.admin_email}). No próximo contrato o sistema confere e liga sozinho.{a.erro ? <span className="block text-red-600">Última tentativa: {a.erro}</span> : null}</>
+                : 'Hoje você assina cada contrato pelo e-mail. Ligue para a EXA assinar sozinha e não deixar contrato vencer.'}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant={a ? 'outline' : 'default'} className={a ? '' : 'bg-[#9C1E1E] hover:bg-[#7d1818]'} onClick={abrir}>{a ? 'Refazer termo' : 'Ligar'}</Button>
+          {a && <Button size="sm" variant="ghost" className="text-red-700" onClick={async () => { if (window.confirm('Desligar a assinatura automática? A EXA volta a assinar pelo e-mail.')) { await chamar('auto_desligar'); carregar(); } }}>Desligar</Button>}
+        </div>
+      </CardContent>
+      <Dialog open={aberto} onOpenChange={(v) => !v && setAberto(false)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Ligar a assinatura automática da EXA</DialogTitle>
+            <DialogDescription>
+              A ClickSign gera um termo de assinatura automática. Ele precisa ser assinado por você (o signatário) e por um administrador da conta ClickSign.
+              Os dados precisam ser iguais aos do seu cadastro: a ClickSign confere CPF, nascimento e e-mail. Ficam guardados só no servidor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div><Label>Nome completo</Label><Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} /></div>
+            <div><Label>E-mail de quem assina pela EXA</Label><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div><Label>CPF</Label><Input value={f.cpf} onChange={(e) => setF({ ...f, cpf: cpfMask(e.target.value) })} inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" /></div>
+              <div><Label>Data de nascimento</Label><Input type="date" value={f.nascimento} onChange={(e) => setF({ ...f, nascimento: e.target.value })} /></div>
+            </div>
+            <div><Label>E-mail do administrador da conta ClickSign</Label><Input type="email" value={f.admin_email} onChange={(e) => setF({ ...f, admin_email: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAberto(false)} disabled={salvando}>Cancelar</Button>
+            <Button onClick={salvar} disabled={salvando} className="bg-[#9C1E1E] hover:bg-[#7d1818]">{salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Pedir termo à ClickSign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
 // ------------------------------------------------------------------ aba
 const BuildingContratoTab: React.FC<{ buildingId: string; buildingName?: string }> = ({ buildingId, buildingName }) => {
   const [info, setInfo] = useState<Info | null>(null);
@@ -356,6 +424,8 @@ const BuildingContratoTab: React.FC<{ buildingId: string; buildingName?: string 
           </CardContent>
         </Card>
       )}
+
+      <AssinaturaAutomatica />
 
       <PedirContrato info={info} aberto={pedir} aoFechar={() => setPedir(false)} aoPedir={() => { setPedir(false); carregar(); }} />
       <AnexarContrato predioId={buildingId} nome={info.predio.nome || buildingName || ''} aberto={anexar} aoFechar={() => setAnexar(false)} aoAnexar={() => { setAnexar(false); carregar(); }} />

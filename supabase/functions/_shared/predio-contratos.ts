@@ -101,9 +101,40 @@ async function signatarioExa(sb: SupabaseClient): Promise<{ nome: string; email:
   return { nome: data.nome, email: data.email };
 }
 
+// ---------------------------------------------------------------- assinatura automática da EXA
+// Termo de assinatura automática da ClickSign (POST /api/v3/auto_signature/terms), assinado pelo admin da conta
+// e pelo próprio signatário. Depois disso, o signatário EXA entra no envelope com auth "auto_signature" e assina
+// sozinho. A ClickSign confere CPF + nascimento + e-mail contra o termo. Os dados ficam em exa_assinatura_automatica
+// (só a service role lê); foram digitados pelo Jeferson no admin.
+export function cpfValido(c: string): boolean {
+  const d = String(c || "").replace(/\D/g, "");
+  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+  const dv = (n: number) => { let s = 0; for (let i = 0; i < n; i++) s += Number(d[i]) * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+  return dv(9) === Number(d[9]) && dv(10) === Number(d[10]);
+}
+export const formatarCpf = (c: string) => { const d = String(c || "").replace(/\D/g, ""); return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`; };
+export async function autoExa(sb: SupabaseClient): Promise<any | null> {
+  const { data } = await sb.from("exa_assinatura_automatica").select("*").in("status", ["solicitado", "ativo"]).order("atualizado_em", { ascending: false }).limit(1).maybeSingle();
+  return data || null;
+}
+export async function solicitarTermoAuto(o: { nome: string; email: string; cpf: string; nascimento: string; admin_email: string; api_email: string }) {
+  try {
+    const r = await cs("POST", "/api/v3/auto_signature/terms", { data: { type: "auto_signature_terms", attributes: {
+      signer: { name: o.nome, email: o.email, documentation: formatarCpf(o.cpf), birthday: o.nascimento },
+      api_email: o.api_email, admin_email: o.admin_email,
+    } } });
+    return { ok: true, termo: r?.data?.id || null, ja_existia: false };
+  } catch (e) {
+    const m = (e as Error).message;
+    if (/422/.test(m) && /j[áa] existe/i.test(m)) return { ok: true, termo: null, ja_existia: true };
+    return { ok: false, erro: m };
+  }
+}
+
 // cria e dispara o envelope; devolve ids
 async function criarEnvelope(sb: SupabaseClient, p: any, pdf: Uint8Array, nomePredio: string) {
-  const exa = await signatarioExa(sb);
+  const auto = await autoExa(sb);
+  const exa = auto ? { nome: auto.nome, email: auto.email } : await signatarioExa(sb);
   const prazo = new Date(Date.now() + 30 * 86400000).toISOString();
   const env = await cs("POST", "/api/v3/envelopes", { data: { type: "envelopes", attributes: { name: `Contrato ${nomePredio}`, locale: "pt-BR", auto_close: true, remind_interval: 3, block_after_refusal: true, deadline_at: prazo } } });
   const envelopeId = env?.data?.id;
@@ -111,14 +142,29 @@ async function criarEnvelope(sb: SupabaseClient, p: any, pdf: Uint8Array, nomePr
   const doc = await cs("POST", `/api/v3/envelopes/${envelopeId}/documents`, { data: { type: "documents", attributes: { filename: `Contrato ${nomePredio}.pdf`.replace(/[\\/:*?"<>|]/g, ""), content_base64: `data:application/pdf;base64,${b64(pdf)}` } } });
   const docId = doc?.data?.id;
   const sCond = await cs("POST", `/api/v3/envelopes/${envelopeId}/signers`, { data: { type: "signers", attributes: { name: String(p.signatario_nome).trim(), email: String(p.signatario_email).trim().toLowerCase() } } });
-  const sExa = await cs("POST", `/api/v3/envelopes/${envelopeId}/signers`, { data: { type: "signers", attributes: { name: exa.nome, email: exa.email } } });
-  for (const s of [sCond?.data?.id, sExa?.data?.id]) {
-    await req(envelopeId, docId, s, { action: "agree", role: "sign" });
-    await req(envelopeId, docId, s, { action: "provide_evidence", auth: "email" });
+  const sExa = await cs("POST", `/api/v3/envelopes/${envelopeId}/signers`, { data: { type: "signers", attributes: auto
+    ? { name: auto.nome, email: auto.email, has_documentation: true, documentation: formatarCpf(auto.documento), birthday: auto.nascimento }
+    : { name: exa.nome, email: exa.email } } });
+  const idCond = sCond?.data?.id, idExa = sExa?.data?.id;
+  await req(envelopeId, docId, idCond, { action: "agree", role: "sign" });
+  await req(envelopeId, docId, idCond, { action: "provide_evidence", auth: "email" });
+  await req(envelopeId, docId, idExa, { action: "agree", role: "sign" });
+  // EXA: assinatura automática quando o termo está valendo; se a ClickSign recusar, cai para o e-mail (e avisa)
+  let autoUsado = false, autoErro: string | null = null;
+  if (auto) {
+    try {
+      await req(envelopeId, docId, idExa, { action: "provide_evidence", auth: "auto_signature" });
+      autoUsado = true;
+      if (auto.status !== "ativo") await sb.from("exa_assinatura_automatica").update({ status: "ativo", erro: null, atualizado_em: new Date().toISOString() }).eq("id", auto.id);
+    } catch (e) {
+      autoErro = (e as Error).message.slice(0, 300);
+      await sb.from("exa_assinatura_automatica").update({ erro: autoErro, atualizado_em: new Date().toISOString() }).eq("id", auto.id);
+    }
   }
+  if (!autoUsado) await req(envelopeId, docId, idExa, { action: "provide_evidence", auth: "email" });
   await cs("PATCH", `/api/v3/envelopes/${envelopeId}`, { data: { id: envelopeId, type: "envelopes", attributes: { status: "running" } } });
   await cs("POST", `/api/v3/envelopes/${envelopeId}/notifications`, { data: { type: "notifications", attributes: { message: `Olá, ${primeiroNome(p.signatario_nome)}! Segue o contrato de comodato do painel EXA do ${nomePredio} para assinatura eletrônica. Qualquer dúvida, fale com o Nando no WhatsApp (45) 9113-2351.` } } }).catch(() => {});
-  return { envelopeId, docId };
+  return { envelopeId, docId, autoUsado, autoErro };
 }
 
 const podeFalar = (tel: string) => !MODO_TESTE || chavesTelefone(tel).some((k) => chavesTelefone(ALERTA_NUMERO).includes(k));
@@ -148,12 +194,12 @@ export async function enviarPedido(sb: SupabaseClient, pedidoId: string): Promis
     const pdf = await pdfDoPedido(p);
     const caminho = `pedidos/${p.id}.pdf`;
     await sb.storage.from(BUCKET).upload(caminho, pdf, { contentType: "application/pdf", upsert: true });
-    const { envelopeId, docId } = await criarEnvelope(sb, p, pdf, nome);
+    const { envelopeId, docId, autoUsado, autoErro } = await criarEnvelope(sb, p, pdf, nome);
     await sb.from("predio_contrato_pedidos").update({ status: "enviado", enviado_em: new Date().toISOString(), clicksign_envelope_id: envelopeId, clicksign_documento_id: docId, pdf_path: caminho, erro: null, modelo: MODELO_VERSAO, atualizado_em: new Date().toISOString() }).eq("id", p.id);
     const tel = p.signatario_telefone || p.pedido_por_tel;
     const falou = await avisar(sb, tel,
       `Oi, ${primeiroNome(p.signatario_nome)}! Aqui é o Nando, da EXA. 😊\n\nAcabei de enviar para o seu e-mail *${String(p.signatario_email).toLowerCase()}* o contrato de comodato do painel do *${nome}*, pela ClickSign.\n\nÉ só abrir o e-mail da ClickSign e assinar (leva 1 minutinho). Assim que estiver assinado, ele aparece no seu Painel do Síndico, em Configurações › Contratos.\n\nQualquer dúvida, é só me chamar aqui.`, p.building_id);
-    await avisarJeferson(sb, `📄 *Contrato enviado para assinatura*\n*Prédio:* ${nome}\n*Assina:* ${p.signatario_nome} (${String(p.signatario_email).toLowerCase()})\n*WhatsApp avisado:* ${falou ? "sim" : "não"}\n\nQuando assinar, eu guardo o PDF no sistema e te aviso.`);
+    await avisarJeferson(sb, `📄 *Contrato enviado para assinatura*\n*Prédio:* ${nome}\n*Assina:* ${p.signatario_nome} (${String(p.signatario_email).toLowerCase()})\n*WhatsApp avisado:* ${falou ? "sim" : "não"}\n*Assinatura da EXA:* ${autoUsado ? "automática ✅ (você não precisa fazer nada)" : autoErro ? "pelo seu e-mail ⚠️ (a automática foi recusada pela ClickSign: " + autoErro.slice(0, 120) + ")" : "pelo seu e-mail (assinatura automática ainda não configurada)"}\n\nQuando assinar, eu guardo o PDF no sistema e te aviso.`);
     return { ok: true, envelope: envelopeId };
   } catch (e) {
     const msg = (e as Error).message;
@@ -215,6 +261,24 @@ export async function rotinaContratos(sb: SupabaseClient): Promise<string[]> {
         await avisar(sb, p.signatario_telefone || p.pedido_por_tel, `Prontinho, ${primeiroNome(p.signatario_nome)}! ✅ O contrato do *${String(b?.nome || "").trim()}* foi assinado por todos e já está no seu Painel do Síndico, em Configurações › Contratos. Obrigado!`, p.building_id);
         await avisarJeferson(sb, `✅ *Contrato assinado*\n*Prédio:* ${String(b?.nome || "").trim()}\n*Assinou:* ${p.signatario_nome}\n\nO PDF assinado já está no prédio (admin › Ver › Contrato) e no Painel do Síndico.`);
         log.push(`contrato assinado: ${b?.nome}`);
+      } else if (st === "running") {
+        // rede de segurança: o condomínio já assinou e falta a EXA (assinatura não automática) -> lembra o Jeferson 1x por dia
+        const ultimo = p.lembrete_em ? new Date(p.lembrete_em).getTime() : 0;
+        if (Date.now() - ultimo > 22 * 3600_000) {
+          const sig = await cs("GET", `/api/v3/envelopes/${p.clicksign_envelope_id}/signers`).catch(() => ({ data: [] }));
+          const lista = (sig?.data || []).map((x: any) => x.attributes || {});
+          const emailCond = String(p.signatario_email || "").toLowerCase();
+          const cond = lista.find((x: any) => String(x.email || "").toLowerCase() === emailCond);
+          const faltando = lista.filter((x: any) => !x.signed_at && String(x.email || "").toLowerCase() !== emailCond);
+          if (cond?.signed_at && faltando.length) {
+            const { data: b } = await sb.from("buildings").select("nome").eq("id", p.building_id).single();
+            const prazo = env?.data?.attributes?.deadline_at ? new Date(env.data.attributes.deadline_at) : null;
+            const dias = prazo ? Math.max(0, Math.ceil((prazo.getTime() - Date.now()) / 86400000)) : null;
+            await avisarJeferson(sb, `✍️ *Falta a assinatura da EXA*\n*Prédio:* ${String(b?.nome || "").trim()}\n${p.signatario_nome} já assinou. Falta: ${faltando.map((x: any) => x.name).join(", ")}.\n${dias !== null ? `*Prazo:* ${dias} dia(s) para o envelope vencer.\n` : ""}\nProcure o e-mail da ClickSign (${faltando.map((x: any) => x.email).join(", ")}) e assine.`);
+            await sb.from("predio_contrato_pedidos").update({ lembrete_em: new Date().toISOString() }).eq("id", p.id);
+            log.push(`lembrete de assinatura EXA: ${b?.nome}`);
+          }
+        }
       } else if (st === "canceled" || st === "refused" || st === "expired") {
         await sb.from("predio_contrato_pedidos").update({ status: "erro", erro: `envelope ${st} na ClickSign` }).eq("id", p.id);
         const { data: b } = await sb.from("buildings").select("nome").eq("id", p.building_id).single();
