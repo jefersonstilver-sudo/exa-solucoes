@@ -127,7 +127,7 @@ jobs:
           cp daily-dooh.log $R/$GITHUB_RUN_ID/ 2>/dev/null || true
           if [ "$NOTICIAS_PUBLICAR" = "0" ]; then cp output/*.mp4 $R/$GITHUB_RUN_ID/ 2>/dev/null || true; fi
           cd $R && git init -q && git checkout -q -b noticias-resultados && git add -A && git -c user.email=bot@examidia.com.br -c user.name="EXA noticias" commit -qm "rodada $GITHUB_RUN_ID (publicar=$NOTICIAS_PUBLICAR)" || exit 0
-          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/noticias-resultados-$GITHUB_RUN_ID || true
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/noticias-resultados || true
       - name: Resultado
         if: always()
         run: |
