@@ -127,7 +127,10 @@ class MainActivity : Activity() {
 
         intro = Intro(this)
         raiz.addView(intro, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        intro.tocar()
+        aplicarGiroNativo(intro)
+        // primeira vez: antes de tudo, a pessoa diz como a TV está instalada (deitada ou em pé, e para que lado)
+        val primeiraVez = !prefs().getBoolean("giro_escolhido", false)
+        if (!primeiraVez) intro.tocar()
 
         dica = TextView(this).apply {
             text = "Para a tela abrir sozinha ao ligar: aperte OK no controle e permita \"Sobrepor a outros apps\" (ou defina a EXA Tela como app inicial)."
@@ -149,8 +152,92 @@ class MainActivity : Activity() {
         }, FrameLayout.LayoutParams(140, 140, Gravity.TOP or Gravity.START))
 
         esconderBarras()
-        criarWeb()
-        h.postDelayed(vigia, 30_000)
+        if (primeiraVez) {
+            intro.visibility = View.GONE
+            mostrarEscolha { intro.visibility = View.VISIBLE; intro.tocar(); criarWeb(); h.postDelayed(vigia, 30_000) }
+        } else {
+            criarWeb()
+            h.postDelayed(vigia, 30_000)
+        }
+    }
+
+    // ---------------- orientação da TV (escolhida na primeira vez; menu e admin refazem) ----------------
+
+    private fun prefs() = getSharedPreferences("exa", MODE_PRIVATE)
+
+    /** 0 = TV deitada; 90 / 270 = TV em pé (mesmo sentido do giro da página). */
+    private fun giroSalvo(): Int = prefs().getInt("giro", 0).let { if (it == 90 || it == 270) it else 0 }
+
+    /** Gira uma camada nativa (intro, menu) para a TV em pé: troca largura/altura e roda em volta do centro. */
+    private fun aplicarGiroNativo(v: View, g: Int = giroSalvo()) {
+        val dm = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        windowManager.defaultDisplay.getRealMetrics(dm)
+        val emPe = g == 90 || g == 270
+        val lp = FrameLayout.LayoutParams(if (emPe) dm.heightPixels else ViewGroup.LayoutParams.MATCH_PARENT, if (emPe) dm.widthPixels else ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER)
+        v.layoutParams = lp
+        v.rotation = g.toFloat()
+    }
+
+    private var escolha: FrameLayout? = null
+
+    /**
+     * Tela "Como esta TV está instalada?": um cartão com a seta "este lado é o de cima" que gira a cada OK em
+     * "Girar" até ficar em pé para quem olha; "Está certo" salva e segue (intro, página). Sem ninguém por 3 min,
+     * fica a posição mostrada no momento.
+     */
+    private fun mostrarEscolha(depois: () -> Unit) {
+        escolha?.let { raiz.removeView(it) }
+        val dm = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        windowManager.defaultDisplay.getRealMetrics(dm)
+        val u = minOf(dm.widthPixels, dm.heightPixels) / 100f
+        var g = giroSalvo()
+        val fundo = FrameLayout(this).apply { setBackgroundColor(Color.rgb(7, 3, 10)); isClickable = true }
+        val cartao = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding((4 * u).toInt(), (3 * u).toInt(), (4 * u).toInt(), (3 * u).toInt())
+            background = GradientDrawable().apply { setColor(Color.rgb(22, 12, 26)); cornerRadius = 3 * u; setStroke((0.3f * u).toInt().coerceAtLeast(2), Color.argb(90, 255, 255, 255)) }
+        }
+        fun texto(t: String, tam: Float, cor: Int = Color.WHITE, negrito: Boolean = false) = TextView(this).apply {
+            text = t; setTextColor(cor); gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, tam * u)
+            if (negrito) typeface = Typeface.DEFAULT_BOLD
+        }
+        cartao.addView(texto("▲", 9f, Color.rgb(234, 37, 29), true))
+        cartao.addView(texto("ESTE LADO É O DE CIMA", 2.4f, Color.rgb(255, 120, 110), true))
+        cartao.addView(texto("Como esta TV está instalada?", 4.2f, negrito = true).apply { setPadding(0, (2.5f * u).toInt(), 0, (1 * u).toInt()) })
+        val posicao = texto("", 2.6f, Color.argb(220, 255, 255, 255), true)
+        cartao.addView(posicao)
+        cartao.addView(texto("Aperte OK em \"Girar\" até este texto ficar em pé para você.\nDepois escolha \"Está certo\".", 2.1f, Color.argb(170, 255, 255, 255)).apply { setPadding(0, (1.5f * u).toInt(), 0, (2 * u).toInt()) })
+        val linha = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        cartao.addView(linha)
+        fun mostrar() {
+            cartao.rotation = g.toFloat()
+            posicao.text = when (g) { 90 -> "TV em pé (girada para um lado)"; 270 -> "TV em pé (girada para o outro lado)"; else -> "TV deitada (horizontal)" }
+        }
+        var feito = false
+        val confirmar = {
+            if (!feito) {
+                feito = true
+                prefs().edit().putInt("giro", g).putBoolean("giro_escolhido", true).apply()
+                raiz.removeView(fundo); escolha = null
+                aplicarGiroNativo(intro, g); aplicarGiroNativo(menu, g)
+                depois()
+            }
+        }
+        val girar = botao("↻  Girar", u) { g = when (g) { 0 -> 90; 90 -> 270; else -> 0 }; mostrar() }
+        linha.addView(girar)
+        linha.addView(botao("✓  Está certo", u) { confirmar() })
+        val lado = (minOf(dm.widthPixels, dm.heightPixels) * 0.92f).toInt()
+        fundo.addView(cartao, FrameLayout.LayoutParams(lado, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
+        raiz.addView(fundo, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        escolha = fundo
+        mostrar()
+        fundo.bringToFront()
+        girar.requestFocus()
+        h.postDelayed({ confirmar() }, 180_000)
     }
 
     // ---------------- WebView ----------------
@@ -474,6 +561,7 @@ class MainActivity : Activity() {
             isClickable = true
         }
         raiz.addView(menu, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        aplicarGiroNativo(menu)
         menuInfo = TextView(this).apply { setTextColor(Color.argb(170, 255, 255, 255)); gravity = Gravity.CENTER }
     }
 
@@ -500,6 +588,7 @@ class MainActivity : Activity() {
         linha1.addView(botao("Wi-Fi", u) { abrirTela(Settings.ACTION_WIFI_SETTINGS) })
         linha1.addView(botao("Data e hora", u) { abrirTela(Settings.ACTION_DATE_SETTINGS) })
         linha2.addView(botao("Atualizar navegador do sistema", u) { abrirLoja("com.google.android.webview") })
+        linha2.addView(botao("Orientação da tela", u) { fecharMenu(); mostrarEscolha { web?.reload() } })
         linha2.addView(botao("Configurações", u) { abrirTela(Settings.ACTION_SETTINGS) })
         linha2.addView(botao("Sair do app", u) { sair() })
         menu.addView(linha1)
@@ -713,6 +802,7 @@ class MainActivity : Activity() {
                 .put("webview", pacoteWebView())
                 .put("relogio", SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date()))
                 .put("ultima_queda", p.getString("ultima_queda", "") ?: "")
+                .put("giro_fisico", if (p.getBoolean("giro_escolhido", false)) giroSalvo() else -1)
                 .put("ua", WebSettings.getDefaultUserAgent(this@MainActivity))
             // hardware completo (como nos NUCs): processador, memória, armazenamento, tela, decodificadores, rede
             val hw = Diagnostico.hardware(this@MainActivity)
@@ -762,6 +852,14 @@ class MainActivity : Activity() {
          * TV em pé: o sistema gira a imagem (o app desenha direto em 720x1280, sem girar a página por CSS).
          * giro 90 = mesmo sentido do giro 90° da página; 270 = o outro lado; 0 = deitada (padrão).
          */
+        /** Como a TV está instalada (escolhido na primeira vez): 0 deitada, 90/270 em pé; -1 = ainda não escolhido. */
+        @JavascriptInterface
+        fun giro(): Int = if (prefs().getBoolean("giro_escolhido", false)) giroSalvo() else -1
+
+        /** Mostra de novo a tela "Como esta TV está instalada?" (comando do admin ou menu). */
+        @JavascriptInterface
+        fun escolherOrientacao() { h.post { mostrarEscolha { web?.reload() } } }
+
         @JavascriptInterface
         fun orientar(giro: Int) {
             h.post {

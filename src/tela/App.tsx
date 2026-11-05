@@ -64,7 +64,9 @@ function Palco({ children, vertical = false, giro = 90, margem = 0 }: { children
   const W = vertical ? 1080 : 1920;
   const H = vertical ? 1920 : 1080;
   const deitada = jan.w > jan.h;
-  const girar = vertical && deitada && (giro === 90 || giro === 270) ? giro : 0;
+  // TV em pé (escolhida no aparelho): gira até o conteúdo horizontal (código de pareamento, avisos) — fica com faixas
+  const emPe = giroFisico();
+  const girar = deitada && (giro === 90 || giro === 270) && (vertical || (emPe !== null && emPe !== 0)) ? giro : 0;
   const visW = girar ? H : W;
   const visH = girar ? W : H;
   // margem (% de cada lado) para TV que corta as bordas da imagem (overscan)
@@ -125,8 +127,25 @@ class Protecao extends React.Component<{ e: Estado; children: React.ReactNode },
   render() { return this.state.erro ? <SemVideo e={this.props.e} /> : this.props.children; }
 }
 
-/** TV em pé: o que foi escolhido ao vincular (config.orientacao) ou um layout vertical. */
-const ehVertical = (e: Estado | null) => !!e?.pareada && (e.tela?.config?.orientacao === 'vertical' || /^(V\d|R)$/.test(String(e.tela?.layout || '')));
+/**
+ * Como a TV está instalada, escolhido no próprio aparelho na primeira vez que o app abre (APK 1.0.8+):
+ * 0 deitada, 90/270 em pé. null = aparelho sem essa escolha (navegador, app antigo): vale a configuração do admin.
+ */
+export const giroFisico = (): number | null => {
+  try {
+    const p: any = (window as any).ExaTela;
+    const g = p?.giro ? Number(p.giro()) : -1;
+    return g === 0 || g === 90 || g === 270 ? g : null;
+  } catch { return null; }
+};
+
+/** TV em pé: a posição escolhida no aparelho manda; sem ela, config.orientacao ou um layout vertical. */
+const ehVertical = (e: Estado | null) => {
+  if (!e?.pareada) return false;
+  const g = giroFisico();
+  if (g !== null) return g !== 0;
+  return e.tela?.config?.orientacao === 'vertical' || /^(V\d|R)$/.test(String(e.tela?.layout || ''));
+};
 
 function Programacao({ e }: { e: Estado }) {
   const vertical = ehVertical(e);
@@ -211,6 +230,7 @@ export default function App() {
               if (r.comando.tipo === 'sair_app' && p?.sairDoApp) p.sairDoApp();
               if (r.comando.tipo === 'abrir_configuracoes' && p?.abrirConfiguracoes) p.abrirConfiguracoes();
               if (r.comando.tipo === 'atualizar_app' && p?.atualizarApp) p.atualizarApp();
+              if (r.comando.tipo === 'orientacao' && p?.escolherOrientacao) p.escolherOrientacao();
             }
             recarregar(); return;
           }
@@ -267,16 +287,10 @@ export default function App() {
     return () => { document.removeEventListener('visibilitychange', vis); document.removeEventListener('contextmenu', menu); document.removeEventListener('click', cheia); try { lock?.release(); } catch { /* */ } };
   }, []);
 
-  const giro = Number(estado?.tela?.config?.giro);
+  const fisico = giroFisico();
+  const giro = fisico !== null && fisico !== 0 ? fisico : Number(estado?.tela?.config?.giro);
   const giroOk = [0, 90, 270].includes(giro) ? giro : 90;
   const vert = ehVertical(estado);
-  // app Android 1.0.7+: o próprio sistema gira a imagem (bem mais leve que girar a página); o Palco percebe a
-  // janela em pé e não gira. Aparelho antigo/navegador comum: o Palco gira por CSS como antes.
-  useEffect(() => {
-    const p: any = (window as any).ExaTela;
-    if (!p?.orientar) return;
-    try { p.orientar(vert ? giroOk : 0); } catch { /* */ }
-  }, [vert, giroOk]);
   return (
     <Palco vertical={vert} giro={giroOk} margem={Number(estado?.tela?.config?.margem) || 0}>
       {estado?.pareada ? <Programacao e={estado} /> : <Pareamento codigo={codigo} online={online} erro={erro} />}
