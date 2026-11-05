@@ -1,0 +1,93 @@
+[05/11/2026, 08:18:55] [BRASIL] ========================================
+[05/11/2026, 08:18:55] [BRASIL] === EXA NOTÍCIAS BRASIL (layout 2026) ===
+[05/11/2026, 08:18:55] [BRASIL] ========================================
+[05/11/2026, 08:18:55] [BRASIL] Buscando notícias de cnnbrasil.com.br...
+[05/11/2026, 08:19:06] [BRASIL] 11 notícias encontradas
+[05/11/2026, 08:19:06] [BRASIL] 7 após filtro editorial
+[05/11/2026, 08:19:16] [BRASIL]   [FILTRO] BARRADA (Claude): "Nissan Kicks é seguro? Crash test do Latin NCAP revela novidade" — Matéria centrada em modelo de carro específico, com avaliação do produto em tom de vitrine [marcas: Nissan, Nissan Kicks]
+[05/11/2026, 08:19:16] [BRASIL]   [FILTRO] 6/7 notícias aprovadas (modelo claude-opus-5-5).
+[05/11/2026, 08:19:16] [BRASIL]   1. [economia] Economia sobreviveu porque mundo vivia leniência fiscal, diz especialista
+[05/11/2026, 08:19:16] [BRASIL]   2. [internacional] Netanyahu perde apoio de aliado e vê posição enfraquecer em Israel
+[05/11/2026, 08:19:16] [BRASIL]   3. [viagemegastronomia] Fortaleza ganha museu com exposições que vão da arte cearense a Picasso
+[05/11/2026, 08:19:16] [BRASIL]   4. [educacao] Enem 2026: você sabe quem corrige a redação e como a nota é formada?
+[05/11/2026, 08:19:16] [BRASIL]   5. [nacional] Tornados e tempestades: veja estragos causados por fenômenos no Sul do país
+[05/11/2026, 08:19:17] [BRASIL]   Imagem 1: 395886 bytes
+[05/11/2026, 08:19:17] [BRASIL]   Imagem 2: 36410 bytes
+[05/11/2026, 08:19:18] [BRASIL]   Imagem 3: 155842 bytes
+[05/11/2026, 08:19:18] [BRASIL]   Imagem 4: 71518 bytes
+[05/11/2026, 08:19:18] [BRASIL]   Imagem 5: 47666 bytes
+[05/11/2026, 08:19:18] [BRASIL] Gravando /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/breaking-news.mp4 (50s, 1500 frames, 1080x890)...
+[05/11/2026, 08:19:19] [BRASIL]   Frame 0/1500 (0%)
+[05/11/2026, 08:19:27] [BRASIL]   Frame 150/1500 (10%)
+[05/11/2026, 08:19:36] [BRASIL]   Frame 300/1500 (20%)
+[05/11/2026, 08:19:45] [BRASIL]   Frame 450/1500 (30%)
+[05/11/2026, 08:19:55] [BRASIL]   Frame 600/1500 (40%)
+[05/11/2026, 08:20:05] [BRASIL]   Frame 750/1500 (50%)
+[05/11/2026, 08:20:15] [BRASIL]   Frame 900/1500 (60%)
+[05/11/2026, 08:20:25] [BRASIL]   Frame 1050/1500 (70%)
+[05/11/2026, 08:20:35] [BRASIL]   Frame 1200/1500 (80%)
+[05/11/2026, 08:20:45] [BRASIL]   Frame 1350/1500 (90%)
+[05/11/2026, 08:20:55] [BRASIL] Encodando MP4...
+[05/11/2026, 08:21:07] [BRASIL] Vídeo salvo: /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/breaking-news.mp4
+[05/11/2026, 08:21:07] [BRASIL] Publicando: Notícias Brasil 05/11 08h18
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] === Publicador EXA (nuvem) === Notícias Brasil 05/11 08h18 → pedido c08f3154-e0dc-4c39-b8a2-721d8acdde7f
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] Pedido "Jeferson Stilver" (ativo) · vídeos: 2:Notícias Brasil 05/11 07h00★
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] Limpeza antes do envio: 0 vídeo(s) antigo(s) removido(s).
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] Arquivo no Storage (9.3 MB, 1080x890, 50s).
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] Vídeo no pedido: "Notícias Brasil 05/11 08h18" (vídeo 1, aprovado).
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] Envio do arquivo às telas: HTTP 200 
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] Sincronização com as telas (tentativa 1): HTTP 200 · master ok
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish]   remover "Notícias Brasil 05/11 07h00" (vídeo 2): OK (telas 200, banco 204)
+[05/11/2026, 08:21:55] [BRASIL] [PUBLICADOR] [publish] === PUBLICACAO CONCLUIDA === principal: "Notícias Brasil 05/11 08h18" · removidos: 1
+[05/11/2026, 08:21:56] [BRASIL]   [RESUMO] 5 manchetes registradas para o resumo da Sofia.
+[05/11/2026, 08:21:56] [BRASIL] === NOTÍCIAS BRASIL CONCLUÍDO ===
+[05/11/2026, 08:21:56] [FOZ] ========================================
+[05/11/2026, 08:21:56] [FOZ] === EXA NOTÍCIAS FOZ — LAYOUT OFICIAL ===
+[05/11/2026, 08:21:56] [FOZ] ========================================
+[05/11/2026, 08:21:56] [FOZ] Buscando notícias de foz.portaldacidade.com (navegador)...
+[05/11/2026, 08:22:03] [FOZ] 22 links de notícias na home
+[05/11/2026, 08:22:05] [FOZ] 17 notícias de até 96 h depois dos filtros fixos (14 de até 36 h)
+[05/11/2026, 08:22:05] [FOZ]   [FILTRO] BARRADA (regra fixa): "Alunos de Foz apresentam soluções em inglês para pesquisadores ligados a Harvard" — marcador de patrocínio: "conteúdo patrocinado"
+[05/11/2026, 08:22:16] [FOZ]   [FILTRO] 16/17 notícias aprovadas (modelo claude-opus-5-5).
+[05/11/2026, 08:22:16] [FOZ] Janela usada: até 36 h → 13 notícias aprovadas.
+[05/11/2026, 08:22:16] [FOZ] Inéditas: 13 · já exibidas nos últimos 7 dias: 0
+[05/11/2026, 08:22:35] [FOZ] Baixando fotos das matérias...
+[05/11/2026, 08:22:35] [FOZ]   Foto 1: 2255463 bytes
+[05/11/2026, 08:22:35] [FOZ]   Foto 2: 66263 bytes
+[05/11/2026, 08:22:36] [FOZ]   Foto 3: 334162 bytes
+[05/11/2026, 08:22:36] [FOZ]   Foto 4: 2285628 bytes
+[05/11/2026, 08:22:36] [FOZ]   Foto 5: 1986674 bytes
+[05/11/2026, 08:22:37] [FOZ]   Foto 6: 1043537 bytes
+[05/11/2026, 08:22:37] [FOZ]   1. [TRANSPORTE] R$ 6. — Passagem de ônibus sobe 20% e passe estudantil cai para duas viagens nos dias úteis
+[05/11/2026, 08:22:37] [FOZ]   2. [SAÚDE] Dengue! — CCZ vai vistoriar 4,7 mil imóveis para identificar focos do mosquito da dengue
+[05/11/2026, 08:22:37] [FOZ]   3. [CIDADE] Leilão. — Prefeitura divulga lista de 18 terrenos públicos que poderão ser leiloados em Foz
+[05/11/2026, 08:22:37] [FOZ]   4. [MEIO AMBIENTE] 81 ovos. — Apreensões de ovos de aves silvestres chegam a 81 em apenas 10 dias em Foz do Iguaçu
+[05/11/2026, 08:22:37] [FOZ]   5. [BOMBEIROS] Fogo! — Fritadeira com óleo pega fogo em padaria de Foz do Iguaçu; ninguém fica ferido
+[05/11/2026, 08:22:37] [FOZ]   6. [SEGURANÇA] Presos! — Dupla é presa pela PM após roubar residência e fugir de moto no bairro Maracanã
+[05/11/2026, 08:22:37] [FOZ] Duração do vídeo: 50 s (6 notícia(s)).
+[05/11/2026, 08:22:37] [FOZ] Gravando /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/foz-news.mp4 (50s, 1500 quadros, 1080x890)...
+[05/11/2026, 08:22:39] [FOZ]   Quadro 0/1500 (0%)
+[05/11/2026, 08:22:47] [FOZ]   Quadro 150/1500 (10%)
+[05/11/2026, 08:22:54] [FOZ]   Quadro 300/1500 (20%)
+[05/11/2026, 08:23:01] [FOZ]   Quadro 450/1500 (30%)
+[05/11/2026, 08:23:08] [FOZ]   Quadro 600/1500 (40%)
+[05/11/2026, 08:23:15] [FOZ]   Quadro 750/1500 (50%)
+[05/11/2026, 08:23:22] [FOZ]   Quadro 900/1500 (60%)
+[05/11/2026, 08:23:29] [FOZ]   Quadro 1050/1500 (70%)
+[05/11/2026, 08:23:36] [FOZ]   Quadro 1200/1500 (80%)
+[05/11/2026, 08:23:43] [FOZ]   Quadro 1350/1500 (90%)
+[05/11/2026, 08:23:50] [FOZ] Encodando MP4 (yuv420p, faixa de TV — formato seguro para os NUCs)...
+[05/11/2026, 08:24:05] [FOZ] Vídeo salvo: /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/foz-news.mp4
+[05/11/2026, 08:24:05] [FOZ] Publicando: Notícias Foz 05/11 08h21
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] === Publicador EXA (nuvem) === Notícias Foz 05/11 08h21 → pedido 9cb8da99-ddb3-491c-b58c-63871eadc4cb
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] Pedido "Jeferson Stilver" (ativo) · vídeos: 2:Notícias Foz 05/11 07h04★
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] Limpeza antes do envio: 0 vídeo(s) antigo(s) removido(s).
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] Arquivo no Storage (11.1 MB, 1080x890, 50s).
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] Vídeo no pedido: "Notícias Foz 05/11 08h21" (vídeo 1, aprovado).
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] Envio do arquivo às telas: HTTP 200 
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] Sincronização com as telas (tentativa 1): HTTP 200 · master ok
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish]   remover "Notícias Foz 05/11 07h04" (vídeo 2): OK (telas 200, banco 204)
+[05/11/2026, 08:24:48] [FOZ] [PUBLICADOR] [publish] === PUBLICACAO CONCLUIDA === principal: "Notícias Foz 05/11 08h21" · removidos: 1
+[05/11/2026, 08:24:49] [FOZ]   [RESUMO] 6 manchetes registradas para o resumo da Sofia.
+[05/11/2026, 08:24:49] [FOZ] === EXA NOTÍCIAS FOZ CONCLUÍDO ===
+[05/11/2026, 08:24:52] [RESUMO-SOFIA] Resumo (manha) enviado ao CEO pela Sofia — 1 pendente(s).
