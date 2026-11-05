@@ -6,8 +6,8 @@
  * e seguiam com programação no manifesto (updates_clientes do ExaSistema). Também havia vídeo de um cliente gravado
  * dentro do pedido de outro (ex.: "duquinbtal" no pedido da Caliu).
  *
- * Regra de órfão: item do manifesto (status != deleted) cujo pedido não existe, não está ativo, ou cujo título não é
- * de nenhum vídeo APROVADO do próprio pedido. Telas internas (bancada, tablet comercial, tela de teste) ficam de fora.
+ * Regra de órfão: item do manifesto (status != deleted) cujo pedido não existe, não está ativo, cuja tela não é de um
+ * prédio do pedido (prédio inativo/apagado sai do pedido), ou cujo título não é de nenhum vídeo APROVADO do pedido. Telas internas (bancada, tablet comercial, tela de teste) ficam de fora.
  *
  * Uso (só super_admin logado ou cron com x-exa2-cron):
  *   { "dry_run": true }                    -> lista o que seria removido
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
     // --- pedidos e vídeos aprovados ---
     const ids = [...new Set(itens.map((i) => i.pedido).filter((x) => /^[0-9a-f-]{36}$/i.test(x)))];
-    const { data: peds } = ids.length ? await main.from('pedidos').select('id, status, client_name').in('id', ids) : { data: [] as any[] };
+    const { data: peds } = ids.length ? await main.from('pedidos').select('id, status, client_name, lista_predios').in('id', ids) : { data: [] as any[] };
     const pedPor = new Map((peds || []).map((p: any) => [String(p.id), p]));
     const { data: pvs } = ids.length ? await main.from('pedido_videos').select('pedido_id, videos(nome)').in('pedido_id', ids).eq('approval_status', 'approved') : { data: [] as any[] };
     const titulosPor = new Map<string, Set<string>>();
@@ -75,10 +75,11 @@ Deno.serve(async (req) => {
       const p: any = pedPor.get(i.pedido);
       if (!p) return true;
       if (!ATIVOS.includes(String(p.status))) return true;
+      if (!(p.lista_predios || []).some((b: string) => String(b).replace(/-/g, '').substring(0, 4) === i.tela)) return true; // prédio saiu do pedido (inativo/apagado)
       return !titulosPor.get(i.pedido)?.has(normT(i.titulo));
     }).map((i) => {
       const p: any = pedPor.get(i.pedido);
-      return { ...i, cliente: p?.client_name || null, status_pedido: p?.status || 'inexistente', motivo: !p ? 'pedido inexistente' : !ATIVOS.includes(String(p.status)) ? 'pedido ' + p.status : 'video fora do pedido' };
+      return { ...i, cliente: p?.client_name || null, status_pedido: p?.status || 'inexistente', motivo: !p ? 'pedido inexistente' : !ATIVOS.includes(String(p.status)) ? 'pedido ' + p.status : !(p.lista_predios || []).some((b: string) => String(b).replace(/-/g, '').substring(0, 4) === i.tela) ? 'predio fora do pedido' : 'video fora do pedido' };
     });
 
     // --- remoção ---
