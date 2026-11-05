@@ -11,6 +11,7 @@ import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 import { prepararLogo, conferenciaLogo } from "./nando-logo.ts";
 import { FERRAMENTAS_CADASTRO, NOMES_CADASTRO, executarCadastro, contextoCadastroParaPrompt, roteiroCadastro } from "./nando-cadastro.ts";
 import { FERRAMENTA_DIAGNOSTICO, diagnosticarPainel } from "./nando-paineis.ts";
+import { lerReferencia, referenciaAtiva, descartarReferencia, resumoReferencia, revisarAviso, aprovacaoValida, mensagensDepoisDaPrevia, qrRastreado, copiaCeo, NOTA_MINIMA } from "./nando-qualidade.ts";
 
 const BUCKET = "nando-midia";
 const LIMITE_AVISOS = 10;
@@ -26,6 +27,7 @@ export interface Contexto {
   predioAtual: Predio | null;
   midias: Record<string, { mime: string; caminho: string; url: string }>; // midias recebidas (id -> arquivo salvo)
   registros: string[];        // o que as ferramentas fizeram neste turno (vira memoria)
+  revisoes?: number;         // quantas vezes o revisor de designer reprovou nesta resposta
   inicio?: number;            // quando esta resposta comecou (rascunhos de antes disso sao descartados ao criar um novo)
 }
 
@@ -187,14 +189,17 @@ export function paginar<T>(itens: T[], comQr: boolean): T[][] | null {
   return pags.filter((x) => x.length || !total);
 }
 
-async function criarSerie(c: Contexto, p: Predio, e: any, v: Visual, extra: Record<string, unknown> = {}): Promise<string | { criados: any[]; totalItens: number; grupo: string }> {
+async function criarSerie(c: Contexto, p: Predio, e: any, v: Visual, extra: Record<string, unknown> = {}): Promise<string | { criados: any[]; totalItens: number; grupo: string; dados: any[] }> {
   const sb = c.sb;
   const cartoes: any[] = Array.isArray(e.cartoes) && e.cartoes.length ? e.cartoes : [{ titulo: e.titulo, quando: e.quando, texto: e.texto, itens: e.itens }];
   const itensBrutos = cartoes.flatMap((cd: any) => Array.isArray(cd?.itens) ? cd.itens : []).filter((x: any) => String(x?.texto || "").trim());
   const titulo = String(e.titulo || cartoes[0]?.titulo || "Aviso").replace(/\s*\(?\d+\s*\/\s*\d+\)?\s*$/, "").replace(/[:\-–]\s*$/, "").trim().slice(0, 60);
   const quando = (e.quando || cartoes[0]?.quando) ? String(e.quando || cartoes[0]?.quando).slice(0, 60) : undefined;
   let paginas: any[][];
-  if (itensBrutos.length) {
+  if (itensBrutos.length && e.__manter_divisao && cartoes.length > 1 && cartoes.every((cd: any) => Array.isArray(cd?.itens) && cd.itens.length && cd.itens.length <= 6)) {
+    // referencia do sindico: mesma divisao de cartoes que ele mandou (nada de redistribuir)
+    paginas = cartoes.map((cd: any) => cd.itens.filter((x: any) => String(x?.texto || "").trim()));
+  } else if (itensBrutos.length) {
     const pg = paginar(itensBrutos, !!v.qr);
     if (!pg) return `São ${itensBrutos.length} itens: não cabem em 5 cartões. Junte itens parecidos (sem perder nenhuma regra) e tente de novo.`;
     paginas = pg;
@@ -208,18 +213,19 @@ async function criarSerie(c: Contexto, p: Predio, e: any, v: Visual, extra: Reco
   const grupo = crypto.randomUUID();
   const ini = parseData(e.inicio), fim = parseData(e.fim);
   const criados: any[] = [];
+  const todosDados: any[] = [];
   for (let k = 0; k < total; k++) {
     const pag = paginas[k];
     const itens = pag.length ? await Promise.all(pag.map(async (it: any) => ({ icone: await v.icone(String(it?.tema || "")), texto: String(it?.texto || "").slice(0, 90) }))) : undefined;
     const ultimo = k === total - 1;
     const dados: any = {
       v: 1, titulo, quando, texto: !itensBrutos.length ? (String(cartoes[k]?.texto || "").slice(0, 160) || undefined) : undefined,
-      itens, assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p), estilo: await estiloDe(c, p, e.estilo), cor, icone: await v.icone(tema), foto: v.foto || undefined,
+      itens, assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p), estilo: await estiloDe(c, p, e.estilo), cor, cor_fundo: corFundo(e), icone: await v.icone(tema), foto: v.foto || undefined,
       fundo, fundo_nitido: nitido || undefined, parte: total > 1 ? `${k + 1}/${total}` : undefined,
       qr: ultimo ? v.qr : undefined, qr_legenda: ultimo ? v.qrLegenda : undefined,
     };
     const { data: a, error } = await sb.from("nando_avisos").insert({
-      building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: (total > 1 ? `${titulo} (${k + 1}/${total})` : titulo).slice(0, 70), status: "rascunho",
+      building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: (total > 1 ? `${titulo} (${k + 1}/${total})` : titulo).replace(/\s*\n\s*/g, " ").slice(0, 70), status: "rascunho",
       segundos: clampSeg(e.segundos || 20), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
       lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
       criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
@@ -232,9 +238,10 @@ async function criarSerie(c: Contexto, p: Predio, e: any, v: Visual, extra: Reco
     a.conteudo = { ...a.conteudo, arquivo_url: url };
     await historico(sb, a.id, quem(c), total > 1 ? `criou rascunho (série, cartão ${k + 1}/${total})` : "criou rascunho");
     criados.push(a);
+    todosDados.push(dados);
   }
   c.registros.push(`${total > 1 ? "série" : "cartão"} criado: ${criados.map((a, k) => `cartão ${k + 1} = [${idCurto(a.id)}]`).join(", ")}; ${itensBrutos.length} itens`);
-  return { criados, totalItens: itensBrutos.length, grupo };
+  return { criados, totalItens: itensBrutos.length, grupo, dados: todosDados };
 }
 
 async function criarArquivoOriginal(c: Contexto, p: Predio, e: any, extra: Record<string, unknown> = {}): Promise<string | any> {
@@ -270,7 +277,7 @@ async function prepararVisual(c: Contexto, e: any, qrMidia?: string): Promise<Vi
     if (!mq) return "Arquivo para o QR code não encontrado (midia_id).";
     qrAlvo = mq.url;
   }
-  if (qrAlvo) qr = await qrDataUrl(qrAlvo);
+  if (qrAlvo) qr = await qrDataUrl(await qrRastreado(c.sb, qrAlvo, c.predioAtual?.nome || "Prédio", String(e.titulo || "Aviso Nando")));
   return { icone, foto, qr, qrAlvo, qrLegenda: qr ? String(e.qr_legenda || "Aponte a câmera e veja o documento completo").slice(0, 60) : undefined };
 }
 
@@ -297,8 +304,8 @@ export const FERRAMENTAS = [
     input_schema: {
       type: "object",
       properties: { predios: { type: "array", items: { type: "string" }, description: "SE o aviso vai para mais de um prédio: nomes/códigos (ou ['todos']). A prévia já mostra todos os prédios de destino e a assinatura de cada um." }, exceto: { type: "array", items: { type: "string" } }, 
-        estilo: { type: "string", enum: ["escuro", "claro"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto de fundo). Vazio = o estilo guardado do prédio (padrão escuro)." }, 
-        titulo: { type: "string", description: "Curto e forte, ATÉ 30 caracteres (letras grandes, lido de longe). Ex: 'Falta d'água no sábado'" },
+        estilo: { type: "string", enum: ["escuro", "claro", "suave"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto). suave = fundo PASTEL na cor do condomínio (rosa clarinho, azul-bebê…), título em 2 cores, regras em cartões brancos com barra colorida, entrada animada uma a uma (use quando a referência do síndico tiver fundo claro colorido). Vazio = o estilo guardado do prédio (padrão escuro)." }, cor_fundo: { type: "string", description: "Só no estilo suave: cor do fundo pastel em #RRGGBB, tirada da referência (ex: #fbe3ea). A cor de destaque vai em cor." }, 
+        titulo: { type: "string", description: "Curto e forte, ATÉ 30 caracteres (letras grandes, lido de longe). Ex: 'Falta d'água no sábado'. Para título em 2 linhas como na referência (linha 1 pequena escura, linha 2 grande na cor de destaque), separe com \\n: 'REGRAS DO\\nOMOIRU'." },
         quando: { type: "string", description: "Data/horário/local em uma linha, ATÉ 35 caracteres. Ex: 'Sáb 26/10 · 8h às 14h'" },
         texto: { type: "string", description: "Frase curta e amigável, ATÉ 110 caracteres (o aviso é lido de longe no elevador)" },
         assinatura: { type: "string", description: "Ex: 'Administração do Edifício Saint Peter'" },
@@ -324,6 +331,7 @@ export const FERRAMENTAS = [
           items: { type: "object", properties: { tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" } } },
         },
         busca_foto: { type: "string", description: "2 a 4 palavras EM INGLÊS para buscar a foto de fundo (banco Pixabay), ligadas ao tema e ao clima do aviso (ex: 'quiet night city', 'water tap kitchen', 'elevator lobby', 'pool summer'). Evite pessoas em destaque." },
+        ref_cartoes: { type: "array", items: { type: "number" }, description: "Só com referência lida e quando a pessoa pediu PARTE dela: números dos cartões da referência que este aviso reproduz (ex: [2] para refazer só o 2/3). Vazio = todos." },
         segundos: { type: "number", description: "Tempo na tela (5 a 120). Padrão 15" },
         inicio: { type: "string", description: "Início 'YYYY-MM-DDTHH:MM' (horário de Brasília). Vazio = assim que publicar" },
         fim: { type: "string", description: "Saída automática 'YYYY-MM-DDTHH:MM'. Vazio = sem data de saída" },
@@ -346,7 +354,7 @@ export const FERRAMENTAS = [
         midia_id: { type: "string", description: "midia_id da imagem/PDF recebido" },
         titulo: { type: "string", description: "Título curto dos cartões, SEM numeração (ex: 'Regras da piscina')" },
         quando: { type: "string", description: "Linha curta de destaque (ex: 'Aberta das 8h às 22h')" },
-        tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, assinatura: { type: "string" }, estilo: { type: "string", enum: ["escuro", "claro"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto de fundo). Vazio = o estilo guardado do prédio (padrão escuro)." }, 
+        tema: { type: "string" }, cor: { type: "string" }, busca_foto: { type: "string" }, assinatura: { type: "string" }, estilo: { type: "string", enum: ["escuro", "claro", "suave"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto). suave = fundo PASTEL na cor do condomínio (rosa clarinho, azul-bebê…), título em 2 cores, regras em cartões brancos com barra colorida, entrada animada uma a uma (use quando a referência do síndico tiver fundo claro colorido). Vazio = o estilo guardado do prédio (padrão escuro)." }, cor_fundo: { type: "string", description: "Só no estilo suave: cor do fundo pastel em #RRGGBB, tirada da referência (ex: #fbe3ea). A cor de destaque vai em cor." }, 
         itens: { type: "array", description: "TODOS os itens/regras do documento, na ordem, cada um com tema de ícone e texto curto (até 70 caracteres). Não deixe nenhum de fora.", items: { type: "object", properties: { tema: { type: "string" }, texto: { type: "string" } }, required: ["texto"] } },
         resumo: { type: "object", description: "Opcional: resumo para o cartão com QR (comunicados). titulo até 30, quando até 35, texto até 110.", properties: { titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" } } },
         titulo_original: { type: "string", description: "Título do aviso do arquivo original (só para a lista)" },
@@ -354,6 +362,11 @@ export const FERRAMENTAS = [
       },
       required: ["midia_id", "titulo", "tema"],
     },
+  },
+  {
+    name: "ler_referencia",
+    description: "OBRIGATÓRIA quando a pessoa manda imagem(ns) ou PDF para virar aviso (cartaz pronto, modelo 'quero algo assim', foto de papel, comunicado). Um designer lê TUDO com precisão: textos exatos de cada cartão, destaques, numeração, cores (hex), estilo e se é arte pronta. Use o resultado como fonte da verdade dos textos e do visual. Depois, se for ARTE PRONTA ou modelo, confirme o entendimento com a pessoa ANTES de criar (o sistema bloqueia criar antes da resposta dela).",
+    input_schema: { type: "object", properties: { midia_ids: { type: "array", items: { type: "string" }, description: "todos os midia_id das imagens/PDF da referência, na ordem (1/3, 2/3, 3/3)" }, pedido: { type: "string", description: "o que a pessoa escreveu/falou sobre essas imagens, nas palavras dela" } }, required: ["midia_ids"] },
   },
   {
     name: "ver_arquivo",
@@ -380,7 +393,7 @@ export const FERRAMENTAS = [
   {
     name: "publicar_aviso",
     description: "Publica um rascunho já aprovado pelo síndico. Para publicar o MESMO aviso em vários prédios: 'predios' com os códigos ou nomes (ou ['todos'] = todos os prédios que a pessoa pode mexer) e, se quiser, 'exceto'. As cópias ficam ligadas (mesmo grupo): depois dá para alterar ou tirar de todos de uma vez. Cada prédio recebe a assinatura dele. O painel atualiza em até ~10 minutos.",
-    input_schema: { type: "object", properties: { aviso: { type: "string" }, predios: { type: "array", items: { type: "string" } }, exceto: { type: "array", items: { type: "string" } },
+    input_schema: { type: "object", properties: { aviso: { type: "string" }, confirmacao: { type: "string", description: "OBRIGATÓRIO: copie as palavras EXATAS da mensagem em que a pessoa aprovou, mandada DEPOIS do link da prévia (ex: 'pode publicar'). O sistema confere; pergunta, pedido de mudança ou mensagem que cruzou com a prévia não valem." }, predios: { type: "array", items: { type: "string" } }, exceto: { type: "array", items: { type: "string" } },
       repetir: { type: "object", description: "SÓ para aviso que se repete (ex: coleta de lixo toda terça; dedetização todo dia 10). O Nando coloca e tira sozinho em cada vez. frequencia: diaria|semanal|mensal; dias_semana: 0=dom..6=sáb; dia_mes: 1-28; hora_inicio/hora_fim 'HH:MM' (quando aparece e some naquele dia); ate: 'AAAA-MM-DD' opcional.",
         properties: { frequencia: { type: "string", enum: ["diaria", "semanal", "mensal"] }, dias_semana: { type: "array", items: { type: "number" } }, dia_mes: { type: "number" },
           hora_inicio: { type: "string" }, hora_fim: { type: "string" }, ate: { type: "string" } }, required: ["frequencia", "hora_inicio", "hora_fim"] } },
@@ -399,13 +412,14 @@ export const FERRAMENTAS = [
   {
     name: "remover_aviso",
     description: "Tira um aviso do painel AGORA. Só use quando a pessoa pedir claramente para tirar aquele aviso. Se o aviso foi publicado junto em vários prédios, use todos_os_predios=true quando ela pedir para tirar de todos (ou 'predios' para só alguns).",
-    input_schema: { type: "object", properties: { aviso: { type: "string" }, todos_os_predios: { type: "boolean" }, predios: { type: "array", items: { type: "string" } } }, required: ["aviso"] },
+    input_schema: { type: "object", properties: { aviso: { type: "string" }, todos_os_predios: { type: "boolean" }, predios: { type: "array", items: { type: "string" } },
+      ficar_sem_avisos: { type: "boolean", description: "Só true se a pessoa CONFIRMOU, depois de você avisar, que o prédio pode ficar sem NENHUM aviso na tela." } }, required: ["aviso"] },
   },
   {
     name: "editar_aviso",
     description: "Muda o TEXTO de um aviso animado do Nando já publicado (ou rascunho) sem criar outro: título, quando/onde, texto, itens ou assinatura. Republica no painel e tira a versão antiga. Com todos_os_predios=true muda em todos os prédios do mesmo grupo (cada um mantém a assinatura dele). Num cartão de série, muda só aquele cartão.",
     input_schema: { type: "object", properties: { aviso: { type: "string" }, titulo: { type: "string" }, quando: { type: "string" }, texto: { type: "string" },
-      itens: { type: "array", items: { type: "string" }, description: "a lista completa nova de itens deste cartão" }, assinatura: { type: "string" }, estilo: { type: "string", enum: ["escuro", "claro"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto de fundo). Vazio = o estilo guardado do prédio (padrão escuro)." }, todos_os_predios: { type: "boolean" } }, required: ["aviso"] },
+      itens: { type: "array", items: { type: "string" }, description: "a lista completa nova de itens deste cartão" }, assinatura: { type: "string" }, estilo: { type: "string", enum: ["escuro", "claro", "suave"], description: "claro = fundo BRANCO com texto escuro e a cor do condomínio nos destaques (sem foto). suave = fundo PASTEL na cor do condomínio (rosa clarinho, azul-bebê…), título em 2 cores, regras em cartões brancos com barra colorida, entrada animada uma a uma (use quando a referência do síndico tiver fundo claro colorido). Vazio = o estilo guardado do prédio (padrão escuro)." }, cor_fundo: { type: "string", description: "Só no estilo suave: cor do fundo pastel em #RRGGBB, tirada da referência (ex: #fbe3ea). A cor de destaque vai em cor." }, todos_os_predios: { type: "boolean" } }, required: ["aviso"] },
   },
   {
     name: "enviar_imagem_whatsapp",
@@ -497,12 +511,17 @@ async function logoDe(c: Contexto, p: Predio): Promise<{ url: string; placa: str
 }
 
 // estilo do aviso: o pedido da vez (e.estilo) ou a preferencia do predio ("estilo" = "claro" -> fundo branco)
-async function estiloDe(c: Contexto, p: Predio, pedido?: unknown): Promise<"claro" | undefined> {
+async function estiloDe(c: Contexto, p: Predio, pedido?: unknown): Promise<"claro" | "suave" | undefined> {
   const q = String(pedido || "").toLowerCase();
-  if (q === "claro") return "claro";
+  if (q === "claro" || q === "suave") return q;
   if (q === "escuro") return undefined;
   const { data } = await c.sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle();
-  return String((data?.preferencias as any)?.estilo || "").toLowerCase() === "claro" ? "claro" : undefined;
+  const pref = String((data?.preferencias as any)?.estilo || "").toLowerCase();
+  return pref === "claro" || pref === "suave" ? pref : undefined;
+}
+// fundo pastel do estilo suave (#RRGGBB); sem isso o renderizador usa a cor do tema bem clarinha
+function corFundo(e: any): string | undefined {
+  return String(e?.estilo || "") === "suave" && /^#[0-9a-f]{6}$/i.test(String(e?.cor_fundo || "")) ? String(e.cor_fundo) : undefined;
 }
 
 // prédios-alvo a partir de nomes/códigos (aceita "todos") menos os "exceto"
@@ -658,6 +677,50 @@ async function cadastrosParecidos(sb: SupabaseClient, tel: string): Promise<stri
   return out.slice(0, 5);
 }
 
+// ---------------------------------------------------------------- qualidade (v49): referencia, revisor e travas
+// o que a pessoa pediu agora (ultimas mensagens dela), para o revisor comparar
+async function pedidoRecente(c: Contexto): Promise<string> {
+  const desde = new Date(Date.now() - 3 * 3600000).toISOString();
+  const { data } = await c.sb.from("nando_mensagens").select("conteudo").eq("telefone", telefoneCanonico(c.tel)).eq("papel", "sindico")
+    .gte("created_at", desde).order("id", { ascending: false }).limit(8);
+  return (data || []).reverse().map((d: any) => String(d.conteudo?.texto || (d.conteudo?.midia ? `[${d.conteudo.midia}]` : ""))).filter(Boolean).join("\n");
+}
+
+// trava de CODIGO antes de criar: imagem/PDF recebida precisa ser lida (ler_referencia) e,
+// se for arte pronta/modelo, a pessoa precisa ter respondido a confirmacao do entendimento
+async function travaReferencia(c: Contexto): Promise<string | null> {
+  const ra = await referenciaAtiva(c.sb, c.tel);
+  const doTurno = Object.entries(c.midias).filter(([, m]) => m.mime.startsWith("image/") || m.mime.includes("pdf")).map(([id]) => id);
+  const naoLidas = doTurno.filter((id) => !ra?.midias.includes(id));
+  if (naoLidas.length) return `NÃO criei: chegou imagem/PDF (${naoLidas.join(", ")}) que ainda não foi lida. Use ler_referencia com esses midia_ids (e os outros da mesma série, na ordem) antes de criar qualquer aviso.`;
+  if (ra && (ra.ref.arte_pronta || ra.ref.cartoes.length > 1) && !ra.respondeu) {
+    return "NÃO criei: a referência é arte pronta/modelo e a pessoa ainda não respondeu à sua confirmação. Primeiro diga em até 2 frases curtas o que entendeu (quantos cartões, que os textos ficam exatamente iguais, o estilo/cores) e pergunte: \"Quer que eu coloque as suas imagens exatamente como estão, ou faço animado no mesmo estilo?\". Espere a resposta.";
+  }
+  return null;
+}
+
+// revisor de designer antes de qualquer previa (nota minima NOTA_MINIMA). Reprovado: os rascunhos saem e o modelo refaz.
+async function revisar(c: Contexto, p: Predio, criados: any[], dados: any[], e: any): Promise<string | null> {
+  const ra = await referenciaAtiva(c.sb, c.tel);
+  const rv = await revisarAviso({ pedido: await pedidoRecente(c), ref: ra?.ref || null, cartoes: dados, refCartoes: Array.isArray(e?.ref_cartoes) ? e.ref_cartoes.map(Number) : undefined });
+  c.registros.push(`revisor de design: nota ${rv.nota}/100${rv.problemas.length ? ` · ${rv.problemas.join(" | ").slice(0, 600)}` : ""}`);
+  if (rv.aprovado) { (c as any).ultimaNota = rv.nota; return null; }
+  await c.sb.from("nando_avisos").update({ status: "removido", removido_por: `reprovado pelo revisor de design (nota ${rv.nota})`, removido_em: new Date().toISOString() })
+    .in("id", criados.map((a) => a.id)).eq("status", "rascunho");
+  c.revisoes = (c.revisoes || 0) + 1;
+  if (c.revisoes >= 3) {
+    await registrarOcorrencia(c.sb, { tipo: "dificuldade", telefone: c.tel, nome: c.nomePessoa, building_id: p.id,
+      descricao: `O revisor de design reprovou 3 vezes o aviso do ${p.nome} (última nota ${rv.nota}). Nada foi mandado à pessoa.\nPedido: ${(await pedidoRecente(c)).slice(0, 500)}\nProblemas: ${rv.problemas.join(" | ").slice(0, 700)}` });
+    return "O revisor de design reprovou de novo. NÃO mande prévia nem diga que ficou pronto. Diga à pessoa, em 1 frase, que vai caprichar nesse aviso com a equipe da EXA e manda a prévia aqui em seguida (o Jeferson já foi avisado e vai acompanhar).";
+  }
+  return `REPROVADO pelo revisor de design (nota ${rv.nota}/100; mínimo ${NOTA_MINIMA}). Nada foi mostrado à pessoa e os rascunhos foram descartados. Corrija TODOS os pontos abaixo e crie de novo (não comente isso com a pessoa):\n- ${rv.problemas.join("\n- ") || "texto/estilo não bate com o pedido; releia o pedido e a referência"}`;
+}
+
+async function copiaPrevia(c: Contexto, p: Predio, link: string, comRef: boolean) {
+  if (!comRef || c.admin) return;
+  await copiaCeo(c.sb, `👀 *Nando · prévia feita a partir de imagem de referência*\n${c.nomePessoa || "?"} (+${telefoneCanonico(c.tel)}) · ${p.nome}\nNota do revisor: ${(c as any).ultimaNota ?? "?"}/100\n${link}`);
+}
+
 export async function executar(c: Contexto, nome: string, e: any): Promise<Saida> {
   const sb = c.sb;
   // cadastro de predio interessado: nao mexe em avisos nem em predios da rede
@@ -726,6 +789,9 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_aviso_nando": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      const trava = await travaReferencia(c); if (trava) return trava;
+      const comRef = !!(await referenciaAtiva(sb, c.tel));
+      if (comRef) e.__manter_divisao = true;
       await descartarAnteriores(c, p.id);
       let foto: string | null = null;
       if (e.midia_id) {
@@ -746,14 +812,16 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         if (!mq) return "qr_midia_id não encontrado. Use o midia_id do arquivo que a pessoa mandou.";
         qrAlvo = mq.url;
       } else if (/^https:\/\/\S+$/i.test(String(e.qr_url || ""))) qrAlvo = String(e.qr_url);
-      if (qrAlvo) qr = await qrDataUrl(qrAlvo);
+      if (qrAlvo) qr = await qrDataUrl(await qrRastreado(sb, qrAlvo, p.nome, String(e.titulo || "Aviso Nando")));
       const qrLegenda = qr ? String(e.qr_legenda || "Aponte a câmera e veja o documento completo").slice(0, 60) : undefined;
 
       // SERIE: varios cartoes com um visual so, publicados juntos
       if (Array.isArray(e.cartoes) && e.cartoes.length > 1) {
         const r = await criarSerie(c, p, e, { icone, foto, qr, qrAlvo, qrLegenda });
         if (typeof r === "string") return r;
+        const reprovado = await revisar(c, p, r.criados, r.dados, e); if (reprovado) return reprovado;
         const link = await criarPrevia(c, r.criados[0].id);
+        await copiaPrevia(c, p, link, comRef);
         const ativos = await avisosAtivos(c, p.id);
         return `Série de ${r.criados.length} cartões criada (vão ao ar JUNTOS, um depois do outro; para publicar use o código do cartão 1: ${idCurto(r.criados[0].id)}).\n` +
           `Itens incluídos no total: ${r.totalItens} (o sistema distribuiu entre os cartões para caber; o QR fica num cartão com menos itens). Confira com o documento original antes de dizer que está tudo.\n` +
@@ -765,13 +833,17 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       if (qtdItens > (qr ? 4 : 6)) {
         const r = await criarSerie(c, p, { ...e, cartoes: undefined }, { icone, foto, qr, qrAlvo, qrLegenda });
         if (typeof r === "string") return r;
+        const reprovado = await revisar(c, p, r.criados, r.dados, e); if (reprovado) return reprovado;
         const link = await criarPrevia(c, r.criados[0].id);
+        await copiaPrevia(c, p, link, comRef);
         return `Eram ${qtdItens} itens: virou uma série de ${r.criados.length} cartões (vão ao ar juntos; publicar com o código ${idCurto(r.criados[0].id)}). Link da prévia (vale 10 min): ${link}`;
       }
       // sempre 3 variacoes para o sindico escolher (o mesmo texto, visuais diferentes, salvo se a variacao trouxer outro texto)
       const itensUnico = await itensDe(e.itens);
-      const vars: any[] = (Array.isArray(e.variacoes) && e.variacoes.length ? e.variacoes : [{}]).slice(0, 3);
-      while (vars.length < 3) vars.push({ ...vars[vars.length - 1], _sem_foto: vars.length === 2 });
+      // com referencia do sindico: UMA versao fiel (nada de 3 variacoes com fotos)
+      const vars: any[] = (Array.isArray(e.variacoes) && e.variacoes.length && !comRef ? e.variacoes : [{}]).slice(0, comRef ? 1 : 3);
+      while (!comRef && vars.length < 3) vars.push({ ...vars[vars.length - 1], _sem_foto: vars.length === 2 });
+      const dadosCriados: any[] = [];
       const grupo = crypto.randomUUID();
       const ini = parseData(e.inicio), fim = parseData(e.fim);
       const criados: any[] = [];
@@ -782,7 +854,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         const dados: any = {
           v: 1, titulo: String(v.titulo || e.titulo || "").slice(0, 60), quando: (v.quando || e.quando) ? String(v.quando || e.quando).slice(0, 60) : undefined,
           texto: String(v.texto || e.texto || "").slice(0, 160), assinatura: e.assinatura || `Administração do ${p.nome}`, logo: await logoDe(c, p), estilo: await estiloDe(c, p, e.estilo),
-          cor, icone: await icone(tema), foto: foto || undefined, itens: itensUnico, qr, qr_legenda: qrLegenda,
+          cor, cor_fundo: corFundo(e), icone: await icone(tema), foto: foto || undefined, itens: itensUnico, qr, qr_legenda: qrLegenda,
         };
         if (!foto && n === 2) {
           // a 3a opcao e sempre um wallpaper abstrato (nitido, sem foto)
@@ -796,7 +868,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           else dados.fundo = (await fundoGradiente(cor)) || undefined;
         }
         const { data: a, error } = await sb.from("nando_avisos").insert({
-          building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: dados.titulo, status: "rascunho",
+          building_id: p.id, cliente_id: p.cliente_id, tipo: "nando", titulo: String(dados.titulo).replace(/\s*\n\s*/g, " "), status: "rascunho",
           segundos: clampSeg(e.segundos), inicio: (ini || new Date()).toISOString(), fim: fim ? fim.toISOString() : null,
           lembrar_em: e.lembrar_dias ? new Date(Date.now() + e.lembrar_dias * 86400000).toISOString() : null,
           criado_por_tel: telefoneCanonico(c.tel), criado_por_nome: c.nomePessoa,
@@ -807,9 +879,16 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         await sb.from("nando_avisos").update({ conteudo: { ...a.conteudo, arquivo_url: url } }).eq("id", a.id);
         await historico(sb, a.id, quem(c), `criou rascunho (opção ${n + 1})`);
         criados.push(a);
+        dadosCriados.push(dados);
       }
+      const reprovado = await revisar(c, p, criados, dadosCriados.slice(0, 1), e); if (reprovado) return reprovado;
       const link = await criarPrevia(c, criados[0].id);
+      await copiaPrevia(c, p, link, comRef);
       const ativos = await avisosAtivos(c, p.id);
+      if (criados.length === 1) {
+        c.registros.push(`aviso criado (fiel à referência): [${idCurto(criados[0].id)}]`);
+        return `Aviso criado fiel à referência (uma versão só), aprovado pelo revisor de design. Código ${idCurto(criados[0].id)}.\nLink da prévia (vale 10 min): ${link}`;
+      }
       c.registros.push(`3 opções criadas: ${criados.map((a, n) => `opção ${n + 1} = [${idCurto(a.id)}]`).join(", ")}`);
       return `3 opções criadas (o síndico escolhe uma e as outras são descartadas):\n` +
         criados.map((a, n) => `Opção ${n + 1} = código ${idCurto(a.id)}`).join("\n") +
@@ -817,6 +896,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_aviso_arquivo": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      const trava = await travaReferencia(c); if (trava) return trava;
       await descartarAnteriores(c, p.id);
       const a = await criarArquivoOriginal(c, p, e);
       if (typeof a === "string") return a;
@@ -826,6 +906,8 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     }
     case "criar_opcoes_documento": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
+      const trava = await travaReferencia(c); if (trava) return trava;
+      const comRef = !!(await referenciaAtiva(sb, c.tel));
       await descartarAnteriores(c, p.id);
       const m = c.midias[e.midia_id] || await midiaSalva(c, String(e.midia_id || ""));
       if (!m) return "Não encontrei esse arquivo (midia_id). Peça para a pessoa mandar de novo.";
@@ -840,6 +922,9 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
         n++;
         const r = await criarSerie(c, p, { ...e, cartoes: undefined, itens, texto: undefined }, vis, { proposta, opcao_proposta: n, rotulo_opcao: "" });
         if (typeof r === "string") return r;
+        // o revisor confere os textos (todos os itens, sem inventar) e o estilo; com referencia a divisao em cartoes nao conta aqui
+        const reprovado = await revisar(c, p, r.criados, r.dados, e);
+        if (reprovado) return reprovado;
         const rotulo = r.criados.length > 1 ? `Em ${r.criados.length} cartões (${r.totalItens} itens)` : `Em 1 cartão (${r.totalItens} itens)`;
         for (const a of r.criados) await sb.from("nando_avisos").update({ conteudo: { ...a.conteudo, rotulo_opcao: rotulo } }).eq("id", a.id);
         opcoes.push({ n, rotulo, codigo: idCurto(r.criados[0].id), qtd: r.criados.length });
@@ -862,6 +947,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       // a previa abre na primeira opcao e mostra todas
       const { data: primeira } = await sb.from("nando_avisos").select("id").eq("conteudo->>proposta", proposta).eq("conteudo->>opcao_proposta", "1").limit(1);
       const link = await criarPrevia(c, primeira?.[0]?.id || orig.id);
+      await copiaPrevia(c, p, link, comRef);
       const ativos = await avisosAtivos(c, p.id);
       c.registros.push(`opções do documento: ${opcoes.map((o) => `opção ${o.n} = ${o.rotulo} [${o.codigo}]`).join("; ")}`);
       return `Opções criadas para o síndico escolher (todas na mesma prévia):\n` + opcoes.map((o) => `Opção ${o.n}: ${o.rotulo} → publicar com o código ${o.codigo}${o.qtd > 1 ? ` (publica os ${o.qtd} cartões juntos)` : ""}`).join("\n") +
@@ -870,6 +956,13 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
     case "publicar_aviso": {
       const a = await acharAviso(c, e.aviso);
       if (!["rascunho", "erro"].includes(a.status)) return `Esse aviso já está ${a.status}.`;
+      if (!c.admin) {
+        // trava de CODIGO: aprovacao literal da pessoa depois do link da previa (pergunta ou mensagem que cruzou nao vale)
+        const m = await mensagensDepoisDaPrevia(sb, c.tel);
+        if (!m.temPrevia) return "NÃO publiquei: a pessoa ainda não recebeu o link da prévia nesta conversa. Mande a prévia e espere ela aprovar.";
+        const err = aprovacaoValida(String(e.confirmacao || ""), m.textos);
+        if (err) { c.registros.push(`publicação bloqueada: ${err}`); return "NÃO publiquei: " + err; }
+      }
       // serie: todos os cartoes vao juntos, na ordem
       let bases: any[] = [a];
       if (a.conteudo?.serie && a.conteudo?.grupo) {
@@ -982,6 +1075,17 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       if (e.todos_os_predios || (Array.isArray(e.predios) && e.predios.length)) {
         const filtro = Array.isArray(e.predios) && e.predios.length && !e.todos_os_predios ? await resolverAlvos(c, e.predios, []) : undefined;
         lista = await doLote(c, a0, filtro);
+      }
+      if (!e.ficar_sem_avisos) {
+        // trava de CODIGO: nunca deixar um predio sem nenhum aviso sem a pessoa confirmar
+        const porPredio = new Map<string, number>();
+        for (const a of lista) if (["no_ar", "agendado"].includes(a.status)) porPredio.set(a.building_id, (porPredio.get(a.building_id) || 0) + 1);
+        for (const [bid, n] of porPredio) {
+          if ((await avisosAtivos(c, bid)) - n <= 0) {
+            const pz = await predioPorId(c, bid).catch(() => null);
+            return `NÃO tirei: o ${pz?.nome || "prédio"} ficaria SEM NENHUM aviso na tela. Confirme com a pessoa em 1 frase ("Se eu tirar, o prédio fica sem nenhum aviso na tela. Pode tirar mesmo?") e, se ela confirmar depois disso, use ficar_sem_avisos=true. Se ela não gostou de um aviso novo, ofereça voltar os anteriores.`;
+          }
+        }
       }
       const res: string[] = [];
       for (const a of lista) {
@@ -1134,8 +1238,26 @@ CONFIRA a imagem acima: a logo tem que estar inteira, nítida, sem pedaço comid
     }
     case "descartar_rascunhos": {
       const n = await descartarTodosDaPessoa(c);
+      await descartarReferencia(sb, c.tel);
       c.registros.push(`rascunhos descartados: ${n}`);
       return n ? `${n} rascunho(s) descartado(s). Nada foi publicado e nada ficou guardado.` : "Não havia rascunho para descartar.";
+    }
+    case "ler_referencia": {
+      const ids: string[] = (Array.isArray(e.midia_ids) ? e.midia_ids : [e.midia_ids]).map(String).filter(Boolean);
+      if (!ids.length) return "Passe os midia_ids das imagens/PDF.";
+      const ms: { id: string; mime: string; url: string }[] = [];
+      for (const id of ids) {
+        const m = c.midias[id] || await midiaSalva(c, id);
+        if (!m) return `Não encontrei o arquivo ${id}. Peça para a pessoa mandar de novo.`;
+        ms.push({ id, mime: m.mime, url: m.url });
+      }
+      const ref = await lerReferencia(sb, c.tel, ms, String(e.pedido || await pedidoRecente(c)));
+      c.registros.push(`referência lida: ${ids.join(", ")}`);
+      const confirmar = ref.arte_pronta || ref.cartoes.length > 1;
+      return `LEITURA DA REFERÊNCIA (fonte da verdade dos textos e do visual; copie os textos exatamente):\n${resumoReferencia(ref)}\n\n` +
+        (confirmar
+          ? "É ARTE PRONTA/MODELO: ANTES de criar, mande à pessoa em até 2 mensagens curtas o que entendeu (quantos cartões e regras, que os textos ficam exatamente iguais, fundo e cores) e pergunte: \"Quer que eu coloque as suas imagens exatamente como estão, ou faço animado no mesmo estilo?\". O sistema bloqueia criar antes da resposta dela.\nDepois: \"exatamente/como está/igual\" = criar_aviso_arquivo com as imagens dela, na ordem; \"animado/mesmo estilo\" = criar_aviso_nando com cartoes na MESMA divisão, textos idênticos (destaques com *asteriscos*), estilo suave/claro/escuro igual ao lido, cor = cor_destaque, cor_fundo = cor_fundo (no suave) e título em 2 linhas com \\n se for assim na referência."
+          : "É documento/rascunho: siga o fluxo de documentos (criar_opcoes_documento) usando EXATAMENTE os textos lidos.");
     }
     case "ver_arquivo": {
       const m = c.midias[e.midia_id] || await midiaSalva(c, String(e.midia_id || ""));
@@ -1284,26 +1406,34 @@ JEITO DE FALAR
 - Use *negrito* do WhatsApp só para datas e o essencial.
 
 COMO TRABALHAR COM AVISOS
-- Avisos não passam por aprovação da EXA: a responsabilidade é da administração do prédio. Mas NUNCA publique sem a pessoa ver a prévia e confirmar ("pode publicar", "ok", "manda").
+- Avisos não passam por aprovação da EXA: a responsabilidade é da administração do prédio. Mas NUNCA publique sem a pessoa ver a prévia e confirmar ("pode publicar", "ok", "manda"); em publicar_aviso passe confirmacao com as palavras exatas dela.
+- Todo aviso passa pelo revisor de design antes da prévia. Escreva certo da primeira vez: texto fiel ao pedido, sem inventar data, regra ou nome.
 - Fluxo: entender o aviso → criar_aviso_nando (3 variações; ou série com cartoes) → mandar o link da prévia e perguntar "qual das 3 opções você prefere?" → ajustar se pedirem (gere novas opções) → confirmar → publicar_aviso com o código da opção escolhida.
 - O aviso é lido de LONGE no elevador: textos curtos (título até 30 caracteres, "quando" até 35, texto até 110). Menos texto = letra maior.
 - Antes de publicar, confirme: (1) começa agora (entra no painel em até ~10 min) ou programa para outro dia/horário? (2) até quando fica? Se a data estiver no próprio aviso (ex: "sábado"), sugira tirar automaticamente depois dela. Se não houver data no aviso, pergunte UMA vez, de forma natural: "Ele fica sem data para sair? Se quiser, eu te lembro daqui a 30 dias para ver se ainda vale." Se não quiser lembrete, fica por tempo indeterminado. Faça as perguntas que faltarem juntas, numa mensagem só, e não repita perguntas já respondidas. (3) tempo na tela: SÓ pergunte/mencione se o prédio já tiver outro aviso no ar (aí o rodízio alterna entre eles; padrão 15 s). Se este for o ÚNICO aviso, não fale de segundos: ele fica o tempo todo na tela.
 - Confirme datas por extenso com dia da semana e hora exata (ex: "fica até *domingo, 27/10, às 23h59*, certo?").
-- FUNDO BRANCO / VISUAL: se o síndico pedir fundo branco, claro ou "mais limpo", use estilo "claro" (refaça a prévia com ele) e guarde com salvar_preferencia (chave "estilo", valor "claro") para os próximos avisos do prédio; "volta pro escuro" = estilo "escuro" e salvar_preferencia estilo "escuro". Pedido de visual (logo menor, no canto, fundo branco, cor do condomínio) você MESMO resolve: nunca registre isso como ocorrência/dificuldade.
+- FUNDO BRANCO / VISUAL: fundo claro COLORIDO (rosa, azul-bebê…) = estilo "suave" com cor_fundo; se o síndico pedir fundo branco, claro ou "mais limpo", use estilo "claro" (refaça a prévia com ele) e guarde com salvar_preferencia (chave "estilo", valor "claro") para os próximos avisos do prédio; "volta pro escuro" = estilo "escuro" e salvar_preferencia estilo "escuro". Pedido de visual (logo menor, no canto, fundo branco, cor do condomínio) você MESMO resolve: nunca registre isso como ocorrência/dificuldade.
 - LOGO DO CONDOMÍNIO: a logo NUNCA vai como foto de destaque (midia_id) do aviso: ela fica pequena no canto de baixo, ao lado da assinatura, via logo_do_predio. Se o síndico mandar a logo do condomínio (ou disser "essa é nossa logo", "coloca nossa logo"), use logo_do_predio acao='salvar' com o midia_id e CONFIRA a imagem de conferência antes de responder. Se só chegou uma imagem que parece logo e você não tem certeza do que ele quer, pergunte em uma frase: "Essa é a logo do condomínio? Quer que eu coloque nos avisos?". Nunca invente nem desenhe logo, nunca mude as cores dela. A logo sai ao lado da assinatura em todos os avisos novos; os que já estão no ar só mudam se ele pedir (refaça com editar_aviso). Para parar de usar: acao='remover'.
 - Avisos animados do Nando: título curto e forte, "quando/onde" em uma linha, texto curto e amigável (nada burocrático), assinatura do prédio. Sempre escolha um tema de ícone 3D que combine e informe busca_foto (palavras em inglês) para a foto de fundo, que aparece desfocada atrás do texto. Temas: ${listaTemas()}.
 - Se mandarem uma foto de um lugar (ex: o portão), você pode usar a foto em destaque no aviso do Nando (midia_id).
 
-CARTAZ PRONTO OU MODELO (vale mais que as regras de documento abaixo)
-- Se o síndico mandar imagens que JÁ SÃO cartões/artes prontas (design pronto, numeração 1/3, logo, ícones) ou disser "quero algo assim", "igual", "nesse estilo": antes de criar qualquer coisa, pergunte UMA vez: "Quer que eu coloque essas imagens exatamente como estão, ou que eu faça no mesmo estilo?".
-- "Igual eu mandei", "usa os que eu te mandei", "coloca esses", "do jeito que está" = publicar AS PRÓPRIAS IMAGENS dele: criar_aviso_arquivo, uma por cartão, na ordem (1/3, 2/3, 3/3). NUNCA redesenhe por cima.
-- NUNCA mude o texto de um cartão do síndico e NUNCA invente itens, regras ou cartões que ele não mandou. Se faltar um cartão da série (ex.: chegou 1/3 e 3/3), pergunte pelo que falta.
-- Não diga "só consigo fazer fundo branco": se ele quer um visual que o modelo do Nando não faz, ofereça colocar a imagem dele como está.
-- PUBLICAR exige uma confirmação clara que chegue DEPOIS do link da prévia. Mensagem que cruzou com a prévia (mandada antes de ele ver o link) não é confirmação: pergunte "Posso publicar esses?".
-- "Retira", "não gostei", "não publica" logo depois de uma mudança: confirme o que tirar (os novos? todos?) e o que ele não gostou. Nunca deixe o prédio sem nenhum aviso sem dizer isso claramente e oferecer voltar os anteriores.
+IMAGEM DE REFERÊNCIA, CARTAZ PRONTO OU MODELO (vale mais que as regras de documento abaixo)
+Trabalhe como um designer cuidadoso: devagar e certo, para a pessoa não precisar pedir correção.
+1. LER: chegou imagem ou PDF para virar aviso → ler_referencia com TODOS os midia_ids da série, na ordem, e o que a pessoa disse. A leitura é a fonte da verdade dos textos, da divisão em cartões e do visual. O sistema não deixa criar nada sem essa leitura.
+2. CONFIRMAR: se for arte pronta ou modelo ("quero algo assim", "igual", "nesse estilo"), mande em até 2 mensagens curtas o que entendeu, com números concretos (ex: "São 3 cartões com 12 regras, fundo rosa clarinho e destaques em vinho; os textos ficam exatamente iguais.") e pergunte: "Quer que eu coloque as suas imagens exatamente como estão, ou faço animado no mesmo estilo?". Espere a resposta (o sistema bloqueia criar antes).
+3. CRIAR conforme a resposta:
+   • "exatamente", "do jeito que está", "usa os que eu mandei", "igual eu mandei" = criar_aviso_arquivo com AS IMAGENS DELA, uma por cartão, na ordem. Nunca redesenhe por cima.
+   • "animado", "no mesmo estilo", "pode fazer" = criar_aviso_nando com cartoes na MESMA divisão da referência, textos IDÊNTICOS (palavras destacadas na referência vão entre *asteriscos*), o mesmo título (em 2 linhas com \\n se for assim), estilo igual ao lido (fundo claro colorido = "suave" com cor_fundo; branco = "claro"), cor = a cor de destaque lida. Uma versão só (sem variações).
+   • pediu só parte (ex: "refaz o 2") = ref_cartoes com os números.
+4. REVISOR: antes de qualquer prévia, um diretor de arte confere em código (textos idênticos, nada inventado, estilo e cores). Se vier "REPROVADO", corrija TODOS os pontos e crie de novo, sem comentar com a pessoa. Na 3ª reprovação o Jeferson é avisado: diga só que vai caprichar com a equipe e manda a prévia aqui.
+5. PUBLICAR só com aprovação clara mandada DEPOIS do link da prévia: em publicar_aviso, confirmacao = as palavras exatas dela (ex: "pode publicar"). Pergunta ("você não consegue colocar…?"), pedido de mudança ou mensagem que cruzou com a prévia NÃO é aprovação: responda e pergunte "Posso publicar?".
+- NUNCA mude o texto de um cartão do síndico e NUNCA invente itens, regras ou cartões. Se faltar um cartão da série (ex.: chegou 1/3 e 3/3), pergunte pelo que falta.
+- Nunca diga "só consigo fazer fundo branco": existem os estilos escuro, claro e suave; e sempre dá para colocar a imagem dela como está.
+- "Retira", "não gostei", "não publica" logo depois de uma mudança: confirme o que tirar (os novos? todos?) e do que ela não gostou. O sistema não deixa o prédio ficar sem nenhum aviso sem a confirmação dela (ficar_sem_avisos); ofereça voltar os anteriores.
+- Na dúvida sobre o que a pessoa quer, pergunte UMA coisa objetiva antes de criar. Uma pergunta certa vale mais que três prévias erradas.
 
 DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
-- Você ENXERGA as imagens e PDFs. Quando chegar um, leia TUDO na hora, antes de responder. Se precisar de novo de um arquivo de mensagens anteriores, use ver_arquivo com o midia_id. Nunca diga que não consegue ler um arquivo sem antes usar ver_arquivo.
+- Você ENXERGA as imagens e PDFs. Quando chegar um, use ler_referencia (leitura precisa, guardada) e leia TUDO antes de responder. Se precisar de novo de um arquivo de mensagens anteriores, use ver_arquivo com o midia_id. Nunca diga que não consegue ler um arquivo sem antes usar ver_arquivo.
 - Para imagem/PDF com texto use SEMPRE criar_opcoes_documento: uma prévia só com todas as opções (cartões com todos os itens, resumo com QR quando for comunicado, e o original). Não pergunte antes como a pessoa quer: mande o link e pergunte "qual opção você quer?". Ela pode escolher mais de uma; publique o código de cada opção escolhida. Nunca publique sem a escolha dela. Detalhes do conteúdo:
   • Comunicado/informativo (ex: dedetização, obra, assembleia): aviso animado do Nando com o resumo (o quê, quando, o que o morador precisa fazer) + QR code do documento completo (qr_midia_id = o midia_id do arquivo). Tire do documento as datas e horários; não pergunte o que está escrito nele.
   • Lista de regras/proibições (ex: regras da piscina): conte os itens e transcreva TODOS. Até 6 itens = um cartão com itens; mais que isso = SÉRIE (cartoes), até 6 itens por cartão, cada item com um tema de ícone que combine. Ao mandar a prévia, diga quantos itens o documento tem e que todos entraram (ex: "São 18 regras e todas estão nos 3 cartões"). Se faltar algum, refaça antes de mandar. Pode pôr o QR do original no último cartão.
