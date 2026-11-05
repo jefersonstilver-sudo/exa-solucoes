@@ -4,6 +4,7 @@
 // Só admin/super_admin (JWT do site). O token da ClickSign fica no servidor (CLICKSIGN_ACCESS_TOKEN).
 // POST { fonte?: "v3" | "v1" | "ambas", pagina_ini?: number, paginas?: number }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
@@ -42,7 +43,17 @@ async function envelopesV3(token: string, ini: number, paginas: number) {
     let signatarios: any[] = [], documentos: any[] = [], erro: string | null = null;
     try {
       const s = await getJson(`${BASE}/api/v3/envelopes/${e.id}/signers`, h);
-      signatarios = (s?.data || []).map((x: any) => ({ nome: x.attributes?.name, email: x.attributes?.email, telefone: x.attributes?.phone_number, assinou_em: x.attributes?.signed_at || null }));
+      // a API v3 não traz signed_at no signatário: a assinatura real vem dos eventos "sign" do envelope
+      const assinou = new Map<string, string>();
+      if (a.status === "running" || a.status === "closed") {
+        const ev = await getJson(`${BASE}/api/v3/envelopes/${e.id}/events`, h).catch(() => ({ data: [] }));
+        for (const x of ev?.data || []) if (x.attributes?.name === "sign") {
+          const em = String(x.attributes?.data?.signer?.email || "").toLowerCase();
+          if (em) assinou.set(em, x.attributes?.created);
+        }
+      }
+      signatarios = (s?.data || []).map((x: any) => ({ nome: x.attributes?.name, email: x.attributes?.email, telefone: x.attributes?.phone_number,
+        assinou_em: assinou.get(String(x.attributes?.email || "").toLowerCase()) || (a.status === "closed" ? a.modified : null) }));
     } catch (err) { erro = "signatários: " + (err as Error).message; }
     try {
       const d = await getJson(`${BASE}/api/v3/envelopes/${e.id}/documents`, h);
@@ -121,6 +132,41 @@ async function importar(sb: any, token: string, b: any, quem: string) {
   return json(200, { ok: true, predio: predio.nome, arquivo_assinado: assinado, bytes: bytes.length, envelope_status: ea.status, contrato: linha });
 }
 
+// DETALHE (conciliação): situação real de cada signatário + texto do contrato (empresa, valores) de até 10 envelopes.
+// Só leitura. body: { acao: "detalhe", envelope_ids: string[] }
+async function detalhe(token: string, ids: string[]) {
+  const h = { Accept: "application/vnd.api+json", Authorization: token };
+  return await emLotes(ids.slice(0, 10), 3, async (raw) => {
+    const id = String(raw).replace(/[^0-9a-f-]/gi, "");
+    const out: any = { id };
+    try {
+      const e = await getJson(`${BASE}/api/v3/envelopes/${id}`, h);
+      out.envelope = { nome: e?.data?.attributes?.name, status: e?.data?.attributes?.status, criado: e?.data?.attributes?.created, prazo: e?.data?.attributes?.deadline_at };
+      const s = await getJson(`${BASE}/api/v3/envelopes/${id}/signers`, h);
+      out.signatarios = (s?.data || []).map((x: any) => ({ id: x.id, ...x.attributes }));
+      const ev = await getJson(`${BASE}/api/v3/envelopes/${id}/events`, h).catch((er: Error) => ({ erro: er.message }));
+      out.eventos = Array.isArray(ev?.data) ? ev.data.map((x: any) => ({ nome: x.attributes?.name, criado: x.attributes?.created, dados: JSON.stringify(x.attributes?.data || {}).replace(/"(documentation|birthday)":"[^"]*"/g, '"$1":"•"').slice(0, 300) })) : ev;
+      const docs = await getJson(`${BASE}/api/v3/envelopes/${id}/documents`, h);
+      const d = (docs?.data || [])[0];
+      if (d) {
+        let det = d;
+        let url = d.links?.files?.signed || d.links?.files?.original;
+        if (!url) { det = (await getJson(`${BASE}/api/v3/envelopes/${id}/documents/${d.id}`, h))?.data || d; url = det.links?.files?.signed || det.links?.files?.original; }
+        out.arquivo = det.attributes?.filename;
+        if (url) {
+          const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
+          if (r.ok) {
+            const pdf = await getDocumentProxy(new Uint8Array(await r.arrayBuffer()));
+            const { text } = await extractText(pdf, { mergePages: true });
+            out.texto = String(text || "").replace(/\s+/g, " ").slice(0, 6000);
+          }
+        }
+      }
+    } catch (er) { out.erro = (er as Error).message; }
+    return out;
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   try {
@@ -135,6 +181,22 @@ Deno.serve(async (req) => {
 
     const b = await req.json().catch(() => ({}));
     if (b.acao === "importar") return await importar(sb, token, b, u.user.email || "admin");
+    // CANCELAR envelopes de teste (pedido explícito do Jeferson, 05/11/2026). Só envelopes "running" e só os ids enviados.
+    if (b.acao === "cancelar") {
+      const ids = (Array.isArray(b.envelope_ids) ? b.envelope_ids : []).slice(0, 20).map((x: any) => String(x).replace(/[^0-9a-f-]/gi, ""));
+      const h = { Accept: "application/vnd.api+json", "Content-Type": "application/vnd.api+json", Authorization: token };
+      const res = [];
+      for (const id of ids) {
+        try {
+          const e = await getJson(`${BASE}/api/v3/envelopes/${id}`, h);
+          if (e?.data?.attributes?.status !== "running") { res.push({ id, ok: false, motivo: "não está em andamento: " + e?.data?.attributes?.status }); continue; }
+          const r = await fetch(`${BASE}/api/v3/envelopes/${id}/cancel`, { method: "PATCH", headers: h });
+          res.push({ id, nome: e?.data?.attributes?.name, ok: r.ok, motivo: r.ok ? null : (await r.text()).slice(0, 200) });
+        } catch (er) { res.push({ id, ok: false, motivo: (er as Error).message }); }
+      }
+      return json(200, { ok: true, itens: res });
+    }
+    if (b.acao === "detalhe") return json(200, { ok: true, itens: await detalhe(token, Array.isArray(b.envelope_ids) ? b.envelope_ids : []) });
     const fonte = ["v3", "v1"].includes(b.fonte) ? b.fonte : "v3";
     const ini = Math.max(1, Number(b.pagina_ini) || 1);
     const paginas = Math.min(10, Math.max(1, Number(b.paginas) || 4));
