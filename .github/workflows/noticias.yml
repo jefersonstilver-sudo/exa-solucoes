@@ -45,20 +45,24 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      NOTICIAS_PUBLICAR: ${{ github.event.inputs.publicar == 'nao' && '0' || '1' }}
-      QUAIS: ${{ github.event.inputs.quais || 'brasil e foz' }}
-      INCLUIR: ${{ github.event.inputs.incluir || '' }}
+      IN_PUBLICAR: ${{ github.event.inputs.publicar || 'sim' }}
+      IN_QUAIS: ${{ github.event.inputs.quais || 'brasil e foz' }}
+      IN_INCLUIR: ${{ github.event.inputs.incluir || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: tools/noticias
-      - name: Opções do disparo por arquivo
-        if: github.event_name == 'push'
+      - name: Opções da rodada
         run: |
-          v(){ grep -E "^$1=" disparo.txt | head -1 | cut -d= -f2- | tr -d '\r'; }
-          echo "NOTICIAS_PUBLICAR=$([ "$(v publicar)" = "nao" ] && echo 0 || echo 1)" >> $GITHUB_ENV
-          [ -n "$(v quais)" ] && echo "QUAIS=$(v quais)" >> $GITHUB_ENV
-          echo "INCLUIR=$(v incluir)" >> $GITHUB_ENV
+          P="$IN_PUBLICAR"; Q="$IN_QUAIS"; I="$IN_INCLUIR"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            v(){ grep -E "^$1=" disparo.txt | head -1 | cut -d= -f2- | tr -d '\r'; }
+            P="$(v publicar)"; Q="$(v quais)"; I="$(v incluir)"; [ -z "$Q" ] && Q="brasil e foz"
+          fi
+          echo "NOTICIAS_PUBLICAR=$([ "$P" = "nao" ] && echo 0 || echo 1)" >> $GITHUB_ENV
+          echo "QUAIS=$Q" >> $GITHUB_ENV
+          echo "INCLUIR=$I" >> $GITHUB_ENV
+          echo "Publicar: $P · Quais: $Q"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
