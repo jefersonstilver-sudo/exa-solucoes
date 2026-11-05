@@ -22,7 +22,7 @@ export const MODO_TESTE = (Deno.env.get("NANDO_MODO_TESTE") || "true").toLowerCa
 export const CADASTRO_ABERTO = (Deno.env.get("NANDO_CADASTRO_ABERTO") || "false").toLowerCase() === "true";
 export const INSTANCIA_PADRAO = "exa-nando-sindicos-mvmjft5q";
 // muda a cada versao publicada: GET /nando-webhook?action=versao mostra qual esta no ar
-export const NANDO_VERSAO = "2026-11-05.48-cartaz-pronto";
+export const NANDO_VERSAO = "2026-11-05.49-referencia-revisor";
 
 export function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);

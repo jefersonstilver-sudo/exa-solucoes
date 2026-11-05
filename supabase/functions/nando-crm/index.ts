@@ -8,9 +8,10 @@ import {
   enviarVideo, VIDEO_PAINEL_URL, LEGENDA_VIDEO_PAINEL, VIDEO_APRESENTACAO_URL,
 } from "../_shared/nando-core.ts";
 import { executar, type Contexto } from "../_shared/nando-agente.ts";
+import { lerReferencia, revisarAviso, aprovacaoValida } from "../_shared/nando-qualidade.ts";
 
 // ferramentas do Nando que a equipe pode usar pelo CRM na conversa de um sindico (nunca publica nem remove: isso so com o sindico)
-const FERRAMENTAS_CRM = ["logo_do_predio", "criar_aviso_nando", "criar_opcoes_documento", "listar_avisos", "salvar_preferencia", "ver_arquivo"];
+const FERRAMENTAS_CRM = ["logo_do_predio", "ler_referencia", "criar_aviso_nando", "criar_opcoes_documento", "listar_avisos", "salvar_preferencia", "ver_arquivo"];
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (status: number, b: unknown) => new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -195,6 +196,19 @@ Deno.serve(async (req) => {
 
     // ---------------- usar uma ferramenta do Nando na conversa do sindico (prepara; nao envia nada a ele) ----------------
     // ex.: preparar um aviso para o CEO aprovar antes de mandar ao sindico. O que foi feito fica no historico (papel sistema)
+    // ---------------- teste de qualidade do Nando (v49): le referencia e passa cartoes no revisor, SEM conversa e SEM criar aviso ----------------
+    // body: { midias: [{id,mime,url}], pedido, cartoes_teste: { nome: [dados...] }, aprovacoes: [{citacao, depois:[...]}] }
+    if (action === "teste_qualidade") {
+      const midias = Array.isArray(body.midias) ? body.midias.slice(0, 6) : [];
+      const ref = midias.length ? await lerReferencia(sb, "5500000000000", midias, String(body.pedido || "")) : null;
+      const revisoes: Record<string, unknown> = {};
+      for (const [nome, cartoes] of Object.entries(body.cartoes_teste || {})) {
+        revisoes[nome] = await revisarAviso({ pedido: String(body.pedido || ""), ref, cartoes: cartoes as any[] });
+      }
+      const aprov = (Array.isArray(body.aprovacoes) ? body.aprovacoes : []).map((x: any) => ({ citacao: x.citacao, erro: aprovacaoValida(String(x.citacao || ""), x.depois || []) }));
+      return json(200, { ok: true, ref, revisoes, aprovacoes: aprov });
+    }
+
     if (action === "ferramenta") {
       const nome = String(body.nome || "");
       if (!tel || !FERRAMENTAS_CRM.includes(nome)) return json(400, { error: "telefone e ferramenta permitida obrigatorios", permitidas: FERRAMENTAS_CRM });
