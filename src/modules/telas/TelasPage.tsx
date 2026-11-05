@@ -312,6 +312,10 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
     if (error) { toast.error(error.message); return; }
     if (!data) { toast.error('Não achei esse código', { description: 'Confira o número na TV. O código muda se a tela ficar 24 h sem ser conectada.' }); return; }
     setAchada(data); setPasso(3);
+    // a TV já disse como está instalada (escolha na primeira vez que o app abriu): começa por ela
+    const gf = Number((data as any)?.info?.giro_fisico);
+    if (gf === 0) setOrientacao('horizontal');
+    else if (gf === 90 || gf === 270) { setOrientacao('vertical'); setGiro(gf); }
   };
 
   const salvar = async () => {

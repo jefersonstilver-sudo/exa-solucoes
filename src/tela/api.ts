@@ -103,7 +103,20 @@ async function chamar(corpo: Record<string, unknown>, ms = 20000): Promise<any> 
 }
 
 export const iniciar = () => chamar({ acao: 'iniciar', plataforma: plataforma(), versao: versaoCompleta(), info: infoAparelho() });
-export const pedirEstado = (extra: Record<string, unknown>) => chamar({ acao: 'estado', versao: versaoCompleta(), plataforma: plataforma(), ...extra });
+/** Posição escolhida à mão na TV (menu do app ou primeira vez) que o admin ainda não sabe: vai no batimento e vira a configuração. */
+const posicaoPendente = (): { giro: number } | null => {
+  try {
+    if (!ponte?.giroPendente || !ponte.giroPendente()) return null;
+    const g = Number(ponte.giro());
+    return g === 0 || g === 90 || g === 270 ? { giro: g } : null;
+  } catch { return null; }
+};
+export const pedirEstado = async (extra: Record<string, unknown>) => {
+  const posicao = posicaoPendente();
+  const r = await chamar({ acao: 'estado', versao: versaoCompleta(), plataforma: plataforma(), ...extra, ...(posicao ? { posicao } : {}) });
+  if (posicao && r && (r as any).posicao_ok) { try { ponte.giroEnviado(); } catch { /* */ } }
+  return r;
+};
 
 export const reiniciarApp = () => {
   if (ponte?.reiniciarApp) { try { ponte.reiniciarApp(); return; } catch { /* cai no reload */ } }

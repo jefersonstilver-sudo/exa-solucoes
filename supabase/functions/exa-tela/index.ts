@@ -581,6 +581,19 @@ Deno.serve(async (req) => {
         }
       }
       if (b.comando_ok && tela.comando && String(b.comando_ok) === String(tela.comando_em)) { patch.comando = null; patch.comando_em = null; }
+      // posição escolhida à mão na própria TV (APK 1.0.9+): vira a configuração (deitada = horizontal; em pé = vertical + giro)
+      let posicaoOk = false;
+      if (b.posicao && [0, 90, 270].includes(Number((b.posicao as any).giro))) {
+        const g = Number((b.posicao as any).giro);
+        const cfg: Record<string, any> = { ...((tela.config as any) || {}) };
+        const vertLayout = /^(V\d|R)$/.test(String(tela.layout || ''));
+        if (g === 0) { cfg.orientacao = 'horizontal'; if (vertLayout) patch.layout = 'H6'; }
+        else { cfg.orientacao = 'vertical'; cfg.giro = g; if (!vertLayout) patch.layout = 'R'; }
+        patch.config = cfg;
+        tela.config = cfg;
+        if (patch.layout) tela.layout = patch.layout;
+        posicaoOk = true;
+      }
       if (Array.isArray(b.exibicoes) && b.exibicoes.length && tela.status === 'ativa') {
         await admin.rpc('exa_telas_somar_exibicoes', { p_tela: tela.id, p_itens: b.exibicoes.slice(0, 200) });
       }
@@ -598,7 +611,7 @@ Deno.serve(async (req) => {
             if (!error) { codigo = c; break; }
           }
         } else await admin.from('exa_telas').update(patch).eq('id', tela.id);
-        return json({ ok: true, pareada: false, codigo, tela_id: tela.id });
+        return json({ ok: true, pareada: false, codigo, tela_id: tela.id, posicao_ok: posicaoOk || undefined });
       }
 
       await admin.from('exa_telas').update(patch).eq('id', tela.id);
@@ -628,7 +641,7 @@ Deno.serve(async (req) => {
       const conteudo = { anuncios: prog.anuncios, casa: prog.casa, cameras: cams, noticias: nots, avisos };
       const versao = (await sha256(JSON.stringify({ l: tela.layout, c: tela.config, r: ritmo, n: tela.nome, a: prog.anuncios.map((x: any) => x.url), k: prog.casa.map((x: any) => x.url), av: avisos }))).slice(0, 16);
       return json({
-        ok: true, pareada: true, versao, servidor_agora: agora,
+        ok: true, pareada: true, versao, servidor_agora: agora, posicao_ok: posicaoOk || undefined,
         tela: { id: tela.id, nome: tela.nome, layout: tela.layout, ambiente: tela.ambiente, config: tela.config || {} },
         local: { id: building.id, nome: building.nome, bairro: building.bairro, segmento: building.segmento_local, tipo: building.tipo_local === 'comercio' ? 'comercio' : 'predio' },
         ritmo,

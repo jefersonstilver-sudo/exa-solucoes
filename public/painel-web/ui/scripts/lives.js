@@ -19,6 +19,9 @@
   // do quadro para o canvas a cada segundo (no Mali-G31 essa cópia de 1080p pesa). ?cam=0: câmera desligada.
   const TV = /[?&]tela=1(&|$)/.test(location.search);
   const SEM_CAMERA = TV && /[?&]cam=0(&|$)/.test(location.search);
+  // TV box: a câmera (1080p, 25 qps) não é desenhada direto — o vídeo fica escondido e um canvas 640x360 recebe
+  // CAM_FPS quadros por segundo. A imagem continua ao vivo, com bem menos trabalho para a placa de vídeo.
+  const CAM_FPS = TV ? Math.max(0, Math.min(25, Number((location.search.match(/[?&]camfps=(\d+)/) || [])[1] || 8))) : 0;
   const HLS_CONFIG = {
     enableWorker: true,
     startLevel: TV ? 0 : -1,
@@ -111,8 +114,9 @@
     st.canvas.height = 360;
     st.video.before(st.canvas);
     st.ctx = st.canvas.getContext("2d");
-    // guarda um quadro por segundo enquanto o video anda (na TV box só na hora da troca)
-    if (!TV) setInterval(guardarQuadro, 1000);
+    // guarda um quadro por segundo enquanto o video anda; na TV box o canvas É a câmera (CAM_FPS quadros/s)
+    if (CAM_FPS > 0) { document.documentElement.classList.add("cam-quadros"); setInterval(guardarQuadro, Math.round(1000 / CAM_FPS)); }
+    else if (!TV) setInterval(guardarQuadro, 1000);
     setInterval(vigiar, 2000);
     return true;
   };

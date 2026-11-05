@@ -221,7 +221,7 @@ class MainActivity : Activity() {
         val confirmar = {
             if (!feito) {
                 feito = true
-                prefs().edit().putInt("giro", g).putBoolean("giro_escolhido", true).apply()
+                prefs().edit().putInt("giro", g).putBoolean("giro_escolhido", true).putBoolean("giro_pendente", true).apply()
                 raiz.removeView(fundo); escolha = null
                 aplicarGiroNativo(intro, g); aplicarGiroNativo(menu, g)
                 depois()
@@ -588,7 +588,7 @@ class MainActivity : Activity() {
         linha1.addView(botao("Wi-Fi", u) { abrirTela(Settings.ACTION_WIFI_SETTINGS) })
         linha1.addView(botao("Data e hora", u) { abrirTela(Settings.ACTION_DATE_SETTINGS) })
         linha2.addView(botao("Atualizar navegador do sistema", u) { abrirLoja("com.google.android.webview") })
-        linha2.addView(botao("Orientação da tela", u) { fecharMenu(); mostrarEscolha { web?.reload() } })
+        linha2.addView(botao("Orientação da tela", u) { fecharMenu(); mostrarEscolha { intro.tocar(); focoSoNaFrente(true); criarWeb() } })
         linha2.addView(botao("Configurações", u) { abrirTela(Settings.ACTION_SETTINGS) })
         linha2.addView(botao("Sair do app", u) { sair() })
         menu.addView(linha1)
@@ -856,9 +856,33 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun giro(): Int = if (prefs().getBoolean("giro_escolhido", false)) giroSalvo() else -1
 
+        /**
+         * A posição que vale mudou (admin trocou horizontal/vertical): guarda, gira intro e menu e recomeça
+         * a tela do zero (intro inteira + página nova), já na posição nova.
+         */
+        @JavascriptInterface
+        fun definirGiro(g: Int) {
+            if (g != 0 && g != 90 && g != 270) return
+            h.post {
+                if (prefs().getBoolean("giro_escolhido", false) && giroSalvo() == g) return@post
+                prefs().edit().putInt("giro", g).putBoolean("giro_escolhido", true).putBoolean("giro_pendente", false).apply()
+                escolha?.let { raiz.removeView(it); escolha = null }
+                aplicarGiroNativo(intro, g); aplicarGiroNativo(menu, g)
+                intro.tocar(); focoSoNaFrente(true)
+                criarWeb()
+            }
+        }
+
+        /** A posição foi escolhida à mão na TV e ainda não foi para o admin (vai no próximo batimento). */
+        @JavascriptInterface
+        fun giroPendente(): Boolean = prefs().getBoolean("giro_pendente", false)
+
+        @JavascriptInterface
+        fun giroEnviado() { prefs().edit().putBoolean("giro_pendente", false).apply() }
+
         /** Mostra de novo a tela "Como esta TV está instalada?" (comando do admin ou menu). */
         @JavascriptInterface
-        fun escolherOrientacao() { h.post { mostrarEscolha { web?.reload() } } }
+        fun escolherOrientacao() { h.post { mostrarEscolha { intro.tocar(); focoSoNaFrente(true); criarWeb() } } }
 
         @JavascriptInterface
         fun orientar(giro: Int) {

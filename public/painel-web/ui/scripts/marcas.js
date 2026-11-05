@@ -2,6 +2,8 @@
 // Fonte: funcao exa2-marcas-tela (sistema EXA), cruzando os pedidos da playlist deste NUC com o cadastro.
 // Sem internet usa a ultima lista guardada (ate 7 dias). Sem marcas, a faixa nao aparece e o layout fica como antes.
 (function () {
+  // TV box (réplica com ?tela=1): sem a faixa de marcas passando (o espaço volta para avisos e câmera)
+  if (/[?&]tela=1(&|$)/.test(location.search)) return;
   var FN = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/exa2-marcas-tela";
   var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk";
   var CHAVE = "exa_marcas_v1";

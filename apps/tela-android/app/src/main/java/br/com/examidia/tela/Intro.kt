@@ -195,7 +195,7 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
     /** Some suavemente (a intro toca pelo menos uma vez inteira, ~2,8 s). */
     fun esconder(depois: (() -> Unit)? = null) {
         if (!tocando) { depois?.invoke(); return }
-        val falta = maxOf(0L, 2800L - (System.currentTimeMillis() - comecouEm))
+        val falta = maxOf(0L, 3800L - (System.currentTimeMillis() - comecouEm))
         postDelayed({
             animate().alpha(0f).scaleX(1.06f).scaleY(1.06f).setStartDelay(0).setDuration(800).setInterpolator(suave).setListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {

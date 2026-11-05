@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { apagar, gravar, iniciar, infoAparelho, ler, pedirEstado, plataforma, recarregar, reiniciarApp, versaoCompleta, type Estado } from './api';
 import { aquecer, estatisticas, limparTudo, sincronizar } from './cache';
-import { aplicarLeve, iniciarMedicao, modoLeve, retirarFluidez, saudeNativa } from './desempenho';
+import { aplicarLeve, iniciarMedicao, retirarFluidez, saudeNativa } from './desempenho';
 
 const abertoEm = Date.now();
 /** O que o monitor mostra sobre o aparelho: rede, cache de vídeos, há quanto tempo a tela está aberta, memória. */
@@ -54,7 +54,7 @@ const K_CMD = 'exa-tela-cmd-ok';
  * TV em pé: o palco é 1080×1920. A maioria dos TV box só manda imagem deitada; se a janela está deitada,
  * o palco gira (giro escolhido ao vincular: 90° ou 270°). Se o aparelho já sai em pé, não gira.
  */
-function Palco({ children, vertical = false, giro = 90, margem = 0 }: { children: React.ReactNode; vertical?: boolean; giro?: number; margem?: number }) {
+function Palco({ children, vertical = false, giro = 90, margem = 0, emPe = false }: { children: React.ReactNode; vertical?: boolean; giro?: number; margem?: number; emPe?: boolean }) {
   const [jan, setJan] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
     const f = () => setJan({ w: window.innerWidth, h: window.innerHeight });
@@ -64,9 +64,8 @@ function Palco({ children, vertical = false, giro = 90, margem = 0 }: { children
   const W = vertical ? 1080 : 1920;
   const H = vertical ? 1920 : 1080;
   const deitada = jan.w > jan.h;
-  // TV em pé (escolhida no aparelho): gira até o conteúdo horizontal (código de pareamento, avisos) — fica com faixas
-  const emPe = giroFisico();
-  const girar = deitada && (giro === 90 || giro === 270) && (vertical || (emPe !== null && emPe !== 0)) ? giro : 0;
+  // TV em pé ainda sem programação (código de pareamento): gira o conteúdo horizontal também — fica com faixas
+  const girar = deitada && (giro === 90 || giro === 270) && (vertical || emPe) ? giro : 0;
   const visW = girar ? H : W;
   const visH = girar ? W : H;
   // margem (% de cada lado) para TV que corta as bordas da imagem (overscan)
@@ -139,12 +138,17 @@ export const giroFisico = (): number | null => {
   } catch { return null; }
 };
 
-/** TV em pé: a posição escolhida no aparelho manda; sem ela, config.orientacao ou um layout vertical. */
-const ehVertical = (e: Estado | null) => {
-  if (!e?.pareada) return false;
-  const g = giroFisico();
-  if (g !== null) return g !== 0;
-  return e.tela?.config?.orientacao === 'vertical' || /^(V\d|R)$/.test(String(e.tela?.layout || ''));
+/** TV em pé: o que foi escolhido no admin (config.orientacao) ou um layout vertical. */
+const ehVertical = (e: Estado | null) => !!e?.pareada && (e.tela?.config?.orientacao === 'vertical' || /^(V\d|R)$/.test(String(e.tela?.layout || '')));
+
+/** Posição que a TV deve ter: com programação, a do admin; antes de parear, a escolhida no aparelho. */
+const giroDaTela = (e: Estado | null): number => {
+  if (e?.pareada) {
+    if (!ehVertical(e)) return 0;
+    const g = Number(e.tela?.config?.giro);
+    return g === 270 ? 270 : 90;
+  }
+  return giroFisico() ?? 0;
 };
 
 function Programacao({ e }: { e: Estado }) {
@@ -157,7 +161,7 @@ function Programacao({ e }: { e: Estado }) {
   const C = COMPONENTES[layout.id] || (vertical ? COMPONENTES.V2 : COMPONENTES.H1);
   const conteudo = <Protecao e={e}><C e={e} f={faixas} layout={layout} /></Protecao>;
   // TV em pé num prédio: a mesma tela do elevador daquele prédio (avisos do síndico inclusos)
-  if (vertical && e.local && e.local.tipo !== 'comercio') return <ReplicaElevador predioId={e.local.id} alternativa={conteudo} camera={typeof e.tela?.config?.camera === 'boolean' ? e.tela.config.camera : !modoLeve()} />;
+  if (vertical && e.local && e.local.tipo !== 'comercio') return <ReplicaElevador predioId={e.local.id} alternativa={conteudo} camera={e.tela?.config?.camera !== false} />;
   return conteudo;
 }
 
@@ -287,12 +291,19 @@ export default function App() {
     return () => { document.removeEventListener('visibilitychange', vis); document.removeEventListener('contextmenu', menu); document.removeEventListener('click', cheia); try { lock?.release(); } catch { /* */ } };
   }, []);
 
-  const fisico = giroFisico();
-  const giro = fisico !== null && fisico !== 0 ? fisico : Number(estado?.tela?.config?.giro);
-  const giroOk = [0, 90, 270].includes(giro) ? giro : 90;
   const vert = ehVertical(estado);
+  const giroAlvo = giroDaTela(estado);
+  // o admin mudou a orientação (ou o aparelho guardou outra): o app guarda a nova posição, gira a intro e
+  // recomeça a tela do zero (intro + página), já na posição certa. App antigo: só o Palco gira.
+  useEffect(() => {
+    const p: any = (window as any).ExaTela;
+    if (!estado?.pareada || !p?.definirGiro || !p?.giro) return;
+    // escolhida à mão na TV agora há pouco: o batimento leva para o admin; não desfaz
+    try { if (p.giroPendente && p.giroPendente()) return; } catch { /* */ }
+    try { if (Number(p.giro()) !== giroAlvo) p.definirGiro(giroAlvo); } catch { /* */ }
+  }, [estado?.pareada, giroAlvo]);
   return (
-    <Palco vertical={vert} giro={giroOk} margem={Number(estado?.tela?.config?.margem) || 0}>
+    <Palco vertical={vert} giro={giroAlvo || 90} emPe={!estado?.pareada && giroAlvo !== 0} margem={Number(estado?.tela?.config?.margem) || 0}>
       {estado?.pareada ? <Programacao e={estado} /> : <Pareamento codigo={codigo} online={online} erro={erro} />}
     </Palco>
   );
