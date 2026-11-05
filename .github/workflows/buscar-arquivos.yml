@@ -1,0 +1,37 @@
+name: buscar-arquivos
+# Baixa arquivos publicos (ex.: imagens do storage) para o branch "arquivos-temp", para o ambiente do Claude usar.
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: URLs separadas por espaco
+        required: true
+      pasta:
+        description: pasta de destino dentro do branch
+        required: true
+permissions:
+  contents: write
+jobs:
+  buscar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: baixar e publicar no branch arquivos-temp
+        env:
+          URLS: ${{ inputs.urls }}
+          PASTA: ${{ inputs.pasta }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          case "$PASTA" in *..*|/*) echo "pasta invalida"; exit 1;; esac
+          git init -q t && cd t
+          git config user.email "actions@github.com"; git config user.name "buscar-arquivos"
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          git fetch -q --depth 1 origin arquivos-temp && git checkout -q -b arquivos-temp FETCH_HEAD || git checkout -q --orphan arquivos-temp
+          mkdir -p "$PASTA"
+          for u in $URLS; do
+            case "$u" in https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/*) ;; *) echo "url fora da lista: $u"; exit 1;; esac
+            curl -fsSL --max-time 60 "$u" -o "$PASTA/$(basename "${u%%\?*}")"
+          done
+          git add -A && git commit -qm "arquivos: $PASTA" && git push -q origin arquivos-temp
