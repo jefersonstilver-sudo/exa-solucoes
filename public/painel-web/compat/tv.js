@@ -76,6 +76,8 @@
      */
     function duploBuffer() {
       try {
+        // desligado por padrão: no Zeta (Las Brisas, 05/11) o anúncio parou depois de 5 trocas. Só com ?duplo=1 na URL.
+        if (!/[?&]duplo=1(&|$)/.test(location.search)) return;
         if (window.__tvSemDuplo || typeof tocarProximo !== 'function' || typeof applyVisualMode !== 'function') return;
         var A = document.getElementById('video-propaganda');
         if (!A || !A.parentNode) return;
