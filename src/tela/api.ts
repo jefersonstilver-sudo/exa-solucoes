@@ -1,4 +1,5 @@
 import { ANON_KEY, FUNCAO, VERSAO_PLAYER } from './config';
+import { modoLeve, placaDeVideo } from './desempenho';
 
 export type Formato = 'h169' | 'h65' | 'v' | 'q';
 export interface ItemVideo {
@@ -26,7 +27,7 @@ export interface Estado {
   tela?: { id: string; nome: string | null; layout: string; ambiente: string; config: Record<string, any> };
   local?: { id: string; nome: string; bairro: string | null; segmento: string | null; tipo: string };
   ritmo?: Ritmo;
-  comando?: { tipo: string; em: string } | null;
+  comando?: { tipo: string; em: string; seg?: number; url?: string; caminho?: string } | null;
   anuncios?: ItemVideo[];
   casa?: ItemVideo[];
   cameras?: Camera[];
@@ -75,6 +76,8 @@ export const infoAparelho = () => {
     idioma: navigator.language,
     fuso: Intl.DateTimeFormat().resolvedOptions().timeZone,
     id_aparelho: ponte?.idAparelho ? safe(() => ponte.idAparelho()) : '',
+    gpu: placaDeVideo() || null,
+    leve: modoLeve(),
     ...(extra && typeof extra === 'object' ? extra : {}),
   };
 };

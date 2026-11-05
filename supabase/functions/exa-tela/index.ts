@@ -423,6 +423,25 @@ async function vigiar(admin: any) {
   return { telas: lista.length, mudancas: out };
 }
 
+/** Comando pendente da tela. "gravar:30" vira um envio assinado para o bucket privado telas-gravacoes. */
+async function comandoDaTela(admin: any, tela: any) {
+  const tipo = String(tela.comando || '');
+  if (!tipo.startsWith('gravar')) return { tipo, em: tela.comando_em };
+  const seg = Math.max(5, Math.min(60, Number(tipo.split(':')[1]) || 30));
+  const caminho = `${tela.id}/${String(tela.comando_em || Date.now()).replace(/[^0-9A-Za-z]/g, '').slice(0, 20)}.mp4`;
+  const { data, error } = await admin.storage.from('telas-gravacoes').createSignedUploadUrl(caminho, { upsert: true });
+  if (error || !data?.signedUrl) { console.error('[exa-tela] gravação', error); return { tipo: 'gravar', em: tela.comando_em, seg, caminho }; }
+  return { tipo: 'gravar', em: tela.comando_em, seg, caminho, url: data.signedUrl };
+}
+
+async function ehEquipe(admin: any, req: Request): Promise<boolean> {
+  const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const { data: u } = await admin.auth.getUser(jwt);
+  if (!u?.user) return false;
+  const { data: papeis } = await admin.from('user_roles').select('role').eq('user_id', u.user.id);
+  return (papeis || []).some((p: any) => ['super_admin', 'admin', 'diretora_operacoes', 'gestor_comercial'].includes(String(p.role)));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   if (req.method !== 'POST') return json({ ok: false, erro: 'use POST' }, 405);
@@ -554,7 +573,13 @@ Deno.serve(async (req) => {
       if (b.info && typeof b.info === 'object') patch.info = b.info;
       if (b.tocando && typeof b.tocando === 'object') patch.tocando = { ...b.tocando, em: agora };
       if (Array.isArray(b.erros)) patch.erros = b.erros.slice(-10).map((e: unknown) => limpa(e, 300));
-      if (b.saude && typeof b.saude === 'object') patch.saude = { ...b.saude, em: agora };
+      if (b.saude && typeof b.saude === 'object') {
+        patch.saude = { ...b.saude, em: agora };
+        // histórico da saúde (fluidez, CPU, temperatura, memória) a cada ~5 min, para o gráfico do admin
+        if (new Date().getUTCMinutes() % 5 === 0 && tela.status === 'ativa') {
+          await admin.from('exa_telas_eventos').insert({ tela_id: tela.id, tipo: 'saude', dados: { fluidez: (b.saude as any).fluidez ?? null, aparelho: (b.saude as any).aparelho ?? null, memoria_mb: (b.saude as any).memoria_mb ?? null, mbps: (b.saude as any).mbps ?? null, tocando: (b.tocando as any)?.titulo ?? null } });
+        }
+      }
       if (b.comando_ok && tela.comando && String(b.comando_ok) === String(tela.comando_em)) { patch.comando = null; patch.comando_em = null; }
       if (Array.isArray(b.exibicoes) && b.exibicoes.length && tela.status === 'ativa') {
         await admin.rpc('exa_telas_somar_exibicoes', { p_tela: tela.id, p_itens: b.exibicoes.slice(0, 200) });
@@ -607,9 +632,30 @@ Deno.serve(async (req) => {
         tela: { id: tela.id, nome: tela.nome, layout: tela.layout, ambiente: tela.ambiente, config: tela.config || {} },
         local: { id: building.id, nome: building.nome, bairro: building.bairro, segmento: building.segmento_local, tipo: building.tipo_local === 'comercio' ? 'comercio' : 'predio' },
         ritmo,
-        comando: tela.comando ? { tipo: tela.comando, em: tela.comando_em } : null,
+        comando: tela.comando ? await comandoDaTela(admin, tela) : null,
         ...conteudo,
       });
+    }
+
+    // ---------- equipe: gravações da tela e histórico da saúde ----------
+    if (acao === 'gravacoes') {
+      if (!(await ehEquipe(admin, req))) return json({ ok: false, erro: 'sem permissão' }, 403);
+      const id = String(b.tela_id || '');
+      const { data: evs } = await admin.from('exa_telas_eventos').select('criado_em, tipo, dados').eq('tela_id', id)
+        .in('tipo', ['gravacao', 'gravacao_inicio']).order('criado_em', { ascending: false }).limit(20);
+      const lista: any[] = [];
+      for (const e of evs || []) {
+        const d: any = e.dados || {};
+        let url: string | null = null;
+        if (e.tipo === 'gravacao' && d.ok && d.caminho) {
+          const { data } = await admin.storage.from('telas-gravacoes').createSignedUrl(String(d.caminho), 3600);
+          url = data?.signedUrl || null;
+        }
+        lista.push({ em: e.criado_em, tipo: e.tipo, ...d, url });
+      }
+      const { data: hist } = await admin.from('exa_telas_eventos').select('criado_em, dados').eq('tela_id', id).eq('tipo', 'saude')
+        .gte('criado_em', new Date(Date.now() - 24 * 3600000).toISOString()).order('criado_em', { ascending: true }).limit(400);
+      return json({ ok: true, gravacoes: lista, saude: hist || [] });
     }
 
     // ---------- diagnóstico da equipe (formato real das notícias/câmeras e prévia da programação) ----------

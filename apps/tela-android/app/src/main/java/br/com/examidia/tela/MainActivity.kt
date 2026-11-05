@@ -75,6 +75,12 @@ class MainActivity : Activity() {
     private lateinit var menuInfo: TextView
     private lateinit var dica: TextView
     private val h = Handler(Looper.getMainLooper())
+    private val gravador by lazy {
+        Gravador(this) { r ->
+            val js = "window.__gravacaoFim && window.__gravacaoFim(" + JSONObject.quote(r.toString()) + ")"
+            web?.evaluateJavascript(js, null)
+        }
+    }
 
     private var erroNaPagina = false
     private var esperandoResposta = false
@@ -110,6 +116,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         instalarReinicioEmFalha()
+        Diagnostico.vigiarQuadros()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or WindowManager.LayoutParams.FLAG_FULLSCREEN)
 
@@ -706,6 +713,10 @@ class MainActivity : Activity() {
                 .put("relogio", SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date()))
                 .put("ultima_queda", p.getString("ultima_queda", "") ?: "")
                 .put("ua", WebSettings.getDefaultUserAgent(this@MainActivity))
+            // hardware completo (como nos NUCs): processador, memória, armazenamento, tela, decodificadores, rede
+            val hw = Diagnostico.hardware(this@MainActivity)
+            val chaves = hw.keys()
+            while (chaves.hasNext()) { val k = chaves.next(); if (!j.has(k)) j.put(k, hw.get(k)) }
         } catch (_: Throwable) {}
         return j.toString()
     }
@@ -726,6 +737,21 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun infoAparelho(): String = this@MainActivity.infoAparelho()
+
+        /** Saúde do aparelho agora (CPU, temperatura, memória, Wi-Fi, quadros do app): o player manda a cada batimento. */
+        @JavascriptInterface
+        fun saudeNativa(): String = try { Diagnostico.saude(this@MainActivity).toString() } catch (_: Throwable) { "{}" }
+
+        /** Grava a tela por N segundos e envia para a URL assinada; o fim chega em window.__gravacaoFim(json). */
+        @JavascriptInterface
+        fun gravar(segundos: Int, urlEnvio: String, caminho: String): Boolean {
+            if (gravador.gravando) return false
+            h.post { gravador.gravar(segundos, urlEnvio, caminho) }
+            return true
+        }
+
+        @JavascriptInterface
+        fun podeGravar(): Boolean = Build.VERSION.SDK_INT >= 26
 
         /** O app desenha a intro: a página não precisa desenhar a dela. */
         @JavascriptInterface

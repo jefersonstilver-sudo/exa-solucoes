@@ -25,6 +25,9 @@ type Props = {
   children?: React.ReactNode;
 };
 
+/** poster transparente: sem ele o WebView desenha o ícone cinza de "play" antes do primeiro quadro */
+export const POSTER_VAZIO = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
 const casa = (area: Props['area'], f: string) =>
   (area === '16:9' && f === 'h169') || (area === '9:16' && f === 'v') || (area === '6:5' && (f === 'h65' || f === 'q'));
 
@@ -35,6 +38,9 @@ export default function Faixa({ itens, area, style, className, barra = true, pri
   const [pos, setPos] = useState(0);
   const [atual, setAtual] = useState<ItemFaixa | null>(itens[0] || null);
   const [ativo, setAtivo] = useState(0);
+  // o <video> que aparece: só troca quando o novo JÁ está tocando (o anterior fica parado no último quadro,
+  // nunca aparece tela preta nem dois vídeos misturados no meio da troca)
+  const [mostra, setMostra] = useState(0);
   const [dur, setDur] = useState(0);
   const [ciclo, setCiclo] = useState(0); // muda a cada item (reinicia a barra)
   const [, forcar] = useState(0);
@@ -84,6 +90,8 @@ export default function Faixa({ itens, area, style, className, barra = true, pri
         if (cur?.tipo !== 'video' && meu?.dataset.k === it.k) { /* mantém */ }
         // o próximo já está carregado no outro <video>: troca sem tela preta
         else if (outro?.dataset.k === it.k) setAtivo(1 - a);
+        // não deu tempo de pré-carregar: carrega no OUTRO <video> (o atual segue na tela até o novo tocar)
+        else if (cur?.tipo === 'video' && outro) { outro.dataset.k = ''; setAtivo(1 - a); }
         else if (meu) meu.dataset.k = '';
       }
       setPos(p); setAtual(it); setCiclo((c) => c + 1); setDur(0); inicio.current = Date.now();
@@ -112,7 +120,7 @@ export default function Faixa({ itens, area, style, className, barra = true, pri
     const v = atual.v;
     const src = fonte(v.url);
     let parado = 0, ultimoT = -1, acabou = false;
-    const ok = () => { falhasSeguidas.current = 0; };
+    const ok = () => { falhasSeguidas.current = 0; setMostra(ativo); if (outro && !outro.paused) outro.pause(); };
     const fim = (m: 'fim' | 'falha', erro?: string) => { if (acabou) return; acabou = true; if (erro) registrarErro(`${v.cliente || v.titulo}: ${erro}`); avancar(m); };
     const meta = () => {
       const d = (el.duration || v.duracao || 15) - (v.trim_inicio || 0) - (v.trim_fim || 0);
@@ -138,7 +146,8 @@ export default function Faixa({ itens, area, style, className, barra = true, pri
     el.muted = true;
     const p = el.play();
     if (p && typeof p.catch === 'function') p.catch((e) => { if (String(e?.name) !== 'AbortError') fim('falha', `play: ${e?.name || e}`); });
-    if (outro) { outro.pause(); }
+    // o outro só para quando este começar a tocar (ver ok); se este já está tocando, mostra na hora
+    if (!el.paused && el.readyState >= 3) ok();
     // vigia: travou (8 s sem andar) ou passou muito do tempo
     const vigia = setInterval(() => {
       if (el.paused && el.readyState >= 2) { el.play().catch(() => {}); }
@@ -198,7 +207,7 @@ export default function Faixa({ itens, area, style, className, barra = true, pri
     <div className={`faixa ${className || ''}`} style={style}>
       {mini && !cobre && <img className="fundo-desfocado on" src={mini} alt="" />}
       {refs.map((r, i) => (
-        <video key={i} ref={r} className={`v ${i === ativo && v ? 'on' : ''} ${cobre ? 'cobrir' : 'conter'}`} muted playsInline preload="auto" disablePictureInPicture />
+        <video key={i} ref={r} className={`v ${i === mostra && v ? 'on' : ''} ${cobre ? 'cobrir' : 'conter'}`} muted playsInline preload="auto" disablePictureInPicture disableRemotePlayback poster={POSTER_VAZIO} />
       ))}
       {atual && atual.tipo !== 'video' && especial && <div className="especial" key={atual.k}>{especial(atual, (falhou) => { if (atualRef.current?.k === atual.k) avancar(falhou ? 'falha' : 'fim'); })}</div>}
       {!atual && vazio}

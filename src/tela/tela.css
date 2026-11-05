@@ -29,9 +29,10 @@
 .faixa .fundo-desfocado { position: absolute; inset: -60px; width: calc(100% + 120px); height: calc(100% + 120px); object-fit: cover; filter: blur(46px) brightness(.5) saturate(1.2); opacity: 0; transition: opacity .4s; }
 .faixa .fundo-desfocado.on { opacity: 1; }
 .barra { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.15); z-index: 5; }
-.barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff4d5e, #ffc35a); animation-name: enche; animation-timing-function: linear; animation-fill-mode: forwards; }
+.barra i { display: block; height: 100%; width: 100%; transform-origin: 0 50%; -webkit-transform: scaleX(0); transform: scaleX(0); background: linear-gradient(90deg, #ff4d5e, #ffc35a); animation-name: enche; animation-timing-function: linear; animation-fill-mode: forwards; }
 .barra.fina { height: 4px; }
-@keyframes enche { from { width: 0; } to { width: 100%; } }
+/* v2: a barra anda por transform (antes animava width = refazia o layout a cada quadro) */
+@keyframes enche { from { -webkit-transform: scaleX(0); transform: scaleX(0); } to { -webkit-transform: scaleX(1); transform: scaleX(1); } }
 .especial { position: absolute; inset: 0; z-index: 3; }
 .entra { animation: entra .5s ease-out both; }
 @keyframes entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -62,3 +63,20 @@
 @keyframes esp-corre { to { left: 100%; } }
 .esp-frase { margin-top: 36px; font-size: 21px; font-weight: 700; letter-spacing: 11px; text-transform: uppercase; color: rgba(255,255,255,.8); animation: esp-respira 3.2s ease-in-out infinite; }
 @keyframes esp-respira { 50% { opacity: .55; } }
+
+/* sem controles nem ícones do WebView por cima do vídeo (ícone de som/play que aparece em TV box) */
+.palco video::-webkit-media-controls, .palco video::-webkit-media-controls-enclosure, .palco video::-webkit-media-controls-panel,
+.palco video::-webkit-media-controls-overlay-play-button, .palco video::-webkit-media-controls-start-playback-button,
+.palco video::-webkit-media-controls-overlay-enclosure, .palco video::-webkit-media-controls-mute-button { display: none !important; -webkit-appearance: none; opacity: 0 !important; }
+
+/* ===== modo leve (TV box fraca): nada de sombra, desfoque, esmaecer nem animação contínua ===== */
+.leve .vidro, .leve .vidro-escuro, .leve .clima-card { box-shadow: none !important; }
+.leve .faixa video.v { transition: none; }
+.leve .faixa .fundo-desfocado { filter: none; opacity: 0; transition: none; }
+.leve .faixa .fundo-desfocado.on { opacity: .28; }
+.leve .entra, .leve .troca { animation: none !important; }
+.leve .cam-video { animation: none; }
+.leve .ao-vivo i { animation: none; }
+.leve .palco * { text-shadow: none !important; }
+.leve .palco [style*="box-shadow"] { box-shadow: none !important; }
+.leve .palco img[style*="blur"] { filter: none !important; opacity: .25; }

@@ -10,6 +10,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { apagar, gravar, iniciar, infoAparelho, ler, pedirEstado, plataforma, recarregar, reiniciarApp, versaoCompleta, type Estado } from './api';
 import { aquecer, estatisticas, limparTudo, sincronizar } from './cache';
+import { aplicarLeve, iniciarMedicao, retirarFluidez, saudeNativa } from './desempenho';
 
 const abertoEm = Date.now();
 /** O que o monitor mostra sobre o aparelho: rede, cache de vídeos, há quanto tempo a tela está aberta, memória. */
@@ -30,6 +31,11 @@ function saudeAgora() {
     sem_cache: estatisticas.semCache || undefined,
     aberta_min: Math.round((Date.now() - abertoEm) / 60000),
     memoria_mb: mem?.usedJSHeapSize ? Math.round(mem.usedJSHeapSize / 1048576) : null,
+    memoria_limite_mb: mem?.jsHeapSizeLimit ? Math.round(mem.jsHeapSizeLimit / 1048576) : null,
+    // fluidez medida na própria tela (quadros por segundo, travadas, vídeo perdendo quadro ou parando)
+    fluidez: retirarFluidez(),
+    // o que só o app Android sabe: CPU, temperatura, memória do aparelho, Wi-Fi
+    aparelho: saudeNativa(),
   };
 }
 import { layoutDe, montarFaixas, urlsDoEstado } from './motor';
@@ -48,7 +54,7 @@ const K_CMD = 'exa-tela-cmd-ok';
  * TV em pé: o palco é 1080×1920. A maioria dos TV box só manda imagem deitada; se a janela está deitada,
  * o palco gira (giro escolhido ao vincular: 90° ou 270°). Se o aparelho já sai em pé, não gira.
  */
-function Palco({ children, vertical = false, giro = 90 }: { children: React.ReactNode; vertical?: boolean; giro?: number }) {
+function Palco({ children, vertical = false, giro = 90, margem = 0 }: { children: React.ReactNode; vertical?: boolean; giro?: number; margem?: number }) {
   const [jan, setJan] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
     const f = () => setJan({ w: window.innerWidth, h: window.innerHeight });
@@ -61,7 +67,9 @@ function Palco({ children, vertical = false, giro = 90 }: { children: React.Reac
   const girar = vertical && deitada && (giro === 90 || giro === 270) ? giro : 0;
   const visW = girar ? H : W;
   const visH = girar ? W : H;
-  const esc = Math.min(jan.w / visW, jan.h / visH);
+  // margem (% de cada lado) para TV que corta as bordas da imagem (overscan)
+  const m = Math.max(0, Math.min(8, Number(margem) || 0)) / 100;
+  const esc = Math.min(jan.w / visW, jan.h / visH) * (1 - 2 * m);
   return (
     <div className="palco-fora">
       <div className="palco" style={{ width: W, height: H, transform: `translate(-50%, -50%) rotate(${girar}deg) scale(${esc})` }}>{children}</div>
@@ -134,6 +142,19 @@ function Programacao({ e }: { e: Estado }) {
   return conteudo;
 }
 
+// ---------------------------------------------------------------- gravação da tela (app Android 1.0.5+)
+(window as any).__gravacaoFim = (s: string) => {
+  let r: any = null; try { r = JSON.parse(s); } catch { r = { ok: false, erro: 'resposta inválida' }; }
+  registrarEvento('gravacao', r);
+};
+function gravarTela(c: { tipo: string; em: string; seg?: number; url?: string; caminho?: string }) {
+  const p: any = (window as any).ExaTela;
+  if (!c.url || !c.caminho) { registrarEvento('gravacao', { ok: false, erro: 'sem endereço de envio' }); return; }
+  if (!p?.gravar || (p.podeGravar && !p.podeGravar())) { registrarEvento('gravacao', { ok: false, caminho: c.caminho, erro: p ? 'app sem gravação: instale a versão nova (examidia.com.br/baixar-tela)' : 'só o app Android grava a tela' }); return; }
+  try { const ok = p.gravar(Number(c.seg) || 30, c.url, c.caminho); registrarEvento('gravacao_inicio', { caminho: c.caminho, seg: c.seg, ok }); }
+  catch (e) { registrarEvento('gravacao', { ok: false, caminho: c.caminho, erro: String((e as Error)?.message || e) }); }
+}
+
 // ---------------------------------------------------------------- app
 export default function App() {
   const [estado, setEstado] = useState<Estado | null>(() => { const s = ler<Estado | null>(K_ESTADO, null); return s?.pareada ? s : null; });
@@ -141,6 +162,9 @@ export default function App() {
   const [online, setOnline] = useState(true);
   const [erro, setErro] = useState('');
   const token = useRef<string>(ler<string>(K_TOKEN, ''));
+  useEffect(() => { aplicarLeve(); iniciarMedicao(); }, []);
+  const leveCfg = estado?.tela?.config?.leve;
+  useEffect(() => { aplicarLeve(typeof leveCfg === 'boolean' ? leveCfg : null); }, [leveCfg]);
   const ultimoInfo = useRef(0);
 
   // ciclo de conversa com o servidor
@@ -181,6 +205,7 @@ export default function App() {
             registrarEvento('comando', r.comando);
             if (r.comando.tipo === 'limpar_cache') { await limparTudo(); recarregar(); return; }
             if (r.comando.tipo === 'reiniciar_app') { reiniciarApp(); return; }
+            if (r.comando.tipo === 'gravar') gravarTela(r.comando);
             recarregar(); return;
           }
           if (!r.comando) apagar(K_CMD);
@@ -238,7 +263,7 @@ export default function App() {
 
   const giro = Number(estado?.tela?.config?.giro);
   return (
-    <Palco vertical={ehVertical(estado)} giro={[0, 90, 270].includes(giro) ? giro : 90}>
+    <Palco vertical={ehVertical(estado)} giro={[0, 90, 270].includes(giro) ? giro : 90} margem={Number(estado?.tela?.config?.margem) || 0}>
       {estado?.pareada ? <Programacao e={estado} /> : <Pareamento codigo={codigo} online={online} erro={erro} />}
     </Palco>
   );

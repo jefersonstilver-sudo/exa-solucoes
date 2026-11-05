@@ -10,13 +10,14 @@ import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import {
   Plus, RefreshCw, MonitorPlay, Smartphone, Laptop, Terminal, Globe, Copy, ChevronRight, ChevronLeft, Check,
-  MoreHorizontal, Trash2, Unlink, RotateCcw, Eraser, Store, Settings2, LayoutTemplate, Pencil, Video,
+  MoreHorizontal, Trash2, Unlink, RotateCcw, Eraser, Store, Settings2, LayoutTemplate, Pencil, Video, Activity,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLayout } from './catalogo';
 import { EscolherCameras } from './EscolherCameras';
+import { SaudeTela } from './SaudeTela';
 
 const db = supabase as any;
 const LINKS = {
@@ -74,6 +75,7 @@ export default function TelasPage() {
   const [layoutDe, setLayoutDe] = useState<Tela | null>(null);
   const [localDe, setLocalDe] = useState<Tela | null>(null);
   const [camerasDe, setCamerasDe] = useState<Tela | null>(null);
+  const [saudeDe, setSaudeDe] = useState<Tela | null>(null);
 
   const telas = useQuery({
     queryKey: ['exa-telas'],
@@ -190,6 +192,7 @@ export default function TelasPage() {
                       <DropdownMenuItem onClick={() => setLayoutDe(t)}><LayoutTemplate className="mr-2 h-4 w-4" />Trocar layout</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setLocalDe(t)}><Settings2 className="mr-2 h-4 w-4" />Nome, local, vídeos da casa e ritmo</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setCamerasDe(t)}><Video className="mr-2 h-4 w-4" />Câmeras ao vivo</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSaudeDe(t)}><Activity className="mr-2 h-4 w-4" />Saúde, hardware e gravar a tela</DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => comando(t, 'recarregar', 'Recarregando a tela')}><RotateCcw className="mr-2 h-4 w-4" />Recarregar a tela</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => comando(t, 'limpar_cache', 'Limpando os vídeos guardados')}><Eraser className="mr-2 h-4 w-4" />Baixar os vídeos de novo</DropdownMenuItem>
@@ -225,6 +228,12 @@ export default function TelasPage() {
                 <dd className="font-semibold">{quando(t.ultimo_sinal)}</dd>
                 <dt className="text-[#6A6B70]">Internet</dt>
                 <dd className="truncate font-semibold">{(t as any).saude?.conexao ? `${(t as any).saude.conexao}${(t as any).saude.rtt ? ` · ${(t as any).saude.rtt} ms` : ''}` : '—'}</dd>
+                <dt className="text-[#6A6B70]">Fluidez</dt>
+                <dd className="truncate font-semibold">
+                  <button type="button" onClick={() => setSaudeDe(t)} className="underline decoration-dotted underline-offset-2">
+                    {(t as any).saude?.fluidez?.fps != null ? `${(t as any).saude.fluidez.fps} quadros/s · ${(t as any).saude.fluidez.video_pct_perdidos ?? 0}% perdidos` : 'ver saúde'}
+                  </button>
+                </dd>
                 <dt className="text-[#6A6B70]">Aparelho</dt>
                 <dd className="truncate font-semibold" title={t.info?.ua || ''}>{nomePlataforma(t.plataforma)}{t.info?.tela ? ` · ${String(t.info.tela).split('@')[0]}` : ''}</dd>
               </dl>
@@ -242,6 +251,7 @@ export default function TelasPage() {
 
       {adicionar && <AdicionarTela locais={locais.data || []} codigoInicial={(params.get('codigo') || '').replace(/\D/g, '').slice(0, 6)} onFechar={fecharAdicionar} onPronto={() => { fecharAdicionar(); recarregar(); }} />}
       {layoutDe && <EscolherLayout tela={layoutDe} predio={(locais.data || []).find((l) => l.id === layoutDe.building_id)?.tipo_local !== 'comercio'} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} onAtualizou={recarregar} />}
+      {saudeDe && <SaudeTela tela={(telas.data || []).find((x: Tela) => x.id === saudeDe.id) || saudeDe} onFechar={() => setSaudeDe(null)} onAtualizou={recarregar} />}
       {camerasDe && (
         <EscolherCameras titulo={camerasDe.nome || 'tela'} atual={camerasDe.config?.cameras} onFechar={() => setCamerasDe(null)}
           onSalvar={async (c) => {

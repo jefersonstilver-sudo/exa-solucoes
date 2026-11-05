@@ -201,7 +201,7 @@ export function CameraAoVivo({ cam, onFalha, onPronta }: { cam: Camera; onFalha?
   return (
     <>
       {!pronta && <div className="cam-vazia"><Icone nome="camera" tamanho={72} traco={1.4} /></div>}
-      <video ref={ref} className="cam-video" muted playsInline autoPlay style={{ opacity: pronta ? undefined : 0 }} />
+      <video ref={ref} className="cam-video" muted playsInline autoPlay disablePictureInPicture poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style={{ opacity: pronta ? undefined : 0 }} />
     </>
   );
 }
