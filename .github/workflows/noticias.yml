@@ -4,6 +4,12 @@ name: Noticias das telas (Brasil e Foz)
 # Publica direto no sistema (tools/noticias/publish-video.mjs) com a chave de serviço.
 # Disparo manual: Actions → "Noticias das telas" → Run workflow (publicar = nao só gera e guarda os vídeos).
 on:
+  # horários em UTC (Brasília = UTC-3). O GitHub costuma atrasar 5–30 min, por isso começa antes.
+  schedule:
+    - cron: "41 9 * * *"    # 06h41 — edição da manhã
+    - cron: "41 18 * * *"   # 15h41 — edição da tarde
+    - cron: "23 11 * * *"   # 08h23 — repescagem: só roda se a da manhã não subiu
+    - cron: "23 20 * * *"   # 17h23 — repescagem: só roda se a da tarde não subiu
   workflow_dispatch:
     inputs:
       publicar:
@@ -63,6 +69,13 @@ jobs:
           echo "QUAIS=$Q" >> $GITHUB_ENV
           echo "INCLUIR=$I" >> $GITHUB_ENV
           echo "Publicar: $P · Quais: $Q"
+          # repescagem: só gera o que estiver velho (principal com mais de 3 h)
+          if [ "${{ github.event.schedule }}" = "23 11 * * *" ] || [ "${{ github.event.schedule }}" = "23 20 * * *" ]; then
+            idade(){ curl -s "$SUPABASE_URL/rest/v1/pedido_videos?pedido_id=eq.$1&is_base_video=eq.true&select=created_at" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const t=Date.parse(JSON.parse(s)[0].created_at);console.log(Math.round((Date.now()-t)/36e5))}catch{console.log(999)}})'; }
+            NQ=""; [ "$(idade c08f3154-e0dc-4c39-b8a2-721d8acdde7f)" -ge 3 ] && NQ="brasil"; [ "$(idade 9cb8da99-ddb3-491c-b58c-63871eadc4cb)" -ge 3 ] && NQ="$NQ foz"
+            echo "Repescagem: precisa gerar [${NQ:-nada}]"
+            echo "QUAIS=${NQ:-nenhum}" >> $GITHUB_ENV
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
