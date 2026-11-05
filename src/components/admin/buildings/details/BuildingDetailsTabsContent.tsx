@@ -8,6 +8,7 @@ import AssignedPanelsTab from './AssignedPanelsTab';
 import AvailablePanelsTab from './AvailablePanelsTab';
 import BuildingActiveCampaignsTab from './BuildingActiveCampaignsTab';
 import BuildingLocationTab from './BuildingLocationTab';
+import BuildingContratoTab from './BuildingContratoTab';
 
 interface BuildingDetailsTabsContentProps {
   building: any;
@@ -45,8 +46,9 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
 
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="w-full max-md:flex max-md:justify-start max-md:overflow-x-auto max-md:[scrollbar-width:none] md:grid md:grid-cols-7 [&>button]:max-md:shrink-0 [&>button]:max-md:px-3">
+      <TabsList className="w-full max-md:flex max-md:justify-start max-md:overflow-x-auto max-md:[scrollbar-width:none] md:grid md:grid-cols-8 [&>button]:max-md:shrink-0 [&>button]:max-md:px-3">
         <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+        <TabsTrigger value="contrato">Contrato</TabsTrigger>
         <TabsTrigger value="location">Localização</TabsTrigger>
         <TabsTrigger value="campaigns">Programação</TabsTrigger>
         <TabsTrigger value="panels">Painéis ({panels?.length || 0})</TabsTrigger>
@@ -63,6 +65,10 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
           canAccessContacts={canAccessContacts}
           onRefresh={onRefresh}
         />
+      </TabsContent>
+
+      <TabsContent value="contrato" className="space-y-6">
+        {building?.id && <BuildingContratoTab buildingId={building.id} buildingName={building?.nome} />}
       </TabsContent>
 
       <TabsContent value="location" className="space-y-6">

@@ -34,6 +34,8 @@ interface BuildingCard3Props {
   onViewCampaigns?: (building: Building) => void;
   onViewPlaylist?: (building: Building) => void;
   videoCount?: number;
+  // contrato do prédio (exa2-contratos-predio › resumo): undefined = ainda carregando
+  contrato?: { contrato: boolean; pedido: string | null } | null;
 }
 
 const BuildingCard3: React.FC<BuildingCard3Props> = ({
@@ -42,7 +44,8 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
   onEdit,
   onImageManager,
   onDelete,
-  videoCount = 0
+  videoCount = 0,
+  contrato
 }) => {
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -157,6 +160,18 @@ const BuildingCard3: React.FC<BuildingCard3Props> = ({
                     </Badge>
                   )}
                   {building.tem_airbnb && <SeloAirbnb size="sm" />}
+                  {contrato !== undefined && building.status === 'ativo' && (
+                    <Badge
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); onView(building); }}
+                      title="Contrato do prédio (Ver › Contrato)"
+                      className={`text-[9px] px-1.5 py-0 h-4 cursor-pointer ${contrato?.contrato
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : contrato?.pedido ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-amber-50 text-amber-700 border-amber-300'}`}
+                    >
+                      {contrato?.contrato ? 'Contrato ✓' : contrato?.pedido === 'enviado' ? 'Contrato em assinatura' : contrato?.pedido ? 'Contrato pedido' : 'Sem contrato'}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center text-gray-500 text-xs mt-0.5">
                   <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />

@@ -675,3 +675,6 @@ verify_jwt = false
 
 [functions.exa2-clicksign-mapa]
 verify_jwt = false
+
+[functions.exa2-contratos-predio]
+verify_jwt = false
