@@ -77,6 +77,7 @@ jobs:
             export CINE_ESPERAR_PC=0
           fi
           export NOTICIAS_PUBLICAR=$([ "$PUB" = "sim" ] && echo 1 || echo 0); echo "publicar=$NOTICIAS_PUBLICAR"
+          if [ "$MODO" = "instagram" ]; then export CINE_SO_INSTAGRAM=1; MODO=cine; fi
           if [ "$MODO" = "sonda" ]; then xvfb-run -a node sonda.mjs; else node cine.mjs; fi
       - name: Guardar semana
         if: success() && steps.precisa.outputs.rodar == '1'

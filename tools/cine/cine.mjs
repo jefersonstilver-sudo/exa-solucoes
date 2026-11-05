@@ -101,22 +101,34 @@ async function avisarCeo(texto) {
     log(`Aviso ao CEO: HTTP ${r.status}`);
   } catch (e) { log(`Aviso ao CEO falhou: ${e.message}`); }
 }
+// sobe a versão Instagram no Storage e grava o link no envio semanal da Sofia (ela manda quando o cliente quiser)
+async function guardarInstagram(arq, rotulo) {
+  const caminho = `cine-instagram/${Date.now()}_Cine-Instagram-30s-${rotulo}.mp4`;
+  const up = await fetch(`${SUPA}/storage/v1/object/sofia-videos/${caminho}`, { method: "POST", signal: AbortSignal.timeout(300000),
+    headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "video/mp4", "x-upsert": "true" }, body: readFileSync(arq) });
+  if (!up.ok) throw new Error(`Storage HTTP ${up.status} ${(await up.text()).slice(0, 150)}`);
+  const url = `${SUPA}/storage/v1/object/public/sofia-videos/${caminho}`;
+  const r = await fetch(`${SUPA}/rest/v1/sofia_envio_semanal?pedido_id=eq.${PEDIDO}`, { method: "PATCH", signal: AbortSignal.timeout(60000),
+    headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ extra_url: url, extra_nome: `Cine Cataratas ${rotulo} - versão Instagram 30s`, extra_em: new Date().toISOString() }) });
+  log(`Versão Instagram guardada para a Sofia: HTTP ${r.status}`);
+}
 async function principalAtual() {
   const j = await sb(`/rest/v1/pedido_videos?pedido_id=eq.${PEDIDO}&is_base_video=eq.true&select=created_at,videos(nome)`);
   return j?.[0] ? { quando: new Date(j[0].created_at), nome: j[0].videos?.nome || "" } : null;
 }
 
-async function gravar(htmlPath, mp4) {
+async function gravar(htmlPath, mp4, dur = DUR) {
   if (existsSync(FR)) readdirSync(FR).forEach(f => unlinkSync(join(FR, f))); else mkdirSync(FR, { recursive: true });
   const b = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-dev-shm-usage", "--allow-file-access-from-files"] });
   const p = await b.newPage(); await p.setViewport({ width: W, height: H });
   await p.goto("file://" + htmlPath, { waitUntil: "load", timeout: 60000 });
   await p.waitForFunction(() => window.__ready === true, { timeout: 30000 }).catch(() => {});
   await p.evaluate(() => Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))));
-  for (let i = 0; i < FPS * DUR; i++) {
+  for (let i = 0; i < FPS * dur; i++) {
     await p.evaluate(s => window.__seek(s), i / FPS);
     await p.screenshot({ path: join(FR, `f-${String(i).padStart(5, "0")}.png`) });
-    if (i % 90 === 0) log(`  quadro ${i}/${FPS * DUR}`);
+    if (i % 90 === 0) log(`  quadro ${i}/${FPS * dur}`);
   }
   await b.close();
   execSync(`ffmpeg -v error -y -framerate ${FPS} -i "${FR}/f-%05d.png" -vf "scale=${W}:${H}:in_range=full:out_range=tv,format=yuv420p" -color_range tv -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -movflags +faststart -an "${mp4}"`, { stdio: "inherit" });
@@ -170,20 +182,31 @@ async function main() {
   // estreias primeiro; o resto na ordem do site
   filmes.sort((a, b) => (estreias.includes(b.title) ? 1 : 0) - (estreias.includes(a.title) ? 1 : 0));
 
-  const html = generateVerticalHtml(filmes, { estreias });
-  const htmlPath = saveVerticalHtml(html);
+  const SO_IG = process.env.CINE_SO_INSTAGRAM === "1";   // só a versão Instagram (não mexe nas telas)
   const mp4 = join(OUT, `Cine-VERTICAL-15s-${rotulo}.mp4`);
-  log("Gravando o vídeo (15 s)..."); await gravar(htmlPath, mp4); log(`Vídeo pronto: ${mp4}`);
+  if (!SO_IG) {
+    const htmlPath = saveVerticalHtml(generateVerticalHtml(filmes, { estreias }));
+    log("Gravando o vídeo (15 s)..."); await gravar(htmlPath, mp4); log(`Vídeo pronto: ${mp4}`);
+  }
+  // versão de 30 s para o Instagram do cinema (a Sofia oferece ao cliente) — falha aqui não atrapalha a publicação
+  let mp4ig = "";
+  try {
+    const hIg = saveVerticalHtml(generateVerticalHtml(filmes, { estreias, instagram: true, duracao: 30 }), "cinema-dooh-instagram.html");
+    mp4ig = join(OUT, `Cine-INSTAGRAM-30s-${rotulo}.mp4`);
+    log("Gravando a versão Instagram (30 s)..."); await gravar(hIg, mp4ig, 30); log(`Instagram pronto: ${mp4ig}`);
+  } catch (e) { log(`Aviso: versão Instagram falhou (${e.message})`); mp4ig = ""; }
   writeFileSync(join(OUT, "filmes.json"), JSON.stringify(filmes.map(({ poster, ...r }) => r), null, 1));
 
   const publicar = process.env.NOTICIAS_PUBLICAR !== "0";
-  if (publicar) {
+  if (SO_IG) { if (publicar && mp4ig) await guardarInstagram(mp4ig, rotulo); log("Só Instagram: telas não foram mexidas."); }
+  else if (publicar) {
     const titulo = `Cine Cataratas ${rotulo}${comHorarios ? "" : " sem horarios"}`;
     log(`Publicando "${titulo}" (troca só o vídeo do Cine)...`);
     try {
       execSync(`node "${join(__dirname, "..", "noticias", "publish-video.mjs")}" "${mp4}" "${titulo}" "${PEDIDO}"`, { stdio: "inherit", env: { ...process.env, LIMPAR_SO: "cine|cinema" } });
     } catch (e) { log(`ERRO na publicação (código ${e.status}).`); await avisarCeo(`O vídeo da semana foi gerado mas a publicação falhou (código ${e.status}). O cliente não foi avisado. Veja o GitHub Actions "Cine Cataratas".`); process.exit(2); }
     if (!comHorarios) await avisarCeo(`Publiquei o vídeo da semana SEM horários: o PC do escritório não entregou a leitura do site de ingressos (estava desligado?). Ao ligar o PC, rode "ENVIAR PROGRAMACAO CINE AGORA.bat" (pasta cinema-dooh) que a repescagem refaz com horários. O cliente não foi avisado de nada.`);
+    if (mp4ig) await guardarInstagram(mp4ig, rotulo).catch(e => log(`Aviso: não guardei a versão Instagram (${e.message})`));
   } else log("Teste: não publicado.");
   // guarda a semana para a próxima comparação
   writeFileSync(ANTERIOR, JSON.stringify({ timestamp: prevDaSemana ? prev.timestamp : new Date().toISOString(), base, movies: filmes.map(({ poster, trecho, ...r }) => r) }, null, 1));

@@ -79,8 +79,11 @@ export function generateVerticalHtml(movies, options = {}) {
   // nuvem 05/11: com 1–2 estreias, completa o destaque com filmes em cartaz (1 filme sozinho ficava 9 s parado)
   if (temEstreia && destaque.length < 3) destaque = destaque.concat(movies.filter((m) => !destaque.includes(m)).slice(0, 3 - destaque.length));
   destaque = destaque.slice(0, 4);
+  // 05/11/2026: versão Instagram (Reels 30 s): todos os filmes em tela cheia, sem grade e sem QR
+  const IG = !!options.instagram, DUR = Number(options.duracao || 15);
+  if (IG) destaque = destaque.concat(movies.filter((m) => !destaque.includes(m))).slice(0, 8);
   const ehNovo = (m) => novosSet.has(String(m.title).toUpperCase().trim());
-  const outros = movies.filter((m) => !destaque.includes(m)).slice(0, 6);
+  const outros = IG ? [] : movies.filter((m) => !destaque.includes(m)).slice(0, 6);
   const nOutros = movies.length - destaque.length;
 
   const N = destaque.length;
@@ -151,17 +154,20 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#07070a;font-fam
 #qr img{display:block;width:100%;height:auto}
 #qr .l{color:#111;text-align:center;font-weight:800;font-size:17px;letter-spacing:3px;padding:6px 0 4px}
 #flash{position:absolute;inset:0;background:#fff;z-index:40;opacity:0;pointer-events:none}
+${IG ? `/* Reels: legenda e botões do Instagram cobrem a parte de baixo — conteúdo sobe */
+.pwrap{top:220px;width:600px;height:910px;margin-left:-300px}.ftitle{top:1160px}.times{top:1385px}.meta{top:1510px}
+#end .q{bottom:640px}#end .loc{bottom:575px}` : ""}
 </style></head><body>
 <div class="layer" id="intro"><div class="k">CINE CATARATAS</div><div class="n">${introNum}</div><div class="w">${introPal}</div><div class="s">${introSub}</div></div>
 ${feats}
 <div class="layer" id="grid"><div class="k">TAMBÉM EM CARTAZ</div><div class="h">+${nOutros} filme${nOutros === 1 ? "" : "s"}</div><div class="cards">${grid}</div></div>
-<div class="layer" id="end"><img class="logo" src="${logo}"/><div class="h">Escolha o seu<br/>filme agora</div><div class="s">e garanta o lugar</div><div class="q">Ingressos pelo QR</div><div class="loc">JL SHOPPING · FOZ</div></div>
+<div class="layer" id="end"><img class="logo" src="${logo}"/><div class="h">Escolha o seu<br/>filme agora</div><div class="s">e garanta o lugar</div><div class="q">${IG ? "Ingressos no site do Cine Cataratas" : "Ingressos pelo QR"}</div><div class="loc">JL SHOPPING · FOZ</div></div>
 <div id="hdr"><img src="${logo}"/><div class="sep"></div><div class="t">EM CARTAZ<br/>${periodo()}</div></div>
-<div id="qr"><img src="${qr}"/><div class="l">INGRESSOS</div></div>
+<div id="qr"${IG ? ' style="display:none"' : ""}><img src="${qr}"/><div class="l">INGRESSOS</div></div>
 <div id="flash"></div>
 <script>
 const N=${N}, HAS_GRID=${outros.length > 0};
-const T_INTRO=1.3, T_GRID=HAS_GRID?10.5:12.9, T_END=12.9, CUR=0.38;
+const DUR=${DUR}, T_INTRO=DUR>15?1.6:1.3, T_END=DUR>15?DUR-3.5:12.9, T_GRID=HAS_GRID?10.5:T_END, CUR=0.38;
 const SLOT=(T_GRID-T_INTRO)/N;
 const $=s=>document.querySelector(s);
 const cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
