@@ -13708,6 +13708,59 @@ export type Database = {
         }
         Relationships: []
       }
+      predio_contratos: {
+        Row: {
+          arquivo_path: string
+          assinado_em: string | null
+          assinante_email: string | null
+          assinante_nome: string | null
+          ativo: boolean
+          building_id: string
+          clicksign_documento_id: string | null
+          clicksign_envelope_id: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          titulo: string
+        }
+        Insert: {
+          arquivo_path: string
+          assinado_em?: string | null
+          assinante_email?: string | null
+          assinante_nome?: string | null
+          ativo?: boolean
+          building_id: string
+          clicksign_documento_id?: string | null
+          clicksign_envelope_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          titulo: string
+        }
+        Update: {
+          arquivo_path?: string
+          assinado_em?: string | null
+          assinante_email?: string | null
+          assinante_nome?: string | null
+          ativo?: boolean
+          building_id?: string
+          clicksign_documento_id?: string | null
+          clicksign_envelope_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predio_contratos_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predios_cadastro_externo: {
         Row: {
           bairro: string | null
