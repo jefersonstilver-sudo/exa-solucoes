@@ -87,8 +87,14 @@ async function importar(sb: any, token: string, b: any, quem: string) {
   const e = await getJson(`${BASE}/api/v3/envelopes/${env}`, h);
   const docs = await getJson(`${BASE}/api/v3/envelopes/${env}/documents`, h);
   const sig = await getJson(`${BASE}/api/v3/envelopes/${env}/signers`, h).catch(() => ({ data: [] }));
-  const d = (docs?.data || [])[0];
-  if (!d) return json(404, { error: "envelope sem documento" });
+  // envelope com vários contratos (ex.: pacote da administradora): escolhe o documento pelo nome
+  const lista = docs?.data || [];
+  const filtro = String(b.documento || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const nomeDoc = (x: any) => String(x?.attributes?.filename || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const d = filtro ? lista.find((x: any) => nomeDoc(x).includes(filtro)) : lista[0];
+  const nomes = lista.map((x: any) => x?.attributes?.filename);
+  if (!d) return json(404, { error: filtro ? `nenhum documento com "${b.documento}" no envelope` : "envelope sem documento", documentos: nomes });
+  if (!filtro && lista.length > 1) return json(400, { error: "envelope com vários documentos: informe 'documento'", documentos: nomes });
   // o link do arquivo assinado pode vir na lista ou no detalhe do documento
   let det = d;
   let url = d.links?.files?.signed || d.attributes?.links?.files?.signed;
@@ -99,14 +105,14 @@ async function importar(sb: any, token: string, b: any, quem: string) {
   const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
   if (!r.ok) return json(502, { error: "não consegui baixar o PDF da ClickSign: " + r.status });
   const bytes = new Uint8Array(await r.arrayBuffer());
-  const caminho = `${bid}/${env}.pdf`;
+  const caminho = `${bid}/${env}-${d.id}.pdf`;
   const { error: up } = await sb.storage.from("contratos-predios").upload(caminho, bytes, { contentType: "application/pdf", upsert: true });
   if (up) return json(500, { error: "falha ao guardar: " + up.message });
   const parte = (sig?.data || []).map((x: any) => x.attributes || {}).find((x: any) => !/jeferson|exa ?m[ií]dia|eduardo/i.test(String(x.name || "")) && !/examidia\.com\.br|eduardogabriel/i.test(String(x.email || "")));
   const ea = e?.data?.attributes || {};
   await sb.from("predio_contratos").update({ ativo: false }).eq("building_id", bid).eq("ativo", true);
   const { data: linha, error: ins } = await sb.from("predio_contratos").insert({
-    building_id: bid, titulo: String(ea.name || det.attributes?.filename || "Contrato").replace(/\s*\(\d+\)\s*$/g, "").trim(), arquivo_path: caminho,
+    building_id: bid, titulo: String((lista.length > 1 ? det.attributes?.filename || d.attributes?.filename : ea.name) || det.attributes?.filename || "Contrato").replace(/\.pdf$/i, "").replace(/\s*\(\d+\)\s*$/g, "").trim(), arquivo_path: caminho,
     assinado_em: ea.status === "closed" ? (ea.modified || ea.created || null) : null,
     assinante_nome: parte?.name || null, assinante_email: parte?.email || null,
     clicksign_envelope_id: env, clicksign_documento_id: d.id, ativo: true, criado_por: quem,
