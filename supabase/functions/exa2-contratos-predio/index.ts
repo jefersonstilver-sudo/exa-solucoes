@@ -8,9 +8,13 @@
 //  cancelar { pedido_id }       → cancela pedido em aberto (e o envelope na ClickSign, se já saiu)
 //  anexar   { building_id, titulo, assinado_em?, assinante_nome?, pdf_base64 } → guarda um contrato assinado manualmente
 //  desativar{ contrato_id }     → tira um contrato do ar (fica no histórico)
+//  auto_status                  → situação da assinatura automática da EXA (sem mostrar o CPF)
+//  auto_ativar { nome, email, cpf, nascimento, admin_email } → pede à ClickSign o termo de assinatura automática
+//  auto_desligar                → volta a EXA a assinar pelo e-mail
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   BUCKET, ABERTOS, proximoEnvio, quandoTexto, validarDados, pdfDoPedido, b64, enviarPedido,
+  autoExa, solicitarTermoAuto, cpfValido,
 } from "../_shared/predio-contratos.ts";
 import { formatarCnpj } from "../_shared/predio-contrato-modelo.ts";
 
@@ -186,6 +190,34 @@ Deno.serve(async (req) => {
         const id = uuid(b.contrato_id);
         const { error } = await sb.from("predio_contratos").update({ ativo: false }).eq("id", id);
         return json(error ? 500 : 200, { ok: !error, erro: error?.message });
+      }
+      case "auto_status": {
+        const a = await autoExa(sb);
+        const { data: padrao } = await sb.from("signatarios_exa").select("nome,email").eq("is_active", true).order("is_default", { ascending: false }).limit(1).maybeSingle();
+        return json(200, { ok: true, auto: a ? { status: a.status, nome: a.nome, email: a.email, cpf_final: String(a.documento || "").replace(/\D/g, "").slice(-2), admin_email: a.admin_email, erro: a.erro, atualizado_em: a.atualizado_em } : null,
+          padrao: { nome: padrao?.nome || "", email: padrao?.email || "", admin_email: Deno.env.get("CLICKSIGN_ADMIN_EMAIL") || "comercial@examidia.com.br" } });
+      }
+      case "auto_ativar": {
+        const nome = String(b.nome || "").trim().replace(/\s+/g, " ");
+        const email = String(b.email || "").trim().toLowerCase();
+        const cpf = dig(b.cpf);
+        const nasc = String(b.nascimento || "").slice(0, 10);
+        const admin = String(b.admin_email || "").trim().toLowerCase();
+        if (nome.split(" ").length < 2) return json(400, { ok: false, erro: "Nome completo de quem assina pela EXA." });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(admin)) return json(400, { ok: false, erro: "E-mail inválido." });
+        if (!cpfValido(cpf)) return json(400, { ok: false, erro: "CPF inválido." });
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(nasc)) return json(400, { ok: false, erro: "Data de nascimento inválida." });
+        const api = Deno.env.get("CLICKSIGN_API_EMAIL") || "comercial@examidia.com.br";
+        const r = await solicitarTermoAuto({ nome, email, cpf, nascimento: nasc, admin_email: admin, api_email: api });
+        if (!r.ok) return json(400, { ok: false, erro: `A ClickSign recusou o pedido do termo: ${String(r.erro).slice(0, 300)}` });
+        await sb.from("exa_assinatura_automatica").update({ status: "substituido", atualizado_em: new Date().toISOString() }).in("status", ["solicitado", "ativo"]);
+        const { error } = await sb.from("exa_assinatura_automatica").insert({ nome, email, documento: cpf, nascimento: nasc, admin_email: admin, termo_id: r.termo, status: "solicitado", criado_por: quem });
+        if (error) return json(500, { ok: false, erro: error.message });
+        return json(200, { ok: true, ja_existia: r.ja_existia });
+      }
+      case "auto_desligar": {
+        await sb.from("exa_assinatura_automatica").update({ status: "desligado", atualizado_em: new Date().toISOString() }).in("status", ["solicitado", "ativo"]);
+        return json(200, { ok: true });
       }
       default: return json(400, { ok: false, erro: "ação inválida" });
     }
