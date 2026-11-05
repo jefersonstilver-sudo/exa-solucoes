@@ -76,21 +76,25 @@ export function generateVerticalHtml(movies, options = {}) {
   let destaque = movies.filter((m) => novosSet.has(String(m.title).toUpperCase().trim()));
   const temEstreia = destaque.length > 0;
   if (!temEstreia) destaque = movies.slice(0, 4);
+  // nuvem 05/11: com 1–2 estreias, completa o destaque com filmes em cartaz (1 filme sozinho ficava 9 s parado)
+  if (temEstreia && destaque.length < 3) destaque = destaque.concat(movies.filter((m) => !destaque.includes(m)).slice(0, 3 - destaque.length));
   destaque = destaque.slice(0, 4);
+  const ehNovo = (m) => novosSet.has(String(m.title).toUpperCase().trim());
   const outros = movies.filter((m) => !destaque.includes(m)).slice(0, 6);
   const nOutros = movies.length - destaque.length;
 
   const N = destaque.length;
   const rotulo = temEstreia ? "ESTREIA" : "EM CARTAZ";
-  const introNum = temEstreia ? String(N) : String(movies.length);
-  const introPal = temEstreia ? (N === 1 ? "ESTREIA" : "ESTREIAS") : "FILMES";
+  const nEstreias = movies.filter(ehNovo).length;
+  const introNum = temEstreia ? String(nEstreias) : String(movies.length);
+  const introPal = temEstreia ? (nEstreias === 1 ? "ESTREIA" : "ESTREIAS") : "FILMES";
   const introSub = temEstreia ? "nesta semana" : "em cartaz";
 
   const feats = destaque.map((m, i) => `
     <section class="feat" id="f${i}">
       <div class="fbg" style="background-image:url('${esc(m.poster)}')"></div>
       <div class="fshade"></div>
-      <div class="ftag"><span>${rotulo} ${i + 1}/${N}</span>${temEstreia ? '<b class="novo">NOVO</b>' : ""}</div>
+      <div class="ftag"><span>${ehNovo(m) ? "ESTREIA" : "EM CARTAZ"} ${i + 1}/${N}</span>${ehNovo(m) ? '<b class="novo">NOVO</b>' : ""}</div>
       <div class="pwrap"><img class="poster" src="${esc(m.poster)}"/></div>
       <h2 class="ftitle"${String(m.title).length > 34 ? ' style="font-size:64px"' : String(m.title).length > 22 ? ' style="font-size:76px"' : ""}>${esc(m.title)}</h2>
       <div class="times">${horarios(m).length ? horarios(m).map((h) => `<span>${esc(h)}</span>`).join("") : `<span class="semh">SESSÕES E INGRESSOS NO QR</span>`}</div>

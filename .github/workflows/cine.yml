@@ -1,6 +1,9 @@
 name: Cine Cataratas (programacao da semana)
 
 on:
+  # quinta-feira 13h37 (Brasília) — o cinema troca a programação na quinta
+  schedule:
+    - cron: "37 16 * * 4"
   workflow_dispatch:
   push:
     branches: [main]
