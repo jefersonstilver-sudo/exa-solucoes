@@ -1,9 +1,11 @@
 name: Cine Cataratas (programacao da semana)
 
 on:
-  # quinta-feira 13h37 (Brasília) — o cinema troca a programação na quinta
+  # O PC lê o site de ingressos quinta 14h00 e grava em cine_programacao; a nuvem gera e publica.
   schedule:
-    - cron: "37 16 * * 4"
+    - cron: "37 17 * * 4"   # quinta 14h37 (Brasília): espera até 40 min a leitura do PC; sem ela publica sem horários
+    - cron: "17 21 * * 4"   # quinta 18h17: repescagem (só se o vídeo no ar não for desta semana ou chegou leitura nova do PC)
+    - cron: "17 12 * * 5"   # sexta 09h17: repescagem (PC ligado mais tarde)
   workflow_dispatch:
   push:
     branches: [main]
@@ -19,7 +21,7 @@ concurrency:
 jobs:
   cine:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: tools/cine
@@ -50,7 +52,10 @@ jobs:
         run: |
           MODO=$(grep -E '^modo=' disparo.txt | cut -d= -f2 | tr -d '\r'); echo "modo=$MODO"
           PUB=$(grep -E '^publicar=' disparo.txt | cut -d= -f2 | tr -d '\r')
-          [ "${{ github.event_name }}" = "schedule" ] && { MODO=cine; PUB=sim; }
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            MODO=cine; PUB=sim
+            if [ "${{ github.event.schedule }}" = "37 17 * * 4" ]; then export CINE_ESPERAR_PC=40; else export CINE_REPESCAGEM=1; fi
+          fi
           export NOTICIAS_PUBLICAR=$([ "$PUB" = "sim" ] && echo 1 || echo 0); echo "publicar=$NOTICIAS_PUBLICAR"
           if [ "$MODO" = "sonda" ]; then xvfb-run -a node sonda.mjs; else node cine.mjs; fi
       - name: Guardar semana

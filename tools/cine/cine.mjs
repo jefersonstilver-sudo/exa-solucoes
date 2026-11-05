@@ -3,7 +3,10 @@
  * O site de ingressos (webcinecataratas.com) bloqueia servidores (Cloudflare). Então:
  *   filmes + cartazes  → cinecataratas.com.br/categoria-produto/em-cartaz/ (site do cinema, abre normal)
  *   classificação/formato → página de cada filme; se faltar, aproveita a semana anterior
- *   horários → não disponíveis na nuvem: o vídeo mostra "SESSÕES E INGRESSOS NO QR" (QR rastreado CINE1)
+ *   horários → o PC do escritório lê webcinecataratas.com toda quinta 14h e grava em cine_programacao (05/11/2026);
+ *              com essa leitura da semana, filmes/cartazes/horários vêm DELA (o site de ingressos é a base).
+ *              Sem ela: o vídeo mostra "SESSÕES E INGRESSOS NO QR" (QR rastreado CINE1).
+ * Ambiente: CINE_ESPERAR_PC=<min> espera a leitura do PC chegar; CINE_REPESCAGEM=1 só publica se faltar algo.
  * Layout: V2 "Estreias em sequência" (aprovado pelo Cine em 04/11/2026), vertical 1080x1920, 15 s.
  * Publica no pedido do Cine + Hotel Cataratas trocando SÓ o vídeo do Cine (tools/noticias/publish-video.mjs).
  * Ambiente: NOTICIAS_PUBLICAR=0 só gera.
@@ -78,6 +81,21 @@ async function buscarFilmes(browser) {
   return filmes.filter(f => f.poster);
 }
 
+const SUPA = (process.env.SUPABASE_URL || "https://aakenoljsycyrcrchgxj.supabase.co").replace(/\/+$/, "");
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const sb = async path => { const r = await fetch(SUPA + path, { headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }, signal: AbortSignal.timeout(60000) }); if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); };
+
+// leitura do site de ingressos feita pelo PC nesta semana (desde quinta 00h)
+async function programacaoDoPC(qui) {
+  if (!KEY) return null;
+  const j = await sb(`/rest/v1/cine_programacao?criado_em=gte.${qui.toISOString()}&order=criado_em.desc&limit=1&select=id,criado_em,filmes`);
+  return j?.[0] || null;
+}
+async function principalAtual() {
+  const j = await sb(`/rest/v1/pedido_videos?pedido_id=eq.${PEDIDO}&is_base_video=eq.true&select=created_at,videos(nome)`);
+  return j?.[0] ? { quando: new Date(j[0].created_at), nome: j[0].videos?.nome || "" } : null;
+}
+
 async function gravar(htmlPath, mp4) {
   if (existsSync(FR)) readdirSync(FR).forEach(f => unlinkSync(join(FR, f))); else mkdirSync(FR, { recursive: true });
   const b = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-dev-shm-usage", "--allow-file-access-from-files"] });
@@ -98,8 +116,32 @@ async function gravar(htmlPath, mp4) {
 async function main() {
   const { qui, rotulo } = semana();
   log(`=== Cine Cataratas · semana ${rotulo} ===`);
-  const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-dev-shm-usage"] });
-  let filmes; try { filmes = await buscarFilmes(browser); } finally { await browser.close(); }
+  let pc = null;
+  const esperar = Number(process.env.CINE_ESPERAR_PC || 0);
+  for (let t = 0; ; t++) {
+    try { pc = await programacaoDoPC(qui); } catch (e) { log(`não li a programação do PC (${e.message})`); }
+    if (pc || t >= esperar) break;
+    if (t === 0) log(`Aguardando a leitura do site de ingressos pelo PC (até ${esperar} min)...`);
+    await sleep(60000);
+  }
+  if (process.env.CINE_REPESCAGEM === "1") {
+    const p = await principalAtual().catch(() => null);
+    const desta = p && p.quando >= qui, semH = p && /sem hor/i.test(p.nome);
+    if (desta && (!semH || !pc || new Date(pc.criado_em) <= p.quando)) { log(`Repescagem: nada a fazer (no ar: "${p.nome}").`); return; }
+    log(`Repescagem: ${!desta ? "o vídeo no ar é de outra semana" : "chegou a leitura do PC com horários"} — gero de novo.`);
+  }
+  let filmes;
+  if (pc) {
+    log(`Programação do site de ingressos (lida pelo PC em ${new Date(pc.criado_em).toLocaleString("pt-BR")}): ${pc.filmes.length} filmes.`);
+    filmes = pc.filmes.filter(f => f.title && String(f.poster || "").startsWith("data:image"))
+      .map(f => ({ title: String(f.title).trim(), poster: f.poster, showtimes: (f.showtimes || []).map(h => String(h).trim().padStart(5, "0")), room: f.room || "", format: f.format || "", rating: f.rating || "", duration: f.duration || "" }));
+    for (const f of filmes) log(`  ${f.title} | ${f.rating || "?"} | ${f.room} | ${f.showtimes.join(" ")}`);
+  } else {
+    log("Sem leitura do PC nesta semana: filmes do site do cinema, SEM horários.");
+    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try { filmes = await buscarFilmes(browser); } finally { await browser.close(); }
+  }
+  const comHorarios = filmes.some(f => f.showtimes?.length);
   if (filmes.length < 2) { log(`ERRO: só ${filmes.length} filme(s) com cartaz — não gero (o vídeo atual continua).`); process.exit(3); }
 
   // semana anterior: estreias + completar classificação/formato
@@ -109,7 +151,7 @@ async function main() {
   for (const f of filmes) {
     // "– PRÉ-ESTREIA" sai do título (quebrava em 3 linhas) e vai para a linha de detalhes
     if (/pr[ée][- ]?estreia/i.test(f.title)) { f.title = f.title.replace(/\s*[–—-]\s*pr[ée][- ]?estreia\s*$/i, "").trim(); f.room = "Pré-estreia"; }
-    const a = acharAntes(f.title); if (a) { f.rating = f.rating || a.rating || ""; f.format = a.format || ""; }
+    const a = acharAntes(f.title); if (a) { f.rating = f.rating || a.rating || ""; f.format = f.format || a.format || ""; }
   }
   const prevDaSemana = prev && new Date(prev.timestamp) >= qui;   // rodou de novo na mesma semana: mantém a base
   const base = prevDaSemana ? (prev.base || []) : [...antes.keys()];
@@ -126,7 +168,7 @@ async function main() {
 
   const publicar = process.env.NOTICIAS_PUBLICAR !== "0";
   if (publicar) {
-    const titulo = `Cine Cataratas ${rotulo}`;
+    const titulo = `Cine Cataratas ${rotulo}${comHorarios ? "" : " sem horarios"}`;
     log(`Publicando "${titulo}" (troca só o vídeo do Cine)...`);
     try {
       execSync(`node "${join(__dirname, "..", "noticias", "publish-video.mjs")}" "${mp4}" "${titulo}" "${PEDIDO}"`, { stdio: "inherit", env: { ...process.env, LIMPAR_SO: "cine|cinema" } });
