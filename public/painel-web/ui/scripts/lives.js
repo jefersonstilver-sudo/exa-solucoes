@@ -15,8 +15,14 @@
     return;
   }
 
+  // TV box (réplica com ?tela=1): câmera mais leve — começa na menor qualidade, buffer curto e sem a cópia
+  // do quadro para o canvas a cada segundo (no Mali-G31 essa cópia de 1080p pesa). ?cam=0: câmera desligada.
+  const TV = /[?&]tela=1(&|$)/.test(location.search);
+  const SEM_CAMERA = TV && /[?&]cam=0(&|$)/.test(location.search);
   const HLS_CONFIG = {
     enableWorker: true,
+    startLevel: TV ? 0 : -1,
+    maxMaxBufferLength: TV ? 12 : 600,
     lowLatencyMode: false,
     capLevelToPlayerSize: true,
     maxBufferLength: 10,
@@ -105,8 +111,8 @@
     st.canvas.height = 360;
     st.video.before(st.canvas);
     st.ctx = st.canvas.getContext("2d");
-    // guarda um quadro por segundo enquanto o video anda
-    setInterval(guardarQuadro, 1000);
+    // guarda um quadro por segundo enquanto o video anda (na TV box só na hora da troca)
+    if (!TV) setInterval(guardarQuadro, 1000);
     setInterval(vigiar, 2000);
     return true;
   };
@@ -294,7 +300,10 @@
   };
 
   const api = {
-    start: () => { carregarLives(); setInterval(carregarLives, RECARREGAR_LISTA); },
+    start: () => {
+      if (SEM_CAMERA) { document.documentElement.classList.add("sem-camera"); return; }
+      carregarLives(); setInterval(carregarLives, RECARREGAR_LISTA);
+    },
     reload: () => carregarLives(),
     next: () => agendar(0),
     _state: st,

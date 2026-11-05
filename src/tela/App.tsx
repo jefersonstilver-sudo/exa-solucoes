@@ -138,7 +138,7 @@ function Programacao({ e }: { e: Estado }) {
   const C = COMPONENTES[layout.id] || (vertical ? COMPONENTES.V2 : COMPONENTES.H1);
   const conteudo = <Protecao e={e}><C e={e} f={faixas} layout={layout} /></Protecao>;
   // TV em pé num prédio: a mesma tela do elevador daquele prédio (avisos do síndico inclusos)
-  if (vertical && e.local && e.local.tipo !== 'comercio') return <ReplicaElevador predioId={e.local.id} alternativa={conteudo} />;
+  if (vertical && e.local && e.local.tipo !== 'comercio') return <ReplicaElevador predioId={e.local.id} alternativa={conteudo} camera={e.tela?.config?.camera !== false} />;
   return conteudo;
 }
 
@@ -268,8 +268,17 @@ export default function App() {
   }, []);
 
   const giro = Number(estado?.tela?.config?.giro);
+  const giroOk = [0, 90, 270].includes(giro) ? giro : 90;
+  const vert = ehVertical(estado);
+  // app Android 1.0.7+: o próprio sistema gira a imagem (bem mais leve que girar a página); o Palco percebe a
+  // janela em pé e não gira. Aparelho antigo/navegador comum: o Palco gira por CSS como antes.
+  useEffect(() => {
+    const p: any = (window as any).ExaTela;
+    if (!p?.orientar) return;
+    try { p.orientar(vert ? giroOk : 0); } catch { /* */ }
+  }, [vert, giroOk]);
   return (
-    <Palco vertical={ehVertical(estado)} giro={[0, 90, 270].includes(giro) ? giro : 90} margem={Number(estado?.tela?.config?.margem) || 0}>
+    <Palco vertical={vert} giro={giroOk} margem={Number(estado?.tela?.config?.margem) || 0}>
       {estado?.pareada ? <Programacao e={estado} /> : <Pareamento codigo={codigo} online={online} erro={erro} />}
     </Palco>
   );

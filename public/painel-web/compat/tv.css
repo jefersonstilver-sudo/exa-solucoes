@@ -43,3 +43,6 @@
 .tv-leve .camera-video-wrapper video.on { animation: none !important; }
 /* textos e sombras grandes por cima de vídeo */
 .tv-leve .noticia-titulo .w, .tv-leve .noticia-titulo.sai { filter: none !important; }
+
+/* v3: câmera desligada pela tela (config.camera = false → ?cam=0): o cartão sai e as notícias ocupam o espaço */
+.sem-camera .widget-camera { display: none !important; }

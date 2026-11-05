@@ -57,7 +57,7 @@ const Aviso = ({ texto }: { texto: string }) => (
   <div className="cheio fundo-exa" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, textAlign: 'center', fontSize: 34, fontWeight: 700, lineHeight: 1.35, color: 'rgba(255,255,255,.8)' }}>{texto}</div>
 );
 
-export function ReplicaElevador({ predioId, alternativa }: { predioId: string; alternativa: React.ReactNode }) {
+export function ReplicaElevador({ predioId, alternativa, camera = true }: { predioId: string; alternativa: React.ReactNode; camera?: boolean }) {
   const [ok, setOk] = useState<boolean | null>(null);
   const ref = useRef<HTMLIFrameElement>(null);
   useEffect(() => { let vivo = true; prepararReplica().then((v) => { if (vivo) setOk(v); }); return () => { vivo = false; }; }, []);
@@ -134,7 +134,7 @@ export function ReplicaElevador({ predioId, alternativa }: { predioId: string; a
   if (ok === false) return <>{alternativa}</>;
   if (ok === null) return <Aviso texto="Abrindo a tela do prédio…" />;
   return (
-    <iframe ref={ref} title="Tela do elevador" src={`/painel-web/ui/index.html?p=${encodeURIComponent(predioId.slice(0, 8))}&tela=1`}
+    <iframe ref={ref} title="Tela do elevador" src={`/painel-web/ui/index.html?p=${encodeURIComponent(predioId.slice(0, 8))}&tela=1${camera ? '' : '&cam=0'}`}
       style={{ position: 'absolute', left: 0, top: 0, width: 1080, height: 1920, border: 0, background: '#0c0610' }} />
   );
 }

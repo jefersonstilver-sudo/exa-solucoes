@@ -7,6 +7,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -756,6 +757,21 @@ class MainActivity : Activity() {
         /** Comandos remotos do admin para nunca precisar de alguém "caçando" a saída do app na TV. */
         @JavascriptInterface
         fun sairDoApp() { h.post { sair() } }
+
+        /**
+         * TV em pé: o sistema gira a imagem (o app desenha direto em 720x1280, sem girar a página por CSS).
+         * giro 90 = mesmo sentido do giro 90° da página; 270 = o outro lado; 0 = deitada (padrão).
+         */
+        @JavascriptInterface
+        fun orientar(giro: Int) {
+            h.post {
+                requestedOrientation = when (giro) {
+                    90 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+                    270 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    else -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                }
+            }
+        }
 
         @JavascriptInterface
         fun abrirConfiguracoes() { h.post { abrirTela(Settings.ACTION_SETTINGS) } }
