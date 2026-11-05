@@ -1,0 +1,5 @@
+output/
+node_modules/
+daily-dooh.log
+.env
+*.env
