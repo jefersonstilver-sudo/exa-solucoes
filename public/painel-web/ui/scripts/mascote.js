@@ -22,6 +22,8 @@
   if (window.__mascote) return;
 
   const BASE = window.MASCOTE_BASE || "../assets/mascote/";
+  // TV box (compat/tv.js): só o boneco parado + "SEM AVISOS NO MOMENTO" — sem abrir mais um decodificador de vídeo
+  const ESTATICO = !!window.__mascoteEstatico;
   const CLIPES = [
     { id: "bater", dur: 10.04, texto: [[4.4, 8.5]] },
     { id: "soquinho", dur: 10.04, texto: [[4.1, 8.8]] },
@@ -192,6 +194,7 @@
   }
 
   function instalarApresentacao() {
+    if (ESTATICO) return;
     try {
       if (typeof _avancar !== "function" || typeof _avisos === "undefined") return;
       const original = _avancar;
@@ -212,6 +215,7 @@
     try {
       if (!st.raiz && !montar()) return;
       const r = st.raiz;
+      if (ESTATICO) { r.classList.toggle("on", semAvisos()); return; }
 
       if (st.apresentando) {             // modo 2 em andamento
         if (st.tocando) {

@@ -152,6 +152,7 @@ class MainActivity : Activity() {
         }, FrameLayout.LayoutParams(140, 140, Gravity.TOP or Gravity.START))
 
         esconderBarras()
+        vigiarRede()
         if (primeiraVez) {
             intro.visibility = View.GONE
             mostrarEscolha { intro.visibility = View.VISIBLE; intro.tocar(); criarWeb(); h.postDelayed(vigia, 30_000) }
@@ -390,6 +391,7 @@ class MainActivity : Activity() {
 
     private fun diagnosticar() {
         if (paginaPronta) return
+        if (aindaEsperandoRede()) return
         if (problema != null) { relatar(); return }
         val ultimoJs = errosJs.lastOrNull()
         when {
@@ -421,8 +423,41 @@ class MainActivity : Activity() {
         h.postDelayed(tentarDeNovo, 20_000)
     }
 
+    /** Ligou agora e o Wi-Fi ainda está subindo: segura a intro (com "Conectando ao Wi-Fi…") por até 90 s antes de avisar. */
+    private var semRedeDesde = 0L
+    private fun aindaEsperandoRede(): Boolean {
+        if (temInternet()) { semRedeDesde = 0L; return false }
+        val agora = System.currentTimeMillis()
+        if (semRedeDesde == 0L) semRedeDesde = agora
+        if (agora - semRedeDesde > 90_000) return false
+        h.post { intro.status.visibility = View.VISIBLE; intro.status.text = "Conectando ao Wi-Fi…" }
+        h.removeCallbacks(tentarDeNovo)
+        h.postDelayed(tentarDeNovo, 4_000)
+        return true
+    }
+
+    /** Assim que a rede volta, tenta de novo na hora (sem esperar os 20 s). */
+    private fun vigiarRede() {
+        if (Build.VERSION.SDK_INT < 24) return
+        try {
+            (getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) {
+                    h.post {
+                        semRedeDesde = 0L
+                        if (!paginaPronta && (erroNaPagina || tipoProblema == "internet")) {
+                            intro.diag.visibility = View.GONE; intro.status.visibility = View.VISIBLE; intro.status.text = "Preparando a tela"
+                            problema = null; tipoProblema = ""
+                            h.removeCallbacks(tentarDeNovo); h.postDelayed(tentarDeNovo, 1_500)
+                        }
+                    }
+                }
+            })
+        } catch (_: Throwable) { }
+    }
+
     private fun falhou(motivo: String) {
         erroNaPagina = true
+        if (aindaEsperandoRede()) return
         if (!temInternet()) {
             mostrarProblema("internet", "Sem internet", "O aparelho não está conectado. Confira o Wi-Fi ou o cabo — a tela tenta de novo sozinha.",
                 botoes = listOf("Wi-Fi" to { abrirTela(Settings.ACTION_WIFI_SETTINGS) }))

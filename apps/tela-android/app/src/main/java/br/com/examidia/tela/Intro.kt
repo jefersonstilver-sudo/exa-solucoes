@@ -72,7 +72,7 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
         trilho.addView(traco, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         trilho.addView(corredor)
 
-        frase.text = "EXA MÍDIA · FOZ DO IGUAÇU"
+        frase.text = "EXAMIDIA.COM.BR"
         frase.setTextColor(Color.argb(200, 255, 255, 255))
         frase.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
         frase.gravity = Gravity.CENTER
@@ -159,6 +159,7 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
 
     /** Toca a intro desde o começo (abrir o app, depois de instalar/atualizar, ao recarregar a página). */
     fun tocar() {
+        garantirAnimacoes()
         parar()
         visibility = View.VISIBLE
         alpha = 1f; scaleX = 1f; scaleY = 1f
@@ -207,6 +208,14 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
                 }
             }).start()
         }, falta)
+    }
+
+    /** TV box costuma vir com as animações do sistema desligadas (escala 0): aí todo ValueAnimator pula para o fim e a intro congela. */
+    private fun garantirAnimacoes() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 26 && ValueAnimator.areAnimatorsEnabled()) return
+            ValueAnimator::class.java.getMethod("setDurationScale", Float::class.javaPrimitiveType).invoke(null, 1f)
+        } catch (_: Throwable) { }
     }
 
     fun parar() {

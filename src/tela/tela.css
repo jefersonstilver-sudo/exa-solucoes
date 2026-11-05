@@ -94,6 +94,10 @@
 .exa-carregando-meio { position: relative; text-align: center; animation: esp-sobe .9s cubic-bezier(.2,.8,.2,1) both; }
 .exa-barra { position: relative; width: 420px; height: 5px; margin: 60px auto 0; border-radius: 10px; background: rgba(255,255,255,.10); overflow: hidden; }
 .exa-barra i { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 10px; background: linear-gradient(90deg, #ff5a4a, #ffc35a); box-shadow: 0 0 18px rgba(255,120,80,.7); animation: exa-enche 12s cubic-bezier(.15,.7,.3,1) forwards; }
+/* brilho que corre pela barra sem parar (nunca fica estático enquanto carrega) */
+.exa-barra::after { content: ''; position: absolute; top: 0; bottom: 0; width: 28%; left: -30%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,240,220,.85), rgba(255,255,255,0)); animation: esp-corre 1.6s cubic-bezier(.45,0,.25,1) infinite; }
+.exa-carregando-meio .esp-logo { animation: exa-respira 3.6s ease-in-out infinite; }
+@keyframes exa-respira { 50% { transform: scale(1.025); filter: drop-shadow(0 0 22px rgba(255,120,90,.35)); } }
 @keyframes exa-enche { 0% { width: 4%; } 40% { width: 58%; } 75% { width: 82%; } 100% { width: 94%; } }
 .exa-carregando.sai .exa-barra i { width: 100% !important; animation: none; transition: width .4s ease; }
 .exa-frase { margin-top: 34px; font-size: 21px; font-weight: 700; letter-spacing: 9px; text-transform: uppercase; color: rgba(255,255,255,.78); animation: exa-frase .6s ease both; }
