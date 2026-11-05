@@ -1,0 +1,95 @@
+{
+ "timestamp": "2026-11-05T11:52:00.730Z",
+ "base": [
+  "100 DIAS",
+  "RAZAO E SENSIBILIDADE",
+  "TRES HORAS PARA VIVER",
+  "A CAIXA DO DEMONIO",
+  "DO OUTRO LADO DAS REDES",
+  "CARA DE BARRO",
+  "STREET FIGHTER",
+  "DENTRO DA BALEIA",
+  "AS AVENTURAS DE TADEO E A LAMPADA MAGICA",
+  "VERITY"
+ ],
+ "movies": [
+  {
+   "title": "O GATOLA DA CARTOLA",
+   "showtimes": [
+    "14:00",
+    "16:30",
+    "19:00",
+    "21:30"
+   ],
+   "room": "Sala 4",
+   "format": "Dublado - 3D",
+   "rating": "10",
+   "duration": "114min"
+  },
+  {
+   "title": "KLARA E O SOL",
+   "showtimes": [
+    "16:30",
+    "21:30"
+   ],
+   "room": "Sala 2",
+   "format": "Dublado - 2D",
+   "rating": "12",
+   "duration": "115min"
+  },
+  {
+   "title": "OS FAROFEIROS 3",
+   "showtimes": [
+    "14:20",
+    "16:30",
+    "19:00"
+   ],
+   "room": "Sala 1",
+   "format": "Dublado - 2D",
+   "rating": "12",
+   "duration": "103min"
+  },
+  {
+   "title": "100 DIAS",
+   "showtimes": [
+    "19:00",
+    "21:30"
+   ],
+   "room": "Sala 3",
+   "format": "Dublado - 2D",
+   "rating": "12",
+   "duration": "117min"
+  },
+  {
+   "title": "TRÊS HORAS PARA VIVER",
+   "showtimes": [
+    "16:30",
+    "21:40"
+   ],
+   "room": "Sala 3",
+   "format": "Dublado - 2D",
+   "rating": "16",
+   "duration": "97min"
+  },
+  {
+   "title": "DO OUTRO LADO DAS REDES",
+   "showtimes": [
+    "14:10"
+   ],
+   "room": "Sala 2",
+   "format": "Dublado - 2D",
+   "rating": "14",
+   "duration": "112min"
+  },
+  {
+   "title": "CARA DE BARRO",
+   "showtimes": [
+    "19:00"
+   ],
+   "room": "Sala 2",
+   "format": "Dublado - 2D",
+   "rating": "18",
+   "duration": "109min"
+  }
+ ]
+}
