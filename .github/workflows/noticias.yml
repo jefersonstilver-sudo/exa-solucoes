@@ -21,6 +21,14 @@ on:
         required: false
         default: ""
 
+  # disparo pelo Claude: editar tools/noticias/disparo.txt (linhas publicar=, quais=, incluir=)
+  push:
+    branches: [main]
+    paths: [tools/noticias/disparo.txt]
+
+permissions:
+  contents: write
+
 concurrency:
   group: noticias-telas
   cancel-in-progress: false
@@ -44,6 +52,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: tools/noticias
+      - name: Opções do disparo por arquivo
+        if: github.event_name == 'push'
+        run: |
+          v(){ grep -E "^$1=" disparo.txt | head -1 | cut -d= -f2- | tr -d '\r'; }
+          echo "NOTICIAS_PUBLICAR=$([ "$(v publicar)" = "nao" ] && echo 0 || echo 1)" >> $GITHUB_ENV
+          [ -n "$(v quais)" ] && echo "QUAIS=$(v quais)" >> $GITHUB_ENV
+          echo "INCLUIR=$(v incluir)" >> $GITHUB_ENV
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -88,6 +103,14 @@ jobs:
             tools/noticias/daily-dooh.log
           retention-days: 5
           if-no-files-found: ignore
+      - name: Guardar resultado no ramo noticias-resultados (para conferência)
+        if: always()
+        run: |
+          R=$(mktemp -d); mkdir -p $R/$GITHUB_RUN_ID
+          cp daily-dooh.log $R/$GITHUB_RUN_ID/ 2>/dev/null || true
+          if [ "$NOTICIAS_PUBLICAR" = "0" ]; then cp output/*.mp4 $R/$GITHUB_RUN_ID/ 2>/dev/null || true; fi
+          cd $R && git init -q && git checkout -q -b noticias-resultados && git add -A && git -c user.email=bot@examidia.com.br -c user.name="EXA noticias" commit -qm "rodada $GITHUB_RUN_ID (publicar=$NOTICIAS_PUBLICAR)" || exit 0
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/noticias-resultados-$GITHUB_RUN_ID || true
       - name: Resultado
         if: always()
         run: |
