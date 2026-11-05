@@ -155,9 +155,8 @@ Deno.serve(async (req) => {
         let aviso = null;
         if (p.status === "enviado" && p.clicksign_envelope_id) {
           const t = Deno.env.get("CLICKSIGN_ACCESS_TOKEN") || "";
-          const r = await fetch(`https://app.clicksign.com/api/v3/envelopes/${p.clicksign_envelope_id}`, {
+          const r = await fetch(`https://app.clicksign.com/api/v3/envelopes/${p.clicksign_envelope_id}/cancel`, {
             method: "PATCH", headers: { "Content-Type": "application/vnd.api+json", Accept: "application/vnd.api+json", Authorization: t },
-            body: JSON.stringify({ data: { id: p.clicksign_envelope_id, type: "envelopes", attributes: { status: "canceled" } } }),
           }).catch(() => null);
           if (!r?.ok) aviso = "Não consegui cancelar o envelope na ClickSign; cancele por lá também.";
         }
