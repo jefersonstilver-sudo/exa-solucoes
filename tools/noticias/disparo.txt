@@ -1,4 +1,4 @@
-publicar=nao
+publicar=sim
 quais=brasil e foz
 incluir=
-# teste 2
+# primeira publicacao pela nuvem

@@ -128,7 +128,8 @@ async function main() {
   // filtro anti-publicidade (regras fixas + Claude): nenhuma marca de não-anunciante vai ao ar
   const validas = await filtrarPublicidade(semBloqueio, log);
   if (validas.length < 3) { log(`ERRO: só ${validas.length} notícias aprovadas pelo filtro editorial — não publico (o vídeo anterior continua no ar).`); process.exit(3); }
-  const itens = validas.slice(0, QTD), resto = lista.filter(n => !itens.includes(n));
+  // 05/11/2026: a faixa de rodapé só usa matérias APROVADAS pelo filtro de propaganda (antes passava matéria barrada, ex.: Nissan Kicks)
+  const itens = validas.slice(0, QTD), resto = validas.filter(n => !itens.includes(n));
   itens.forEach((n, i) => log(`  ${i + 1}. [${n.cat}] ${n.title}`));
   const bufs = await baixarImagens(log, itens.map(n => n.imgSrc));
   itens.forEach((n, i) => n.imgBuffer = bufs[i]);
