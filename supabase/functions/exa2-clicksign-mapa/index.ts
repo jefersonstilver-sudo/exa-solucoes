@@ -43,7 +43,17 @@ async function envelopesV3(token: string, ini: number, paginas: number) {
     let signatarios: any[] = [], documentos: any[] = [], erro: string | null = null;
     try {
       const s = await getJson(`${BASE}/api/v3/envelopes/${e.id}/signers`, h);
-      signatarios = (s?.data || []).map((x: any) => ({ nome: x.attributes?.name, email: x.attributes?.email, telefone: x.attributes?.phone_number, assinou_em: x.attributes?.signed_at || null }));
+      // a API v3 não traz signed_at no signatário: a assinatura real vem dos eventos "sign" do envelope
+      const assinou = new Map<string, string>();
+      if (a.status === "running" || a.status === "closed") {
+        const ev = await getJson(`${BASE}/api/v3/envelopes/${e.id}/events`, h).catch(() => ({ data: [] }));
+        for (const x of ev?.data || []) if (x.attributes?.name === "sign") {
+          const em = String(x.attributes?.data?.signer?.email || "").toLowerCase();
+          if (em) assinou.set(em, x.attributes?.created);
+        }
+      }
+      signatarios = (s?.data || []).map((x: any) => ({ nome: x.attributes?.name, email: x.attributes?.email, telefone: x.attributes?.phone_number,
+        assinou_em: assinou.get(String(x.attributes?.email || "").toLowerCase()) || (a.status === "closed" ? a.modified : null) }));
     } catch (err) { erro = "signatários: " + (err as Error).message; }
     try {
       const d = await getJson(`${BASE}/api/v3/envelopes/${e.id}/documents`, h);
@@ -135,7 +145,7 @@ async function detalhe(token: string, ids: string[]) {
       const s = await getJson(`${BASE}/api/v3/envelopes/${id}/signers`, h);
       out.signatarios = (s?.data || []).map((x: any) => ({ id: x.id, ...x.attributes }));
       const ev = await getJson(`${BASE}/api/v3/envelopes/${id}/events`, h).catch((er: Error) => ({ erro: er.message }));
-      out.eventos = Array.isArray(ev?.data) ? ev.data.map((x: any) => ({ nome: x.attributes?.name, criado: x.attributes?.created, dados: JSON.stringify(x.attributes?.data || {}).slice(0, 300) })) : ev;
+      out.eventos = Array.isArray(ev?.data) ? ev.data.map((x: any) => ({ nome: x.attributes?.name, criado: x.attributes?.created, dados: JSON.stringify(x.attributes?.data || {}).replace(/"(documentation|birthday)":"[^"]*"/g, '"$1":"•"').slice(0, 300) })) : ev;
       const docs = await getJson(`${BASE}/api/v3/envelopes/${id}/documents`, h);
       const d = (docs?.data || [])[0];
       if (d) {
