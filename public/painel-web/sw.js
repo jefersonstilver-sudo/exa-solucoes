@@ -26,10 +26,11 @@ async function tvVersao(pasta, arq) {
       const r = await fetch(`${TVV}/${pasta}/lista.json?t=${Date.now()}`, { cache: "no-store" });
       const d = r.ok ? await r.json() : null;
       // v2 (05/11): {v, itens}; a lista antiga (array) é de versões que serão refeitas — ainda serve enquanto isso
-      m = { t: Date.now(), set: new Set(Array.isArray(d) ? d : (d && Array.isArray(d.itens) ? d.itens : [])) };
+      m = { t: Date.now(), v: Array.isArray(d) ? 1 : Number(d && d.v) || 1, set: new Set(Array.isArray(d) ? d : (d && Array.isArray(d.itens) ? d.itens : [])) };
       tvListas.set(pasta, m);
     }
-    return m.set.has(arq) ? `${TVV}/${pasta}/${arq.split("/").map(encodeURIComponent).join("/")}` : null;
+    // ?v= muda quando as versões são refeitas: o vídeo guardado no aparelho também é trocado
+    return m.set.has(arq) ? `${TVV}/${pasta}/${arq.split("/").map(encodeURIComponent).join("/")}?v=${m.v}` : null;
   } catch (e) { return null; }
 }
 // TV box: os vídeos ficam guardados no aparelho (Cache Storage) e tocam do disco, com resposta por faixas (Range/206).
