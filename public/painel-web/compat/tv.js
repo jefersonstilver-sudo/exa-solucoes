@@ -55,6 +55,16 @@
             var forma = function (x) { return /vertical/i.test(x) ? 'v' : 'h'; };
             var reaproveita = antes && !window.__tvSempreDesmonta && forma(antes) === forma(String(u)) && forma(antes) === 'h';
             if (antes && !reaproveita) { v.pause(); v.removeAttribute('src'); v.load(); }
+            // medição: quanto tempo a tela fica parada em cada troca (do novo arquivo até o primeiro quadro tocando)
+            var info = window.__tvInfo = window.__tvInfo || { trocas: [], desmonta_sempre: false };
+            info.desmonta_sempre = !!window.__tvSempreDesmonta;
+            var t0 = Date.now(), tipo = (reaproveita ? 'r' : 'd') + forma(String(u));
+            var fim = function () {
+              v.removeEventListener('playing', fim);
+              info.trocas.push(tipo + ':' + (Date.now() - t0));
+              if (info.trocas.length > 12) info.trocas.shift();
+            };
+            v.addEventListener('playing', fim);
           } catch (e) { /* segue */ }
           desc.set.call(v, u);
         }
