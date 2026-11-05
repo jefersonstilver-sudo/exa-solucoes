@@ -1,0 +1,80 @@
+[05/11/2026, 08:13:25] [BRASIL] ========================================
+[05/11/2026, 08:13:26] [BRASIL] === EXA NOTÍCIAS BRASIL (layout 2026) ===
+[05/11/2026, 08:13:26] [BRASIL] ========================================
+[05/11/2026, 08:13:26] [BRASIL] Buscando notícias de cnnbrasil.com.br...
+[05/11/2026, 08:13:37] [BRASIL] 11 notícias encontradas
+[05/11/2026, 08:13:37] [BRASIL] 6 após filtro editorial
+[05/11/2026, 08:13:43] [BRASIL]   [FILTRO] BARRADA (Claude): "Nissan Kicks é seguro? Crash test do Latin NCAP revela novidade" — Matéria centrada em modelo de carro específico, com avaliação positiva de produto em tom de vitrine [marcas: Nissan, Nissan Kicks, Latin NCAP]
+[05/11/2026, 08:13:43] [BRASIL]   [FILTRO] 5/6 notícias aprovadas (modelo claude-opus-5-5).
+[05/11/2026, 08:13:43] [BRASIL]   1. [economia] Economia sobreviveu porque mundo vivia leniência fiscal, diz especialista
+[05/11/2026, 08:13:43] [BRASIL]   2. [internacional] O Grande Debate: Midterms mudam a relação entre Brasil e EUA?
+[05/11/2026, 08:13:43] [BRASIL]   3. [educacao] Enem 2026: você sabe quem corrige a redação e como a nota é formada?
+[05/11/2026, 08:13:43] [BRASIL]   4. [nacional] Tornados e tempestades: veja estragos causados por fenômenos no Sul do país
+[05/11/2026, 08:13:43] [BRASIL]   5. [tecnologia] Ataque hacker atinge freezers do banco de sangue da França
+[05/11/2026, 08:13:45] [BRASIL]   Imagem 1: 395886 bytes
+[05/11/2026, 08:13:45] [BRASIL]   Imagem 2: 34958 bytes
+[05/11/2026, 08:13:45] [BRASIL]   Imagem 3: 71518 bytes
+[05/11/2026, 08:13:45] [BRASIL]   Imagem 4: 47666 bytes
+[05/11/2026, 08:13:45] [BRASIL]   Imagem 5: 44818 bytes
+[05/11/2026, 08:13:46] [BRASIL] Gravando /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/breaking-news.mp4 (50s, 1500 frames, 1080x890)...
+[05/11/2026, 08:13:46] [BRASIL]   Frame 0/1500 (0%)
+[05/11/2026, 08:13:56] [BRASIL]   Frame 150/1500 (10%)
+[05/11/2026, 08:14:06] [BRASIL]   Frame 300/1500 (20%)
+[05/11/2026, 08:14:16] [BRASIL]   Frame 450/1500 (30%)
+[05/11/2026, 08:14:26] [BRASIL]   Frame 600/1500 (40%)
+[05/11/2026, 08:14:36] [BRASIL]   Frame 750/1500 (50%)
+[05/11/2026, 08:14:46] [BRASIL]   Frame 900/1500 (60%)
+[05/11/2026, 08:14:56] [BRASIL]   Frame 1050/1500 (70%)
+[05/11/2026, 08:15:06] [BRASIL]   Frame 1200/1500 (80%)
+[05/11/2026, 08:15:16] [BRASIL]   Frame 1350/1500 (90%)
+[05/11/2026, 08:15:26] [BRASIL] Encodando MP4...
+[05/11/2026, 08:15:42] [BRASIL] Vídeo salvo: /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/breaking-news.mp4
+[05/11/2026, 08:15:42] [BRASIL] Publicando: Notícias Brasil 05/11 08h13
+[05/11/2026, 08:15:43] [BRASIL] [PUBLICADOR] [publish] === Publicador EXA (nuvem) === Notícias Brasil 05/11 08h13 → pedido c08f3154-e0dc-4c39-b8a2-721d8acdde7f [TESTE: não publica]
+[05/11/2026, 08:15:43] [BRASIL] [PUBLICADOR] [publish] Pedido "Jeferson Stilver" (ativo) · vídeos: 2:Notícias Brasil 05/11 07h00★
+[05/11/2026, 08:15:43] [BRASIL] [PUBLICADOR] [publish] Teste: conexão com o sistema OK. Nada foi alterado.
+[05/11/2026, 08:15:43] [BRASIL]   [RESUMO] teste — manchetes não registradas.
+[05/11/2026, 08:15:43] [BRASIL] === NOTÍCIAS BRASIL CONCLUÍDO ===
+[05/11/2026, 08:15:43] [FOZ] ========================================
+[05/11/2026, 08:15:43] [FOZ] === EXA NOTÍCIAS FOZ — LAYOUT OFICIAL ===
+[05/11/2026, 08:15:43] [FOZ] ========================================
+[05/11/2026, 08:15:43] [FOZ] Buscando notícias de foz.portaldacidade.com (navegador)...
+[05/11/2026, 08:15:50] [FOZ] 22 links de notícias na home
+[05/11/2026, 08:15:58] [FOZ] 17 notícias de até 96 h depois dos filtros fixos (14 de até 36 h)
+[05/11/2026, 08:15:58] [FOZ]   [FILTRO] BARRADA (regra fixa): "Alunos de Foz apresentam soluções em inglês para pesquisadores ligados a Harvard" — marcador de patrocínio: "conteúdo patrocinado"
+[05/11/2026, 08:16:08] [FOZ]   [FILTRO] 16/17 notícias aprovadas (modelo claude-opus-5-5).
+[05/11/2026, 08:16:08] [FOZ] Janela usada: até 36 h → 13 notícias aprovadas.
+[05/11/2026, 08:16:08] [FOZ] Inéditas: 13 · já exibidas nos últimos 7 dias: 0
+[05/11/2026, 08:16:34] [FOZ] Baixando fotos das matérias...
+[05/11/2026, 08:16:34] [FOZ]   Foto 1: 2255463 bytes
+[05/11/2026, 08:16:34] [FOZ]   Foto 2: 66263 bytes
+[05/11/2026, 08:16:34] [FOZ]   Foto 3: 334162 bytes
+[05/11/2026, 08:16:35] [FOZ]   Foto 4: 2285628 bytes
+[05/11/2026, 08:16:36] [FOZ]   Foto 5: 344316 bytes
+[05/11/2026, 08:16:39] [FOZ]   Foto 6: 2357612 bytes
+[05/11/2026, 08:16:39] [FOZ]   1. [TRANSPORTE] R$ 6,00. — Passagem de ônibus sobe 20% e passe estudantil cai para duas viagens nos dias úteis
+[05/11/2026, 08:16:39] [FOZ]   2. [SAÚDE] Dengue! — CCZ vai vistoriar 4,7 mil imóveis para identificar focos do mosquito da dengue
+[05/11/2026, 08:16:39] [FOZ]   3. [CIDADE] Leilão. — Prefeitura divulga lista de 18 terrenos públicos que poderão ser leiloados em Foz
+[05/11/2026, 08:16:39] [FOZ]   4. [MEIO AMBIENTE] Tráfico. — Apreensões de ovos de aves silvestres chegam a 81 em apenas 10 dias em Foz do Iguaçu
+[05/11/2026, 08:16:39] [FOZ]   5. [CIDADE] Nossa Casa. — Operação aborda 14 pessoas em situação de rua em Foz; dez recusam atendimento
+[05/11/2026, 08:16:39] [FOZ]   6. [BOMBEIROS] Susto. — Fritadeira com óleo pega fogo em padaria de Foz do Iguaçu; ninguém fica ferido
+[05/11/2026, 08:16:39] [FOZ] Duração do vídeo: 50 s (6 notícia(s)).
+[05/11/2026, 08:16:39] [FOZ] Gravando /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/foz-news.mp4 (50s, 1500 quadros, 1080x890)...
+[05/11/2026, 08:16:41] [FOZ]   Quadro 0/1500 (0%)
+[05/11/2026, 08:16:49] [FOZ]   Quadro 150/1500 (10%)
+[05/11/2026, 08:16:56] [FOZ]   Quadro 300/1500 (20%)
+[05/11/2026, 08:17:04] [FOZ]   Quadro 450/1500 (30%)
+[05/11/2026, 08:17:12] [FOZ]   Quadro 600/1500 (40%)
+[05/11/2026, 08:17:19] [FOZ]   Quadro 750/1500 (50%)
+[05/11/2026, 08:17:27] [FOZ]   Quadro 900/1500 (60%)
+[05/11/2026, 08:17:34] [FOZ]   Quadro 1050/1500 (70%)
+[05/11/2026, 08:17:42] [FOZ]   Quadro 1200/1500 (80%)
+[05/11/2026, 08:17:49] [FOZ]   Quadro 1350/1500 (90%)
+[05/11/2026, 08:17:56] [FOZ] Encodando MP4 (yuv420p, faixa de TV — formato seguro para os NUCs)...
+[05/11/2026, 08:18:17] [FOZ] Vídeo salvo: /home/runner/work/exa-solucoes/exa-solucoes/tools/noticias/output/foz-news.mp4
+[05/11/2026, 08:18:17] [FOZ] Publicando: Notícias Foz 05/11 08h15
+[05/11/2026, 08:18:18] [FOZ] [PUBLICADOR] [publish] === Publicador EXA (nuvem) === Notícias Foz 05/11 08h15 → pedido 9cb8da99-ddb3-491c-b58c-63871eadc4cb [TESTE: não publica]
+[05/11/2026, 08:18:18] [FOZ] [PUBLICADOR] [publish] Pedido "Jeferson Stilver" (ativo) · vídeos: 2:Notícias Foz 05/11 07h04★
+[05/11/2026, 08:18:18] [FOZ] [PUBLICADOR] [publish] Teste: conexão com o sistema OK. Nada foi alterado.
+[05/11/2026, 08:18:18] [FOZ]   [RESUMO] teste — manchetes não registradas.
+[05/11/2026, 08:18:18] [FOZ] === EXA NOTÍCIAS FOZ CONCLUÍDO ===
