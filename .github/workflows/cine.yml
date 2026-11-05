@@ -1,0 +1,49 @@
+name: Cine Cataratas (programacao da semana)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [tools/cine/disparo.txt]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cine
+  cancel-in-progress: false
+
+jobs:
+  cine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: tools/cine
+    env:
+      TZ: America/Sao_Paulo
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/cine
+            tools/noticias/publish-video.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Programas
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg xvfb fonts-noto-color-emoji >/dev/null
+      - name: Dependências
+        run: npm install --no-audit --no-fund
+      - name: Rodada
+        run: |
+          MODO=$(grep -E '^modo=' disparo.txt | cut -d= -f2 | tr -d '\r'); echo "modo=$MODO"
+          if [ "$MODO" = "sonda" ]; then xvfb-run -a node sonda.mjs; else xvfb-run -a node cine.mjs; fi
+      - name: Guardar resultado no ramo cine-resultados
+        if: always()
+        run: |
+          R=$(mktemp -d); mkdir -p $R/$GITHUB_RUN_ID; cp -r output/* $R/$GITHUB_RUN_ID/ 2>/dev/null || true
+          cd $R && git init -q && git checkout -q -b x && git add -A && git -c user.email=bot@examidia.com.br -c user.name="EXA cine" commit -qm "rodada $GITHUB_RUN_ID" || exit 0
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/cine-resultados || true
