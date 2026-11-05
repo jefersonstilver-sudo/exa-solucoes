@@ -137,7 +137,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#07070a;font-fam
 #grid .h{position:absolute;top:260px;width:100%;text-align:center;font-weight:900;font-size:120px;letter-spacing:-2px}
 #grid .cards{position:absolute;top:510px;left:52px;right:52px;display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
 .card{background:rgba(255,255,255,.07);border-radius:16px;overflow:hidden}
-.cimg{height:430px;background-size:cover;background-position:center top}
+.cimg{height:370px;background-size:cover;background-position:center top}
 .cinfo{padding:14px 16px 18px;min-height:150px}
 .cinfo b{display:block;font-weight:800;font-size:30px;line-height:1.12;text-transform:uppercase}
 .cinfo i{display:block;margin-top:8px;font-style:normal;font-family:'MonoV2',monospace;font-size:27px;color:#ff8a96}
