@@ -101,7 +101,7 @@ jobs:
         continue-on-error: true
         run: node foz-news.mjs
       - name: Resumo da Sofia ao CEO
-        if: env.NOTICIAS_PUBLICAR == '1'
+        if: env.NOTICIAS_PUBLICAR == '1' && env.QUAIS != 'nenhum'
         continue-on-error: true
         run: node enviar-resumo.mjs
       - name: Guardar histórico do Foz
