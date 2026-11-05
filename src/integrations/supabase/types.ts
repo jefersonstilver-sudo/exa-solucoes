@@ -13708,6 +13708,98 @@ export type Database = {
         }
         Relationships: []
       }
+      predio_contrato_pedidos: {
+        Row: {
+          agendado_para: string | null
+          assinado_em: string | null
+          atualizado_em: string
+          building_id: string
+          clicksign_documento_id: string | null
+          clicksign_envelope_id: string | null
+          condominio_cnpj: string | null
+          condominio_endereco: string | null
+          condominio_nome: string | null
+          criado_em: string
+          criado_por: string | null
+          enviado_em: string | null
+          erro: string | null
+          id: string
+          modelo: string | null
+          origem: string
+          pdf_path: string | null
+          pedido_por_nome: string | null
+          pedido_por_tel: string | null
+          qtd_paineis: number | null
+          signatario_cargo: string | null
+          signatario_email: string | null
+          signatario_nome: string | null
+          signatario_telefone: string | null
+          status: string
+        }
+        Insert: {
+          agendado_para?: string | null
+          assinado_em?: string | null
+          atualizado_em?: string
+          building_id: string
+          clicksign_documento_id?: string | null
+          clicksign_envelope_id?: string | null
+          condominio_cnpj?: string | null
+          condominio_endereco?: string | null
+          condominio_nome?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          modelo?: string | null
+          origem?: string
+          pdf_path?: string | null
+          pedido_por_nome?: string | null
+          pedido_por_tel?: string | null
+          qtd_paineis?: number | null
+          signatario_cargo?: string | null
+          signatario_email?: string | null
+          signatario_nome?: string | null
+          signatario_telefone?: string | null
+          status?: string
+        }
+        Update: {
+          agendado_para?: string | null
+          assinado_em?: string | null
+          atualizado_em?: string
+          building_id?: string
+          clicksign_documento_id?: string | null
+          clicksign_envelope_id?: string | null
+          condominio_cnpj?: string | null
+          condominio_endereco?: string | null
+          condominio_nome?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          modelo?: string | null
+          origem?: string
+          pdf_path?: string | null
+          pedido_por_nome?: string | null
+          pedido_por_tel?: string | null
+          qtd_paineis?: number | null
+          signatario_cargo?: string | null
+          signatario_email?: string | null
+          signatario_nome?: string | null
+          signatario_telefone?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predio_contrato_pedidos_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predio_contratos: {
         Row: {
           arquivo_path: string
