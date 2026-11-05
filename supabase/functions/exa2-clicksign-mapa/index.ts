@@ -181,6 +181,21 @@ Deno.serve(async (req) => {
 
     const b = await req.json().catch(() => ({}));
     if (b.acao === "importar") return await importar(sb, token, b, u.user.email || "admin");
+    // CANCELAR envelopes de teste (pedido explícito do Jeferson, 05/11/2026). Só envelopes "running" e só os ids enviados.
+    if (b.acao === "cancelar") {
+      const ids = (Array.isArray(b.envelope_ids) ? b.envelope_ids : []).slice(0, 20).map((x: any) => String(x).replace(/[^0-9a-f-]/gi, ""));
+      const h = { Accept: "application/vnd.api+json", "Content-Type": "application/vnd.api+json", Authorization: token };
+      const res = [];
+      for (const id of ids) {
+        try {
+          const e = await getJson(`${BASE}/api/v3/envelopes/${id}`, h);
+          if (e?.data?.attributes?.status !== "running") { res.push({ id, ok: false, motivo: "não está em andamento: " + e?.data?.attributes?.status }); continue; }
+          const r = await fetch(`${BASE}/api/v3/envelopes/${id}`, { method: "PATCH", headers: h, body: JSON.stringify({ data: { id, type: "envelopes", attributes: { status: "canceled" } } }) });
+          res.push({ id, nome: e?.data?.attributes?.name, ok: r.ok, motivo: r.ok ? null : (await r.text()).slice(0, 200) });
+        } catch (er) { res.push({ id, ok: false, motivo: (er as Error).message }); }
+      }
+      return json(200, { ok: true, itens: res });
+    }
     if (b.acao === "detalhe") return json(200, { ok: true, itens: await detalhe(token, Array.isArray(b.envelope_ids) ? b.envelope_ids : []) });
     const fonte = ["v3", "v1"].includes(b.fonte) ? b.fonte : "v3";
     const ini = Math.max(1, Number(b.pagina_ini) || 1);
