@@ -31,7 +31,7 @@ jobs:
           git fetch -q --depth 1 origin arquivos-temp && git checkout -q -b arquivos-temp FETCH_HEAD || git checkout -q --orphan arquivos-temp
           mkdir -p "$PASTA"
           for u in $URLS; do
-            case "$u" in https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/*) ;; *) echo "url fora da lista: $u"; exit 1;; esac
+            case "$u" in https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/*|https://sistema-update.s3.sa-east-1.amazonaws.com/ui_v*.zip) ;; *) echo "url fora da lista: $u"; exit 1;; esac
             curl -fsSL --max-time 60 "$u" -o "$PASTA/$(basename "${u%%\?*}")"
           done
           git add -A && git commit -qm "arquivos: $PASTA" && git push -q origin arquivos-temp
