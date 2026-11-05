@@ -1,0 +1,101 @@
+{
+ "timestamp": "2026-10-29T17:01:08.896Z",
+ "movies": [
+  {
+   "title": "100 DIAS",
+   "rating": "12",
+   "format": "Dublado - 2D",
+   "room": "Sala 4",
+   "showtimes": [
+    "14:10",
+    "19:00"
+   ]
+  },
+  {
+   "title": "RAZÃO E SENSIBILIDADE",
+   "rating": "10",
+   "format": "Dublado - 2D",
+   "room": "Sala 3",
+   "showtimes": [
+    "14:00",
+    "18:50"
+   ]
+  },
+  {
+   "title": "TRÊS HORAS PARA VIVER",
+   "rating": "16",
+   "format": "Dublado - 2D",
+   "room": "Sala 3",
+   "showtimes": [
+    "16:50",
+    "21:40"
+   ]
+  },
+  {
+   "title": "A CAIXA DO DEMÔNIO",
+   "rating": "18",
+   "format": "Dublado - 2D",
+   "room": "Sala 2",
+   "showtimes": [
+    "19:00"
+   ]
+  },
+  {
+   "title": "DO OUTRO LADO DAS REDES",
+   "rating": "14",
+   "format": "Dublado - 2D",
+   "room": "Sala 2",
+   "showtimes": [
+    "16:30",
+    "21:30"
+   ]
+  },
+  {
+   "title": "CARA DE BARRO",
+   "rating": "18",
+   "format": "Dublado - 2D",
+   "room": "Sala 4",
+   "showtimes": [
+    "16:30",
+    "21:30"
+   ]
+  },
+  {
+   "title": "STREET FIGHTER",
+   "rating": "14",
+   "format": "Dublado - 2D",
+   "room": "Sala 1",
+   "showtimes": [
+    "21:30"
+   ]
+  },
+  {
+   "title": "DENTRO DA BALEIA",
+   "rating": "14",
+   "format": "Dublado - 2D",
+   "room": "Sala 1",
+   "showtimes": [
+    "19:00"
+   ]
+  },
+  {
+   "title": "AS AVENTURAS DE TADEO E A LÂMPADA MÁGICA",
+   "rating": "10",
+   "format": "Dublado - 2D",
+   "room": "Sala 2",
+   "showtimes": [
+    "14:30"
+   ]
+  },
+  {
+   "title": "VERITY",
+   "rating": "16",
+   "format": "Dublado - 2D",
+   "room": "Sala 1",
+   "showtimes": [
+    "14:00",
+    "16:30"
+   ]
+  }
+ ]
+}

@@ -61,7 +61,9 @@ async function remover(v) {
 }
 async function limpar(manterId) {
   let n = 0;
-  for (const v of await videosDoPedido()) if (!v.is_base_video && v.id !== manterId) { if (await remover(v)) n++; }
+  // LIMPAR_SO (regex): só remove vídeos cujo nome bate (ex.: Cine "cine|cinema" — os do hotel ficam)
+  const so = process.env.LIMPAR_SO ? new RegExp(process.env.LIMPAR_SO, "i") : null;
+  for (const v of await videosDoPedido()) if (!v.is_base_video && v.id !== manterId && (!so || so.test(v.nome))) { if (await remover(v)) n++; }
   return n;
 }
 

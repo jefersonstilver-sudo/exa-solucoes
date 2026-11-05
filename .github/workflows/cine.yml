@@ -35,12 +35,27 @@ jobs:
           node-version: 22
       - name: Programas
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg xvfb fonts-noto-color-emoji >/dev/null
+      - name: Semana anterior (para achar as estreias)
+        uses: actions/cache/restore@v4
+        with:
+          path: tools/cine/output/_cine-semana-anterior.json
+          key: cine-semana-${{ github.run_id }}
+          restore-keys: cine-semana-
       - name: Dependências
         run: npm install --no-audit --no-fund
       - name: Rodada
         run: |
           MODO=$(grep -E '^modo=' disparo.txt | cut -d= -f2 | tr -d '\r'); echo "modo=$MODO"
-          if [ "$MODO" = "sonda" ]; then xvfb-run -a node sonda.mjs; else xvfb-run -a node cine.mjs; fi
+          PUB=$(grep -E '^publicar=' disparo.txt | cut -d= -f2 | tr -d '\r')
+          [ "${{ github.event_name }}" = "schedule" ] && { MODO=cine; PUB=sim; }
+          export NOTICIAS_PUBLICAR=$([ "$PUB" = "sim" ] && echo 1 || echo 0); echo "publicar=$NOTICIAS_PUBLICAR"
+          if [ "$MODO" = "sonda" ]; then xvfb-run -a node sonda.mjs; else node cine.mjs; fi
+      - name: Guardar semana
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: tools/cine/output/_cine-semana-anterior.json
+          key: cine-semana-${{ github.run_id }}
       - name: Guardar resultado no ramo cine-resultados
         if: always()
         run: |

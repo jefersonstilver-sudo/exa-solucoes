@@ -1,2 +1,2 @@
-modo=sonda
-# 2
+modo=cine
+publicar=nao
