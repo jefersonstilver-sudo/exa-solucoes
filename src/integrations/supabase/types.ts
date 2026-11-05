@@ -2510,6 +2510,30 @@ export type Database = {
           },
         ]
       }
+      cine_programacao: {
+        Row: {
+          criado_em: string
+          filmes: Json
+          id: number
+          origem: string
+          qtd: number
+        }
+        Insert: {
+          criado_em?: string
+          filmes: Json
+          id?: number
+          origem?: string
+          qtd: number
+        }
+        Update: {
+          criado_em?: string
+          filmes?: Json
+          id?: number
+          origem?: string
+          qtd?: number
+        }
+        Relationships: []
+      }
       clausulas_padrao: {
         Row: {
           codigo: string
@@ -19631,6 +19655,10 @@ export type Database = {
       check_video_schedule_conflict: {
         Args: { p_video1_id: string; p_video2_id: string }
         Returns: boolean
+      }
+      cine_registrar_programacao: {
+        Args: { p_filmes: Json; p_token: string }
+        Returns: Json
       }
       clean_old_navigation_history: { Args: never; Returns: undefined }
       cleanup_expired_blocked_ips: { Args: never; Returns: undefined }
