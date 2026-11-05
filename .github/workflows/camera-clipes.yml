@@ -22,7 +22,12 @@ jobs:
       MINUTOS: ${{ inputs.minutos || '330' }}
     steps:
       - name: ffmpeg
-        run: sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg >/dev/null && ffmpeg -version | head -1
+        # build estático (o apt dos runners às vezes leva mais de 10 min)
+        run: |
+          curl -sSL --retry 3 -o /tmp/ff.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
+          mkdir -p /tmp/ff && tar -xJf /tmp/ff.tar.xz -C /tmp/ff --strip-components=1
+          echo "/tmp/ff/bin" >> "$GITHUB_PATH"
+          /tmp/ff/bin/ffmpeg -version | head -1
       - name: bucket
         run: |
           curl -s -X POST "$SURL/storage/v1/bucket" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: application/json" \
@@ -36,7 +41,7 @@ jobs:
           mkdir -p /tmp/c
           sobe() { # $1 arquivo local, $2 caminho no bucket, $3 content-type, $4 cache
             curl -s -o /dev/null -w "%{http_code}" -X POST "$SURL/storage/v1/object/camera-clipes/$2" \
-              -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: $3" -H "x-upsert: true" -H "Cache-Control: $4" --data-binary @"$1"
+              -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: $3" -H "x-upsert: true" -H "Cache-Control: $4" --max-time 60 --data-binary @"$1"
           }
           um() { # grava, converte e publica um clipe de uma câmera
             c=$1; t=$(date -u +%Y%m%dT%H%M%SZ); f=/tmp/c/$c-$t.mp4
