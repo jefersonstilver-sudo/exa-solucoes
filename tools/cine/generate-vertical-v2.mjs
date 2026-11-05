@@ -92,7 +92,7 @@ export function generateVerticalHtml(movies, options = {}) {
       <div class="fshade"></div>
       <div class="ftag"><span>${rotulo} ${i + 1}/${N}</span>${temEstreia ? '<b class="novo">NOVO</b>' : ""}</div>
       <div class="pwrap"><img class="poster" src="${esc(m.poster)}"/></div>
-      <h2 class="ftitle">${esc(m.title)}</h2>
+      <h2 class="ftitle"${String(m.title).length > 34 ? ' style="font-size:64px"' : String(m.title).length > 22 ? ' style="font-size:76px"' : ""}>${esc(m.title)}</h2>
       <div class="times">${horarios(m).length ? horarios(m).map((h) => `<span>${esc(h)}</span>`).join("") : `<span class="semh">SESSÕES E INGRESSOS NO QR</span>`}</div>
       <div class="meta">${esc(formatoCurto(m))}</div>
     </section>`).join("");

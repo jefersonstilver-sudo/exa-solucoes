@@ -22,6 +22,11 @@ const PEDIDO = "b4b2f33a-d37d-40a8-98fb-77177fa0b35f";
 const ANTERIOR = join(OUT, "_cine-semana-anterior.json"), SEMENTE = join(__dirname, "semana-anterior.json");
 const log = m => console.log(`[cine] ${m}`);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// mesmo filme com nome levemente diferente (ex.: "DO OUTRO LADO DAS REDES" → "O OUTRO LADO DAS REDES")
+const PARADAS = new Set(["O", "A", "OS", "AS", "DO", "DA", "DOS", "DAS", "DE", "E", "UM", "UMA"]);
+const fichas = t => new Set(norm(t).split(" ").filter(w => w && !PARADAS.has(w)));
+function mesmoFilme(a, b) { const A = fichas(a), B = fichas(b); if (!A.size || !B.size) return norm(a) === norm(b);
+  let i = 0; for (const x of A) if (B.has(x)) i++; return i / new Set([...A, ...B]).size >= 0.75; }
 const norm = s => String(s || "").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[–—-]\s*PRE[- ]?ESTREIA/, "").replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
 function semana() {
@@ -100,10 +105,15 @@ async function main() {
   // semana anterior: estreias + completar classificação/formato
   let prev = null; for (const f of [ANTERIOR, SEMENTE]) { if (!prev && existsSync(f)) try { prev = JSON.parse(readFileSync(f, "utf-8")); } catch {} }
   const antes = new Map((prev?.movies || []).map(m => [norm(m.title), m]));
-  for (const f of filmes) { const a = antes.get(norm(f.title)); if (a) { f.rating = f.rating || a.rating || ""; f.format = a.format || ""; } }
+  const acharAntes = t => antes.get(norm(t)) || [...antes.values()].find(m => mesmoFilme(m.title, t));
+  for (const f of filmes) {
+    // "– PRÉ-ESTREIA" sai do título (quebrava em 3 linhas) e vai para a linha de detalhes
+    if (/pr[ée][- ]?estreia/i.test(f.title)) { f.title = f.title.replace(/\s*[–—-]\s*pr[ée][- ]?estreia\s*$/i, "").trim(); f.room = "Pré-estreia"; }
+    const a = acharAntes(f.title); if (a) { f.rating = f.rating || a.rating || ""; f.format = a.format || ""; }
+  }
   const prevDaSemana = prev && new Date(prev.timestamp) >= qui;   // rodou de novo na mesma semana: mantém a base
   const base = prevDaSemana ? (prev.base || []) : [...antes.keys()];
-  const estreias = base.length ? filmes.filter(f => !base.includes(norm(f.title))).map(f => f.title) : [];
+  const estreias = base.length ? filmes.filter(f => !base.some(b => b === norm(f.title) || mesmoFilme(b, f.title))).map(f => f.title) : [];
   log(`Estreias: ${estreias.length ? estreias.join(", ") : "nenhuma (mostra os filmes em cartaz)"}`);
   // estreias primeiro; o resto na ordem do site
   filmes.sort((a, b) => (estreias.includes(b.title) ? 1 : 0) - (estreias.includes(a.title) ? 1 : 0));
