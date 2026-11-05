@@ -85,13 +85,14 @@
         B.style.cssText = A.style.cssText; B.style.visibility = 'hidden';
         A.parentNode.insertBefore(B, A);
         window.__tvDuplo = true;
+        var info = window.__tvInfo = { duplo: true, prontas: 0, normais: 0, falhas: 0, espera_ms: 0 };
         var pre = { el: B, src: '' };
         var falhas = 0;
         var fonteDe = function (it) { return '/cache/' + encodeURI(it.video); };
         var plusDe = function (it) { return it && (it.isPlus === true || it.isPlus === 'true'); };
         var errou = function () {
-          falhas++; pre.src = '';
-          if (falhas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; console.log('tv: revezamento desligado'); }
+          falhas++; pre.src = ''; info.falhas++;
+          if (falhas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; console.log('tv: revezamento desligado'); }
         };
         B.addEventListener('error', errou); A.addEventListener('error', function () { if (pre.el === A) errou(); });
         var carregar = function () {
@@ -121,7 +122,8 @@
             var i = currentIdx + 1;
             if (i >= playlist.length) return normal(); // fim do ciclo: o propagandas.js recarrega a programação
             var it = playlist[i], el = pre.el, velho = videoElement;
-            if (!it || el === velho || pre.src !== fonteDe(it) || el.readyState < 2 || el.error) return normal();
+            if (!it || el === velho || pre.src !== fonteDe(it) || el.readyState < 2 || el.error) { info.normais++; return normal(); }
+            var t0 = Date.now();
             currentIdx = i;
             var plus = plusDe(it);
             applyVisualMode(el, plus);
@@ -131,6 +133,7 @@
             var feito = false;
             var mostrar = function () {
               if (feito) return; feito = true;
+              info.prontas++; info.espera_ms = Date.now() - t0;
               el.style.visibility = '';
               if (velho) { velho.style.visibility = 'hidden'; velho.removeAttribute('id'); velho.removeAttribute('data-fullscreen'); }
               el.id = 'video-propaganda';

@@ -120,7 +120,8 @@ export function ReplicaElevador({ predioId, alternativa, camera = true }: { pred
         if (cam && !cam.paused && cam.readyState >= 3) saude.camera++;
         if (Date.now() - ultimoEnvio > 120000 && saude.seg >= 30) {
           ultimoEnvio = Date.now();
-          registrarEvento('replica_saude', { ...saude, pct_perdidos: saude.quadros ? Math.round((saude.perdidos / saude.quadros) * 1000) / 10 : null });
+          let tv: any = null; try { tv = (ref.current?.contentWindow as any)?.__tvInfo || null; if (tv) tv = { ...tv }; } catch { /* */ }
+          registrarEvento('replica_saude', { ...saude, tv, pct_perdidos: saude.quadros ? Math.round((saude.perdidos / saude.quadros) * 1000) / 10 : null });
           Object.assign(saude, { seg: 0, parado: 0, preto: 0, trocas: 0, perdidos: 0, quadros: 0, arquivos: {}, camera: 0 });
         }
       } catch { /* a página ainda está carregando */ }
