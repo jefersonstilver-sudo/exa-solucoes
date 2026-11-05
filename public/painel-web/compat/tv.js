@@ -86,8 +86,9 @@
      */
     function duploBuffer() {
       try {
-        // desligado por padrão: no Zeta (Las Brisas, 05/11) o anúncio parou depois de 5 trocas. Só com ?duplo=1 na URL.
-        if (!/[?&]duplo=1(&|$)/.test(location.search)) return;
+        // ?duplo=0 desliga. Medido no Zeta (Las Brisas, 05/11): 17 trocas seguidas, ~20–80 ms até o novo tocar e só 3–6 s
+        // "parado" a cada 2 min (antes 10–16 s). Uma vez o anúncio parou de vez: por isso o vigia abaixo.
+        if (/[?&]duplo=0(&|$)/.test(location.search)) return;
         if (window.__tvSemDuplo || typeof tocarProximo !== 'function' || typeof applyVisualMode !== 'function') return;
         var A = document.getElementById('video-propaganda');
         if (!A || !A.parentNode) return;
@@ -162,6 +163,26 @@
             if (el.currentTime > 0.05) mostrar();
           } catch (e) { console.error('tv: revezamento falhou, troca normal', e); return normal(); }
         };
+        // vigia: se o anúncio que aparece ficar 4 s sem andar (fora da tela cheia de carregamento), sai do revezamento
+        // nesta troca e segue pela troca normal; duas vezes = desliga o revezamento até a próxima recarga
+        var ultT = -1, parouEm = 0, travadas = 0;
+        setInterval(function () {
+          try {
+            var v = videoElement;
+            if (!v || !v.currentSrc) return;
+            if (v.currentTime !== ultT) { ultT = v.currentTime; parouEm = Date.now(); return; }
+            if (v.ended) return;
+            if (Date.now() - parouEm > 4000) {
+              parouEm = Date.now(); travadas++; info.travadas = travadas;
+              console.log('tv: anúncio parado, troca normal');
+              if (travadas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; }
+              try { [A, B].forEach(function (x) { if (x !== v) { x.pause(); x.removeAttribute('src'); x.load(); x.style.visibility = 'hidden'; } }); } catch (e) { /* segue */ }
+              pre = { el: v === A ? B : A, src: '' };
+              v.style.visibility = '';
+              normal();
+            }
+          } catch (e) { /* segue */ }
+        }, 1000);
         window.tocarProximo = trocar;
         if (A.onended) A.onended = trocar;
         console.log('tv: revezamento de players ligado');
