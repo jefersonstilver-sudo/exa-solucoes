@@ -16329,6 +16329,9 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          extra_em: string | null
+          extra_nome: string | null
+          extra_url: string | null
           id: string
           mensagem: string | null
           nome: string | null
@@ -16342,6 +16345,9 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string
+          extra_em?: string | null
+          extra_nome?: string | null
+          extra_url?: string | null
           id?: string
           mensagem?: string | null
           nome?: string | null
@@ -16355,6 +16361,9 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string
+          extra_em?: string | null
+          extra_nome?: string | null
+          extra_url?: string | null
           id?: string
           mensagem?: string | null
           nome?: string | null
