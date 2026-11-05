@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Check, Video } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Moldura, MCab, MTit, MDesc } from './Moldura';
 
 const FUNCAO = 'https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/exa-tela';
 const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk';
@@ -34,8 +34,8 @@ export function resumoCameras(cfg?: Partial<CamerasConfig> | null, nomes?: Map<s
 
 const TEMPOS = [10, 15, 20, 30, 60, 120];
 
-export function EscolherCameras({ titulo, atual, onFechar, onSalvar }: {
-  titulo: string; atual?: Partial<CamerasConfig> | null; onFechar: () => void; onSalvar: (c: CamerasConfig) => Promise<void>;
+export function EscolherCameras({ titulo, atual, onFechar, onSalvar, embutido = false }: {
+  titulo: string; atual?: Partial<CamerasConfig> | null; onFechar: () => void; onSalvar: (c: CamerasConfig) => Promise<void>; embutido?: boolean;
 }) {
   const [lista, setLista] = useState<Cam[] | null>(null);
   const [erro, setErro] = useState('');
@@ -56,17 +56,16 @@ export function EscolherCameras({ titulo, atual, onFechar, onSalvar }: {
     try {
       await onSalvar({ ids: modo === 'fixa' ? ids.slice(0, 1) : ids, segundos: modo === 'fixa' ? null : seg });
       toast.success('Câmeras salvas', { description: 'A TV muda em até 1 minuto.' });
-      onFechar();
+      if (!embutido) onFechar();
     } catch (e) { toast.error((e as Error).message || 'Não consegui salvar'); } finally { setSalvando(false); }
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[560px]">
-        <DialogHeader>
-          <DialogTitle>Câmeras · {titulo}</DialogTitle>
-          <DialogDescription>Quais câmeras ao vivo aparecem nesta TV e por quanto tempo cada uma.</DialogDescription>
-        </DialogHeader>
+    <Moldura embutido={embutido} onFechar={onFechar} className="max-h-[92vh] overflow-y-auto sm:max-w-[560px]">
+        <MCab>
+          <MTit>{embutido ? 'Câmeras ao vivo' : `Câmeras · ${titulo}`}</MTit>
+          <MDesc>Quais câmeras ao vivo aparecem nesta TV e por quanto tempo cada uma. Na TV box elas chegam como clipes nítidos com cerca de 1 min de atraso.</MDesc>
+        </MCab>
         <div className="space-y-4 text-[14px]">
           <div className="grid grid-cols-2 gap-2">
             {([['rodizio', 'Rodízio', 'Troca entre as câmeras escolhidas'], ['fixa', 'Uma fixa', 'Uma câmera só, sem trocar']] as const).map(([v, t, sub]) => (
@@ -121,7 +120,6 @@ export function EscolherCameras({ titulo, atual, onFechar, onSalvar }: {
             </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </Moldura>
   );
 }

@@ -394,7 +394,7 @@ export default function PaineisEXA() {
                             onAlternar={() => setCardAberto(cardAberto === `tela:${t.id}` ? null : `tela:${t.id}`)}
                             locais={locaisOrdenados} grupos={deviceGroups.map((x) => ({ id: x.id, nome: x.nome }))} semColunaGrupo={telasNovas.semColunaGrupo}
                             onAtualizar={(patch) => telasNovas.atualizar(t.id, patch)} onComando={(tipo) => telasNovas.comando(t.id, tipo)}
-                            onAbrirTelas={() => navigate(buildPath('telas'))}
+                            onAbrirTelas={() => navigate(buildPath(`telas/${t.id}`))}
                             onConectar={(codigo) => navigate(buildPath(`telas?adicionar=1&codigo=${encodeURIComponent(codigo)}`))} />
                         ))}
                         {g.itens.map((p) => {

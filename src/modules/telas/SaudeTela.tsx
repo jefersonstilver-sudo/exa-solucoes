@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Clapperboard, Cpu, Gauge, Loader2, RefreshCw, Thermometer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Moldura, MCab, MTit, MDesc } from './Moldura';
 
 const db = supabase as any;
 
@@ -46,7 +46,7 @@ function Grafico({ pontos, cor, rotulo, max }: { pontos: { t: number; v: number 
   );
 }
 
-export function SaudeTela({ tela, onFechar, onAtualizou }: Props) {
+export function SaudeTela({ tela, onFechar, onAtualizou, embutido = false }: Props & { embutido?: boolean }) {
   const info = tela.info || {};
   const saude = tela.saude || {};
   const fl = saude.fluidez || {};
@@ -88,12 +88,11 @@ export function SaudeTela({ tela, onFechar, onAtualizou }: Props) {
   const decHw = (Array.isArray(info.decodificadores) ? info.decodificadores : []).filter((d: any) => !d.software && /avc|hevc|vp9/.test(String(d.tipo)));
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onFechar()}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Saúde · {tela.nome || 'tela'}</DialogTitle>
-          <DialogDescription>Hardware, fluidez medida na própria TV, histórico de 24 h e gravações da tela.</DialogDescription>
-        </DialogHeader>
+    <Moldura embutido={embutido} onFechar={onFechar} className="max-h-[92vh] max-w-3xl overflow-y-auto">
+        <MCab>
+          <MTit>{embutido ? 'Saúde, hardware e gravações' : `Saúde · ${tela.nome || 'tela'}`}</MTit>
+          <MDesc>Hardware, fluidez medida na própria TV, histórico de 24 h e gravações da tela.</MDesc>
+        </MCab>
 
         <section className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl bg-black/[0.035] p-4">
@@ -201,7 +200,6 @@ export function SaudeTela({ tela, onFechar, onAtualizou }: Props) {
           </div>
           <button type="button" onClick={salvarAjustes} className="mt-3 h-10 rounded-xl bg-[#17181A] px-4 text-[13px] font-bold text-white">Salvar ajustes</button>
         </section>
-      </DialogContent>
-    </Dialog>
+    </Moldura>
   );
 }

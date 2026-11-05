@@ -124,7 +124,7 @@ export function TelaNoPaineis({ t, aberto, onAlternar, locais, grupos, semColuna
                   <RefreshCw className="h-4 w-4" />Recarregar
                 </button>
                 <button type="button" onClick={onAbrirTelas} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#17181A] px-3 text-sm font-bold text-white">
-                  <Settings2 className="h-4 w-4" />Layout e mais
+                  <Settings2 className="h-4 w-4" />Abrir a tela
                 </button>
               </div>
             </>

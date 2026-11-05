@@ -42,12 +42,22 @@
             }
           } catch (e) { /* segue */ }
           try {
-            if (desc.get.call(v)) { v.pause(); v.removeAttribute('src'); v.load(); }
+            // v2: com as versões leves todos os horizontais têm o mesmo tamanho (874x720): entre dois horizontais
+            // o decodificador é reaproveitado (troca sem a parada de 1–2 s). Vertical, mudança de formato ou
+            // qualquer erro de vídeo: desmonta como antes (e, depois de um erro, sempre desmonta).
+            var antes = String(desc.get.call(v) || '');
+            var forma = function (x) { return /vertical/i.test(x) ? 'v' : 'h'; };
+            var reaproveita = antes && !window.__tvSempreDesmonta && forma(antes) === forma(String(u)) && forma(antes) === 'h';
+            if (antes && !reaproveita) { v.pause(); v.removeAttribute('src'); v.load(); }
           } catch (e) { /* segue */ }
           desc.set.call(v, u);
         }
       });
     };
+    document.addEventListener('error', function (ev) {
+      var t = ev.target;
+      if (t && t.id === 'video-propaganda') window.__tvSempreDesmonta = true;
+    }, true);
     // roda antes do iniciar() do propagandas.js (este script está no <head>, o listener dele é registrado antes)
     document.addEventListener('DOMContentLoaded', preparar);
   } catch (e) { /* segue sem o ajuste */ }

@@ -36,6 +36,11 @@ jobs:
         run: |
           set +e
           CAMS="fozpontedaamizadesentidoparaguai fozpontedaamizadesentidobrasil fozsentidopontedaamizade01 fozaduanapontedaamizade fozpontetancredoneves fozpontedaintegracao"
+          # + as câmeras cadastradas no sistema (as mesmas que aparecem em "Câmeras ao vivo" no admin)
+          EXTRA=$(curl -s --max-time 30 -X POST "$SURL/functions/v1/exa-tela" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{"acao":"cameras_lista"}' \
+            | python3 -c "import json,sys,re; d=json.load(sys.stdin); print(' '.join(sorted({m.group(1) for c in d.get('cameras',[]) for m in [re.search(r'portaldacidade/([a-z0-9]+)\.stream/', str(c.get('url','')), re.I)] if m})))" 2>/dev/null)
+          CAMS=$(echo $CAMS $EXTRA | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          echo "câmeras: $CAMS"
           BASE="https://video02.logicahost.com.br/portaldacidade"
           FIM=$(( $(date +%s) + MINUTOS * 60 ))
           mkdir -p /tmp/c

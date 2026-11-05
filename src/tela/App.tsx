@@ -288,12 +288,44 @@ export default function App() {
     document.addEventListener('click', cheia);
     window.addEventListener('error', (e) => registrarErro(`js: ${e.message}`));
     // a primeira tela já foi desenhada: encerra a intro (web) e o splash do app Android
-    requestAnimationFrame(() => requestAnimationFrame(() => { try { (window as any).__telaPronta?.(); } catch { /* */ } }));
-    return () => { document.removeEventListener('visibilitychange', vis); document.removeEventListener('contextmenu', menu); document.removeEventListener('click', cheia); try { lock?.release(); } catch { /* */ } };
+    // a intro (do app ou da página) só sai quando a tela já está rodando de verdade: o vídeo tocando
+    // (na réplica do prédio: o anúncio e a câmera). Nunca passa de 25 s; sem programação (código), sai logo.
+    const comeco = Date.now();
+    const tocando = (v: HTMLVideoElement | null) => !!v && !v.paused && v.readyState >= 3 && v.currentTime > 0.15;
+    const pronta = () => {
+      try {
+        const e = ler<Estado | null>(K_ESTADO, null);
+        if (!e?.pareada) return Date.now() - comeco > 600;
+        const ifr = document.querySelector('iframe[title="Tela do elevador"]') as HTMLIFrameElement | null;
+        if (ifr) {
+          const d = ifr.contentDocument;
+          const ad = d?.getElementById('video-propaganda') as HTMLVideoElement | null;
+          const cam = d?.getElementById('live-video') as HTMLVideoElement | null;
+          const semCamera = !!d?.documentElement.classList.contains('sem-camera') || !d?.querySelector('.widget-camera');
+          return tocando(ad) && (semCamera || tocando(cam) || Date.now() - comeco > 14000);
+        }
+        return Array.prototype.some.call(document.querySelectorAll('video'), (v: HTMLVideoElement) => tocando(v)) || Date.now() - comeco > 12000;
+      } catch { return false; }
+    };
+    const vigiaPronta = setInterval(() => {
+      if (pronta() || Date.now() - comeco > 25000) {
+        clearInterval(vigiaPronta);
+        // mais meio segundo para o primeiro quadro assentar (sem "abrir aos poucos")
+        setTimeout(() => { try { (window as any).__telaPronta?.(); } catch { /* */ } }, 500);
+      }
+    }, 300);
+    return () => { clearInterval(vigiaPronta); document.removeEventListener('visibilitychange', vis); document.removeEventListener('contextmenu', menu); document.removeEventListener('click', cheia); try { lock?.release(); } catch { /* */ } };
   }, []);
 
   const vert = ehVertical(estado);
   const giroAlvo = giroDaTela(estado);
+  // desconectada no admin (vai ser ligada do zero em outro lugar): a TV pergunta de novo como está instalada
+  const eraPareada = useRef<boolean | null>(null);
+  useEffect(() => {
+    const agora = !!estado?.pareada;
+    if (eraPareada.current === true && !agora) { try { (window as any).ExaTela?.escolherOrientacao?.(); } catch { /* */ } }
+    eraPareada.current = agora;
+  }, [estado?.pareada]);
   // o admin mudou a orientação (ou o aparelho guardou outra): o app guarda a nova posição, gira a intro e
   // recomeça a tela do zero (intro + página), já na posição certa. App antigo: só o Palco gira.
   useEffect(() => {

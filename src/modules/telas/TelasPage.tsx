@@ -5,15 +5,17 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import {
   Plus, RefreshCw, MonitorPlay, Smartphone, Laptop, Terminal, Globe, Copy, ChevronRight, ChevronLeft, Check,
   MoreHorizontal, Trash2, Unlink, RotateCcw, Eraser, Store, Settings2, LayoutTemplate, Pencil, Video, Activity,
+  ArrowLeft, Power, Download, Compass, Wrench,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Moldura, MCab, MTit, MDesc } from './Moldura';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLayout } from './catalogo';
 import { EscolherCameras } from './EscolherCameras';
@@ -70,6 +72,8 @@ function useQr(valor: string) {
 // ============================================================== página
 export default function TelasPage() {
   const qc = useQueryClient();
+  const base = useLocation().pathname.replace(/\/+$/, '');
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [adicionar, setAdicionar] = useState(params.get('adicionar') === '1');
   const [layoutDe, setLayoutDe] = useState<Tela | null>(null);
@@ -179,33 +183,12 @@ export default function TelasPage() {
             <article key={t.id} className={`flex min-w-0 flex-col gap-3 rounded-3xl p-4 ${vidro}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-[17px] font-extrabold">{t.nome || (t.status === 'ativa' ? 'Tela' : `Código ${t.codigo || '…'}`)}</div>
+                  <Link to={`${base}/${t.id}`} className="block truncate text-[17px] font-extrabold hover:underline">{t.nome || (t.status === 'ativa' ? 'Tela' : `Código ${t.codigo || '…'}`)}</Link>
                   <div className="truncate text-[13px] text-[#5E5F63]">{local ? `${local.nome}${local.segmento_local ? ` · ${local.segmento_local}` : ''}` : 'Sem local'} · {t.ambiente === 'hall' ? 'Hall' : 'Comércio'}</div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <span className={`rounded-full px-2.5 py-1 text-[12px] font-bold ${SELO[st].cls}`}>{SELO[st].txt}</span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button type="button" aria-label="Ações da tela" className="grid h-9 w-9 place-items-center rounded-full hover:bg-black/5"><MoreHorizontal className="h-4 w-4" /></button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-60">
-                      <DropdownMenuItem onClick={() => setLayoutDe(t)}><LayoutTemplate className="mr-2 h-4 w-4" />Trocar layout</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setLocalDe(t)}><Settings2 className="mr-2 h-4 w-4" />Nome, local, vídeos da casa e ritmo</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setCamerasDe(t)}><Video className="mr-2 h-4 w-4" />Câmeras ao vivo</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSaudeDe(t)}><Activity className="mr-2 h-4 w-4" />Saúde, hardware e gravar a tela</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => comando(t, 'recarregar', 'Recarregando a tela')}><RotateCcw className="mr-2 h-4 w-4" />Recarregar a tela</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => comando(t, 'limpar_cache', 'Limpando os vídeos guardados')}><Eraser className="mr-2 h-4 w-4" />Baixar os vídeos de novo</DropdownMenuItem>
-                      {String(t.plataforma || '') === 'android' && <DropdownMenuItem onClick={() => comando(t, 'reiniciar_app', 'Reiniciando o app')}><Smartphone className="mr-2 h-4 w-4" />Reiniciar o app</DropdownMenuItem>}
-                      {String(t.plataforma || '') === 'android' && <DropdownMenuItem onClick={() => comando(t, 'atualizar_app', 'Abrindo o download do app novo na TV')}><Smartphone className="mr-2 h-4 w-4" />Atualizar o app (abre o download na TV)</DropdownMenuItem>}
-                      {String(t.plataforma || '') === 'android' && <DropdownMenuItem onClick={() => comando(t, 'orientacao', 'A TV vai perguntar como está instalada (deitada ou em pé)')}><Smartphone className="mr-2 h-4 w-4" />Escolher de novo a posição da TV</DropdownMenuItem>}
-                      {String(t.plataforma || '') === 'android' && <DropdownMenuItem onClick={() => comando(t, 'abrir_configuracoes', 'Abrindo as configurações do aparelho')}><Settings2 className="mr-2 h-4 w-4" />Abrir configurações do aparelho</DropdownMenuItem>}
-                      {String(t.plataforma || '') === 'android' && <DropdownMenuItem onClick={() => { if (confirm('Fechar o app na TV? Ela deixa de mostrar a programação até alguém abrir o app de novo.')) comando(t, 'sair_app', 'Fechando o app na TV'); }}><Unlink className="mr-2 h-4 w-4" />Fechar o app na TV</DropdownMenuItem>}
-                      <DropdownMenuSeparator />
-                      {t.status === 'ativa' && <DropdownMenuItem onClick={() => desparear(t)}><Unlink className="mr-2 h-4 w-4" />Desconectar (novo código)</DropdownMenuItem>}
-                      <DropdownMenuItem className="text-[#9C1E1E]" onClick={() => excluir(t)}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Link to={`${base}/${t.id}`} aria-label="Abrir a tela" title="Abrir: configurações, saúde, câmeras e comandos" className="grid h-9 w-9 place-items-center rounded-full hover:bg-black/5"><ChevronRight className="h-4 w-4" /></Link>
                 </div>
               </div>
 
@@ -234,7 +217,7 @@ export default function TelasPage() {
                 <dd className="truncate font-semibold">{(t as any).saude?.conexao ? `${(t as any).saude.conexao}${(t as any).saude.rtt ? ` · ${(t as any).saude.rtt} ms` : ''}` : '—'}</dd>
                 <dt className="text-[#6A6B70]">Fluidez</dt>
                 <dd className="truncate font-semibold">
-                  <button type="button" onClick={() => setSaudeDe(t)} className="underline decoration-dotted underline-offset-2">
+                  <button type="button" onClick={() => navigate(`${base}/${t.id}`)} className="underline decoration-dotted underline-offset-2">
                     {(t as any).saude?.fluidez?.fps != null ? `${(t as any).saude.fluidez.fps} quadros/s · ${(t as any).saude.fluidez.video_pct_perdidos ?? 0}% perdidos` : 'ver saúde'}
                   </button>
                 </dd>
@@ -530,7 +513,7 @@ function Ritmo({ casa, ed, onCasa, onEd, mostrarEd }: { casa: number; ed: number
 }
 
 // ============================================================== trocar layout
-function EscolherLayout({ tela, predio, onFechar, onSalvo, onAtualizou }: { tela: Tela; predio: boolean; onFechar: () => void; onSalvo: () => void; onAtualizou: () => void }) {
+export function EscolherLayout({ tela, predio, onFechar, onSalvo, onAtualizou, embutido = false }: { tela: Tela; predio: boolean; onFechar: () => void; onSalvo: () => void; onAtualizou: () => void; embutido?: boolean }) {
   const cfg = tela.config || {};
   const [ori, setOri] = useState<'horizontal' | 'vertical'>(cfg.orientacao === 'vertical' || ehLayoutVertical(tela.layout) ? 'vertical' : 'horizontal');
   const [giro, setGiro] = useState<number>([0, 90, 270].includes(Number(cfg.giro)) ? Number(cfg.giro) : 90);
@@ -545,29 +528,28 @@ function EscolherLayout({ tela, predio, onFechar, onSalvo, onAtualizou }: { tela
     onAtualizou();
   };
   const escolher = async (id: string) => {
-    if (id === atual) { onFechar(); return; }
+    if (id === atual) { if (!embutido) onFechar(); return; }
     setAplicando(id);
     const { error } = await db.from('exa_telas').update({ layout: id }).eq('id', tela.id);
     if (error) { toast.error(error.message); setAplicando(null); return; }
     toast.success(`Layout ${id} aplicado`, { description: 'A TV troca em até 1 minuto.' });
+    setAtual(id); setAplicando(null);
     onSalvo();
   };
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
-        <DialogHeader><DialogTitle>Layout · {tela.nome || 'tela'}</DialogTitle><DialogDescription>Deitada ou em pé, e o layout. Toque para aplicar: a TV troca em até 1 minuto.</DialogDescription></DialogHeader>
+    <Moldura embutido={embutido} onFechar={onFechar} className="max-h-[92vh] overflow-y-auto sm:max-w-[720px]">
+        <MCab><MTit>{embutido ? 'Orientação e layout' : `Layout · ${tela.nome || 'tela'}`}</MTit><MDesc>Deitada ou em pé, e o layout. Toque para aplicar: a TV troca em até 1 minuto.</MDesc></MCab>
         <div className="space-y-4">
           <EscolherOrientacao orientacao={ori} giro={giro} predio={predio} onOrientacao={(o) => mudarOrientacao(o, giro)} onGiro={(g) => mudarOrientacao(ori, g)} />
           <GradeLayouts valor={aplicando || atual} atual={atual} aplicando={aplicando} onEscolher={escolher} vertical={ori === 'vertical'} predio={predio} />
           {predio && ori === 'horizontal' && <p className="rounded-2xl bg-[#FFF9EE] p-3 text-[12.5px] text-[#5A3A00]">Prédio: os <b>avisos do síndico</b> entram intercalados no <b>H6</b> e na coluna vertical do <b>H2</b> e do <b>H5</b>.</p>}
         </div>
-      </DialogContent>
-    </Dialog>
+    </Moldura>
   );
 }
 
 // ============================================================== nome, local, vídeos da casa e ritmo
-function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: Local[]; onFechar: () => void; onSalvo: () => void }) {
+export function ConfigTela({ tela, locais, onFechar, onSalvo, embutido = false }: { tela: Tela; locais: Local[]; onFechar: () => void; onSalvo: () => void; embutido?: boolean }) {
   const [nome, setNome] = useState(tela.nome || '');
   const [localId, setLocalId] = useState(tela.building_id || '');
   const [ambiente, setAmbiente] = useState(tela.ambiente || 'comercio');
@@ -622,9 +604,8 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
-      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-h-[92vh] overflow-y-auto sm:max-w-[620px]">
-        <DialogHeader><DialogTitle>Configurar tela</DialogTitle><DialogDescription>Nome, local, vídeos do próprio comerciante e o ritmo da programação.</DialogDescription></DialogHeader>
+    <Moldura embutido={embutido} onFechar={onFechar} className="max-h-[92vh] overflow-y-auto sm:max-w-[620px]">
+        <MCab><MTit>{embutido ? 'Nome, local, vídeos da casa e ritmo' : 'Configurar tela'}</MTit><MDesc>Nome, local, vídeos do próprio comerciante e o ritmo da programação.</MDesc></MCab>
         <div className="space-y-4 text-[14px]">
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="space-y-1"><span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6A6B70]">Nome da tela</span>
@@ -670,9 +651,150 @@ function ConfigTela({ tela, locais, onFechar, onSalvo }: { tela: Tela; locais: L
               </div>
             </>
           )}
-          <div className="sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-end"><button type="button" disabled={salvando} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Pencil className="h-4 w-4" />Salvar</button></div>
+          <div className={embutido ? 'flex justify-end pt-1' : 'sticky bottom-0 z-10 -mx-6 -mb-2 flex border-t border-black/[0.06] bg-white/95 px-6 py-3 backdrop-blur justify-end'}><button type="button" disabled={salvando} onClick={salvar} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50"><Pencil className="h-4 w-4" />Salvar</button></div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </Moldura>
+  );
+}
+
+
+// ============================================================== página de uma tela (tudo o que dá para fazer com ela)
+export function TelaDetalhe() {
+  const { id = '' } = useParams();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const voltar = useLocation().pathname.replace(/\/[^/]+\/?$/, '');
+  const tela = useQuery({
+    queryKey: ['exa-tela', id],
+    queryFn: async () => {
+      const { data, error } = await db.from('exa_telas').select('*').eq('id', id).maybeSingle();
+      if (error) throw error;
+      return data as Tela | null;
+    },
+    refetchInterval: 10000,
+  });
+  const locais = useQuery({
+    queryKey: ['exa-telas-locais'],
+    queryFn: async () => {
+      const { data, error } = await db.from('buildings').select('id, nome, bairro, endereco, status, tipo_local, segmento_local, pedido_casa_id, telas_ritmo').order('nome');
+      if (error) throw error;
+      return (data || []) as Local[];
+    },
+  });
+  const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  const exib = useQuery({
+    queryKey: ['exa-tela-exib', id, hoje],
+    queryFn: async () => {
+      const { data } = await db.from('exa_telas_exibicoes').select('tipo, vezes').eq('tela_id', id).eq('dia', hoje);
+      return (data || []).reduce((a: number, r: any) => a + (r.tipo === 'anuncio' || r.tipo === 'casa' ? r.vezes : 0), 0);
+    },
+    refetchInterval: 60000,
+  });
+  const atualizar = () => { qc.invalidateQueries({ queryKey: ['exa-tela', id] }); qc.invalidateQueries({ queryKey: ['exa-telas'] }); };
+  const t = tela.data;
+  if (tela.isLoading) return <div className="p-8 text-sm text-[#6A6B70]">Carregando a tela…</div>;
+  if (!t) return <div className="space-y-3 p-8"><p className="text-sm">Tela não encontrada.</p><Link to={voltar} className="text-sm font-bold text-[#9C1E1E]">← Voltar para Telas</Link></div>;
+
+  const st = estadoDe(t);
+  const local = (locais.data || []).find((l) => l.id === t.building_id) || null;
+  const predio = local?.tipo_local !== 'comercio';
+  const android = String(t.plataforma || '').startsWith('android');
+  const comando = async (c: string, msg: string) => {
+    const { error } = await db.from('exa_telas').update({ comando: c, comando_em: new Date().toISOString() }).eq('id', t.id);
+    if (error) toast.error(error.message); else { toast.success(msg, { description: 'A tela recebe em até 1 minuto.' }); atualizar(); }
+  };
+  const desparear = async () => {
+    if (!confirm(`Desconectar "${t.nome || 'tela'}"? Ela volta a mostrar um código novo.`)) return;
+    const { error } = await db.from('exa_telas').update({ status: 'aguardando', building_id: null, codigo: null, codigo_expira: null }).eq('id', t.id);
+    if (error) toast.error(error.message); else { toast.success('Tela desconectada'); atualizar(); }
+  };
+  const excluir = async () => {
+    if (!confirm(`Excluir "${t.nome || t.codigo || 'tela'}" de vez? Se o aparelho estiver ligado, ele mostra um código novo.`)) return;
+    const { error } = await db.from('exa_telas').delete().eq('id', t.id);
+    if (error) toast.error(error.message); else { toast.success('Tela excluída'); navigate(voltar); }
+  };
+  const acoes: { r: string; d: string; i: React.ReactNode; f: () => void; so?: boolean }[] = [
+    { r: 'Recarregar a tela', d: 'Abre a programação de novo', i: <RotateCcw className="h-5 w-5" />, f: () => comando('recarregar', 'Recarregando a tela') },
+    { r: 'Baixar os vídeos de novo', d: 'Apaga os guardados e baixa tudo', i: <Eraser className="h-5 w-5" />, f: () => comando('limpar_cache', 'Limpando os vídeos guardados') },
+    { r: 'Reiniciar o app', d: 'Fecha e abre o app EXA na TV', i: <Power className="h-5 w-5" />, f: () => comando('reiniciar_app', 'Reiniciando o app'), so: true },
+    { r: 'Atualizar o app', d: 'Abre o download da versão nova', i: <Download className="h-5 w-5" />, f: () => comando('atualizar_app', 'Abrindo o download do app novo na TV'), so: true },
+    { r: 'Escolher a posição da TV', d: 'A TV pergunta: deitada ou em pé', i: <Compass className="h-5 w-5" />, f: () => comando('orientacao', 'A TV vai perguntar como está instalada'), so: true },
+    { r: 'Configurações do aparelho', d: 'Abre as configurações do Android', i: <Wrench className="h-5 w-5" />, f: () => comando('abrir_configuracoes', 'Abrindo as configurações do aparelho'), so: true },
+    { r: 'Fechar o app na TV', d: 'Para de mostrar até abrirem de novo', i: <Unlink className="h-5 w-5" />, f: () => { if (confirm('Fechar o app na TV? Ela deixa de mostrar a programação até alguém abrir o app de novo.')) comando('sair_app', 'Fechando o app na TV'); }, so: true },
+  ].filter((a) => !a.so || android);
+  const fl = (t as any).saude?.fluidez || {};
+
+  return (
+    <div className="mx-auto max-w-[1400px] space-y-5 text-[#17181A]" style={{ fontFeatureSettings: '"tnum"' }}>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <Link to={voltar} className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#6A6B70] hover:text-[#17181A]"><ArrowLeft className="h-4 w-4" />Telas</Link>
+          <h1 className="truncate text-[26px] font-extrabold leading-tight tracking-[-0.03em] md:text-[30px]">{t.nome || (t.status === 'ativa' ? 'Tela' : `Código ${t.codigo || '…'}`)}</h1>
+          <div className="text-[13px] text-[#5E5F63]">{local ? `${local.nome}${local.segmento_local ? ` · ${local.segmento_local}` : ''}` : 'Sem local'} · {t.ambiente === 'hall' ? 'Hall' : 'Comércio'} · {nomePlataforma(t.plataforma)}{t.info?.app ? ` ${t.info.app}` : ''}</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-3 py-1.5 text-[13px] font-bold ${SELO[st].cls}`}>{SELO[st].txt}</span>
+          <button type="button" onClick={atualizar} className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold ${vidro}`}><RefreshCw className={`h-4 w-4 ${tela.isFetching ? 'animate-spin' : ''}`} />Atualizar</button>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {[
+          { r: 'Tocando agora', v: t.tocando?.cliente || t.tocando?.titulo || '—' },
+          { r: 'Exibições hoje', v: String(exib.data ?? 0) },
+          { r: 'Último sinal', v: quando(t.ultimo_sinal) },
+          { r: 'Fluidez', v: fl.fps != null ? `${fl.fps} q/s · ${fl.video_pct_perdidos ?? 0}% perdidos` : '—' },
+        ].map((k) => (
+          <div key={k.r} className={`min-w-0 rounded-2xl p-4 ${vidro}`}>
+            <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6A6B70]">{k.r}</div>
+            <div className="mt-1 truncate text-[17px] font-extrabold">{k.v}</div>
+          </div>
+        ))}
+      </div>
+      {t.comando && <div className="rounded-2xl bg-[#FFF6E5] px-4 py-3 text-[13px] font-semibold text-[#8A5A00]">Comando pendente: {t.comando} — a TV recebe no próximo batimento (até 1 min). Um comando novo substitui o pendente.</div>}
+      {st === 'aguardando' && <div className="rounded-2xl bg-[#FFF1D6] px-4 py-3 text-[13px] font-semibold text-[#8A5A00]">Esta TV está mostrando o código {t.codigo || '…'}. Conecte pela lista de telas (Adicionar tela).</div>}
+
+      <section className={`rounded-3xl p-5 ${vidro}`}>
+        <h2 className="mb-3 text-[18px] font-extrabold tracking-[-0.02em]">Comandos para a TV</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {acoes.map((a) => (
+            <button key={a.r} type="button" onClick={a.f} className="flex items-start gap-3 rounded-2xl bg-black/[0.035] p-3 text-left hover:bg-black/[0.07]">
+              <span className="mt-0.5 text-[#9C1E1E]">{a.i}</span>
+              <span className="min-w-0"><span className="block text-[14px] font-bold">{a.r}</span><span className="block text-[12px] text-[#6A6B70]">{a.d}</span></span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <div className="min-w-0 space-y-5">
+          <EscolherLayout tela={t} predio={predio} embutido onFechar={() => {}} onSalvo={atualizar} onAtualizou={atualizar} />
+          <EscolherCameras titulo={t.nome || 'tela'} atual={t.config?.cameras} embutido onFechar={() => {}}
+            onSalvar={async (c) => {
+              const { error } = await db.from('exa_telas').update({ config: { ...(t.config || {}), cameras: c } }).eq('id', t.id);
+              if (error) throw error;
+              atualizar();
+            }} />
+          <ConfigTela tela={t} locais={locais.data || []} embutido onFechar={() => {}} onSalvo={atualizar} />
+        </div>
+        <div className="min-w-0 space-y-5">
+          <SaudeTela tela={t as any} embutido onFechar={() => {}} onAtualizou={atualizar} />
+          {!!t.erros?.length && (
+            <section className={`rounded-3xl p-5 ${vidro}`}>
+              <h2 className="mb-2 text-[18px] font-extrabold tracking-[-0.02em]">Avisos recentes da TV</h2>
+              <ul className="space-y-1 text-[12.5px] text-[#7A5200]">{t.erros.slice(-10).reverse().map((e, i) => <li key={i} className="break-words">{e}</li>)}</ul>
+            </section>
+          )}
+          <section className="rounded-3xl border border-[#F1C9C6] bg-[#FFF7F6] p-5">
+            <h2 className="mb-1 text-[18px] font-extrabold tracking-[-0.02em] text-[#9C1E1E]">Desconectar ou excluir</h2>
+            <p className="mb-3 text-[13px] text-[#6A4A48]">Desconectar faz a TV mostrar um código novo (para ligar em outro local). Excluir apaga a tela do sistema.</p>
+            <div className="flex flex-wrap gap-2">
+              {t.status === 'ativa' && <button type="button" onClick={desparear} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-[#9C1E1E]/30 bg-white px-4 text-sm font-bold text-[#9C1E1E]"><Unlink className="h-4 w-4" />Desconectar (novo código)</button>}
+              <button type="button" onClick={excluir} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-4 text-sm font-bold text-white"><Trash2 className="h-4 w-4" />Excluir</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
   );
 }
