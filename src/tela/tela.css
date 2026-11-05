@@ -80,3 +80,10 @@
 .leve .palco * { text-shadow: none !important; }
 .leve .palco [style*="box-shadow"] { box-shadow: none !important; }
 .leve .palco img[style*="blur"] { filter: none !important; opacity: .25; }
+
+/* tela de conexão em pé */
+.esp-cartao { border-radius: 44px; background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.03)); border: 1.5px solid rgba(255,255,255,.09); box-shadow: 0 40px 120px -40px rgba(0,0,0,.8); animation: esp-sobe .9s cubic-bezier(.2,.8,.2,1) both .2s; }
+.esp-qr { position: relative; padding: 0; border-radius: 26px; box-shadow: 0 0 0 10px rgba(255,255,255,.05), 0 24px 70px -20px rgba(234,37,29,.55); }
+.esp-qr::after { content: ''; position: absolute; inset: -22px; border-radius: 36px; border: 2px solid rgba(255,90,74,.45); animation: esp-pulso 2.8s ease-in-out infinite; }
+@keyframes esp-pulso { 0%, 100% { opacity: .15; transform: scale(.98); } 50% { opacity: .9; transform: scale(1); } }
+@keyframes esp-sobe { from { opacity: 0; transform: translateY(40px); } }

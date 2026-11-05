@@ -82,7 +82,7 @@ export function QR({ valor, tamanho = 110 }: { valor: string; tamanho?: number }
   const [img, setImg] = useState(qrCache.get(valor) || '');
   useEffect(() => {
     if (!valor || qrCache.has(valor)) { setImg(qrCache.get(valor) || ''); return; }
-    QRCode.toDataURL(valor, { margin: 0, width: 240, errorCorrectionLevel: 'M' }).then((d: string) => { qrCache.set(valor, d); setImg(d); }).catch(() => {});
+    QRCode.toDataURL(valor, { margin: 0, width: 512, errorCorrectionLevel: 'M' }).then((d: string) => { qrCache.set(valor, d); setImg(d); }).catch(() => {});
   }, [valor]);
   if (!valor || !img) return null;
   const pad = Math.round(tamanho * 0.055);

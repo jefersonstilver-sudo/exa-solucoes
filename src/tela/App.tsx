@@ -79,10 +79,11 @@ function Palco({ children, vertical = false, giro = 90, margem = 0, emPe = false
 }
 
 // ---------------------------------------------------------------- tela de código
-function Pareamento({ codigo, online, erro }: { codigo: string | null; online: boolean; erro: string }) {
+function Pareamento({ codigo, online, erro, vertical = false }: { codigo: string | null; online: boolean; erro: string; vertical?: boolean }) {
   // TV ainda sem local: só a marca EXA animada, o código discreto e o QR (o celular logado conecta direto)
   const link = codigo ? `https://examidia.com.br/conectar?c=${codigo}` : '';
   const cod = codigo ? `${codigo.slice(0, 3)} ${codigo.slice(3)}` : '··· ···';
+  if (vertical) return <PareamentoEmPe codigo={codigo} cod={cod} link={link} online={online} erro={erro} />;
   return (
     <div className="cheio" style={{ background: '#07030a', overflow: 'hidden' }}>
       <i className="esp-luz a" />
@@ -110,6 +111,44 @@ function Pareamento({ codigo, online, erro }: { codigo: string | null; online: b
             <QR valor={link} tamanho={176} />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// TV em pé (1080x1920): marca no alto, QR grande no meio (o jeito mais rápido de conectar), código e status embaixo
+function PareamentoEmPe({ codigo, cod, link, online, erro }: { codigo: string | null; cod: string; link: string; online: boolean; erro: string }) {
+  return (
+    <div className="cheio esp-pe" style={{ background: '#07030a', overflow: 'hidden' }}>
+      <i className="esp-luz a" style={{ left: -520, bottom: -620 }} />
+      <i className="esp-luz b" style={{ right: -620, top: -560 }} />
+      <div className="abs" style={{ left: 0, right: 0, top: 250, textAlign: 'center' }}>
+        <span className="esp-logo" style={{ height: 150 }}><img src={LOGO} alt="EXA" /><span className="esp-brilho"><i /></span></span>
+        <div className="esp-linha" style={{ width: 380, marginTop: 50 }}><i /></div>
+        <div className="esp-frase" style={{ fontSize: 22, letterSpacing: 9 }}>Aguardando conexão</div>
+      </div>
+
+      <div className="abs esp-cartao" style={{ left: 110, right: 110, top: 640, padding: '64px 0 58px', textAlign: 'center' }}>
+        <div className="rotulo" style={{ fontSize: 17, letterSpacing: 5, color: 'rgba(255,255,255,.55)' }}>Conecte esta TV</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 38 }}>
+          {link ? <div className="esp-qr"><QR valor={link} tamanho={400} /></div> : <div style={{ width: 400, height: 400, borderRadius: 24, background: 'rgba(255,255,255,.06)' }} />}
+        </div>
+        <div style={{ fontSize: 38, fontWeight: 800, marginTop: 44, letterSpacing: -0.5 }}>Aponte a câmera do celular</div>
+        <div style={{ fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,.6)', marginTop: 12 }}>ou, no sistema EXA: Adicionar tela → Ler o QR Code</div>
+      </div>
+
+      <div className="abs" style={{ left: 0, right: 0, top: 1500, textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22 }}>
+          <i style={{ width: 120, height: 2, background: 'rgba(255,255,255,.14)' }} />
+          <span className="rotulo" style={{ fontSize: 16, letterSpacing: 4, color: 'rgba(255,255,255,.5)' }}>ou digite o código</span>
+          <i style={{ width: 120, height: 2, background: 'rgba(255,255,255,.14)' }} />
+        </div>
+        <div className="grande" style={{ fontSize: 104, letterSpacing: 18, marginTop: 26, paddingLeft: 18, opacity: codigo ? 1 : 0.35 }}>{cod}</div>
+      </div>
+
+      <div className="abs rotulo" style={{ left: 60, right: 60, bottom: 64, textAlign: 'center', fontSize: 15, textTransform: 'none', letterSpacing: 0.5, color: online ? 'rgba(126,226,168,.8)' : '#ff8a8a' }}>
+        {online ? '● conectada à internet' : '● sem internet — tentando de novo'}
+        <span style={{ color: 'rgba(255,255,255,.38)' }}> · {plataforma()} · {versaoCompleta()}{erro ? ` · ${erro}` : ''}</span>
       </div>
     </div>
   );
@@ -335,9 +374,11 @@ export default function App() {
     try { if (p.giroPendente && p.giroPendente()) return; } catch { /* */ }
     try { if (Number(p.giro()) !== giroAlvo) p.definirGiro(giroAlvo); } catch { /* */ }
   }, [estado?.pareada, giroAlvo]);
+  // sem local ainda: TV em pé (escolhida no app) ou janela em retrato = tela de conexão vertical própria
+  const pePareamento = !estado?.pareada && (giroAlvo === 90 || giroAlvo === 270 || window.innerHeight > window.innerWidth);
   return (
-    <Palco vertical={vert} giro={giroAlvo || 90} emPe={!estado?.pareada && giroAlvo !== 0} margem={Number(estado?.tela?.config?.margem) || 0}>
-      {estado?.pareada ? <Programacao e={estado} /> : <Pareamento codigo={codigo} online={online} erro={erro} />}
+    <Palco vertical={vert || pePareamento} giro={giroAlvo || 90} margem={Number(estado?.tela?.config?.margem) || 0}>
+      {estado?.pareada ? <Programacao e={estado} /> : <Pareamento codigo={codigo} online={online} erro={erro} vertical={pePareamento} />}
     </Palco>
   );
 }

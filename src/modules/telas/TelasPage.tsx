@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import {
   Plus, RefreshCw, MonitorPlay, Smartphone, Laptop, Terminal, Globe, Copy, ChevronRight, ChevronLeft, Check,
   MoreHorizontal, Trash2, Unlink, RotateCcw, Eraser, Store, Settings2, LayoutTemplate, Pencil, Video, Activity,
-  ArrowLeft, Power, Download, Compass, Wrench,
+  ArrowLeft, Power, Download, Compass, Wrench, QrCode, Hash,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,6 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLayout } from './catalogo';
 import { EscolherCameras } from './EscolherCameras';
 import { SaudeTela } from './SaudeTela';
+import { LerQR } from './LerQR';
 
 const db = supabase as any;
 const LINKS = {
@@ -274,6 +275,9 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
   const [casaCada, setCasaCada] = useState(3);
   const [edCada, setEdCada] = useState(2);
   const [salvando, setSalvando] = useState(false);
+  // celular: abrir direto a câmera para ler o QR da TV
+  const celular = typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 768);
+  const [camera, setCamera] = useState(false);
   const qrAndroid = useQr(LINKS.android);
 
   const filtrados = useMemo(() => {
@@ -286,8 +290,8 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
   // TV em pé: prédio = réplica do elevador; estabelecimento = layout vertical
   useEffect(() => { setLayout(orientacao === 'vertical' ? (ehPredio ? 'R' : 'V2') : 'H6'); }, [orientacao, ehPredio]);
 
-  const conferir = async () => {
-    const c = codigo.replace(/\D/g, '');
+  const conferir = async (lido?: string) => {
+    const c = (lido ?? codigo).replace(/\D/g, '');
     if (c.length !== 6) { toast.error('O código tem 6 números'); return; }
     setBuscando(true);
     const { data, error } = await db.from('exa_telas').select('*').eq('codigo', c).eq('status', 'aguardando').maybeSingle();
@@ -360,6 +364,15 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
 
         {passo === 1 && (
           <div className="space-y-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={() => { setPasso(2); setCamera(true); }} className="flex items-center gap-3 rounded-2xl bg-[#9C1E1E] px-4 py-3 text-left text-white">
+                <QrCode className="h-7 w-7 shrink-0" /><span><span className="block text-[15px] font-extrabold">Ler o QR Code da TV</span><span className="block text-[12.5px] text-white/80">A TV já mostra "Aguardando conexão"</span></span>
+              </button>
+              <button type="button" onClick={() => { setPasso(2); setCamera(false); }} className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-left">
+                <Hash className="h-7 w-7 shrink-0 text-[#9C1E1E]" /><span><span className="block text-[15px] font-extrabold">Digitar o código</span><span className="block text-[12.5px] text-[#5E5F63]">Os 6 números que aparecem na TV</span></span>
+              </button>
+            </div>
+            <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6A6B70]">Ainda não instalou? Escolha o aparelho</div>
             <div className="grid grid-cols-4 gap-2">
               <Plat id="android" icone={Smartphone} txt="TV Android" />
               <Plat id="windows" icone={Laptop} txt="Windows" />
@@ -409,9 +422,16 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
 
         {passo === 2 && (
           <div className="space-y-4">
-            <label className="block text-[14px] font-semibold">Código que aparece na TV</label>
+            {camera ? (
+              <LerQR onFechar={() => setCamera(false)} onCodigo={(c) => { setCamera(false); setCodigo(c); conferir(c); }} />
+            ) : (
+              <button type="button" onClick={() => setCamera(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#9C1E1E]/40 bg-[#9C1E1E]/[0.04] py-3 text-[14px] font-bold text-[#9C1E1E]">
+                <QrCode className="h-5 w-5" />Ler o QR Code da TV com a câmera
+              </button>
+            )}
+            <label className="block text-[14px] font-semibold">{camera ? 'Ou digite o código que aparece na TV' : 'Código que aparece na TV'}</label>
             <input
-              autoFocus inputMode="numeric" maxLength={7} value={codigo}
+              autoFocus={!celular && !camera} inputMode="numeric" maxLength={7} value={codigo}
               onChange={(e) => setCodigo(e.target.value.replace(/[^\d]/g, '').slice(0, 6))}
               onKeyDown={(e) => { if (e.key === 'Enter') conferir(); }}
               placeholder="000000"
@@ -419,7 +439,7 @@ function AdicionarTela({ locais, onFechar, onPronto, codigoInicial = '' }: { loc
             />
             <div className="flex justify-between">
               <button type="button" onClick={() => setPasso(1)} className="inline-flex h-11 items-center gap-1 rounded-xl px-3 text-sm font-semibold hover:bg-black/5"><ChevronLeft className="h-4 w-4" />Voltar</button>
-              <button type="button" disabled={buscando || codigo.length !== 6} onClick={conferir} className="inline-flex h-11 items-center gap-1 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50">{buscando ? 'Procurando…' : 'Conferir'}<ChevronRight className="h-4 w-4" /></button>
+              <button type="button" disabled={buscando || codigo.length !== 6} onClick={() => conferir()} className="inline-flex h-11 items-center gap-1 rounded-xl bg-[#9C1E1E] px-5 text-sm font-bold text-white disabled:opacity-50">{buscando ? 'Procurando…' : 'Conferir'}<ChevronRight className="h-4 w-4" /></button>
             </div>
           </div>
         )}
