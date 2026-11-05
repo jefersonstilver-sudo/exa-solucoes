@@ -11466,6 +11466,42 @@ export type Database = {
           },
         ]
       }
+      nando_paineis_alertas: {
+        Row: {
+          avisado_em: string | null
+          created_at: string
+          device_id: string
+          fora_texto: string | null
+          id: number
+          inicio: string
+          noite: boolean
+          resumo: string | null
+          voltou_em: string | null
+        }
+        Insert: {
+          avisado_em?: string | null
+          created_at?: string
+          device_id: string
+          fora_texto?: string | null
+          id?: number
+          inicio: string
+          noite?: boolean
+          resumo?: string | null
+          voltou_em?: string | null
+        }
+        Update: {
+          avisado_em?: string | null
+          created_at?: string
+          device_id?: string
+          fora_texto?: string | null
+          id?: number
+          inicio?: string
+          noite?: boolean
+          resumo?: string | null
+          voltou_em?: string | null
+        }
+        Relationships: []
+      }
       nando_painel_acessos: {
         Row: {
           alterar_ate: string | null
