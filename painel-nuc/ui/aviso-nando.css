@@ -116,3 +116,50 @@
 .na-claro .na-foto{border-color:#fff;box-shadow:0 24px 50px rgba(0,0,0,.18)}
 /* no fundo branco a logo vai sem placa (a placa clara sumiria); logo branca continua com placa escura */
 .na-claro .na-logo-clara{background:transparent;box-shadow:none;padding:6px 0}
+
+/* ===== v36: estilo "suave" - fundo claro na cor do predio (ex.: rosa), titulo em 2 tons, faixa na cor,
+   cartoes brancos com barra, selo da serie na cor. Animado: entrada dos itens em cascata, brilho no titulo. ===== */
+.na-suave{--na-escuro:color-mix(in srgb,var(--na-cor) 55%,#140409);--na-claro1:var(--na-fundo1,color-mix(in oklch,var(--na-cor) 11%,#fff));--na-claro2:var(--na-fundo2,color-mix(in oklch,var(--na-cor) 24%,#fff))}
+.na-raiz.na-suave{background:var(--na-claro1);color:#2a1219}
+.na-suave>.na-fundo{animation:naZoom 26s ease-in-out infinite alternate;background-color:var(--na-claro1);background-image:
+  radial-gradient(ellipse 70% 22% at 88% 9%,rgba(255,255,255,.85),transparent 70%),
+  radial-gradient(ellipse 60% 16% at 10% 34%,rgba(255,255,255,.55),transparent 70%),
+  radial-gradient(ellipse 90% 20% at 50% 96%,color-mix(in srgb,var(--na-cor) 16%,transparent),transparent 70%),
+  radial-gradient(circle at 92% 62%,color-mix(in srgb,var(--na-cor) 12%,transparent),transparent 30%),
+  linear-gradient(180deg,var(--na-claro1) 0%,var(--na-claro2) 100%)}
+.na-suave .na-brilho{display:none}
+.na-suave .na-titulo{color:var(--na-cor);text-transform:uppercase;letter-spacing:-1px;line-height:.95;text-shadow:none}
+.na-suave .na-t1{display:block;font-size:.62em;color:#3a1d26;letter-spacing:0}
+.na-suave .na-t2{display:block;font-size:1em;color:var(--na-cor);
+  background:linear-gradient(100deg,var(--na-cor) 0%,var(--na-cor) 40%,color-mix(in srgb,var(--na-cor) 30%,#fff) 50%,var(--na-cor) 60%,var(--na-cor) 100%);
+  background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:naBrilhoT 6s ease-in-out 2.2s infinite}
+@keyframes naBrilhoT{0%{background-position:100% 0}22%,100%{background-position:0 0}}
+.na-suave .na-quando{position:relative;background:var(--na-cor);color:#fff;border-radius:999px;padding:16px 56px;box-shadow:0 12px 28px color-mix(in srgb,var(--na-cor) 35%,transparent)}
+.na-suave .na-quando::before,.na-suave .na-quando::after{content:"";position:absolute;top:50%;width:56px;height:40px;transform:translateY(-50%);
+  background:linear-gradient(var(--na-cor),var(--na-cor)) 0 0/100% 6px no-repeat,linear-gradient(var(--na-cor),var(--na-cor)) 0 50%/70% 6px no-repeat,linear-gradient(var(--na-cor),var(--na-cor)) 0 100%/100% 6px no-repeat;border-radius:3px;opacity:.85}
+.na-suave .na-quando::before{left:-84px;transform:translateY(-50%) scaleX(-1)}
+.na-suave .na-quando::after{right:-84px}
+.na-suave .na-parte{background:var(--na-cor);color:#fff;border:0;box-shadow:0 8px 20px color-mix(in srgb,var(--na-cor) 35%,transparent)}
+.na-suave .na-item{background:linear-gradient(180deg,#fff 0%,color-mix(in srgb,var(--na-cor) 5%,#fff) 100%);border:2px solid color-mix(in srgb,var(--na-cor) 14%,#fff);
+  box-shadow:0 10px 26px color-mix(in srgb,var(--na-cor) 16%,transparent);border-radius:.42em}
+.na-suave .na-item-tx{color:#2a1219;font-weight:600;text-shadow:none;border-left:7px solid var(--na-cor);padding-left:.45em}
+.na-suave .na-item-ic{filter:drop-shadow(0 8px 12px rgba(60,10,25,.22))}
+.na-suave .na-assina{color:#3a1d26}
+.na-suave .na-qr-img{border:8px solid var(--na-cor);border-radius:26px;box-shadow:0 14px 34px color-mix(in srgb,var(--na-cor) 28%,transparent)}
+.na-suave .na-qr-tx{color:var(--na-cor);text-shadow:none}
+/* cabecalho: icone a esquerda do titulo (como os cartoes feitos pelos sindicos) */
+.na-suave.na-com-itens .na-midia{left:34px;right:auto;top:120px;width:330px;height:330px}
+.na-suave.na-com-itens .na-icone{width:300px;height:300px}
+.na-suave.na-com-itens .na-bloco{top:150px;gap:30px}
+.na-suave .na-itens{gap:.36em}
+.na-suave .na-item{padding:.36em .5em}
+.na-suave.na-com-itens .na-titulo{align-self:flex-end;width:620px;text-align:center;min-height:300px;display:flex;flex-direction:column;justify-content:center}
+/* itens entram um a um */
+.na-suave .na-itens.na-entra{opacity:1;transform:none}
+.na-suave .na-item{opacity:0;transform:translateX(-70px);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.75,.2,1);transition-delay:calc(.75s + var(--na-k,0) * .28s)}
+.na-on.na-suave .na-item{opacity:1;transform:none}
+.na-on.na-suave .na-qr{transition-delay:2s}.na-on.na-suave .na-assina{transition-delay:2.2s}
+@media (prefers-reduced-motion:reduce){.na-suave .na-t2{animation:none}}
+
+.na-dest{color:var(--na-cor);font-weight:800}

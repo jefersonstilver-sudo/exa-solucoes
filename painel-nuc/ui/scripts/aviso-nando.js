@@ -1,5 +1,5 @@
 /**
- * aviso-nando.js (v33) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
+ * aviso-nando.js (v36) - desenha os avisos criados pelo Nando (modelo fixo, sem HTML livre).
  * Usado pelo painel E pela pagina de previa, para os dois ficarem identicos.
  *
  * O aviso e um "palco" 1080x1920 que e escalado inteiro para caber na caixa:
@@ -69,9 +69,11 @@
     d = d || {};
     var itens = Array.isArray(d.itens) ? d.itens.slice(0, 6) : [];
     var qr = seguro(d.qr);
-    var claro = d.estilo === "claro";   // v35: fundo branco (pedido do sindico)
-    var raiz = el("div", "na-raiz" + (itens.length ? " na-com-itens" : "") + (qr ? " na-com-qr" : "") + (claro ? " na-claro" : ""));
+    var suave = d.estilo === "suave";   // v36: fundo claro na cor do predio (rosa, azul...), titulo em 2 tons, cartoes brancos
+    var claro = d.estilo === "claro" || suave;   // v35: fundo branco (pedido do sindico)
+    var raiz = el("div", "na-raiz" + (itens.length ? " na-com-itens" : "") + (qr ? " na-com-qr" : "") + (claro ? " na-claro" : "") + (suave ? " na-suave" : ""));
     raiz.style.setProperty("--na-cor", cor(d.cor));
+    if (suave && /^#[0-9a-f]{6}$/i.test(String(d.cor_fundo || ""))) { raiz.style.setProperty("--na-fundo1", d.cor_fundo); raiz.style.setProperty("--na-fundo2", "color-mix(in srgb," + d.cor_fundo + " 70%,var(--na-cor) 12%)"); }
 
     var bg = el("div", "na-bg");
     raiz.appendChild(bg);
@@ -104,7 +106,12 @@
     if (d.parte) palco.appendChild(el("div", "na-parte na-entra", String(d.parte).slice(0, 7)));
 
     var bloco = el("div", "na-bloco");
-    var tt = el("div", "na-titulo na-entra", d.titulo || "");
+    var tt = el("div", "na-titulo na-entra");
+    var linhasT = String(d.titulo || "").split("\n");
+    if (suave && linhasT.length > 1) {   // v36: 1a linha menor e escura, a ultima em destaque na cor do predio
+      tt.appendChild(el("span", "na-t1", linhasT.slice(0, -1).join(" ")));
+      tt.appendChild(el("span", "na-t2", linhasT[linhasT.length - 1]));
+    } else tt.textContent = String(d.titulo || "").replace(/\n/g, " ");
     bloco.appendChild(tt);
     var qd = null, tx = null;
     if (d.quando) { qd = el("div", "na-quando na-entra", d.quando); bloco.appendChild(qd); }
@@ -112,11 +119,16 @@
     var lista = null;
     if (itens.length) {
       lista = el("div", "na-itens na-entra");
-      itens.forEach(function (it) {
+      itens.forEach(function (it, k) {
         var li = el("div", "na-item");
+        li.style.setProperty("--na-k", k);
         var ii = seguro(it && it.icone);
         if (ii) { var im = el("img", "na-item-ic"); im.src = ii; im.alt = ""; li.appendChild(im); }
-        li.appendChild(el("div", "na-item-tx", (it && it.texto) || ""));
+        var itx = el("div", "na-item-tx");
+        String((it && it.texto) || "").split(/(\*[^*]+\*)/).forEach(function (pd) {
+          if (/^\*[^*]+\*$/.test(pd)) itx.appendChild(el("b", "na-dest", pd.slice(1, -1))); else if (pd) itx.appendChild(document.createTextNode(pd));
+        });
+        li.appendChild(itx);
         lista.appendChild(li);
       });
       bloco.appendChild(lista);
@@ -166,7 +178,8 @@
 
     // texto: cabe sempre (titulo 2 linhas, texto ate a area disponivel)
     // letras grandes: o quadro e lido de longe no elevador (tela de 27")
-    caber(tt, itens.length ? 110 : 150, itens.length ? 64 : 84, itens.length ? 230 : (foto ? 300 : 340));
+    if (suave && itens.length) caber(tt, 150, 84, 300);
+    else caber(tt, itens.length ? 110 : 150, itens.length ? 64 : 84, itens.length ? 230 : (foto ? 300 : 340));
     if (qd) { // data/horario numa linha so, se couber
       qd.style.whiteSpace = "nowrap"; var tq = 58; qd.style.fontSize = tq + "px";
       while (tq > 44 && qd.scrollWidth > qd.clientWidth + 1) { tq -= 2; qd.style.fontSize = tq + "px"; }
@@ -174,7 +187,7 @@
     }
     if (tx) caber(tx, itens.length ? 50 : 64, itens.length ? 36 : 42, itens.length ? 160 : (foto ? 300 : 420));
     if (lista) { // itens: letra o maior possivel sem passar da area do bloco
-      var fi = 54;
+      var fi = suave ? 64 : 54;
       var aplicar = function () {
         lista.style.fontSize = fi + "px";
         lista.style.setProperty("--na-ic", Math.round(fi * 2.1) + "px");
@@ -200,5 +213,5 @@
     return { raiz: raiz, escalar: escalar, remover: function () { if (vigia) { try { vigia.disconnect(); } catch (e) {} } if (raiz.parentNode) raiz.parentNode.removeChild(raiz); } };
   }
 
-  window.NandoAviso = { montar: montar, W: W, H: H, versao: 35 };
+  window.NandoAviso = { montar: montar, W: W, H: H, versao: 37 };
 })();
