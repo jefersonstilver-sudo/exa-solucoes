@@ -30,3 +30,16 @@
 
 /* sombras grandes e desfocadas em cima de vídeo pesam no compositor girado */
 .tv-leve .card { box-shadow: none !important; }
+
+/* v2 (05/11, medido na TV box Allwinner/Mali-G31: 9 quadros/s, 41% dos quadros do vídeo perdidos):
+   o fundo do NUC tem 4 manchas de 600–900 px e uma faixa de luz de 220% da tela se movendo sem parar —
+   na TV girada isso refaz a tela inteira a cada quadro. Na TV fica parado (o visual é o mesmo, sem movimento). */
+.tv-leve .fundo i { animation: none !important; will-change: auto !important; }
+.tv-leve .fundo .luz { display: none !important; }
+/* clima e selos: sol pulsando, raios girando (gradiente cônico + máscara), pontos piscando */
+.tv-leve .c-sol, .tv-leve .c-raios, .tv-leve .camera-espera-dot, .tv-leve .camera-live-badge i { animation: none !important; }
+.tv-leve .c-sol { box-shadow: none !important; }
+/* câmera: sem o "vivo" de opacidade contínuo */
+.tv-leve .camera-video-wrapper video.on { animation: none !important; }
+/* textos e sombras grandes por cima de vídeo */
+.tv-leve .noticia-titulo .w, .tv-leve .noticia-titulo.sai { filter: none !important; }
