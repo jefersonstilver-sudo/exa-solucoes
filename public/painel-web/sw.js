@@ -16,6 +16,20 @@ const CFG = "/painel-web/__cfg";
 const FN_TELA = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/exa-tela";
 const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk";
 const memo = new Map(); // predio -> { t, dados }
+// TV box: versões leves dos anúncios (workflow tv-versoes: no máximo 720 px de altura, sem áudio) — mesmo nome, outra pasta
+const TVV = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/tv-versoes";
+const tvListas = new Map(); // pasta -> { t, set }
+async function tvVersao(pasta, arq) {
+  try {
+    let m = tvListas.get(pasta);
+    if (!m || Date.now() - m.t > 10 * 60000) {
+      const r = await fetch(`${TVV}/${pasta}/lista.json?t=${Date.now()}`, { cache: "no-store" });
+      m = { t: Date.now(), set: new Set(r.ok ? (await r.json()) || [] : []) };
+      tvListas.set(pasta, m);
+    }
+    return m.set.has(arq) ? `${TVV}/${pasta}/${arq.split("/").map(encodeURIComponent).join("/")}` : null;
+  } catch (e) { return null; }
+}
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
@@ -129,7 +143,10 @@ self.addEventListener("fetch", (e) => {
       const d = await updates(predio);
       const pasta = String(d.pasta_s3 || "").replace(/^\/+|\/+$/g, "");
       const alvo = `${S3}/${pasta}/${arq.split("/").map(encodeURIComponent).join("/")}`;
-      if (/\.(mp4|webm|mov|m4v)$/i.test(arq) || e.request.destination === "video") return Response.redirect(alvo, 302);
+      if (/\.(mp4|webm|mov|m4v)$/i.test(arq) || e.request.destination === "video") {
+        if ((await cfg()).tela) { const leve = await tvVersao(pasta, arq); if (leve) return Response.redirect(leve, 302); }
+        return Response.redirect(alvo, 302);
+      }
       // imagens, PDFs e avisos do Nando: o S3 nao libera o navegador, entao vem pelo nando-painel (e ficam guardados aqui;
       // os nomes dos arquivos mudam a cada aviso novo, entao o mesmo nome e sempre o mesmo arquivo)
       const caixa = await caches.open("replica-arquivos");

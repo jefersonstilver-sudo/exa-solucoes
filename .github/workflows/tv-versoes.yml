@@ -1,0 +1,71 @@
+name: tv-versoes
+# Versões leves dos anúncios para as TV boxes dos prédios (réplica do elevador):
+# os arquivos dos NUCs (1310x1080, 1920x1080, 608x1080) pesam no TV box; aqui viram no máximo 720 px de altura
+# (o tamanho real em que a TV box desenha a réplica), H.264 main, sem áudio, e vão para o bucket público
+# tv-versoes/<pasta_s3>/<mesmo caminho>. O sw.js da réplica (só TV) troca para a versão leve quando ela existe
+# (tv-versoes/<pasta>/lista.json). Os NUCs continuam com os originais.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17,47 * * * *"
+concurrency:
+  group: tv-versoes
+  cancel-in-progress: false
+jobs:
+  converter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      SURL: ${{ secrets.SUPABASE_URL }}
+      KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: ffmpeg
+        run: |
+          curl -sSL --retry 3 -o /tmp/ff.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
+          mkdir -p /tmp/ff && tar -xJf /tmp/ff.tar.xz -C /tmp/ff --strip-components=1
+          echo "/tmp/ff/bin" >> "$GITHUB_PATH"
+      - name: converter
+        run: |
+          set +e
+          curl -s -X POST "$SURL/storage/v1/bucket" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d '{"id":"tv-versoes","name":"tv-versoes","public":true,"file_size_limit":52428800,"allowed_mime_types":["video/mp4","application/json"]}' >/dev/null
+          curl -s -X POST "$SURL/functions/v1/exa-tela" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d '{"acao":"tv_lista"}' > /tmp/lista.json
+          python3 - <<'PY'
+          import json
+          j = json.load(open('/tmp/lista.json'))
+          assert j.get('ok'), j
+          with open('/tmp/itens.tsv', 'w') as f:
+              for it in j['itens']:
+                  f.write(f"{it['pasta']}\t{it['video']}\n")
+          print(len(j['itens']), 'vídeos nas TVs')
+          PY
+          cut -f1 /tmp/itens.tsv | sort -u > /tmp/pastas.txt
+          mkdir -p /tmp/v
+          while read -r pasta; do
+            curl -s "$SURL/storage/v1/object/public/tv-versoes/$pasta/lista.json?t=$(date +%s)" -o /tmp/v/lista.json
+            python3 -c "import json,sys; d=json.load(open('/tmp/v/lista.json')); print('\n'.join(d) if isinstance(d,list) else '')" > /tmp/v/feitos.txt 2>/dev/null || : > /tmp/v/feitos.txt
+            novos=0
+            while IFS=$'\t' read -r p v; do
+              [ "$p" = "$pasta" ] || continue
+              grep -qxF "$v" /tmp/v/feitos.txt && continue
+              enc=$(python3 -c "import urllib.parse,sys; print('/'.join(urllib.parse.quote(x) for x in sys.argv[1].split('/')))" "$pasta/$v")
+              url="https://telas-clientes.s3.sa-east-1.amazonaws.com/$enc"
+              curl -s -f --max-time 120 -o /tmp/v/in "$url" || { echo "sem original: $v"; continue; }
+              ffmpeg -loglevel error -y -i /tmp/v/in -an \
+                -vf "scale=-2:'min(720,ih)':flags=lanczos,fps='min(30,source_fps)',format=yuv420p" \
+                -c:v libx264 -preset slow -crf 21 -profile:v main -level 3.1 -maxrate 2500k -bufsize 5000k -g 60 \
+                -movflags +faststart /tmp/v/out.mp4 || { echo "falhou: $v"; continue; }
+              h=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SURL/storage/v1/object/tv-versoes/$enc" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" \
+                -H "Content-Type: video/mp4" -H "x-upsert: true" -H "Cache-Control: max-age=31536000" --max-time 120 --data-binary @/tmp/v/out.mp4)
+              if [ "$h" = "200" ]; then
+                echo "$v" >> /tmp/v/feitos.txt; novos=$((novos+1))
+                echo "ok $pasta/$v $(du -k /tmp/v/in | cut -f1)KB -> $(du -k /tmp/v/out.mp4 | cut -f1)KB"
+              else echo "upload $h: $v"; fi
+            done < /tmp/itens.tsv
+            if [ "$novos" -gt 0 ]; then
+              python3 -c "import json; print(json.dumps(sorted(set(l.strip() for l in open('/tmp/v/feitos.txt') if l.strip()))))" > /tmp/v/lista_nova.json
+              curl -s -o /dev/null -w "lista $pasta: %{http_code}\n" -X POST "$SURL/storage/v1/object/tv-versoes/$pasta/lista.json" -H "Authorization: Bearer $KEY" -H "apikey: $KEY" \
+                -H "Content-Type: application/json" -H "x-upsert: true" -H "Cache-Control: no-cache" --data-binary @/tmp/v/lista_nova.json
+            fi
+          done < /tmp/pastas.txt

@@ -22,6 +22,26 @@
         get: function () { return desc.get.call(v); },
         set: function (u) {
           try {
+            // sem piscar preto entre anúncios: o último quadro fica por cima até o próximo vídeo começar a tocar
+            if (desc.get.call(v) && v.readyState >= 2 && v.videoWidth) {
+              var c = document.getElementById('tv-ultimo-quadro');
+              if (!c) {
+                c = document.createElement('canvas'); c.id = 'tv-ultimo-quadro';
+                c.style.cssText = 'position:absolute;pointer-events:none;z-index:3;object-fit:cover';
+                v.parentNode.insertBefore(c, v.nextSibling);
+              }
+              c.width = Math.min(960, v.videoWidth); c.height = Math.round(c.width * v.videoHeight / v.videoWidth);
+              c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+              c.style.left = v.offsetLeft + 'px'; c.style.top = v.offsetTop + 'px';
+              c.style.width = v.offsetWidth + 'px'; c.style.height = v.offsetHeight + 'px';
+              try { c.style.objectFit = getComputedStyle(v).objectFit || 'cover'; } catch (e2) {}
+              c.style.display = 'block';
+              var some = function () { v.removeEventListener('playing', some); setTimeout(function () { c.style.display = 'none'; }, 120); };
+              v.addEventListener('playing', some);
+              setTimeout(function () { c.style.display = 'none'; }, 6000);
+            }
+          } catch (e) { /* segue */ }
+          try {
             if (desc.get.call(v)) { v.pause(); v.removeAttribute('src'); v.load(); }
           } catch (e) { /* segue */ }
           desc.set.call(v, u);

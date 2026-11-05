@@ -690,6 +690,31 @@ Deno.serve(async (req) => {
       return json(out);
     }
 
+    // ---------- versões leves para TV box: lista dos vídeos que as TVs dos prédios tocam (workflow tv-versoes, service role) ----------
+    if (acao === 'tv_lista') {
+      const chave = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+      if (!chave || (req.headers.get('authorization') || '') !== `Bearer ${chave}`) return json({ ok: false, erro: 'sem permissão' }, 403);
+      const { data: ts } = await admin.from('exa_telas').select('building_id').eq('status', 'ativa').not('building_id', 'is', null);
+      const predios = [...new Set((ts || []).map((t: any) => t.building_id))];
+      const itens: { pasta: string; video: string }[] = [];
+      const visto = new Set<string>();
+      for (const id of predios) {
+        try {
+          const j = await updatesDoPredio(id as string);
+          if (!j) continue;
+          const pasta = String(j.pasta_s3 || '').replace(/^\/+|\/+$/g, '');
+          for (const it of [...(j.Propagandas || []), ...(j.PlaylistPronta || [])]) {
+            const v = String(it?.video || '');
+            if (!v || !/\.(mp4|mov|m4v|webm)$/i.test(v) || v.includes('..')) continue;
+            const k = `${pasta}/${v}`;
+            if (visto.has(k)) continue;
+            visto.add(k); itens.push({ pasta, video: v });
+          }
+        } catch { /* prédio sem programação */ }
+      }
+      return json({ ok: true, itens });
+    }
+
     // ---------- vigia (cron a cada 5 min, token interno) ----------
     if (acao === 'vigia') {
       const { data: cfg } = await admin.from('exa2_config').select('valor').eq('chave', 'cron_token').maybeSingle();

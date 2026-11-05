@@ -1,7 +1,7 @@
 name: camera-clipes
 # Câmeras ao vivo do Portal da Cidade (1080p 25 qps, pesadas demais para TV box) viram clipes leves com ~1 min de atraso:
-# a cada ciclo grava 30 s de cada câmera, recorta no formato do quadro da câmera da réplica (4:3, sem perder os carros),
-# reduz para 640x480 a 15 qps, H.264 main ~700 kbps, e sobe para o bucket público camera-clipes/<chave>/<hora>.mp4 + atual.json.
+# a cada ciclo grava 30 s de cada câmera, recorta no formato do quadro da câmera da réplica (3:2, sem perder os carros),
+# reduz para 720x480 a 20 qps, H.264 main ~1,8 Mbps (nítido), e sobe para o bucket público camera-clipes/<chave>/<hora>.mp4 + atual.json.
 # A TV (lives.js com ?tela=1) toca o clipe mais novo do próprio arquivo, como um anúncio. Os NUCs seguem no ao vivo.
 # Protótipo: roda até ~5h30 por execução e o agendamento emenda a próxima. Destino definitivo: servidor próprio (AWS).
 on:
@@ -46,8 +46,8 @@ jobs:
           um() { # grava, converte e publica um clipe de uma câmera
             c=$1; t=$(date -u +%Y%m%dT%H%M%SZ); f=/tmp/c/$c-$t.mp4
             timeout 75 ffmpeg -loglevel error -y -rw_timeout 15000000 -i "$BASE/$c.stream/playlist.m3u8" -t 30 -an \
-              -vf "crop=1440:1080,scale=640:480:flags=lanczos,fps=15,format=yuv420p" \
-              -c:v libx264 -preset veryfast -profile:v main -level 3.1 -b:v 700k -maxrate 850k -bufsize 1400k -g 30 -keyint_min 30 \
+              -vf "crop=1620:1080,scale=720:480:flags=lanczos,fps=20,format=yuv420p" \
+              -c:v libx264 -preset medium -tune film -profile:v main -level 3.1 -b:v 1800k -maxrate 2200k -bufsize 3600k -g 40 -keyint_min 40 \
               -movflags +faststart "$f"
             dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" 2>/dev/null | cut -d. -f1)
             if [ -z "$dur" ] || [ "$dur" -lt 10 ]; then echo "$c: falhou"; rm -f "$f"; return; fi
