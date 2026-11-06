@@ -28,17 +28,20 @@ jobs:
           set +e
           H=(-H "Authorization: Bearer $KEY" -H "apikey: $KEY")
           curl -s "${H[@]}" "$SURL/rest/v1/pedido_videos?select=video_id,videos(url)&limit=5000" > /tmp/pv.json
+          # também vídeos que já saíram do pedido mas aparecem no histórico do relatório (mais recentes primeiro)
+          curl -s "${H[@]}" "$SURL/rest/v1/videos?select=id,url&url=not.is.null&order=created_at.desc&limit=1500" > /tmp/vs.json
           curl -s "${H[@]}" "$SURL/rest/v1/video_miniaturas?select=video_id&limit=20000" > /tmp/ja.json
           python3 - <<'PY'
           import json
           pv = json.load(open('/tmp/pv.json')); ja = {x['video_id'] for x in json.load(open('/tmp/ja.json'))}
+          pv += [{'video_id': v['id'], 'videos': {'url': v['url']}} for v in json.load(open('/tmp/vs.json'))]
           vistos, n = set(), 0
           with open('/tmp/fila.tsv', 'w') as f:
               for x in pv:
                   vid, url = x.get('video_id'), ((x.get('videos') or {}).get('url'))
                   if not vid or not url or vid in ja or vid in vistos: continue
                   vistos.add(vid); f.write(f"{vid}\t{url}\n"); n += 1
-                  if n >= 80: break
+                  if n >= 120: break
           print(n, 'vídeos sem miniatura')
           PY
           mkdir -p /tmp/m
