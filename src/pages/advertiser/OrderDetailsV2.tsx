@@ -134,17 +134,21 @@ const ContratoResumo: React.FC<{ order: any; orient: string; predios: number; me
  * (emojis, título repetido e estimativas inventadas de "exibições").
  */
 /** Número inteiro por extenso em português (até trilhões): 2011958 → "dois milhões, onze mil, novecentos e cinquenta e oito". */
-const porExtenso = (n: number): string => {
+const porExtenso = (n: number, feminino = false): string => {
   n = Math.floor(Math.abs(n));
   if (n === 0) return 'zero';
   const U = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
   const D = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
   const C = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
-  const ate999 = (x: number): string => {
+  // feminino ("exibições"): uma, duas, duzentas… — milhões/bilhões continuam no masculino
+  const UF = U.map((w, i) => (i === 1 ? 'uma' : i === 2 ? 'duas' : w));
+  const CF = C.map((w) => w.replace(/os$/, 'as'));
+  const ate999 = (x: number, fem = false): string => {
     if (x === 100) return 'cem';
+    const u = fem ? UF : U, cc = fem ? CF : C;
     const c = Math.floor(x / 100), r = x % 100, p: string[] = [];
-    if (c) p.push(C[c]);
-    if (r < 20) { if (r) p.push(U[r]); } else { p.push(D[Math.floor(r / 10)]); if (r % 10) p.push(U[r % 10]); }
+    if (c) p.push(cc[c]);
+    if (r < 20) { if (r) p.push(u[r]); } else { p.push(D[Math.floor(r / 10)]); if (r % 10) p.push(u[r % 10]); }
     return p.join(' e ');
   };
   const escalas: [string, string][] = [['', ''], ['mil', 'mil'], ['milhão', 'milhões'], ['bilhão', 'bilhões'], ['trilhão', 'trilhões']];
@@ -155,7 +159,7 @@ const porExtenso = (n: number): string => {
     const g = grupos[i];
     if (!g) continue;
     const nome = i === 0 ? '' : g === 1 ? escalas[i][0] : escalas[i][1];
-    const num = i === 1 && g === 1 ? '' : ate999(g);
+    const num = i === 1 && g === 1 ? '' : ate999(g, feminino && i < 2);
     partes.push({ txt: [num, nome].filter(Boolean).join(' '), g });
   }
   // "e" antes do último grupo quando ele é < 100 ou centena redonda (ex.: "mil e duzentos", "dois mil e cinco")
@@ -193,7 +197,7 @@ const MaisDetalhes: React.FC<{ order: any; relatorio?: any; telas?: number; mens
     custoDia && nTelas ? ['Custo por tela por dia', brl2(custoDia / nTelas)] : null,
     relatorio?.totais ? ['Exibições realizadas', <span key="ex" className="flex flex-col items-end gap-0.5">
       <span className="inline-flex items-center gap-1.5 tabular-nums"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#13a24a]" />{exibicoes.toLocaleString('pt-BR')}</span>
-      <span className="max-w-[260px] text-[12px] font-medium leading-snug text-[#8b8285] first-letter:uppercase">{porExtenso(exibicoes)}{/(milhão|milhões|bilhão|bilhões|trilhão|trilhões)$/.test(porExtenso(exibicoes)) ? ' de' : ''} exibições</span>
+      <span className="max-w-[260px] text-[12px] font-medium leading-snug text-[#8b8285] first-letter:uppercase">{porExtenso(exibicoes, true)}{/(milhão|milhões|bilhão|bilhões|trilhão|trilhões)$/.test(porExtenso(exibicoes, true)) ? ' de' : ''} exibições</span>
     </span>] : null,
     order.cupom_id ? ['Cupom', cupom ? `${cupom.codigo}${cupom.desconto_percentual ? ` · ${cupom.desconto_percentual}% off` : ''}` : 'Aplicado'] : null,
     cortesia ? ['Cobrança', 'Cortesia · sem custo'] : null,
