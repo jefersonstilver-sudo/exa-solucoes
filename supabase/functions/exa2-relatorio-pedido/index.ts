@@ -23,6 +23,8 @@ const diaBR = (t: number) => new Date(t - 3 * 3600_000).toISOString().slice(0, 1
 const inicioDiaBR = (d: string) => Date.parse(d + "T03:00:00Z");
 
 const SUPA = Deno.env.get("SUPABASE_URL")!;
+// miniaturas ficam no bucket público de imagens que já existe (a área de trabalho do Lovable não deixa criar bucket público novo)
+const BUCKET_MINI = "building-images";
 // nome do arquivo da automação semanal do cinema: video-vertical-15s-qui11-qui18-jun.mp4 → dias 11 a 18/jun
 const PADRAO_CINEMA = /video-(?:vertical-)?(?:15s-)?(seg|ter|qua|qui|sex|sab|dom)(\d{2})-(seg|ter|qua|qui|sex|sab|dom)(\d{2})-([a-z]{3})/;
 const fotoPredio = (path?: string | null) => !path ? null : String(path).startsWith("http") ? path : `${SUPA}/storage/v1/object/public/building-images/${path}`;
@@ -96,9 +98,9 @@ Deno.serve(async (req) => {
       if (ja) return json(200, { ok: true, ja: true });
       const { data: existe } = await sb.from("videos").select("id").eq("id", vid).maybeSingle();
       if (!existe) return json(404, { ok: false });
-      const path = `${vid}.jpg`;
-      const up = await sb.storage.from("video-miniaturas").upload(path, bytes, { contentType: "image/jpeg", upsert: false });
-      if (up.error && !/exists/i.test(up.error.message)) return json(500, { ok: false });
+      const path = `miniaturas-videos/${vid}.jpg`;
+      const up = await sb.storage.from(BUCKET_MINI).upload(path, bytes, { contentType: "image/jpeg", upsert: false });
+      if (up.error && !/exists/i.test(up.error.message)) { console.error("[RELATORIO] miniatura", up.error.message); return json(500, { ok: false }); }
       await sb.from("video_miniaturas").insert({ video_id: vid, path });
       return json(200, { ok: true });
     }
@@ -350,7 +352,7 @@ Deno.serve(async (req) => {
     // miniaturas já guardadas (cache permanente)
     const idsVideos = videos.map((v) => v.id).filter((id) => id !== "__inicio");
     const { data: minis } = idsVideos.length ? await sb.from("video_miniaturas").select("video_id,path").in("video_id", idsVideos) : { data: [] as any[] };
-    const miniDe = new Map((minis || []).map((m: any) => [m.video_id, `${SUPA}/storage/v1/object/public/video-miniaturas/${m.path}`]));
+    const miniDe = new Map((minis || []).map((m: any) => [m.video_id, `${SUPA}/storage/v1/object/public/${BUCKET_MINI}/${m.path}`]));
     for (const v of videos) v.miniatura = miniDe.get(v.id) || null;
     const noAr = videos.filter((v) => v.situacao === "no_ar");
 

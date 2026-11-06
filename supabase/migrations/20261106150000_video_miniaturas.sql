@@ -10,6 +10,5 @@ alter table public.video_miniaturas enable row level security;
 revoke all on public.video_miniaturas from anon, authenticated;
 grant all on public.video_miniaturas to service_role;
 
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('video-miniaturas', 'video-miniaturas', true, 400000, array['image/jpeg'])
-on conflict (id) do nothing;
+-- As imagens ficam no bucket público que já existe, building-images, na pasta miniaturas-videos/
+-- (a área de trabalho do Lovable bloqueia criar bucket público novo).
