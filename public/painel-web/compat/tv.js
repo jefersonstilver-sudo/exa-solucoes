@@ -211,12 +211,26 @@
         try {
           var orig = window.applyVisualMode;
           if (typeof orig !== 'function' || orig.__exa) return;
+          // 06/11/2026 (Del Fuego esticado no Zeta): o player do NUC usa object-fit:fill — o vídeo estica até
+          // preencher o espaço. Vídeo vertical 4:5 em tela cheia 9:16, ou formato diferente do espaço, deformava.
+          // Agora: formato do arquivo a até 4% do espaço = preenche (como antes); mais que isso = encaixa inteiro
+          // (sobra borda preta, nunca deforma).
+          var encaixar = function (el) {
+            try {
+              var w = el.videoWidth, h = el.videoHeight, ew = el.clientWidth, eh = el.clientHeight;
+              if (!w || !h || !ew || !eh) return;
+              var r = (w / h) / (ew / eh);
+              el.style.objectFit = (r > 1.04 || r < 0.96) ? 'contain' : 'fill';
+              el.style.backgroundColor = '#000';
+            } catch (e) { /* segue */ }
+          };
           var corrigir = function (el, isPlus) {
             var w = el.videoWidth, h = el.videoHeight;
             if (!w || !h) return;
             var vert = h > w * 1.1, plus = isPlus === true || isPlus === 'true';
-            if (vert === plus) return;
+            if (vert === plus) { encaixar(el); return; }
             orig(el, vert);
+            encaixar(el);
             var info = window.__tvInfo = window.__tvInfo || {};
             var nome = String(el.currentSrc || '').split('/').pop().slice(-60);
             info.orient = (info.orient || []).filter(function (x) { return x.indexOf(nome) < 0; }).concat([nome + (vert ? ' vertical sem isPlus' : ' horizontal com isPlus')]).slice(-6);
@@ -231,6 +245,26 @@
           };
           novo.__exa = true;
           window.applyVisualMode = novo;
+          // rede de segurança: TODO anúncio que começa a tocar é conferido aqui, venha de onde vier a troca
+          // (dois players, recarga, cache): horizontal em tela cheia volta para o espaço; vertical no espaço vai
+          // para tela cheia; e o encaixe nunca deforma.
+          document.addEventListener('playing', function (ev) {
+            try {
+              var el = ev.target;
+              if (!el || el.tagName !== 'VIDEO' || el.id === 'live-video' || /mascote/.test(el.className || '')) return;
+              if (!el.closest || !el.closest('.video-wrapper') && el.id !== 'video-propaganda' && el.getAttribute('data-fullscreen') !== 'true') return;
+              var w = el.videoWidth, h = el.videoHeight;
+              if (!w || !h) return;
+              var vert = h > w * 1.1, fs = el.getAttribute('data-fullscreen') === 'true' || el.style.position === 'fixed';
+              if (fs !== vert) {
+                orig(el, vert);
+                var info = window.__tvInfo = window.__tvInfo || {};
+                var nome = String(el.currentSrc || '').split('/').pop().slice(-60);
+                info.orient = (info.orient || []).filter(function (x) { return x.indexOf(nome) < 0; }).concat([nome + (vert ? ' vertical no espaço (corrigido ao tocar)' : ' horizontal em tela cheia (corrigido ao tocar)')]).slice(-6);
+              }
+              encaixar(el);
+            } catch (e) { /* segue */ }
+          }, true);
         } catch (e) { /* segue */ }
       }, 0);
     });
