@@ -140,7 +140,8 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
     } else {
       setForm(EMPTY);
     }
-  }, [editingCoupon, isOpen, getCouponBuildings]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingCoupon, isOpen]);
 
   useEffect(() => {
     if (!isOpen || buildings.length > 0) return;
