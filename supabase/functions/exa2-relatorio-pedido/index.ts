@@ -37,6 +37,11 @@ function tituloVideo(v: any): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+function serieDoPedido(ped: any, vids: any[]): string {
+  const n = String(ped.nome_pedido || "") + " " + vids.map((v) => v.nome).join(" ");
+  return /cine|cinema/i.test(n) ? "cinema" : "geral";
+}
+
 function serie(nome: string): string {
   const n = String(nome || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   if (/\bcine|cinema/.test(n)) return "cinema";
@@ -205,8 +210,18 @@ Deno.serve(async (req) => {
       .eq("client_id", ped.client_id).gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString()).order("created_at");
     const idsLog = [...new Set(logs.flatMap((x) => [x.f, x.t]).filter(Boolean) as string[])];
     const { data: deLog } = idsLog.length ? await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url").in("id", idsLog) : { data: [] as any[] };
+    // vídeos do cinema que a equipe subiu pela Conta Interna da EXA (ex.: "3 setembro" = cine_3_de_setembro.mp4):
+    // não ficam no pedido depois de trocados, mas foram o principal da semana
+    const CONTA_INTERNA = "de96cfa9-9dbe-4ead-be94-3647e345d2de";
+    let internos: any[] = [];
+    const seriePrincipal = serieDoPedido(ped, hist || []);
+    if (seriePrincipal === "cinema") {
+      const { data: ci } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url").eq("client_id", CONTA_INTERNA)
+        .gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString());
+      internos = (ci || []).filter((v: any) => /(^|[^a-z])cine([^a-z]|$)|cinema/i.test(String(v.nome) + " " + decodeURIComponent(String(v.url || "").split("/").pop() || "")) && !/cinematic/i.test(v.nome));
+    }
     const todos = new Map<string, any>();
-    for (const v of [...(hist || []), ...(deLog || [])]) todos.set(v.id, v);
+    for (const v of [...(hist || []), ...(deLog || []), ...internos]) todos.set(v.id, { ...v, serieForcada: internos.some((x) => x.id === v.id) ? "cinema" : undefined });
     for (const x of pvs || []) if (x.videos) todos.set(x.video_id, x.videos);
     const ordenados = [...todos.values()].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
 
@@ -219,12 +234,16 @@ Deno.serve(async (req) => {
       const prog = minDia.get(d);
       const bases = baseDia.get(d);
       if (bases && bases.size) ultimoBase = [...bases.entries()].sort((a, b) => b[1] - a[1])[0][0];
-      else if (!primeiroLog || d < primeiroLog) {
-        // antes dos registros: vídeo da conta publicado por último até este dia (série do cinema/campanha principal)
+      else {
+        // dia sem registro de troca: o principal é o último da série principal publicado até este dia
+        // (antes dos registros) ou o principal anterior, a não ser que um vídeo novo da série tenha entrado depois dele
         const t = inicioDiaBR(d) + DIA;
-        const cand = ordenados.filter((v) => Date.parse(v.created_at) <= t && !/\bteste?\b/i.test(v.nome) && (hist || []).some((h: any) => h.id === v.id));
-        const daSerie = cand.filter((v) => serie(v.nome) !== "hotel");
-        ultimoBase = (daSerie[daSerie.length - 1] || cand[cand.length - 1])?.id || null;
+        const cand = ordenados.filter((v) => Date.parse(v.created_at) <= t && !/\bteste?\b/i.test(v.nome) && ((hist || []).some((h: any) => h.id === v.id) || v.serieForcada));
+        const daSerie = cand.filter((v) => seriePrincipal === "cinema" ? (v.serieForcada || serie(v.nome)) === "cinema" : (v.serieForcada || serie(v.nome)) !== "hotel");
+        const novo = (daSerie[daSerie.length - 1] || cand[cand.length - 1]) || null;
+        const atual = ultimoBase ? todos.get(ultimoBase) : null;
+        if (!primeiroLog || d < primeiroLog || !atual) ultimoBase = novo?.id || ultimoBase;
+        else if (novo && Date.parse(novo.created_at) > Date.parse(atual.created_at) && novo.id !== ultimoBase) ultimoBase = novo.id;
       }
       if (d === dias[dias.length - 1] && pvBase && !(bases && bases.size)) ultimoBase = pvBase.video_id;
       let usados = 0;
@@ -266,7 +285,7 @@ Deno.serve(async (req) => {
       const rs = regrasPorVideo.get(v.id) || [];
       videos.push({
         id: v.id, nome: String(v.nome || "Vídeo").trim(), url: v.url || null, emPedido: !!pv, publicado_em: v.created_at, duracao: Number(v.duracao) || duracao,
-        orientacao: v.orientacao || (vertical ? "vertical" : "horizontal"), serie: serie(v.nome),
+        orientacao: v.orientacao || (vertical ? "vertical" : "horizontal"), serie: v.serieForcada || serie(v.nome),
         situacao: noAr ? "no_ar" : a ? (pv ? "pausado" : "substituido") : "pausado",
         principal: !!pv?.is_base_video,
         programacao: rs.length ? descreverRegras(rs) : horarioDoLog(v.id) || (noAr ? "todos os dias, o dia todo" : null),
