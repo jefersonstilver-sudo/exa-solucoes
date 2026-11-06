@@ -33,7 +33,7 @@ function tituloVideo(v: any): string {
   }
   if (/okto/i.test(v.nome)) return "Oktoberfest";
   let t = String(v.nome || "").replace(/^v[ií]deo\s*\d*\s*/i, "").replace(/\bv\d+\b/gi, "").replace(/\s+/g, " ").trim();
-  if (t.length < 6) t = v.serie === "hotel" ? "Hotel" : "Campanha";
+  if (t.length < 6) t = (v.serie === "hotel" ? "Hotel Cataratas Park" : "Campanha") + (t ? ` · ${t}` : "");
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
@@ -218,7 +218,10 @@ Deno.serve(async (req) => {
     if (seriePrincipal === "cinema") {
       const { data: ci } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url").eq("client_id", CONTA_INTERNA)
         .gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString());
-      internos = (ci || []).filter((v: any) => /(^|[^a-z])cine([^a-z]|$)|cinema/i.test(String(v.nome) + " " + decodeURIComponent(String(v.url || "").split("/").pop() || "")) && !/cinematic/i.test(v.nome));
+      internos = (ci || []).filter((v: any) => {
+        const arq = decodeURIComponent(String(v.url || "").split("/").pop() || "").toLowerCase();
+        return /\bcine\b|cinema|catarat/i.test(String(v.nome)) || /(^|[_\-\s])cine([_\-\s.]|$)/.test(arq);
+      });
     }
     const todos = new Map<string, any>();
     for (const v of [...(hist || []), ...(deLog || []), ...internos]) todos.set(v.id, { ...v, serieForcada: internos.some((x) => x.id === v.id) ? "cinema" : undefined });
@@ -269,6 +272,8 @@ Deno.serve(async (req) => {
       const h = r.is_all_day || !r.start_time ? "o dia todo" : `${String(r.start_time).slice(0, 5)}–${String(r.end_time || "").slice(0, 5)}`;
       return `${d}, ${h}`;
     }).join(" · ");
+    const minutosProgramados = (vid: string) => { let n = 0; for (const m of minDia.values()) n += m.get(vid) || 0; return n; };
+    const minutosTotais = (vid: string) => { let n = 0; for (const m of minutosPorVideoDia.values()) n += m.get(vid) || 0; return n || 1; };
     const horarioDoLog = (vid: string) => {
       const hs = horasVid.get(vid), ss = semVid.get(vid); if (!hs || !hs.size) return null;
       const h = [...hs].sort((a, b) => a - b);
@@ -288,12 +293,14 @@ Deno.serve(async (req) => {
         orientacao: v.orientacao || (vertical ? "vertical" : "horizontal"), serie: v.serieForcada || serie(v.nome),
         situacao: noAr ? "no_ar" : a ? (pv ? "pausado" : "substituido") : "pausado",
         principal: !!pv?.is_base_video,
-        programacao: rs.length ? descreverRegras(rs) : horarioDoLog(v.id) || (noAr ? "todos os dias, o dia todo" : null),
+        programacao: rs.length ? descreverRegras(rs) : (minutosProgramados(v.id) >= 0.5 * minutosTotais(v.id) ? horarioDoLog(v.id) : null) || (noAr ? "todos os dias, o dia todo" : null),
         periodo: a ? { de: new Date(inicioDiaBR(a.de)).toISOString(), ate: new Date(Math.min(fim, inicioDiaBR(a.ate) + DIA - 1)).toISOString() } : null,
         dias_no_ar: a?.dias || 0,
         exibicoes: a ? Math.round(a.exib) : undefined,
       });
     }
+    // vídeo sem série enviado junto com um do hotel (ex.: "vídeo 1 café hotel" + "vídeo 2 tarde") é do hotel
+    for (const v of videos) if (v.serie === "geral" && !/okto/i.test(v.nome) && videos.some((w) => w.serie === "hotel" && Math.abs(Date.parse(w.publicado_em) - Date.parse(v.publicado_em)) < 3600_000)) v.serie = "hotel";
     // o mesmo vídeo enviado mais de uma vez (mesmo nome em até 48 h): soma num só
     for (let i = videos.length - 1; i > 0; i--) {
       const j = videos.findIndex((w, k) => k < i && w.nome.toLowerCase() === videos[i].nome.toLowerCase() && Math.abs(Date.parse(w.publicado_em) - Date.parse(videos[i].publicado_em)) < 2 * DIA);
