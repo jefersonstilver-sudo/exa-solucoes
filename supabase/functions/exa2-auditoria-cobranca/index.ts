@@ -133,7 +133,7 @@ async function montar(pid: string) {
 // Cliente do Asaas para cobrar este pedido. Nunca usa cliente REMOVIDO (o Asaas recusa cobrança para ele):
 // 1) ativo ligado ao pedido/às parcelas pagas; 2) ativo com o mesmo CPF/CNPJ; 3) restaura o removido (mantém o histórico).
 // Não grava nada no pedido (a régua da exa2-cobranca não pode passar a enxergar este cliente).
-async function clienteDoPedido(pid: string, rows: any[]) {
+async function clienteDoPedido(pid: string, rows: any[], ignorar: string[] = [], trilha: any[] = []) {
   const { data: ped } = await sb.from("pedidos").select("asaas_customer_id,client_id").eq("id", pid).maybeSingle();
   const candidatos: string[] = [];
   if (ped?.asaas_customer_id) candidatos.push(String(ped.asaas_customer_id));
@@ -145,8 +145,9 @@ async function clienteDoPedido(pid: string, rows: any[]) {
   const removidos: string[] = [];
   for (const id of candidatos) {
     const c = await asaas("GET", "/customers/" + id);
+    trilha.push({ id, status: c.status, deleted: c.j?.deleted ?? null });
     if (!c.ok) continue;
-    if (!c.j?.deleted) return id;
+    if (!c.j?.deleted && !ignorar.includes(id)) return id;
     removidos.push(id);
     const d = digits(c.j?.cpfCnpj); if (d && !docs.includes(d)) docs.push(d);
   }
@@ -156,11 +157,13 @@ async function clienteDoPedido(pid: string, rows: any[]) {
   }
   for (const d of docs) {
     const r = await asaas("GET", "/customers?cpfCnpj=" + d);
-    const ativo = (r.j?.data || []).find((c: any) => !c.deleted);
+    trilha.push({ busca_doc: d.slice(0, 4) + "…", achados: (r.j?.data || []).map((c: any) => ({ id: c.id, deleted: c.deleted })) });
+    const ativo = (r.j?.data || []).find((c: any) => !c.deleted && !ignorar.includes(String(c.id)));
     if (r.ok && ativo?.id) return String(ativo.id);
   }
-  for (const id of removidos) {
+  for (const id of [...removidos, ...ignorar.filter((x) => !removidos.includes(x))]) {
     const r = await asaas("POST", "/customers/" + id + "/restore");
+    trilha.push({ restaurar: id, status: r.status, ok: r.ok });
     if (r.ok) { await logEv("AUDITORIA_COBRANCA_CLIENTE_RESTAURADO", { pedido: pid, cliente_asaas: id }); return id; }
   }
   return null;
@@ -210,6 +213,14 @@ Deno.serve(async (req) => {
     }
 
     // ===== cliente: pagar uma parcela (Pix ou boleto, valor cheio) ou todas as atrasadas num Pix único com 35% de desconto =====
+    if (action === "diag_cliente") {
+      if (!admin) return json({ ok: false }, 401);
+      const atual = await montar(pid!);
+      const trilha: any[] = []; const cid = await clienteDoPedido(pid!, atual.parcelas, [], trilha);
+      const c = cid ? await asaas("GET", "/customers/" + cid) : null;
+      return json({ ok: true, cid, deleted: c?.j?.deleted ?? null, notificationDisabled: c?.j?.notificationDisabled ?? null, trilha });
+    }
+
     if (action === "cliente_pagar") {
       if (!pid || quem.tipo === "anon") return json({ ok: false, erro: "Entre na sua conta." }, 401);
       if (!admin) {
@@ -236,13 +247,10 @@ Deno.serve(async (req) => {
       for (const l of abertos || []) if (await conciliarLote(l)) return json({ ok: true, ja_pago: true });
       const igual = (abertos || []).find((l: any) => (l.forma || "pix") === forma && JSON.stringify([...(l.parcelas || [])].sort((a: number, b: number) => a - b)) === JSON.stringify(nums) && Math.abs(Number(l.valor) - valor) < 0.01);
       if (igual) return json({ ok: true, cobranca: publico(igual) });
-      // outra cobrança aberta com alguma dessas parcelas: cancela antes (nunca duas cobranças para a mesma parcela)
-      for (const l of (abertos || []).filter((l: any) => (l.parcelas || []).some((n: number) => nums.includes(n)))) {
-        if (l.asaas_payment_id) await asaas("DELETE", "/payments/" + l.asaas_payment_id);
-        await sb.from("cobranca_auditoria_pix").update({ status: "cancelado" }).eq("id", l.id);
-        await sb.from("cobranca_auditoria").update({ pix_lote_id: null }).eq("pix_lote_id", l.id).eq("status", "aberto");
-      }
-      const cid = await clienteDoPedido(pid, atual.parcelas);
+      // outra cobrança aberta com alguma dessas parcelas: cancela SÓ DEPOIS que a nova existir
+      // (antes cancelava primeiro — se a nova falhasse, o cliente ficava sem nenhuma)
+      const sobrepostos = (abertos || []).filter((l: any) => (l.parcelas || []).some((n: number) => nums.includes(n)));
+      let cid = await clienteDoPedido(pid, atual.parcelas);
       if (!cid) { await logEv("AUDITORIA_COBRANCA_CLIENTE_FALHOU", { pedido: pid, motivo: "sem cliente no Asaas" }); return json({ ok: false, erro: admin ? "Cliente sem cadastro no Asaas." : "Não consegui gerar agora. Tente de novo em instantes." }, 409); }
       let nd = await asaas("PUT", "/customers/" + cid, { notificationDisabled: true });
       if (!nd.ok && [404, 405].includes(nd.status)) nd = await asaas("POST", "/customers/" + cid, { notificationDisabled: true });
@@ -252,11 +260,23 @@ Deno.serve(async (req) => {
       const { data: lote, error: eL } = await sb.from("cobranca_auditoria_pix").insert({ pedido_id: pid, valor, vencimento: venc, parcelas: nums, criado_por: quem.uid, forma, desconto_pct: DESC * 100 }).select("*").single();
       if (eL || !lote) return json({ ok: false, erro: "Não consegui gerar agora." }, 500);
       const desc = alvo.map((p: any) => p.competencia || p.numero).join(", ");
-      const r = await asaas("POST", "/payments", {
-        customer: cid, billingType: forma === "boleto" ? "BOLETO" : "PIX", value: valor, dueDate: venc,
+      const payload = (cliente: string) => ({
+        customer: cliente, billingType: forma === "boleto" ? "BOLETO" : "PIX", value: valor, dueDate: venc,
         description: `EXA Mídia · ${String(atual.pedido?.nome_pedido || "campanha").slice(0, 60)} · mensalidade${alvo.length > 1 ? "s" : ""} ${desc}${DESC ? " · 35% de desconto" : ""}`.slice(0, 480),
         externalReference: "auditoria:" + lote.id,
       });
+      let r = await asaas("POST", "/payments", payload(cid));
+      // o Asaas diz que o cliente foi removido (às vezes o GET ainda mostra ativo): procura outro/restaura e tenta 1 vez
+      if (!r.ok && /removid/i.test(erroAsaas(r))) {
+        const trilha: any[] = [];
+        const outro = await clienteDoPedido(pid, atual.parcelas, [cid], trilha);
+        await logEv("AUDITORIA_COBRANCA_CLIENTE_REMOVIDO", { pedido: pid, cliente_asaas: cid, novo: outro, trilha });
+        if (outro) {
+          let n2 = await asaas("PUT", "/customers/" + outro, { notificationDisabled: true });
+          if (!n2.ok && [404, 405].includes(n2.status)) n2 = await asaas("POST", "/customers/" + outro, { notificationDisabled: true });
+          if (n2.ok) { cid = outro; r = await asaas("POST", "/payments", payload(cid)); }
+        }
+      }
       if (!r.ok || !r.j?.id) {
         await sb.from("cobranca_auditoria_pix").delete().eq("id", lote.id);
         const motivo = erroAsaas(r); console.error("[AUDITORIA] asaas", motivo);
@@ -269,8 +289,13 @@ Deno.serve(async (req) => {
       if (qr.ok) { up.pix_copia_cola = qr.j?.payload || null; up.pix_qr_base64 = qr.j?.encodedImage || null; }
       if (forma === "boleto") { const lin = await asaas("GET", "/payments/" + r.j.id + "/identificationField"); if (lin.ok) up.linha_digitavel = lin.j?.identificationField || null; }
       await sb.from("cobranca_auditoria_pix").update(up).eq("id", lote.id);
+      for (const l of sobrepostos) {
+        if (l.asaas_payment_id) await asaas("DELETE", "/payments/" + l.asaas_payment_id);
+        await sb.from("cobranca_auditoria_pix").update({ status: "cancelado" }).eq("id", l.id);
+        await sb.from("cobranca_auditoria").update({ pix_lote_id: null }).eq("pix_lote_id", l.id).eq("status", "aberto");
+      }
       await sb.from("cobranca_auditoria").update({ pix_lote_id: lote.id, updated_at: new Date().toISOString() }).in("id", alvo.map((p: any) => p.id));
-      await logEv("AUDITORIA_COBRANCA_CLIENTE_GEROU", { pedido: pid, lote: lote.id, asaas: r.j.id, forma, valor, parcelas: nums, desconto: DESC, por: quem.uid });
+      await logEv("AUDITORIA_COBRANCA_CLIENTE_GEROU", { pedido: pid, lote: lote.id, asaas: r.j.id, cliente_asaas: cid, forma, valor, parcelas: nums, desconto: DESC, por: quem.uid });
       return json({ ok: true, cobranca: publico({ ...lote, ...up }) });
     }
 
