@@ -374,6 +374,10 @@ class MainActivity : Activity() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean =
                 !permitido(request?.url)
 
+            // câmera IP ao vivo da rede local (https://lan.exa.local/<ip>/<porta>/...): ver CameraLocal.kt
+            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? =
+                CameraLocal.atender(request)
+
             @Suppress("DEPRECATION")
             @Deprecated("Android < 7")
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean =
