@@ -1764,6 +1764,7 @@ export type Database = {
           quantidade_telas: number | null
           segmento_local: string | null
           status: string
+          telas_config: Json
           telas_ritmo: Json
           tem_airbnb: boolean
           tipo_local: string
@@ -1844,6 +1845,7 @@ export type Database = {
           quantidade_telas?: number | null
           segmento_local?: string | null
           status?: string
+          telas_config?: Json
           telas_ritmo?: Json
           tem_airbnb?: boolean
           tipo_local?: string
@@ -1924,6 +1926,7 @@ export type Database = {
           quantidade_telas?: number | null
           segmento_local?: string | null
           status?: string
+          telas_config?: Json
           telas_ritmo?: Json
           tem_airbnb?: boolean
           tipo_local?: string
