@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Info, Loader2, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
+import { LogoSelo } from '@/components/exa2/LogoSelo';
 import { useRelatorio, useExibicoesAoVivo, exibicoesAte, videoNoAr, ehAgora, comAgora, nf, dataBR, mesCurto, periodoTexto, SERIE, type Relatorio, type RelatorioVideo } from './useRelatorio';
 import { miniaturaDoVideo, montarMapa } from './midia';
 import { baixarRelatorioPdf } from './relatorioPdf';
@@ -43,11 +44,8 @@ const Miniatura = ({ v, className, pedidoId }: { v?: RelatorioVideo | null; clas
 
 const LogoCliente = ({ clientId, nome }: { clientId?: string; nome: string }) => {
   const logo = useLogoEmpresa(clientId || null, null);
-  return logo ? (
-    <img src={logo} alt={nome} className="h-[52px] w-[52px] flex-none rounded-2xl bg-white object-contain p-1 shadow-sm" />
-  ) : (
-    <div className="flex h-[52px] w-[52px] flex-none items-center justify-center rounded-2xl bg-[#1b1719] text-lg font-extrabold text-white">{nome.slice(0, 1).toUpperCase()}</div>
-  );
+  // mesmo selo do topo do pedido: adapta logo branco/colorido/com fundo ao vermelho da EXA (nunca branco sobre branco)
+  return <LogoSelo src={logo} fallback={nome.slice(0, 1).toUpperCase()} className="h-[52px] w-[52px] flex-none" rounded="rounded-2xl" pad="p-1.5" />;
 };
 
 /** A rodada típica de hoje: horizontais em cinza, a marca em vermelho (tela cheia), notícia em azul. */

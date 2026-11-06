@@ -260,9 +260,9 @@ export const EmpresaTab: React.FC<Props> = (p) => {
           const sel = m.id === marca.id;
           return (
             <button key={m.id} onClick={() => setSelId(m.id)} className={`flex flex-none items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 transition ${sel ? 'bg-[#9C1E1E] text-white shadow-md' : `${CARD} text-[#1b1719]`}`}>
-              <span className={`flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border text-[13px] font-extrabold text-[#9e1b34] ${logo ? 'border-white/40 bg-gradient-to-br from-[#b3262b] to-[#7d1416]' : 'border-[#ebe6e7] bg-white'}`}>
-                {logo ? <img src={logo} alt="" className="h-full w-full object-contain p-1" /> : iniciais(m.empresa)}
-              </span>
+              {logo ? <LogoSelo src={logo} fallback={iniciais(m.empresa)} className="h-9 w-9 flex-none ring-1 ring-white/40" rounded="rounded-full" pad="p-1" /> : (
+                <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[#ebe6e7] bg-white text-[13px] font-extrabold text-[#9e1b34]">{iniciais(m.empresa)}</span>
+              )}
               <span className="text-left text-[13.5px] font-bold leading-tight">
                 {m.empresa}
                 <small className={`block text-[11px] font-medium ${sel ? 'text-white/75' : 'text-[#8b8285]'}`}>{m.segmento || 'segmento a definir'}</small>
