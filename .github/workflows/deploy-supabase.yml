@@ -84,8 +84,12 @@ jobs:
         if: steps.token.outputs.ok == '1' && steps.lista.outputs.funcoes != ''
         run: |
           set -euo pipefail
-          # o CLI novo recusa a seção [inbucket] (só serve para o Supabase local); troca só aqui no CI, sem mexer no repositório
-          sed -i 's/^\[inbucket\]/[local_smtp]/' supabase/config.toml
+          # o CLI 3 recusa partes do config.toml que só servem para o Supabase local (inbucket, auth.hook…);
+          # aqui no CI fica só project_id + as seções [functions.*] (verify_jwt etc.), sem mexer no repositório
+          awk 'NR==1 && /^project_id/ {print; next} /^\[/ {keep = ($0 ~ /^\[functions\./)} keep' supabase/config.toml > /tmp/config.toml
+          grep -q '^project_id' /tmp/config.toml || sed -i "1i project_id = \"$PROJECT_REF\"" /tmp/config.toml
+          cp /tmp/config.toml supabase/config.toml
+          echo "config do CI: $(grep -c '^\[functions\.' supabase/config.toml) funções com configuração"
           for f in ${{ steps.lista.outputs.funcoes }}; do
             echo "== $f"
             supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api || supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api --debug
