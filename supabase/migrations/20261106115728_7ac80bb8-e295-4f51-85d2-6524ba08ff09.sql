@@ -1,0 +1,11 @@
+REVOKE ALL ON FUNCTION public.validar_cupom(text,numeric,integer,uuid[],text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.validar_cupom(text,numeric,integer,uuid[],text) TO authenticated;
+REVOKE ALL ON FUNCTION public.validate_coupon_secure(text,numeric) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.validate_coupon_secure(text,numeric,integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.validate_coupon_secure(text,numeric) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.validate_coupon_secure(text,numeric,integer) TO authenticated;
+REVOKE ALL ON FUNCTION public.apply_coupon_secure(text,uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.apply_coupon_secure(text,uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.pedidos_cupom_antes() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.pedidos_cupom_depois() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.cupons_validar_config() FROM PUBLIC, anon, authenticated;

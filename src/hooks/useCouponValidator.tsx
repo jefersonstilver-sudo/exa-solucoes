@@ -9,8 +9,10 @@ interface CouponValidationResult {
   couponId: string | null;
   discountPercent: number;
   categoria?: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
-  tipo_desconto?: 'percentual' | 'valor_fixo' | 'preco_final';
+  tipo_desconto?: 'percentual' | 'valor_fixo' | 'preco_final' | 'mensal_fixo';
   preco_final?: number; // Valor final fixo quando tipo_desconto = 'preco_final'
+  desconto_parcial?: boolean;
+  predios_elegiveis?: string[];
 }
 
 export function useCouponValidator() {
@@ -57,7 +59,12 @@ export function useCouponValidator() {
     }
   }, []);
 
-  const validateCoupon = useCallback(async (code: string, orderValue: number, quantidadePredios: number = 0) => {
+  const validateCoupon = useCallback(async (
+    code: string,
+    orderValue: number,
+    quantidadePredios: number = 0,
+    opts?: { buildingIds?: string[]; planMonths?: number; tipoProduto?: string }
+  ) => {
     if (!code) {
       const result = {
         valid: false,
@@ -75,10 +82,12 @@ export function useCouponValidator() {
       console.log('[useCouponValidator] Validando cupom:', { code, orderValue, quantidadePredios });
       
       const { data: responseData, error } = await supabase
-        .rpc('validate_coupon_secure', { 
-          p_codigo: code,
+        .rpc('validar_cupom' as any, {
+          p_codigo: code.trim().toUpperCase(),
           p_valor_pedido: orderValue || 0,
-          p_quantidade_predios: quantidadePredios || 0
+          p_meses: opts?.planMonths ?? null,
+          p_building_ids: opts?.buildingIds && opts.buildingIds.length > 0 ? opts.buildingIds : null,
+          p_tipo_produto: opts?.tipoProduto || 'horizontal'
         });
       
       if (error) {
@@ -106,7 +115,9 @@ export function useCouponValidator() {
         error?: string; 
         id?: string; 
         desconto_percentual?: number;
-        tipo_desconto?: 'percentual' | 'valor_fixo' | 'preco_final';
+        tipo_desconto?: 'percentual' | 'valor_fixo' | 'preco_final' | 'mensal_fixo';
+        desconto_parcial?: boolean;
+        predios_elegiveis?: string[];
         categoria?: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
       };
       
@@ -131,7 +142,9 @@ export function useCouponValidator() {
         discountPercent: isValid ? (couponData.desconto_percentual || 0) : 0,
         categoria: isValid ? couponData.categoria : undefined,
         tipo_desconto: tipoDesconto,
-        preco_final: precoFinal
+        preco_final: precoFinal,
+        desconto_parcial: isValid ? !!couponData.desconto_parcial : false,
+        predios_elegiveis: isValid ? (couponData.predios_elegiveis || []) : []
       };
       
       console.log('[useCouponValidator] Resultado da validação:', validationResult);

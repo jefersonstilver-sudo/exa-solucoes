@@ -1,3 +1,4 @@
+import { applyCouponToItems, type CouponMathItem, type CouponMathType } from './couponMath';
 
 // CORREÇÃO COMPLETA: Sistema de Cálculo de Preços Baseado no Prédio
 
@@ -48,19 +49,14 @@ export const calculateTotalPrice = (
   couponValid: boolean = false,
   couponCode?: string,
   couponCategoria?: string,
-  tipoDesconto?: 'percentual' | 'valor_fixo' | 'preco_final',
-  precoFinal?: number
+  tipoDesconto?: 'percentual' | 'valor_fixo' | 'preco_final' | 'mensal_fixo',
+  precoFinal?: number,
+  couponScope?: { parcial?: boolean; elegiveis?: string[] }
 ): number => {
   // 🎁 CUPOM CORTESIA: Força R$ 0,00 SEMPRE
   if (couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN') {
     console.log("🎁🎁🎁 [CheckoutUtils] CUPOM CORTESIA DETECTADO - Forçando R$ 0,00");
     return 0;
-  }
-  
-  // 🎯 CUPOM ESPECIAL 573040: Força R$ 0,05 SEMPRE
-  if (couponCode === '573040') {
-    console.log("🎯🎯🎯 [CheckoutUtils] CUPOM 573040 DETECTADO - Forçando R$ 0,05");
-    return 0.05;
   }
   
   // 💰 CUPOM PREÇO FINAL: Força o valor exato definido no cupom
@@ -89,6 +85,7 @@ export const calculateTotalPrice = (
 
   // CORREÇÃO: Usar preços manuais se disponíveis, senão calcular com desconto
   let totalWithPlan = 0;
+  const couponItems: CouponMathItem[] = [];
   
   cartItems.forEach(item => {
     const building = item.panel.buildings;
@@ -128,6 +125,7 @@ export const calculateTotalPrice = (
     }
     
     totalWithPlan += itemTotal;
+    couponItems.push({ buildingId: String((building as any)?.id || (item.panel as any)?.building_id || ''), price: itemTotal });
     
     console.log("💰 [CheckoutUtils] ITEM CALCULADO:", {
       buildingName: building?.nome,
@@ -147,36 +145,16 @@ export const calculateTotalPrice = (
     totalWithPlan
   });
 
-  // Aplicar desconto se válido
+  // Aplicar desconto se válido (regra compartilhada com o servidor)
   let finalPrice = totalWithPlan;
   if (couponValid && couponDiscount > 0) {
-    let discountAmount: number;
-    
-    if (tipoDesconto === 'valor_fixo') {
-      // Desconto valor fixo: subtrai o valor direto do total
-      discountAmount = couponDiscount;
-      finalPrice = totalWithPlan - discountAmount;
-      
-      console.log("💰 [CheckoutUtils] DESCONTO VALOR FIXO APLICADO:", {
-        totalWithPlan,
-        valorDesconto: `R$ ${couponDiscount}`,
-        discountAmount,
-        finalPrice,
-        calculation: `R$ ${totalWithPlan} - R$ ${discountAmount} = R$ ${finalPrice}`
-      });
-    } else {
-      // Desconto percentual: calcula porcentagem do total
-      discountAmount = (totalWithPlan * couponDiscount) / 100;
-      finalPrice = totalWithPlan - discountAmount;
-      
-      console.log("💰 [CheckoutUtils] DESCONTO PERCENTUAL APLICADO:", {
-        totalWithPlan,
-        couponDiscount: `${couponDiscount}%`,
-        discountAmount,
-        finalPrice,
-        calculation: `R$ ${totalWithPlan} - (${couponDiscount}% = R$ ${discountAmount}) = R$ ${finalPrice}`
-      });
-    }
+    finalPrice = applyCouponToItems(couponItems, {
+      tipo: (tipoDesconto || 'percentual') as CouponMathType,
+      valor: couponDiscount,
+      planMonths: Number(selectedPlan) || 1,
+      parcial: couponScope?.parcial,
+      elegiveis: couponScope?.elegiveis,
+    });
   }
 
   // CORREÇÃO CRÍTICA: Aplicar valor mínimo (nunca menos que R$ 0,05)

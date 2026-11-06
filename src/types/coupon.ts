@@ -33,7 +33,14 @@ export interface Coupon {
   categoria: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
   min_predios?: number;
   max_predios?: number;
+  tipo_produto?: CouponProductType;
+  modo_predios?: CouponBuildingMode;
+  predios_fora_da_lista?: CouponOutsideRule;
 }
+
+export type CouponProductType = 'ambos' | 'horizontal' | 'vertical_premium';
+export type CouponBuildingMode = 'todos' | 'especificos' | 'quantidade' | 'combinado';
+export type CouponOutsideRule = 'recusar' | 'desconto_parcial';
 
 export interface CouponStats {
   total_cupons: number;
@@ -69,6 +76,12 @@ export interface CreateCouponData {
   ativo: boolean;
   min_predios?: number;
   max_predios?: number;
+  data_inicio?: string | null;
+  tipo_produto?: CouponProductType;
+  modo_predios?: CouponBuildingMode;
+  predios_fora_da_lista?: CouponOutsideRule;
+  /** Prédios do cupom (modos especificos/combinado) — salvos em cupom_predios */
+  predio_ids?: string[];
 }
 
 export interface CouponFilters {
