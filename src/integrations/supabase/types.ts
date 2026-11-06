@@ -20984,6 +20984,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      relatorio_minutos_video: {
+        Args: { p_pedido: string }
+        Returns: {
+          dia: string
+          dows: number[]
+          horas: number[]
+          minutos: number
+          video_from: string
+          video_to: string
+        }[]
+      }
       reset_device_alert_metadata_for_rule: {
         Args: { p_rule_id: string }
         Returns: undefined
