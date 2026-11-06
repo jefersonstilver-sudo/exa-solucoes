@@ -92,5 +92,5 @@ jobs:
           echo "config do CI: $(grep -c '^\[functions\.' supabase/config.toml) funções com configuração"
           for f in ${{ steps.lista.outputs.funcoes }}; do
             echo "== $f"
-            supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api || supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api --debug
+            supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api --yes || supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api --yes --debug
           done
