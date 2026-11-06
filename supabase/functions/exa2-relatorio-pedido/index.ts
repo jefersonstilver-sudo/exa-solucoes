@@ -72,6 +72,12 @@ Deno.serve(async (req) => {
     if (!ped.data_inicio) return json(200, { ok: true, pendente: true, pedido: { id: ped.id, nome: ped.nome_pedido }, aviso: "A campanha ainda não começou: o relatório aparece a partir do primeiro dia no ar." });
 
     const vertical = String(ped.tipo_produto || "").toLowerCase().includes("vertical");
+    // nome da empresa para o relatório (marca do cliente → empresa do cadastro → nome do pedido); nunca o nome da pessoa
+    const [{ data: marca }, { data: usr }] = await Promise.all([
+      sb.from("marcas_clientes").select("empresa").eq("client_id", ped.client_id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      sb.from("users").select("empresa_nome").eq("id", ped.client_id).maybeSingle(),
+    ]);
+    const empresa = String(marca?.empresa || usr?.empresa_nome || "").trim() || null;
     const { data: confs } = await sb.from("configuracoes_exibicao").select("horas_operacao_dia").limit(1);
     const horas = Number(confs?.[0]?.horas_operacao_dia) || 24; // telas ligadas 24 h (Jeferson, 06/11/2026)
     const segDia = horas * 3600;
@@ -85,7 +91,7 @@ Deno.serve(async (req) => {
 
     // prédios e telas
     const ids: string[] = (ped.lista_predios || []).filter(Boolean);
-    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,quantidade_telas,publico_estimado,status,imagem_principal,latitude,longitude,manual_latitude,manual_longitude").in("id", ids).neq("status", "interno") : { data: [] as any[] }; // telas internas da EXA (entrada, sala de reunião, tablet) não entram no relatório do cliente
+    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,quantidade_telas,publico_estimado,status,imagem_principal,latitude,longitude,manual_latitude,manual_longitude").in("id", ids).neq("status", "interno").not("nome", "ilike", "%teste%") : { data: [] as any[] }; // telas internas da EXA (entrada, sala de reunião, tablet) não entram no relatório do cliente
     const { data: devs } = ids.length ? await sb.from("devices").select("id,building_id,is_deleted").in("building_id", ids) : { data: [] as any[] };
     const devsPorPredio = new Map<string, number>();
     for (const d of devs || []) if (!d.is_deleted) devsPorPredio.set(d.building_id, (devsPorPredio.get(d.building_id) || 0) + 1);
@@ -243,7 +249,7 @@ Deno.serve(async (req) => {
       ok: true,
       gerado_em: new Date().toISOString(),
       pedido: {
-        id: ped.id, nome: ped.nome_pedido || "Campanha EXA", status: ped.status, cliente: ped.client_name || null, client_id: ped.client_id,
+        id: ped.id, nome: ped.nome_pedido || "Campanha EXA", status: ped.status, cliente: empresa || ped.nome_pedido || ped.client_name || null, empresa, client_id: ped.client_id,
         produto: vertical ? "vertical_premium" : "horizontal", inicio: ped.data_inicio, fim: ped.data_fim, plano_meses: ped.plano_meses,
         dias_no_ar: diasNoAr, dias_restantes: ped.data_fim ? Math.max(0, Math.ceil((fimContrato - hoje) / DIA)) : null,
         progresso: Math.min(100, Math.round((diasNoAr / totalDias) * 100)),
