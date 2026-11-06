@@ -8,6 +8,7 @@ export type RelatorioVideo = {
   serie: 'cinema' | 'hotel' | 'geral'; situacao: 'no_ar' | 'pausado' | 'substituido' | 'aguardando'; principal: boolean;
   programacao: string | null; periodo: { de: string; ate: string } | null; exibicoes?: number;
   titulo: string; url: string | null; miniatura?: string | null; dias_no_ar?: number; arquivo_antigo?: boolean;
+  agora?: boolean; // é o vídeo que está tocando neste minuto (mesmo motor da aba Vídeos)
 };
 export type Relatorio = {
   ok: boolean; pendente?: boolean; aviso?: string; gerado_em: string;
@@ -18,6 +19,7 @@ export type Relatorio = {
   dias: { dia: string; exibicoes: number }[];
   predios: { id: string; nome: string; bairro: string; telas: number; exibicoes: number; por_dia_tela: number; participacao: number; horas_tela: number; publico: number; foto: string | null; lat: number | null; lng: number | null }[];
   rodada_tipica: { horizontais: number; verticais: number; verticais_por_rodada: number; segundos: number };
+  agora_video_id?: string | null;
   videos: RelatorioVideo[];
   publicacoes: { por_mes: { mes: string; qtd: number }[]; series: Record<string, { videos: number; semanas: number }> };
   metodologia: string;
@@ -35,7 +37,8 @@ export const useRelatorio = (pedidoId?: string | null) =>
   useQuery({
     queryKey: ['relatorio-pedido', pedidoId],
     enabled: !!pedidoId,
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000, // "no ar agora" e totais acompanham a troca de programação
     queryFn: () => chamar<Relatorio>({ acao: 'relatorio', pedido_id: pedidoId }),
   });
 
@@ -76,16 +79,35 @@ export const mesCurto = (m: string) => MES_LONGO[Number(m.slice(5, 7)) - 1];
  * o contador mostra só a parte do dia que já passou e sobe a cada segundo, no ritmo real da programação
  * (ex.: Cine ≈ 1 exibição a cada 7 s somando as telas). À meia-noite bate exatamente com o total.
  */
+/**
+ * Fonte ÚNICA do número de exibições "até agora" — a página (contador vivo), o PDF e o Contrato usam esta função.
+ * O total do servidor inclui o dia de hoje inteiro; aqui tira a parte do dia que ainda não passou (hora de Brasília).
+ */
+export const exibicoesAte = (r?: Relatorio | null, agoraMs = Date.now()) => {
+  if (!r) return 0;
+  const ult = r.dias?.[r.dias.length - 1];
+  const agora = new Date(agoraMs - 3 * 3600e3);
+  const hojeBR = agora.toISOString().slice(0, 10);
+  if (!ult || ult.dia !== hojeBR) return r.totais.exibicoes; // contrato encerrado ou sem dado de hoje: total fechado
+  const frac = (agora.getUTCHours() * 3600 + agora.getUTCMinutes() * 60 + agora.getUTCSeconds()) / 86400;
+  return Math.floor(r.totais.exibicoes - ult.exibicoes * (1 - frac));
+};
+
+/**
+ * Fonte ÚNICA do vídeo "no ar agora". Quem já sabe (aba Vídeos, motor da agenda) passa o id; senão vale o do servidor,
+ * que usa o MESMO motor (supabase/functions/_shared/agendaEngine.ts). Página, PDF e lista de vídeos leem daqui.
+ */
+export const comAgora = (r: Relatorio, noArVideoId?: string | null): Relatorio => {
+  const id = noArVideoId || r.agora_video_id || null;
+  if (!id || !r.videos?.some((v) => v.id === id)) return r;
+  const videos = r.videos.map((v) => ({ ...v, agora: v.id === id }));
+  return { ...r, agora_video_id: id, videos: [...videos.filter((v) => v.agora), ...videos.filter((v) => !v.agora)] };
+};
+export const videoNoAr = (r: Relatorio) => r.videos.find((v) => v.agora) || r.videos.find((v) => v.situacao === 'no_ar') || r.videos[0];
+export const ehAgora = (r: Relatorio, v?: RelatorioVideo | null) => !!v && (v.agora || (!r.agora_video_id && v.situacao === 'no_ar'));
+
 export const useExibicoesAoVivo = (r?: Relatorio | null) => {
-  const calc = () => {
-    if (!r) return 0;
-    const ult = r.dias?.[r.dias.length - 1];
-    const hojeBR = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
-    if (!ult || ult.dia !== hojeBR) return r.totais.exibicoes; // contrato encerrado ou sem dado de hoje: total fechado
-    const agora = new Date(Date.now() - 3 * 3600e3);
-    const frac = (agora.getUTCHours() * 3600 + agora.getUTCMinutes() * 60 + agora.getUTCSeconds()) / 86400;
-    return Math.floor(r.totais.exibicoes - ult.exibicoes * (1 - frac));
-  };
+  const calc = () => exibicoesAte(r);
   const [v, setV] = useStateVivo(calc);
   useEffectVivo(() => { setV(calc()); const t = setInterval(() => setV(calc()), 1000); return () => clearInterval(t); }, [r]); // eslint-disable-line react-hooks/exhaustive-deps
   return v;

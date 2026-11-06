@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Info, Loader2, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
-import { useRelatorio, useExibicoesAoVivo, nf, dataBR, mesCurto, periodoTexto, SERIE, type Relatorio, type RelatorioVideo } from './useRelatorio';
+import { useRelatorio, useExibicoesAoVivo, exibicoesAte, videoNoAr, ehAgora, comAgora, nf, dataBR, mesCurto, periodoTexto, SERIE, type Relatorio, type RelatorioVideo } from './useRelatorio';
 import { miniaturaDoVideo, montarMapa } from './midia';
 import { baixarRelatorioPdf } from './relatorioPdf';
 
@@ -158,7 +158,7 @@ const CartaoVideo = ({ v, pedidoId }: { v: RelatorioVideo; pedidoId: string }) =
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
       <div className="flex flex-wrap gap-1.5">
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${v.serie === 'hotel' ? 'bg-[#E8EEFD] text-[#2557C7]' : v.serie === 'cinema' ? 'bg-[#F8E9EC] text-[#9E1B34]' : 'bg-[#F0ECEA] text-[#6F6669]'}`}>{SERIE[v.serie]}</span>
-        {v.situacao === 'no_ar' && <span className="rounded-full bg-[#E6F6EC] px-2.5 py-0.5 text-[11px] font-extrabold text-[#13A24A]">No ar</span>}
+        {v.situacao === 'no_ar' && <span className="rounded-full bg-[#E6F6EC] px-2.5 py-0.5 text-[11px] font-extrabold text-[#13A24A]">{v.agora ? 'No ar agora' : 'Na programação'}</span>}
         {v.situacao === 'pausado' && <span className="rounded-full bg-[#F0ECEA] px-2.5 py-0.5 text-[11px] font-extrabold text-[#6F6669]">Em pausa</span>}
         {v.situacao === 'aguardando' && <span className="rounded-full bg-[#EAF1FB] px-2.5 py-0.5 text-[11px] font-extrabold text-[#2F6FB5]">Aprovado</span>}
       </div>
@@ -201,13 +201,13 @@ const Mapa = ({ r }: { r: Relatorio }) => {
   );
 };
 
-export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: string; compacto?: boolean }) => {
+export const RelatorioPedido = ({ pedidoId, compacto = false, noArVideoId }: { pedidoId: string; compacto?: boolean; noArVideoId?: string | null }) => {
   const q = useRelatorio(pedidoId);
   const [filtro, setFiltro] = useState<'todos' | 'cinema' | 'hotel' | 'geral'>('todos');
   const [todosVideos, setTodosVideos] = useState(false);
   const [todosPredios, setTodosPredios] = useState(false);
   const [gerando, setGerando] = useState(false);
-  const r = q.data;
+  const r = q.data && !q.data.pendente ? comAgora(q.data, noArVideoId) : q.data;
   const logo = useLogoEmpresa(r?.pedido.client_id || null, null);
 
   if (q.isLoading) return <div className={`${CARD} flex items-center justify-center gap-2 p-10 text-sm text-[#6F6669]`}><Loader2 className="h-4 w-4 animate-spin" /> Montando seu relatório…</div>;
@@ -215,7 +215,8 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
   if (!r) return null;
   if (r.pendente) return <div className={`${CARD} p-6 text-sm text-[#6F6669]`}>{r.aviso}</div>;
 
-  const noAr = r.videos.find((v) => v.situacao === 'no_ar') || r.videos[0];
+  const noAr = videoNoAr(r);
+  const noArAgora = ehAgora(r, noAr);
   const series = [...new Set(r.videos.map((v) => v.serie))];
   const filtrados = r.videos.filter((v) => filtro === 'todos' || v.serie === filtro);
   const videos = todosVideos ? filtrados : filtrados.slice(0, 8);
@@ -223,7 +224,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
   const nomeCampanha = r.pedido.cliente || r.pedido.nome;
   const pdf = async () => {
     setGerando(true);
-    try { await baixarRelatorioPdf(r, logo); } catch { toast.error('Não consegui gerar o PDF agora.'); } finally { setGerando(false); }
+    try { await baixarRelatorioPdf(r, logo, { exibicoes: exibicoesAte(r) }); } catch { toast.error('Não consegui gerar o PDF agora.'); } finally { setGerando(false); }
   };
   const qtdSerie = (s: string) => r.videos.filter((v) => v.serie === s).length;
 
@@ -270,7 +271,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
           <div className="rounded-[22px] bg-[#141012] p-[9px] shadow-[0_24px_50px_-18px_rgba(0,0,0,.6)]">
             <Miniatura v={noAr} pedidoId={pedidoId} className={r.formato.tela_cheia ? 'h-[320px] w-[180px] rounded-[15px]' : 'h-[150px] w-[180px] rounded-[15px]'} />
           </div>
-          {noAr && <div className="flex items-center gap-2 text-[13px] font-bold"><span className="h-2 w-2 rounded-full bg-[#3DDC84]" />{noAr.situacao === 'no_ar' ? 'No ar agora' : 'Último vídeo'} · {noAr.titulo}</div>}
+          {noAr && <div className="flex items-center gap-2 text-[13px] font-bold"><span className="h-2 w-2 rounded-full bg-[#3DDC84]" />{noArAgora ? 'No ar agora' : 'Último vídeo'} · {noAr.titulo}</div>}
         </div>
       </section>
 

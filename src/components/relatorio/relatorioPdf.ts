@@ -2,7 +2,7 @@
 // Página 1: capa vinho com logo da EXA e do cliente, total, tela do elevador com a miniatura do vídeo no ar, números,
 // a rodada desenhada, barras por mês e linha do tempo. Página 2+: vídeos com miniatura e exibições, mapa e prédios.
 import type { Relatorio, RelatorioVideo } from './useRelatorio';
-import { nf, dataBR, mesCurto, periodoTexto, SERIE } from './useRelatorio';
+import { nf, dataBR, mesCurto, periodoTexto, SERIE, exibicoesAte, videoNoAr, ehAgora } from './useRelatorio';
 import { imagemComoDataUrl, mapaComoImagem, miniaturaDoVideo } from './midia';
 
 type RGB = [number, number, number];
@@ -18,13 +18,30 @@ const tipoImg = (d: string) => (d.startsWith('data:image/png') ? 'PNG' : 'JPEG')
 const tamanhoImg = (d: string): Promise<{ w: number; h: number }> =>
   new Promise((res) => { const i = new Image(); i.onload = () => res({ w: i.width, h: i.height }); i.onerror = () => res({ w: 1, h: 1 }); i.src = d; });
 
-export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | null) {
+/** Logo claro (branco sobre transparente)? Média de brilho dos pixels visíveis. */
+const logoEhClaro = (d: string): Promise<boolean> => new Promise((res) => {
+  const i = new Image();
+  i.onload = () => {
+    try {
+      const w = 64, h = Math.max(1, Math.round((i.height / i.width) * 64));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const g = c.getContext('2d')!; g.drawImage(i, 0, 0, w, h);
+      const px = g.getImageData(0, 0, w, h).data; let soma = 0, n = 0, transp = 0;
+      for (let k = 0; k < px.length; k += 4) { if (px[k + 3] < 40) { transp++; continue; } soma += 0.299 * px[k] + 0.587 * px[k + 1] + 0.114 * px[k + 2]; n++; }
+      res(n > 0 && transp > (px.length / 4) * 0.15 && soma / n > 200);
+    } catch { res(false); }
+  };
+  i.onerror = () => res(false); i.src = d;
+});
+
+export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | null, o: { exibicoes?: number } = {}) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = 210, M = 15, L = W - 2 * M;
 
   // imagens (tudo antes de desenhar)
-  const noAr = r.videos.find((v) => v.situacao === 'no_ar') || r.videos[0];
+  const noAr = videoNoAr(r); // mesma regra da página (r já vem com o "no ar agora" marcado)
+  const noArAgora = ehAgora(r, noAr);
   const lista = r.videos; // todos os vídeos (o PDF é o histórico completo)
   const [logoExa, logoExaVinho, logoCli, mapa, ...minis] = await Promise.all([
     imagemComoDataUrl('/relatorio/exa-branco.png'),
@@ -58,13 +75,16 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
   // ===================== PÁGINA 1 =====================
   doc.setFillColor(...VINHO); doc.rect(0, 0, W, 118, 'F');
   await logo(logoExa, M, 11, 9, 40);
-  if (logoCli) { caixa(W - M - 30, 8, 30, 15, [255, 255, 255], 3); await logo(logoCli, W - M - 2, 9.5, 12, 26, 'right'); }
+  if (logoCli) {
+    if (await logoEhClaro(logoCli)) await logo(logoCli, W - M, 8, 15, 42, 'right'); // logo branco: direto no vinho (caixa branca o apagava)
+    else { caixa(W - M - 30, 8, 30, 15, [255, 255, 255], 3); await logo(logoCli, W - M - 2, 9.5, 12, 26, 'right'); }
+  }
   txt(`RELATÓRIO DE VEICULAÇÃO · ${new Date(r.gerado_em).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}`, M, 35, { size: 7.5, bold: true, cor: ROSA });
   txt(r.pedido.cliente || r.pedido.nome, M, 45, { size: 21, bold: true, cor: [255, 255, 255], max: 130 });
   txt(`${r.formato.tela_cheia ? 'Vertical Premium · tela cheia' : 'Horizontal'} · ${dataBR(r.pedido.inicio)} a ${dataBR(r.pedido.fim)}`, M, 53, { size: 9, cor: [249, 228, 230] });
   txt('Sua marca apareceu', M, 68, { size: 9.5, cor: ROSA });
   doc.setFont('helvetica', 'bold'); doc.setFontSize(36); doc.setTextColor(255, 255, 255);
-  const total = nf(r.totais.exibicoes); doc.text(total, M, 82);
+  const total = nf(o.exibicoes ?? exibicoesAte(r)); doc.text(total, M, 82); // mesmo número do contador da página
   const wTot = doc.getTextWidth(total);
   txt('vezes', M + wTot + 2.5, 82, { size: 14, bold: true, cor: [255, 255, 255] });
   txt(`em ${r.totais.predios} prédios residenciais de Foz do Iguaçu`, M, 90, { size: 9.5, cor: [249, 228, 230] });
@@ -76,7 +96,7 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
   const tw = r.formato.tela_cheia ? 40 : 52, th = r.formato.tela_cheia ? 71 : 44, tx = W - M - tw, ty = 30;
   caixa(tx - 2, ty - 2, tw + 4, th + 4, [20, 16, 18], 4);
   if (miniNoAr) doc.addImage(miniNoAr, 'JPEG', tx, ty, tw, th); else caixa(tx, ty, tw, th, [59, 31, 39], 3);
-  if (noAr) txt(`${noAr.situacao === 'no_ar' ? 'No ar agora' : 'Último vídeo'} · ${noAr.titulo}`, tx + tw / 2, ty + th + 7, { size: 7, bold: true, cor: [255, 255, 255], align: 'center', max: 60 });
+  if (noAr) txt(`${noArAgora ? 'No ar agora' : 'Último vídeo'} · ${noAr.titulo}`, tx + tw / 2, ty + th + 7, { size: 7, bold: true, cor: [255, 255, 255], align: 'center', max: 60 });
 
   // números
   let y = 128;
@@ -161,7 +181,7 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
     const mi = miniDe.get(v.id);
     if (mi) doc.addImage(mi, 'JPEG', x + 2.5, y + 2.5, 13.5, 24); else caixa(x + 2.5, y + 2.5, 13.5, 24, v.serie === 'hotel' ? [30, 44, 79] : [59, 31, 39], 1.5);
     const corChip = v.serie === 'hotel' ? [37, 87, 199] as RGB : v.serie === 'cinema' ? [158, 27, 52] as RGB : CINZA;
-    txt(`${SERIE[v.serie].toUpperCase()}${v.situacao === 'no_ar' ? ' · NO AR' : v.situacao === 'pausado' ? ' · EM PAUSA' : v.situacao === 'aguardando' ? ' · APROVADO' : ''}`, x + 19, y + 7, { size: 6.5, bold: true, cor: corChip });
+    txt(`${SERIE[v.serie].toUpperCase()}${v.situacao === 'no_ar' ? (v.agora ? ' · NO AR AGORA' : ' · NA PROGRAMAÇÃO') : v.situacao === 'pausado' ? ' · EM PAUSA' : v.situacao === 'aguardando' ? ' · APROVADO' : ''}`, x + 19, y + 7, { size: 6.5, bold: true, cor: corChip });
     const linhas = txt(v.titulo, x + 19, y + 11.5, { size: 8.5, bold: true, max: cw - 22 });
     txt(periodoTexto(v), x + 19, y + 11.5 + linhas * 3.6, { size: 7, cor: CINZA, max: cw - 22 });
     if (v.exibicoes != null) { txt(nf(v.exibicoes), x + 19, y + 25.5, { size: 11, bold: true }); txt('exibições', x + 19 + doc.getTextWidth(nf(v.exibicoes)) + 2, y + 25.5, { size: 7, cor: CINZA }); }

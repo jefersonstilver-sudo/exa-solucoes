@@ -8,6 +8,7 @@
 // POST { acao: "lista", cliente_id? }  → pedidos do cliente
 // POST { acao: "relatorio", pedido_id } → relatório completo
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { winnerAt } from "../_shared/agendaEngine.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -259,7 +260,7 @@ Deno.serve(async (req) => {
     // Fonte da verdade, quando existe: video_management_logs (o sincronizador grava 1 linha por MINUTO em que um vídeo
     // programado substitui o principal: video_from = principal do momento, video_to = o que está tocando). Desde 03/08/2026.
     // Dia sem linha = o principal tocou o dia todo. Antes do primeiro registro: sequência de publicações da conta.
-    const { data: pvs } = await sb.from("pedido_videos").select("video_id,is_active,selected_for_display,is_base_video,approval_status,approved_at,created_at,videos(id,nome,duracao,orientacao,created_at,url)").eq("pedido_id", pid);
+    const { data: pvs } = await sb.from("pedido_videos").select("id,slot_position,video_id,is_active,selected_for_display,is_base_video,approval_status,approved_at,created_at,videos(id,nome,duracao,orientacao,created_at,url)").eq("pedido_id", pid);
     const atuais = new Map<string, any>((pvs || []).map((x: any) => [x.video_id, x]));
     const { data: regras } = await sb.from("campaign_video_schedules").select("video_id,campaign_schedule_rules(days_of_week,start_time,end_time,is_all_day,is_active,rule_type,label),campaigns_advanced!inner(pedido_id)").eq("campaigns_advanced.pedido_id", pid);
     const regrasPorVideo = new Map<string, any[]>();
@@ -432,6 +433,19 @@ Deno.serve(async (req) => {
     const miniDe = new Map((minis || []).map((m: any) => [m.video_id, `${SUPA}/storage/v1/object/public/${BUCKET_MINI}/${m.path}`]));
     for (const v of videos) v.miniatura = miniDe.get(v.id) || null;
     const noAr = videos.filter((v) => v.situacao === "no_ar");
+    // "No ar agora": o MESMO motor da aba Vídeos (src/lib/agenda/agendaEngine.ts → _shared/agendaEngine.ts),
+    // com as mesmas regras (todas as regras ligadas aos vídeos do pedido) e a hora de Brasília.
+    let agoraVideoId: string | null = null;
+    try {
+      const slotsAg = (pvs || []).filter((x: any) => x.id && x.video_id).map((x: any) => ({ id: x.id, videoId: x.video_id, slot_position: x.slot_position || 0, is_base_video: !!x.is_base_video, approved: x.approval_status === "approved" }));
+      const porVid = new Map(slotsAg.map((x: any) => [x.videoId, x]));
+      const vids = slotsAg.map((x: any) => x.videoId);
+      const { data: rr } = vids.length ? await sb.from("campaign_schedule_rules").select("id,days_of_week,start_time,end_time,is_all_day,is_active,rule_type,start_date,end_date,is_override,label,created_at,campaign_video_schedules!inner(video_id)").in("campaign_video_schedules.video_id", vids) : { data: [] as any[] };
+      const rulesAg = (rr || []).map((r: any) => { const sl: any = porVid.get(r.campaign_video_schedules?.video_id); return sl ? { ...r, slotId: sl.id, videoId: sl.videoId } : null; }).filter(Boolean) as any[];
+      const agoraBR = new Date(Date.now() - 3 * 3600e3); // getHours/getDay do servidor (UTC) passam a ser os de Brasília
+      agoraVideoId = (winnerAt(slotsAg as any, rulesAg, agoraBR)?.slot as any)?.videoId || null;
+    } catch (_) { agoraVideoId = null; }
+    for (const v of videos) v.agora = !!agoraVideoId && v.id === agoraVideoId;
 
     // publicações por mês e por série (ex.: programação semanal do cinema)
     const pubMes = new Map<string, number>();
@@ -474,7 +488,8 @@ Deno.serve(async (req) => {
       meses: [...porMes.entries()].sort().map(([mes, v]) => ({ mes, ...v })),
       dias: [...porDia.entries()].sort().slice(-90).map(([dia, exibicoes]) => ({ dia, exibicoes })),
       predios: linhasPredios,
-      videos: [...videos].sort((a: any, b: any) => (b.situacao === "no_ar" ? 1 : 0) - (a.situacao === "no_ar" ? 1 : 0) || (a.situacao === "aguardando" ? 1 : 0) - (b.situacao === "aguardando" ? 1 : 0) || String(b.periodo?.ate || b.publicado_em).localeCompare(String(a.periodo?.ate || a.publicado_em)) || String(b.publicado_em).localeCompare(String(a.publicado_em))),
+      agora_video_id: agoraVideoId,
+      videos: [...videos].sort((a: any, b: any) => (b.agora ? 1 : 0) - (a.agora ? 1 : 0) || (b.situacao === "no_ar" ? 1 : 0) - (a.situacao === "no_ar" ? 1 : 0) || (a.situacao === "aguardando" ? 1 : 0) - (b.situacao === "aguardando" ? 1 : 0) || String(b.periodo?.ate || b.publicado_em).localeCompare(String(a.periodo?.ate || a.publicado_em)) || String(b.publicado_em).localeCompare(String(a.publicado_em))),
       publicacoes: { por_mes: [...pubMes.entries()].sort().map(([mes, qtd]) => ({ mes, qtd })), series },
       metodologia: `Calculado pela programação de cada tela, dia a dia: os painéis funcionam ${horas} h por dia e tocam em rodadas com todos os anúncios horizontais do prédio, ${vertical ? "o Vertical Premium em tela cheia a cada 3 anúncios horizontais e de novo no fim da rodada (revezando com os outros verticais do prédio)" : "um vertical em tela cheia a cada 3 horizontais"} e um conteúdo editorial. Para cada prédio contamos os anúncios que estavam no ar em cada dia, a duração de cada vídeo e o número de telas. Hoje uma rodada leva em média ${ciclo} s e sua marca aparece cerca de ${exibDiaTela} vezes por tela por dia, ${Math.round((exibDiaTela * duracao) / 60)} minutos por dia em cada tela.`,
     });

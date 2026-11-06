@@ -637,7 +637,7 @@ const OrderDetailsV2 = () => {
             />
           )}
 
-          {aba === 'relatorio' && <RelatorioPedido pedidoId={order.id} compacto />}
+          {aba === 'relatorio' && <RelatorioPedido pedidoId={order.id} compacto noArVideoId={agenda.slots.find((x) => x.id === slotNoArId)?.videoId || null} />}
 
           {aba === 'contrato' && (
             <div className="space-y-3">

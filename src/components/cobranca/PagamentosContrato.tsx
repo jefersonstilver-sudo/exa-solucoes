@@ -26,6 +26,21 @@ const mesLongo = (p: Parcela) => {
   const m = d.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
   return m.charAt(0).toUpperCase() + m.slice(1) + ' ' + d.getUTCFullYear();
 };
+/** Período coberto pela mensalidade: início do plano + (n-1) meses até a véspera do mês seguinte (ex.: 15/05/2026 a 14/06/2026). */
+const somaMeses = (iso: string, n: number) => {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  const alvo = new Date(Date.UTC(y, m - 1 + n, 1));
+  const ultimo = new Date(Date.UTC(alvo.getUTCFullYear(), alvo.getUTCMonth() + 1, 0)).getUTCDate();
+  alvo.setUTCDate(Math.min(d, ultimo));
+  return alvo;
+};
+const periodoDa = (p: Parcela, inicioPlano?: string | null) => {
+  const base = String(inicioPlano || p.data_vencimento).slice(0, 10);
+  const de = inicioPlano ? somaMeses(base, p.numero - 1) : somaMeses(base, 0);
+  const ate = somaMeses(de.toISOString(), 1); ate.setUTCDate(ate.getUTCDate() - 1);
+  const f = (d: Date) => d.toISOString().slice(0, 10).split('-').reverse().join('/');
+  return `${f(de)} a ${f(ate)}`;
+};
 const copiar = (t: string, rotulo: string) => navigator.clipboard?.writeText(t).then(() => toast.success(`${rotulo} copiado`)).catch(() => toast.error('Não consegui copiar.'));
 
 export const usePagamentosContrato = (pedidoId?: string | null) => {
@@ -132,6 +147,7 @@ const PagamentosContrato: React.FC<{ estado: ReturnType<typeof usePagamentosCont
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className={`text-[14.5px] font-extrabold ${c.titulo}`}>{mesLongo(p)}</div>
+                        <div className={`text-[11.5px] font-semibold tabular-nums ${c.sub} opacity-90`}>Período {periodoDa(p, dados.plano?.inicio)}</div>
                         <div className={`text-[12.5px] ${c.sub}`}>
                           {p.situacao === 'cortesia' ? <><span className="line-through">{brl(p.valor)}</span> · cortesia EXA</> :
                             p.situacao === 'pago' ? <>{brl(p.valor_pago || p.valor)} · paga em {p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : ''}</> :
