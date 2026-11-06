@@ -93,5 +93,5 @@
 - [x] Commit 1c5e7a2: migration telas_24h executada (horas_operacao_dia=24), exa2-relatorio-pedido deployada do main, site publicado com cupons + relatório novo. Build OK.
 
 # Fila 06/11/2026 (tarde)
-- [ ] Deploy exa2-relatorio-pedido do commit edf9964 (miniaturas no bucket existente building-images/miniaturas-videos, sem criar bucket novo). Sem alterar arquivos.
-- [ ] Puxar main 482925e+: deploy exa-tela + publicar site (mudou public/painel-web/compat/tv.js, correção de lentidão do Zeta). Sem alterar arquivos, sem migrations, sem funções protegidas.
+- [x] Deploy exa2-relatorio-pedido do commit edf9964 (miniaturas no bucket existente building-images/miniaturas-videos, sem criar bucket novo). Sem alterar arquivos.
+- [x] Main 482925e: deploy exa-tela + site publicado (tv.js com correção de lentidão do Zeta). Sem alterar arquivos, sem migrations, sem funções protegidas.
