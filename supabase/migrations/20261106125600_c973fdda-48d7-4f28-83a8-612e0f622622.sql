@@ -1,0 +1,1 @@
+update public.configuracoes_exibicao set horas_operacao_dia = 24 where horas_operacao_dia is distinct from 24;
