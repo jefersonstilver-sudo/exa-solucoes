@@ -533,7 +533,7 @@ Deno.serve(async (req) => {
     if (acao === 'replica') {
       const token = String(b.token || '');
       if (token.length < 32) return json({ ok: false, erro: 'sem token' }, 401);
-      const { data: tela } = await admin.from('exa_telas').select('id, building_id, status').eq('token_hash', await sha256(token)).maybeSingle();
+      const { data: tela } = await admin.from('exa_telas').select('id, building_id, status, config').eq('token_hash', await sha256(token)).maybeSingle();
       if (!tela || tela.status !== 'ativa' || !tela.building_id) return json({ ok: false, erro: 'tela não conectada' }, 403);
       const arq = String(b.arq || 'updates');
       if (arq === 'noticias') {
@@ -568,6 +568,14 @@ Deno.serve(async (req) => {
       }
       const upd = { ...j };
       if (!Array.isArray(upd.PlaylistPronta) || !upd.PlaylistPronta.length) upd.PlaylistPronta = playlistAgora(upd.Propagandas || []);
+      // 06/11/2026: o título "Avisos do <prédio>" usa o nome do prédio no admin da EXA (o ScreenName do ExaSistema
+      // ficava com o nome antigo, ex.: Rio Negro virou "Local de teste"); nomes em CAIXA ALTA viram "Local De Teste"
+      if (predio?.nome) {
+        const n = String(predio.nome).trim();
+        upd.ScreenName = n === n.toUpperCase() ? n.toLowerCase().replace(/(^|\s)\S/g, (x) => x.toUpperCase()) : n;
+      }
+      // tela com config.avisos = false não mostra os avisos do prédio (não apaga nada: só esta TV deixa de exibir)
+      if (((tela as any).config || {}).avisos === false) upd.CondominiumNotices = [];
       return json({ ok: true, predio: predio?.nome || '', updates: upd, avisos: Array.isArray(upd.CondominiumNotices) ? upd.CondominiumNotices.length : 0 });
     }
 
