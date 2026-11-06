@@ -27,8 +27,9 @@ const CHIP: Record<string, string> = {
   a_vencer: 'bg-gray-100 text-gray-700',
   perdoado: 'bg-blue-50 text-blue-700',
   cancelado: 'bg-gray-100 text-gray-400',
+  cortesia: 'bg-amber-50 text-amber-800',
 };
-const ROTULO: Record<string, string> = { pago: 'Paga', atrasado: 'Atrasada', a_vencer: 'A vencer', perdoado: 'Perdoada', cancelado: 'Cancelada' };
+const ROTULO: Record<string, string> = { pago: 'Paga', atrasado: 'Atrasada', a_vencer: 'A vencer', perdoado: 'Perdoada', cancelado: 'Cancelada', cortesia: 'Cortesia' };
 
 const AuditoriaCobrancaPedido: React.FC<{ pedidoId: string }> = ({ pedidoId }) => {
   const { isSuperAdmin } = useAuth();
@@ -69,6 +70,7 @@ const AuditoriaCobrancaPedido: React.FC<{ pedidoId: string }> = ({ pedidoId }) =
     <section className="rounded-2xl border border-gray-200 bg-white p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="mr-auto text-base font-bold text-gray-900">Contrato e pagamentos</h3>
+        {dados?.pedido?.data_inicio_cobranca && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700">Plano de {dataBR(dados.pedido.data_inicio_cobranca)} a {dataBR(dados.pedido.data_fim)}</span>}
         <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">Auditoria interna · o cliente não vê nem é avisado</span>
         <button type="button" onClick={ler} className={btn} aria-label="Atualizar">{carregando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}</button>
       </div>
@@ -95,7 +97,7 @@ const AuditoriaCobrancaPedido: React.FC<{ pedidoId: string }> = ({ pedidoId }) =
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
-          ['Contrato', brl(r.total_contrato), `${parcelas.length} parcelas`],
+          ['Contrato', brl(r.total_contrato), `${parcelas.length - (r.qtd_cortesia || 0)} parcelas${r.qtd_cortesia ? ` + ${r.qtd_cortesia} cortesia` : ''}`],
           ['Pago', brl(r.pago), `${r.qtd_pagas} parcela${r.qtd_pagas === 1 ? '' : 's'}`],
           ['Atrasado', brl(r.atrasado), `${r.qtd_atrasadas} parcela${r.qtd_atrasadas === 1 ? '' : 's'}`],
           ['A vencer', brl(r.a_vencer), r.proximo_vencimento ? `próxima ${dataBR(r.proximo_vencimento)}` : '—'],
@@ -113,7 +115,7 @@ const AuditoriaCobrancaPedido: React.FC<{ pedidoId: string }> = ({ pedidoId }) =
           <div key={p.id} className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 ${p.situacao === 'atrasado' ? 'bg-red-50/40' : ''}`}>
             <span className="w-6 text-xs font-bold text-gray-400">{p.numero}</span>
             <div className="min-w-[160px] flex-1">
-              <div className="text-sm font-semibold text-gray-900">{p.competencia ? `${p.competencia} · ` : ''}{brl(p.valor)}</div>
+              <div className="text-sm font-semibold text-gray-900">{p.competencia ? `${p.competencia} · ` : ''}<span className={p.situacao === 'cortesia' || p.situacao === 'perdoado' ? 'text-gray-400 line-through' : ''}>{brl(p.valor)}</span>{p.situacao === 'cortesia' && <span className="ml-1.5 font-bold text-amber-700">Cortesia</span>}</div>
               <div className="text-xs text-gray-500">
                 Vence {dataBR(p.data_vencimento)}
                 {p.situacao === 'pago' && <> · paga em {dataHoraBR(p.pago_em)}{p.valor_pago && Number(p.valor_pago) !== Number(p.valor) ? ` (${brl(p.valor_pago)})` : ''}{p.pagador ? ` · ${p.pagador}` : ''}</>}

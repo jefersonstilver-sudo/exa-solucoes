@@ -88,7 +88,7 @@ async function conciliarLote(l: any) {
 
 // ---------- leitura com a situação de cada parcela ----------
 async function montar(pid: string) {
-  const { data: ped } = await sb.from("pedidos").select("id,nome_pedido,client_name,status,data_inicio,data_fim,plano_meses").eq("id", pid).maybeSingle();
+  const { data: ped } = await sb.from("pedidos").select("id,nome_pedido,client_name,status,data_inicio,data_inicio_cobranca,data_fim,plano_meses").eq("id", pid).maybeSingle();
   const { data: lotes } = await sb.from("cobranca_auditoria_pix").select("*").eq("pedido_id", pid).order("created_at", { ascending: false });
   for (const l of (lotes || []).filter((x: any) => x.status === "aberto")) await conciliarLote(l);
   const [{ data: rows }, { data: lotes2 }] = await Promise.all([
@@ -98,7 +98,7 @@ async function montar(pid: string) {
   const hoje = hojeBR();
   const parcelas = (rows || []).map((p: any) => {
     const venc = String(p.data_vencimento).slice(0, 10);
-    const situacao = p.status === "pago" ? "pago" : p.status === "perdoado" ? "perdoado" : p.status === "cancelado" ? "cancelado" : venc < hoje ? "atrasado" : "a_vencer";
+    const situacao = ["pago", "perdoado", "cancelado", "cortesia"].includes(p.status) ? p.status : venc < hoje ? "atrasado" : "a_vencer";
     return { ...p, situacao, dias_atraso: situacao === "atrasado" ? difDias(venc, hoje) : 0 };
   });
   const atrasadas = parcelas.filter((p: any) => p.situacao === "atrasado");
@@ -111,7 +111,8 @@ async function montar(pid: string) {
     parcelas,
     lotes: lotes2 || [],
     resumo: {
-      total_contrato: soma(parcelas.filter((p: any) => p.situacao !== "cancelado")),
+      total_contrato: soma(parcelas.filter((p: any) => !["cancelado", "cortesia", "perdoado"].includes(p.situacao))),
+      cortesia: soma(parcelas.filter((p: any) => p.situacao === "cortesia")), qtd_cortesia: parcelas.filter((p: any) => p.situacao === "cortesia").length,
       pago: soma(pagas, "valor_pago"), qtd_pagas: pagas.length,
       atrasado: soma(atrasadas), qtd_atrasadas: atrasadas.length,
       atrasado_desde: maisAntiga ? String(maisAntiga.data_vencimento).slice(0, 10) : null,
