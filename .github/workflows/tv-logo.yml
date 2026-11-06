@@ -1,0 +1,24 @@
+name: tv-logo
+on:
+  push:
+    paths: ["apps/tv-logo/**", ".github/workflows/tv-logo.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compila e converte para dex
+        run: |
+          mkdir -p out dex
+          javac --release 8 -d out apps/tv-logo/src/Logo.java
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          $BT/d8 --min-api 21 --output dex out/*.class
+          cd dex && zip -q ../logo.jar classes.dex && cd .. && ls -la logo.jar
+      - name: Publica
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh release view tv-logo >/dev/null 2>&1 || gh release create tv-logo -t "EXA · ajudante de logo (TV KTC)" -n "logo.jar para app_process"
+          gh release upload tv-logo logo.jar --clobber

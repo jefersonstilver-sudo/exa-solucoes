@@ -159,7 +159,9 @@ class MainActivity : Activity() {
             intro.visibility = View.GONE
             mostrarEscolha { intro.visibility = View.VISIBLE; intro.tocar(); criarWeb(); h.postDelayed(vigia, 30_000) }
         } else {
-            criarWeb()
+            // o navegador (WebView) leva vários segundos para abrir em TV fraca e trava a tela enquanto isso:
+            // primeiro desenha a intro da EXA, depois abre o navegador (antes ficava ~10 s preto depois do boot)
+            raiz.post { h.postDelayed({ criarWeb() }, 900) }
             h.postDelayed(vigia, 30_000)
         }
     }

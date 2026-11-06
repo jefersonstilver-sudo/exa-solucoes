@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- fundo da janela já na cor da intro da EXA: nada de tela preta enquanto o app abre -->
+    <style name="ExaTela" parent="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">@color/exa_fundo</item>
+        <item name="android:windowDisablePreview">false</item>
+    </style>
+    <color name="exa_fundo">#07030A</color>
+</resources>
