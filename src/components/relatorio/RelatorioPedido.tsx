@@ -15,18 +15,22 @@ const EYEBROW = 'text-[12px] font-bold uppercase tracking-[0.11em] text-[#9C1E1E
 const H2 = 'mt-1 text-[21px] font-extrabold tracking-tight text-[#1b1719]';
 const COR_SERIE: Record<string, string[]> = { cinema: ['#9E1B34', '#B63B52'], hotel: ['#2563EB', '#5B8DEF'], geral: ['#6F6669', '#9A9194'] };
 
-export const useMiniatura = (url?: string | null) => {
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => { let vivo = true; miniaturaDoVideo(url).then((s) => vivo && setSrc(s)); return () => { vivo = false; }; }, [url]);
+export const useMiniatura = (v?: RelatorioVideo | null, pedidoId?: string) => {
+  const [src, setSrc] = useState<string | null>(v?.miniatura || null);
+  useEffect(() => {
+    let vivo = true;
+    miniaturaDoVideo(v?.url, { pronta: v?.miniatura, videoId: v?.id, pedidoId }).then((s) => vivo && setSrc(s));
+    return () => { vivo = false; };
+  }, [v?.id, v?.url, v?.miniatura, pedidoId]);
   return src;
 };
 
-const Miniatura = ({ v, className }: { v?: RelatorioVideo | null; className: string }) => {
-  const src = useMiniatura(v?.url);
+const Miniatura = ({ v, className, pedidoId }: { v?: RelatorioVideo | null; className: string; pedidoId?: string }) => {
+  const src = useMiniatura(v, pedidoId);
   const fundo = v?.serie === 'hotel' ? 'bg-[#1E2C4F]' : 'bg-[#3B1F27]';
   return (
     <div className={`${className} ${fundo} relative flex flex-none items-center justify-center overflow-hidden`}>
-      {src ? <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" /> : <Play className="h-5 w-5 text-white/70" />}
+      {src ? <img src={src} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" /> : <><span className="absolute inset-0 animate-pulse bg-white/5" /><Play className="h-5 w-5 text-white/70" /></>}
     </div>
   );
 };
@@ -142,9 +146,9 @@ const LinhaDoTempo = ({ r }: { r: Relatorio }) => {
   );
 };
 
-const CartaoVideo = ({ v }: { v: RelatorioVideo }) => (
+const CartaoVideo = ({ v, pedidoId }: { v: RelatorioVideo; pedidoId: string }) => (
   <article className={`${CARD} flex gap-3.5 p-3.5`}>
-    <Miniatura v={v} className="h-[118px] w-[66px] rounded-xl" />
+    <Miniatura v={v} pedidoId={pedidoId} className="h-[118px] w-[66px] rounded-xl" />
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
       <div className="flex flex-wrap gap-1.5">
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${v.serie === 'hotel' ? 'bg-[#E8EEFD] text-[#2557C7]' : v.serie === 'cinema' ? 'bg-[#F8E9EC] text-[#9E1B34]' : 'bg-[#F0ECEA] text-[#6F6669]'}`}>{SERIE[v.serie]}</span>
@@ -253,7 +257,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
         </div>
         <div className="flex flex-[1_1_200px] flex-col items-center gap-3">
           <div className="rounded-[22px] bg-[#141012] p-[9px] shadow-[0_24px_50px_-18px_rgba(0,0,0,.6)]">
-            <Miniatura v={noAr} className={r.formato.tela_cheia ? 'h-[320px] w-[180px] rounded-[15px]' : 'h-[150px] w-[180px] rounded-[15px]'} />
+            <Miniatura v={noAr} pedidoId={pedidoId} className={r.formato.tela_cheia ? 'h-[320px] w-[180px] rounded-[15px]' : 'h-[150px] w-[180px] rounded-[15px]'} />
           </div>
           {noAr && <div className="flex items-center gap-2 text-[13px] font-bold"><span className="h-2 w-2 rounded-full bg-[#3DDC84]" />{noAr.situacao === 'no_ar' ? 'No ar agora' : 'Último vídeo'} · {noAr.titulo}</div>}
         </div>
@@ -298,7 +302,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
           )}
         </div>
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-          {videos.map((v) => <CartaoVideo key={v.id} v={v} />)}
+          {videos.map((v) => <CartaoVideo key={v.id} v={v} pedidoId={pedidoId} />)}
         </div>
         {filtrados.length > 8 && (
           <div className="text-center">

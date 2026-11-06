@@ -25,13 +25,13 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
 
   // imagens (tudo antes de desenhar)
   const noAr = r.videos.find((v) => v.situacao === 'no_ar') || r.videos[0];
-  const lista = r.videos.slice(0, 12);
+  const lista = r.videos; // todos os vídeos (o PDF é o histórico completo)
   const [logoExa, logoExaVinho, logoCli, mapa, ...minis] = await Promise.all([
     imagemComoDataUrl('/relatorio/exa-branco.png'),
     imagemComoDataUrl('/relatorio/exa-vinho.png'),
     imagemComoDataUrl(logoCliente || null),
     mapaComoImagem(r.predios.map((p) => ({ lat: p.lat || 0, lng: p.lng || 0, nome: p.nome })), 900, 470),
-    ...[noAr, ...lista].map((v) => miniaturaDoVideo(v?.url)),
+    ...[noAr, ...lista].map((v) => miniaturaDoVideo(v?.url, { pronta: v?.miniatura, videoId: v?.id, pedidoId: r.pedido.id }).then((m) => (m && !m.startsWith('data:') ? imagemComoDataUrl(m) : m))),
   ]);
   const miniNoAr = minis[0];
   const miniDe = new Map<string, string | null>(lista.map((v, i) => [v.id, minis[i + 1]]));
@@ -124,8 +124,17 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
     txt(mesCurto(m.mes), x + mw / 2, y + 41, { size: 7.5, bold: true, align: 'center' });
   });
 
+  // ===================== PÁGINA 2+ =====================
+  const novaPagina = async () => {
+    doc.addPage();
+    await logo(logoExaVinho, M, 10, 6.5, 26);
+    txt(`${r.pedido.cliente || r.pedido.nome} · ${r.formato.tela_cheia ? 'Vertical Premium' : 'Horizontal'}`, W - M, 15, { size: 8, cor: CINZA, align: 'right' });
+    doc.setDrawColor(238, 233, 234); doc.line(M, 20, W - M, 20);
+    return 30;
+  };
+  y = await novaPagina();
   // linha do tempo
-  y += 51; rotulo('O que esteve nas telas', M, y); y += 4;
+  rotulo('O que esteve nas telas', M, y); y += 4;
   const ini = Date.parse(r.pedido.inicio + 'T00:00:00'), tot = Math.max(1, Date.now() - ini);
   const pct = (x: number) => Math.max(0, Math.min(1, (x - ini) / tot));
   const series = ['cinema', 'hotel', 'geral'].filter((s) => r.videos.some((v) => v.serie === s && v.periodo));
@@ -141,15 +150,7 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
   const qCin = r.videos.filter((v) => v.serie === 'cinema').length, qHot = r.videos.filter((v) => v.serie === 'hotel').length;
   txt([qCin ? `${qCin} programações do cinema` : '', qHot ? `${qHot} vídeos do hotel` : '', `${r.videos.length} vídeos no total`].filter(Boolean).join(' · '), M, y + 2, { size: 7.5, cor: CINZA });
 
-  // ===================== PÁGINA 2+ =====================
-  const novaPagina = async () => {
-    doc.addPage();
-    await logo(logoExaVinho, M, 10, 6.5, 26);
-    txt(`${r.pedido.cliente || r.pedido.nome} · ${r.formato.tela_cheia ? 'Vertical Premium' : 'Horizontal'}`, W - M, 15, { size: 8, cor: CINZA, align: 'right' });
-    doc.setDrawColor(238, 233, 234); doc.line(M, 20, W - M, 20);
-    return 30;
-  };
-  y = await novaPagina();
+  y += 12;
   rotulo('Seus vídeos nas telas', M, y); y += 4;
   const cw = (L - 4) / 2, ch = 31;
   for (let i = 0; i < lista.length; i++) {
@@ -166,11 +167,6 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
     if (v.exibicoes != null) { txt(nf(v.exibicoes), x + 19, y + 25.5, { size: 11, bold: true }); txt('exibições', x + 19 + doc.getTextWidth(nf(v.exibicoes)) + 2, y + 25.5, { size: 7, cor: CINZA }); }
     if (i % 2 === 1 || i === lista.length - 1) y += ch;
   }
-  if (r.videos.length > lista.length) {
-    const resto = r.videos.slice(lista.length), soma = resto.reduce((a, v) => a + (v.exibicoes || 0), 0);
-    txt(`Mais ${resto.length} vídeo${resto.length === 1 ? '' : 's'} anteriores${soma ? `, somando ${nf(soma)} exibições` : ''}. Lista completa na sua área do cliente.`, M, y + 2, { size: 7.5, cor: CINZA }); y += 6;
-  }
-
   // mapa e prédios
   y += 6;
   if (y + 70 > 278) y = await novaPagina();

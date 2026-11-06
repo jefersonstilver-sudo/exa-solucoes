@@ -1,7 +1,6 @@
 // EXA (06/11/2026) — imagens do relatório: miniatura de cada vídeo (quadro capturado do próprio vídeo, no navegador),
 // imagem vinda de URL (logo, foto do prédio) e mapa dos prédios (OpenStreetMap). Tudo vira data URL para o PDF.
 const cacheMini = new Map<string, Promise<string | null>>();
-let fila: Promise<unknown> = Promise.resolve();
 
 function capturar(url: string, largura = 360): Promise<string | null> {
   return new Promise((resolve) => {
@@ -25,12 +24,37 @@ function capturar(url: string, largura = 360): Promise<string | null> {
   });
 }
 
-/** Uma de cada vez (não abre 20 vídeos ao mesmo tempo no celular do cliente). */
-export function miniaturaDoVideo(url?: string | null): Promise<string | null> {
+/** Até 3 capturas ao mesmo tempo (o celular do cliente não abre 20 vídeos de uma vez). */
+const LIMITE = 3;
+let rodando = 0;
+const espera: (() => void)[] = [];
+const vez = () => new Promise<void>((ok) => { if (rodando < LIMITE) { rodando++; ok(); } else espera.push(() => { rodando++; ok(); }); });
+const libera = () => { rodando--; espera.shift()?.(); };
+
+/** Guarda a miniatura capturada para todo mundo receber pronta da próxima vez (cache permanente no servidor). */
+async function guardar(pedidoId: string, videoId: string, imagem: string) {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    await supabase.functions.invoke('exa2-relatorio-pedido', { body: { acao: 'miniatura', pedido_id: pedidoId, video_id: videoId, imagem } });
+  } catch { /* sem cache desta vez */ }
+}
+
+/**
+ * Miniatura de um vídeo: 1) a guardada no servidor (instantânea); 2) senão captura do próprio vídeo,
+ * mostra na hora e guarda no servidor para as próximas vezes.
+ */
+export function miniaturaDoVideo(url?: string | null, opts: { pronta?: string | null; videoId?: string; pedidoId?: string } = {}): Promise<string | null> {
+  if (opts.pronta) return Promise.resolve(opts.pronta);
   if (!url) return Promise.resolve(null);
   if (!cacheMini.has(url)) {
-    const p = fila.then(() => capturar(url));
-    fila = p.catch(() => null);
+    const p = (async () => {
+      await vez();
+      try {
+        const img = await capturar(url);
+        if (img && opts.videoId && opts.pedidoId && opts.videoId !== '__inicio') guardar(opts.pedidoId, opts.videoId, img);
+        return img;
+      } finally { libera(); }
+    })();
     cacheMini.set(url, p);
   }
   return cacheMini.get(url)!;
@@ -62,7 +86,7 @@ export function montarMapa(pinos: Pino[], W: number, H: number) {
   for (; z > 10; z--) {
     const w = (lon2x(Math.max(...lngs), z) - lon2x(Math.min(...lngs), z)) * 256;
     const h = (lat2y(Math.min(...lats), z) - lat2y(Math.max(...lats), z)) * 256;
-    if (w < W * 0.8 && h < H * 0.8) break;
+    if (w < W * 0.9 && h < H * 0.9) break;
   }
   const cx = lon2x(cLng, z) * 256, cy = lat2y(cLat, z) * 256;
   const x0 = cx - W / 2, y0 = cy - H / 2;

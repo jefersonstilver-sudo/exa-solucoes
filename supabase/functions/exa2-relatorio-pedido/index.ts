@@ -84,6 +84,24 @@ Deno.serve(async (req) => {
     const { data: ped } = await sb.from("pedidos").select("*").eq("id", pid).maybeSingle();
     if (!ped) return json(404, { ok: false, erro: "Pedido não encontrado." });
     if (!equipe && ped.client_id !== u.user.id) return json(403, { ok: false, erro: "Este pedido não é da sua conta." });
+
+    // guarda a miniatura capturada no navegador (só cria, nunca sobrescreve; só JPEG pequeno; vídeo tem que existir)
+    if (b.acao === "miniatura") {
+      const vid = uuid(b.video_id);
+      const m = String(b.imagem || "").match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
+      if (!vid || !m) return json(400, { ok: false });
+      const bytes = Uint8Array.from(atob(m[1]), (c) => c.charCodeAt(0));
+      if (bytes.length < 2000 || bytes.length > 350000 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return json(400, { ok: false });
+      const { data: ja } = await sb.from("video_miniaturas").select("video_id").eq("video_id", vid).maybeSingle();
+      if (ja) return json(200, { ok: true, ja: true });
+      const { data: existe } = await sb.from("videos").select("id").eq("id", vid).maybeSingle();
+      if (!existe) return json(404, { ok: false });
+      const path = `${vid}.jpg`;
+      const up = await sb.storage.from("video-miniaturas").upload(path, bytes, { contentType: "image/jpeg", upsert: false });
+      if (up.error && !/exists/i.test(up.error.message)) return json(500, { ok: false });
+      await sb.from("video_miniaturas").insert({ video_id: vid, path });
+      return json(200, { ok: true });
+    }
     if (!ped.data_inicio) return json(200, { ok: true, pendente: true, pedido: { id: ped.id, nome: ped.nome_pedido }, aviso: "A campanha ainda não começou: o relatório aparece a partir do primeiro dia no ar." });
 
     const vertical = String(ped.tipo_produto || "").toLowerCase().includes("vertical");
@@ -329,6 +347,11 @@ Deno.serve(async (req) => {
       periodo: { de: new Date(inicioDiaBR(ini0.de)).toISOString(), ate: new Date(inicioDiaBR(ini0.ate) + DIA - 1).toISOString() }, dias_no_ar: ini0.dias, exibicoes: Math.round(ini0.exib),
     });
     for (const v of videos) v.titulo = v.id === "__inicio" ? "Vídeo do início da campanha" : tituloVideo(v);
+    // miniaturas já guardadas (cache permanente)
+    const idsVideos = videos.map((v) => v.id).filter((id) => id !== "__inicio");
+    const { data: minis } = idsVideos.length ? await sb.from("video_miniaturas").select("video_id,path").in("video_id", idsVideos) : { data: [] as any[] };
+    const miniDe = new Map((minis || []).map((m: any) => [m.video_id, `${SUPA}/storage/v1/object/public/video-miniaturas/${m.path}`]));
+    for (const v of videos) v.miniatura = miniDe.get(v.id) || null;
     const noAr = videos.filter((v) => v.situacao === "no_ar");
 
     // publicações por mês e por série (ex.: programação semanal do cinema)

@@ -6,7 +6,7 @@ export type RelatorioVideo = {
   id: string; nome: string; publicado_em: string; duracao: number; orientacao: string;
   serie: 'cinema' | 'hotel' | 'geral'; situacao: 'no_ar' | 'pausado' | 'substituido'; principal: boolean;
   programacao: string | null; periodo: { de: string; ate: string } | null; exibicoes?: number;
-  titulo: string; url: string | null; dias_no_ar?: number; arquivo_antigo?: boolean;
+  titulo: string; url: string | null; miniatura?: string | null; dias_no_ar?: number; arquivo_antigo?: boolean;
 };
 export type Relatorio = {
   ok: boolean; pendente?: boolean; aviso?: string; gerado_em: string;
