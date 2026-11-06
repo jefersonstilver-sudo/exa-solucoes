@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { ShoppingBag, User, LogOut, MessageCircle, MonitorPlay } from 'lucide-react';
+import { ShoppingBag, User, LogOut, MessageCircle, MonitorPlay, BarChart3 } from 'lucide-react';
 import { useMinhasTelas } from '@/modules/telas/useMinhasTelas';
 import { useUserSession } from '@/hooks/useUserSession';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,7 @@ interface AdvertiserSidebarContentProps {
 
 const ITENS = [
   { title: 'Meus pedidos', href: '/anunciante/pedidos', icon: ShoppingBag },
+  { title: 'Relatórios', href: '/anunciante/relatorios', icon: BarChart3 },
   { title: 'Meu perfil', href: '/anunciante/configuracoes', icon: User },
 ];
 
@@ -46,7 +47,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
   };
 
   const telas = useMinhasTelas();
-  const itens = telas.data?.locais?.length ? [ITENS[0], { title: 'Minhas telas', href: '/anunciante/telas', icon: MonitorPlay }, ...ITENS.slice(1)] : ITENS;
+  const itens = telas.data?.locais?.length ? [ITENS[0], ITENS[1], { title: 'Minhas telas', href: '/anunciante/telas', icon: MonitorPlay }, ...ITENS.slice(2)] : ITENS;
 
   const ativo = (href: string) =>
     href === '/anunciante/pedidos'

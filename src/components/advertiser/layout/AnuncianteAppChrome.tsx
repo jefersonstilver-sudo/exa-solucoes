@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Building2, ChevronLeft, FileText, LogOut, MessageCircle, MonitorPlay, MoreHorizontal, ShieldCheck, ShoppingBag, User } from 'lucide-react';
+import { BarChart3, Building2, ChevronLeft, FileText, LogOut, MessageCircle, MonitorPlay, MoreHorizontal, ShieldCheck, ShoppingBag, User } from 'lucide-react';
 import { useMinhasTelas } from '@/modules/telas/useMinhasTelas';
 import AumenteAlcance from '@/components/advertiser/AumenteAlcance';
 import { toast } from 'sonner';
@@ -187,6 +187,11 @@ export const AnuncianteNavInferior: React.FC = () => {
               {semSinal > 0 && <span className="rounded-full bg-[#C7141A] px-2 py-0.5 text-[12px] font-bold">{semSinal} sem sinal</span>}
             </Link>
           )}
+          <Link to={`/anunciante/relatorios${preservar}`} onClick={() => setMais(false)} className="mb-3 flex items-center gap-3 rounded-2xl bg-[#9C1E1E] px-4 py-3.5 text-white active:opacity-90">
+            <BarChart3 className="h-5 w-5" />
+            <span className="flex-1 text-[15px] font-bold">Relatórios</span>
+            <span className="text-[12px] text-white/75">exibições e PDF</span>
+          </Link>
           <div className="mb-3" onClick={() => setMais(false)}><AumenteAlcance compacto /></div>
           <div className="divide-y divide-black/[0.05] overflow-hidden rounded-2xl bg-[#f7f5f6]">
             {[

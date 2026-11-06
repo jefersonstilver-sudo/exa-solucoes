@@ -165,6 +165,7 @@ const QrCodesRastreaveis = lazy(() => import('./pages/advertiser/QrCodesRastreav
 const AdvertiserSettings = lazy(() => import('./pages/advertiser/AdvertiserSettings'));
 const CampaignDetails = lazy(() => import('./pages/advertiser/CampaignDetails'));
 const GeradorRoteiros = lazy(() => import('./pages/advertiser/GeradorRoteiros'));
+const Relatorios = lazy(() => import('./pages/advertiser/Relatorios'));
 const CompleteResponsiveLayout = lazy(() => import('@/components/advertiser/layout/CompleteResponsiveLayout'));
 
 
@@ -601,6 +602,8 @@ const AppContent = () => {
                 <OrderDetails />
               </Suspense>
             } />
+            <Route path="relatorios" element={<Suspense fallback={<GlobalLoadingPage message="Carregando relatórios..." />}><Relatorios /></Suspense>} />
+            <Route path="relatorios/:id" element={<Suspense fallback={<GlobalLoadingPage message="Carregando relatório..." />}><Relatorios /></Suspense>} />
             <Route path="telas" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando suas telas..." />}>
                 <MinhasTelas />

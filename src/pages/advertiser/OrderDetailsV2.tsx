@@ -8,7 +8,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AgendarNaAgenda } from '@/components/video-management/agendarNaAgenda';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, Building2, CalendarDays, Check, ChevronRight, Crown, Film, Loader2, Pencil, Receipt, Tag, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BarChart3, Building2, CalendarDays, Check, ChevronRight, Crown, Film, Loader2, Pencil, Receipt, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveAuth as useAuth } from '@/hooks/useEffectiveAuth';
@@ -36,16 +36,18 @@ import { AgendaTab } from '@/components/pedido-v2/AgendaTab';
 import { PrediosTab } from '@/components/pedido-v2/PrediosTab';
 import { EmpresaTab } from '@/components/pedido-v2/EmpresaTab';
 import { CARD, EYEBROW } from '@/components/pedido-v2/ui';
+import { RelatorioPedido } from '@/components/relatorio/RelatorioPedido';
 import { useVisaoInterna } from '@/hooks/exa2/useVisaoInterna';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import { EsqueletoPedido } from '@/components/pedido-v2/Esqueletos';
 import { AvisoCobranca, FaturasPedido, useParcelas } from '@/components/cobranca/FaturasPedido';
 
-type Aba = 'videos' | 'agenda' | 'predios' | 'empresa' | 'contrato';
+type Aba = 'videos' | 'agenda' | 'predios' | 'relatorio' | 'empresa' | 'contrato';
 const ABAS: { id: Aba; label: string; icon: React.ElementType }[] = [
   { id: 'videos', label: 'Vídeos', icon: Film },
   { id: 'agenda', label: 'Agenda', icon: CalendarDays },
   { id: 'predios', label: 'Prédios', icon: Building2 },
+  { id: 'relatorio', label: 'Relatório', icon: BarChart3 },
   { id: 'empresa', label: 'Empresa', icon: Tag },
   { id: 'contrato', label: 'Contrato', icon: Receipt },
 ];
@@ -406,13 +408,13 @@ const OrderDetailsV2 = () => {
           {/* Abas — celular: controle segmentado (ícone + nome), 5 colunas iguais, preso logo abaixo do topo do app */}
           {celular ? (
             <nav className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-20 -mx-4 bg-[#f3f1f2]/95 px-4 pb-2 pt-1 backdrop-blur-md">
-              <div className="grid grid-cols-5 gap-0.5 rounded-[16px] bg-[#e9e4e5] p-1">
+              <div className="grid grid-cols-6 gap-0.5 rounded-[16px] bg-[#e9e4e5] p-1">
                 {ABAS.map(({ id: a, label, icon: I }) => (
                   <button
                     key={a}
                     onClick={() => setAba(a)}
                     aria-current={aba === a ? 'page' : undefined}
-                    className={`flex flex-col items-center justify-center gap-0.5 rounded-[12px] py-1.5 text-[11px] font-bold transition ${aba === a ? 'bg-white text-[#9C1E1E] shadow-[0_1px_3px_rgba(30,15,18,.14)]' : 'text-[#8b8285]'}`}
+                    className={`flex flex-col items-center justify-center gap-0.5 rounded-[12px] py-1.5 text-[10.5px] font-bold transition ${aba === a ? 'bg-white text-[#9C1E1E] shadow-[0_1px_3px_rgba(30,15,18,.14)]' : 'text-[#8b8285]'}`}
                   >
                     <I className="h-[18px] w-[18px]" strokeWidth={aba === a ? 2.3 : 1.9} />
                     {label}
@@ -588,6 +590,8 @@ const OrderDetailsV2 = () => {
               removerArquivo={empresas.removerArquivo}
             />
           )}
+
+          {aba === 'relatorio' && <RelatorioPedido pedidoId={order.id} compacto />}
 
           {aba === 'contrato' && (
             <div className="space-y-3">
