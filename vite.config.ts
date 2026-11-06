@@ -96,7 +96,7 @@ export default defineConfig(() => ({
               // Ponte da Integração). O NUC nunca recebe "escolhidas", então nele nada muda.
               const de = "if (Array.isArray(lista)) return comExtras(lista.filter(x => x && x.url));";
               if (fonte.includes(de)) fonte = fonte.replace(de, "if (Array.isArray(lista)) return (data && data.escolhidas) ? lista.filter(x => x && x.url) : comExtras(lista.filter(x => x && x.url));");
-              else console.warn("[painel-web-legado] lives.js mudou: câmeras escolhidas da TV não aplicadas");
+              else if (!fonte.includes("data.escolhidas")) console.warn("[painel-web-legado] lives.js mudou: câmeras escolhidas da TV não aplicadas");
             }
             const r = await esb.transform(fonte, { loader: "js", target: "chrome51", charset: "utf8" });
             fs.writeFileSync(p, r.code);
