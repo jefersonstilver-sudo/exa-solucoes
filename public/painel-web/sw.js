@@ -42,7 +42,8 @@ async function videoGuardado(url, req) {
   const caixa = await caches.open(CX_VIDEOS);
   const r = await caixa.match(url);
   if (!r) {
-    if (!baixando.has(url)) {
+    // 06/11/2026: durante o preparo (boot) os vídeos baixam UM de cada vez pela fila abaixo; aqui não abre outro download
+    if (!baixando.has(url) && !preparo.rodando) {
       baixando.add(url);
       fetch(url, { mode: "cors", credentials: "omit" }).then(async (x) => {
         if (x.ok && x.status === 200) await caixa.put(url, new Response(await x.blob(), { headers: { "Content-Type": "video/mp4" } }));
@@ -61,6 +62,56 @@ async function videoGuardado(url, req) {
   if (ini >= total) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${total}` } });
   return new Response(blob.slice(ini, fim + 1), { status: 206, headers: { "Content-Type": "video/mp4", "Content-Length": String(fim - ini + 1), "Content-Range": `bytes ${ini}-${fim}/${total}`, "Accept-Ranges": "bytes" } });
 }
+// 06/11/2026 — PREPARO DO BOOT (TV box): ao ligar, baixa para o aparelho todos os vídeos da programação, um de cada vez
+// (antes cada vídeo tocava pela rede E baixava inteiro ao mesmo tempo: no boot o Zeta engasgava minutos). A página
+// (compat/tv.js) pergunta o andamento ({tipo:'preparo'}) e só tira a tela de espera quando tudo está guardado e fluido.
+const preparo = { rodando: false, feito: false, total: 0, prontos: 0, sem_leve: 0, atual: "", erro: "" };
+async function baixarUm(caixa, url) {
+  while (baixando.has(url)) await new Promise((r) => setTimeout(r, 500));
+  if (await caixa.match(url)) return;
+  baixando.add(url);
+  try {
+    const x = await fetch(url, { mode: "cors", credentials: "omit" });
+    if (x.ok && x.status === 200) await caixa.put(url, new Response(await x.blob(), { headers: { "Content-Type": "video/mp4" } }));
+  } finally { baixando.delete(url); }
+}
+async function prepararVideos(predio) {
+  if (preparo.rodando || !predio) return;
+  preparo.rodando = true; preparo.erro = "";
+  try {
+    const d = await updates(predio);
+    const pasta = String(d.pasta_s3 || "").replace(/^\/+|\/+$/g, "");
+    const lista = (Array.isArray(d.PlaylistPronta) && d.PlaylistPronta.length ? d.PlaylistPronta : d.Propagandas || []);
+    const arqs = [...new Set(lista.map((it) => it && it.video).filter(Boolean).map(String))];
+    const urls = []; let semLeve = 0;
+    for (const a of arqs) { const u = await tvVersao(pasta, a); if (u) urls.push(u); else semLeve++; }
+    const caixa = await caches.open(CX_VIDEOS);
+    Object.assign(preparo, { total: urls.length, prontos: 0, sem_leve: semLeve });
+    for (const u of urls) {
+      preparo.atual = u.split("/").pop().split("?")[0];
+      for (let tentativa = 0; tentativa < 3; tentativa++) {
+        try { await baixarUm(caixa, u); break; } catch (e) { preparo.erro = String(e && e.message || e).slice(0, 80); await new Promise((r) => setTimeout(r, 3000)); }
+      }
+      if (await caixa.match(u)) preparo.prontos++;
+    }
+    preparo.atual = ""; preparo.feito = true;
+  } catch (e) { preparo.erro = String(e && e.message || e).slice(0, 80); }
+  finally { preparo.rodando = false; }
+}
+self.addEventListener("message", (e) => {
+  const d = e.data || {};
+  if (d.tipo !== "preparo") return;
+  const resposta = (async () => {
+    try {
+      const predio = await predioDoCliente(e.source && e.source.id);
+      // waitUntil: o navegador não desliga o service worker no meio do download (a página pergunta a cada 2 s)
+      if (!preparo.feito && !preparo.rodando) { const p = prepararVideos(predio); try { e.waitUntil && e.waitUntil(p); } catch (er) { /* segue */ } }
+      e.source && e.source.postMessage({ tipo: "preparo", ...preparo });
+    } catch (er) { /* a página pergunta de novo */ }
+  })();
+  try { e.waitUntil && e.waitUntil(resposta); } catch (er) { /* segue */ }
+});
+
 /** Apaga do aparelho os vídeos que saíram da programação (chamado quando a programação é lida). */
 async function limparVideos(validos) {
   try {

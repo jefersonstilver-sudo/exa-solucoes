@@ -76,6 +76,76 @@
     }, true);
     // roda antes do iniciar() do propagandas.js (este script está no <head>, o listener dele é registrado antes)
     document.addEventListener('DOMContentLoaded', preparar);
+    // 06/11/2026 — TELA DE ESPERA DE VERDADE (boot): depois de faltar energia o Zeta ficava minutos engasgando, com tela
+    // escura e a câmera parada. Agora uma tela EXA fica por cima e só sai quando é verdade que está tudo pronto:
+    //  1) vídeos da programação guardados no aparelho (o service worker baixa um de cada vez);
+    //  2) anúncio tocando com quadro novo; 3) câmera tocando (se a TV tem câmera);
+    //  4) fluidez conferida: 4 s seguidos acima de 22 quadros/s, sem engasgo maior que 250 ms.
+    // Tudo isso 4 s seguido -> some. Teto de 6 min (aí mostra assim mesmo e registra). O andamento aparece na tela.
+    document.addEventListener('DOMContentLoaded', function () {
+      try {
+        var t0 = Date.now(), fim = false;
+        var cx = document.createElement('div');
+        cx.id = 'tv-espera';
+        cx.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;z-index:2147483647;background:#0c0610;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Inter,system-ui,sans-serif;transition:opacity .6s';
+        cx.innerHTML = '<div style="font-size:120px;font-weight:800;letter-spacing:-4px;color:#fff">exa</div>' +
+          '<div style="margin-top:28px;font-size:34px;font-weight:700">Preparando a tela</div>' +
+          '<div id="tv-espera-passos" style="margin-top:36px;font-size:28px;line-height:1.7;opacity:.85;text-align:left;min-width:640px"></div>' +
+          '<div style="margin-top:36px;width:640px;height:10px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden"><div id="tv-espera-barra" style="height:100%;width:3%;background:#EA251D"></div></div>';
+        (document.body || document.documentElement).appendChild(cx);
+        var passosEl = document.getElementById('tv-espera-passos'), barra = document.getElementById('tv-espera-barra');
+        var est = { total: 0, prontos: 0, feito: false, rodando: false, sem_leve: 0 };
+        navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', function (ev) { if (ev.data && ev.data.tipo === 'preparo') est = ev.data; });
+        // fluidez: quadros da página
+        var quadros = [], ultimo = 0;
+        var medir = function (t) { if (fim) return; if (ultimo) quadros.push([t, t - ultimo]); ultimo = t; while (quadros.length && t - quadros[0][0] > 4000) quadros.shift(); requestAnimationFrame(medir); };
+        requestAnimationFrame(medir);
+        // vídeo andando de verdade: 3 conferências seguidas (1 s cada) com o tempo avançando e quadro novo decodificado
+        var andou = function (v, k) {
+          if (!v || !v.currentSrc || v.paused || v.readyState < 2) { if (v) v[k] = null; return false; }
+          var q = 0; try { q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality().totalVideoFrames : (v.webkitDecodedFrameCount || 0); } catch (e) { q = 0; }
+          var a = v[k] || { t: -1, q: -1, n: 0 };
+          var foi = v.currentTime > a.t + 0.3 && (!q || q > a.q);
+          v[k] = { t: v.currentTime, q: q, n: foi ? a.n + 1 : 0 };
+          return v[k].n >= 3;
+        };
+        var okDesde = 0;
+        var tique = setInterval(function () {
+          try {
+            if (fim) return;
+            try { navigator.serviceWorker && navigator.serviceWorker.controller && navigator.serviceWorker.controller.postMessage({ tipo: 'preparo' }); } catch (e) { /* segue */ }
+            // sem service worker controlando a página (primeira abertura), não há como guardar: não prende a tela por isso
+            var semSw = !(navigator.serviceWorker && navigator.serviceWorker.controller) && Date.now() - t0 > 20000;
+            var videosOk = semSw || est.feito || (est.total > 0 && est.prontos >= est.total);
+            var ad = window.videoElement || document.getElementById('video-propaganda');
+            var adOk = andou(ad, '__esperaAd');
+            var cam = document.getElementById('live-video');
+            var semCam = /[?&]cam=0(&|$)/.test(location.search) || !document.querySelector('.camera-video-wrapper');
+            var camOk = semCam || andou(cam, '__esperaCam') || Date.now() - t0 > 150000; // câmera fora do ar não prende a tela
+            var fps = 0, pior = 0;
+            if (quadros.length > 10) { fps = quadros.length / ((quadros[quadros.length - 1][0] - quadros[0][0]) / 1000 || 1); quadros.forEach(function (q) { if (q[1] > pior) pior = q[1]; }); }
+            var fluido = fps >= 22 && pior < 250;
+            var tudo = videosOk && adOk && camOk && fluido;
+            okDesde = tudo ? (okDesde || Date.now()) : 0;
+            var ck = function (b) { return b ? '✓' : '…'; };
+            passosEl.innerHTML =
+              '<div>' + ck(videosOk) + ' Vídeos no aparelho: ' + (est.total ? est.prontos + ' de ' + est.total : 'conferindo') + '</div>' +
+              '<div>' + ck(adOk) + ' Anúncio tocando</div>' +
+              '<div>' + ck(camOk) + ' Câmera ' + (semCam ? '(sem câmera)' : 'ao vivo') + '</div>' +
+              '<div>' + ck(fluido) + ' Fluidez: ' + (fps ? Math.round(fps) + ' quadros/s' : 'medindo') + '</div>';
+            var p = (est.total ? 0.55 * est.prontos / est.total : 0.05) + (adOk ? 0.15 : 0) + (camOk ? 0.1 : 0) + (fluido ? 0.1 : 0) + (okDesde ? 0.1 * Math.min(1, (Date.now() - okDesde) / 4000) : 0);
+            barra.style.width = Math.max(3, Math.round(p * 100)) + '%';
+            var estourou = Date.now() - t0 > 360000;
+            if ((okDesde && Date.now() - okDesde >= 4000) || estourou) {
+              fim = true; clearInterval(tique);
+              var info = window.__tvInfo = window.__tvInfo || {};
+              info.boot_s = Math.round((Date.now() - t0) / 1000); info.boot_ok = !estourou;
+              cx.style.opacity = '0'; setTimeout(function () { try { cx.remove(); } catch (e) { cx.style.display = 'none'; } }, 700);
+            }
+          } catch (e) { /* segue */ }
+        }, 1000);
+      } catch (e) { /* sem tela de espera: segue como antes */ }
+    });
     // 06/11/2026 (Zeta): vídeo vertical aparecendo no espaço horizontal e horizontal esticado em tela cheia.
     // O modo (tela cheia premium ou espaço horizontal) vinha só do isPlus da programação; quando ele não bate com o
     // arquivo, a imagem sai errada. Aqui a TV decide pelo formato REAL do vídeo (altura > largura = tela cheia) e
