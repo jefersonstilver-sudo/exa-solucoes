@@ -364,6 +364,8 @@ export const FERRAMENTAS = [
         assinatura: { type: "string", description: "Ex: 'Administração do Condomínio X' (o que a pessoa usa)" },
         rodape: { type: "object", description: "Opcional: acompanhamento (ex: rotulo 'Acompanhamento', texto 'Protocolo Sanepar: 2026...')", properties: { rotulo: { type: "string" }, texto: { type: "string" } } },
         cor: { type: "string", description: "Cor do condomínio em #RRGGBB (das preferências/logo do prédio). Sem cor: verde-escuro sóbrio." },
+        predios: { type: "array", items: { type: "string" }, description: "VÁRIOS PRÉDIOS (gestora/administradora): nomes ou códigos (ou ['todos']). Gera UM PDF POR PRÉDIO com o nome, a cor, o logo e a assinatura de cada um. Use {predio} no texto onde entra o nome do prédio. Confirme a lista com a pessoa antes." },
+        exceto: { type: "array", items: { type: "string" } },
       },
       required: ["titulo", "paragrafos"],
     },
@@ -942,28 +944,46 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       return `Rascunho criado [${idCurto(a.id)}]. Link de prévia (vale 10 min): ${link}\nAvisos já no ar neste prédio: ${ativos}${ativos === 0 ? " (este será o único: não fale de segundos de tela)" : ""}.`;
     }
     case "criar_pdf_comunicado": {
-      const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
-      const { data: pf } = await sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle();
-      const pref: any = pf?.preferencias || {};
-      let logo: Uint8Array | null = null;
-      if (pref.logo?.url && String(pref.usar_logo || "").toLowerCase() !== "nao") {
-        try { const r = await fetch(pref.logo.url, { signal: AbortSignal.timeout(10000) }); if (r.ok) logo = new Uint8Array(await r.arrayBuffer()); } catch (_) { logo = null; }
+      // um prédio (o atual) ou VÁRIOS (predios): um PDF por prédio, cada um com o nome, a cor e o logo DELE — nunca misturados
+      let alvos: Predio[] = [];
+      if (Array.isArray(e.predios) && e.predios.length) alvos = await resolverAlvos(c, e.predios, e.exceto);
+      else if (c.predioAtual) alvos = [c.predioAtual];
+      if (!alvos.length) return "Escolha o prédio primeiro (escolher_predio) ou passe 'predios'.";
+      const varios = alvos.length > 1;
+      const feitos: string[] = [];
+      for (const p of alvos) {
+        const { data: pf } = await sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle();
+        const pref: any = pf?.preferencias || {};
+        let logo: Uint8Array | null = null;
+        if (pref.logo?.url && String(pref.usar_logo || "").toLowerCase() !== "nao") {
+          try { const r = await fetch(pref.logo.url, { signal: AbortSignal.timeout(10000) }); if (r.ok) logo = new Uint8Array(await r.arrayBuffer()); } catch (_) { logo = null; }
+        }
+        const corP = [varios ? null : e.cor, pref.cor, pref.cor_destaque, pref.logo?.tom, varios ? e.cor : null].find((x) => /^#?[0-9a-f]{6}$/i.test(String(x || "")));
+        const nomeCond = String(p.nome).trim();
+        // assinatura: em vários prédios, sempre a de cada prédio ({predio} no texto vira o nome do prédio)
+        const assin = e.assinatura && (!varios || String(e.assinatura).includes("{predio}")) ? String(e.assinatura).replace(/\{predio\}/g, nomeCond) : `Administração do ${nomeCond}`;
+        const troca = (t: unknown) => typeof t === "string" ? t.replace(/\{predio\}/g, nomeCond) : t;
+        const bytes = await pdfComunicado({
+          ...e, titulo: troca(e.titulo) as string, subtitulo: troca(e.subtitulo) as string,
+          paragrafos: (e.paragrafos || []).map(troca), secoes: (e.secoes || []).map((x: any) => ({ titulo: troca(x?.titulo), texto: troca(x?.texto) })),
+          condominio: nomeCond, cor: corP ? String(corP) : undefined, logo, logoClara: pref.logo?.placa === "escura", assinatura: assin,
+        });
+        const id = "t" + crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+        const caminho = `recebidas/${id}.pdf`;
+        const { error } = await sb.storage.from(BUCKET).upload(caminho, bytes, { contentType: "application/pdf", upsert: true });
+        if (error) { feitos.push(`${nomeCond}: ERRO ao salvar (${error.message})`); continue; }
+        const url = urlPublica(c, caminho);
+        c.midias[id] = { mime: "application/pdf", caminho, url, gerado: true } as any; // feito pelo Nando: não precisa de ler_referencia
+        const nomeArq = `Comunicado - ${String(e.categoria || e.titulo || "aviso").replace(/\n/g, " ").replace(/[^\p{L}\p{N} -]/gu, "").trim().slice(0, 40)} - ${nomeCond.slice(0, 30)}.pdf`;
+        try { await enviarDocumento(sb, c.tel, url, nomeArq, varios ? `📄 ${nomeCond}` : ""); }
+        catch (er) { feitos.push(`${nomeCond}: PDF pronto mas NÃO enviado (${(er as Error).message.slice(0, 80)}) · link ${url}`); continue; }
+        feitos.push(`${nomeCond} → midia_id=${id}`);
+        c.registros.push(`PDF do comunicado (${nomeCond}) criado e enviado: midia_id=${id} ${url}`);
+        if (varios) await new Promise((r) => setTimeout(r, 1200));
       }
-      const corP = [e.cor, pref.cor, pref.cor_destaque, pref.logo?.tom].find((x) => /^#?[0-9a-f]{6}$/i.test(String(x || "")));
-      const nomeCond = String(p.nome).trim();
-      const bytes = await pdfComunicado({ ...e, condominio: nomeCond, cor: corP ? String(corP) : undefined, logo, logoClara: pref.logo?.placa === "escura",
-        assinatura: e.assinatura || `Administração do ${nomeCond}` });
-      const id = "t" + crypto.randomUUID().replace(/-/g, "").slice(0, 10);
-      const caminho = `recebidas/${id}.pdf`;
-      const { error } = await sb.storage.from(BUCKET).upload(caminho, bytes, { contentType: "application/pdf", upsert: true });
-      if (error) return `Não consegui montar o PDF: ${error.message}`;
-      const url = urlPublica(c, caminho);
-      c.midias[id] = { mime: "application/pdf", caminho, url, gerado: true } as any; // feito pelo Nando: não precisa de ler_referencia
-      const nomeArq = `Comunicado - ${String(e.categoria || e.titulo || "aviso").replace(/\n/g, " ").replace(/[^\p{L}\p{N} -]/gu, "").trim().slice(0, 50)} - ${nomeCond.slice(0, 30)}.pdf`;
-      try { await enviarDocumento(sb, c.tel, url, nomeArq, ""); }
-      catch (er) { return `O PDF ficou pronto mas não consegui mandar no WhatsApp (${(er as Error).message.slice(0, 120)}). Mande este link para a pessoa: ${url}`; }
-      c.registros.push(`PDF profissional do comunicado criado e enviado: midia_id=${id} ${url}`);
-      return `PDF profissional criado e JÁ ENVIADO para a pessoa no WhatsApp (midia_id=${id}, já lido: NÃO use ler_referencia nele). Agora diga em UMA frase curta que mandou o PDF e pergunte se ela quer que você coloque na tela do elevador um resumo com QR code que abre esse documento. Se ela quiser: criar_opcoes_documento com midia_id="${id}" e o resumo (o quê, até quando, o que o morador faz).`;
+      return `PDF profissional criado e JÁ ENVIADO no WhatsApp (${alvos.length} prédio${varios ? "s, um PDF para cada, com o nome e a assinatura de cada um" : ""}; já lidos: NÃO use ler_referencia):\n${feitos.join("\n")}\n` +
+        `Agora diga em UMA frase curta que mandou ${varios ? "os PDFs (um por prédio)" : "o PDF"} e pergunte se quer na tela do elevador um resumo com QR code que abre o documento.` +
+        (varios ? ` Se quiser: para CADA prédio, escolher_predio e crie o aviso com qr_midia_id = o midia_id DAQUELE prédio (o QR de um prédio nunca abre o PDF de outro). Antes, confirme a lista de prédios em uma frase.` : ` Se quiser: criar_opcoes_documento com o midia_id acima e o resumo (o quê, até quando, o que o morador faz).`);
     }
     case "criar_opcoes_documento": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
