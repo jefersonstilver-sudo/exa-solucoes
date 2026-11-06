@@ -1,9 +1,9 @@
-// EXA (06/11/2026) — Relatório do pedido para o anunciante: o que foi exibido, onde, quantas vezes (estimado pela
-// programação), disponibilidade das telas, histórico de vídeos publicados e PDF. Usado em /anunciante/relatorios/:id
+// EXA (06/11/2026) — Relatório do pedido para o anunciante: o que foi exibido, onde, quantas vezes (pela
+// programação real de cada prédio), tempo de tela, histórico de vídeos publicados e PDF. Usado em /anunciante/relatorios/:id
 // e na aba "Relatório" do pedido.
 import React, { useMemo, useState } from 'react';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Building2, Clapperboard, Download, Eye, Film, Info, Loader2, MonitorPlay, Timer, Users, Wifi } from 'lucide-react';
+import { Building2, Clapperboard, Crown, Download, Eye, Film, Info, Loader2, MonitorPlay, Timer, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { CARD, EYEBROW, H_SEC, BTN, BTN_SOFT, BADGE } from '@/components/pedido-v2/ui';
 import { useRelatorio, nf, dataBR, mesBR, SITUACAO, SERIE, type Relatorio } from './useRelatorio';
@@ -81,15 +81,26 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
 
       {/* números */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Num icon={Eye} valor={nf(r.totais.exibicoes)} rotulo="exibições (estimadas)" dica="Estimadas pela programação dos painéis; veja a metodologia no fim." />
+        <Num icon={Eye} valor={nf(r.totais.exibicoes)} rotulo="exibições da sua marca" />
         <Num icon={Timer} valor={nf(r.totais.media_dia)} rotulo="exibições por dia" />
         <Num icon={MonitorPlay} valor={`${nf(r.totais.predios)} · ${nf(r.totais.telas)}`} rotulo="prédios · telas" />
-        <Num icon={Wifi} valor={`${r.totais.disponibilidade.toLocaleString('pt-BR')}%`} rotulo="do tempo com telas no ar" />
+        <Num icon={Timer} valor={`${r.formato.minutos_dia_tela} min`} rotulo="por dia em cada tela" />
         <Num icon={Clapperboard} valor={nf(r.totais.horas_tela)} rotulo="horas da sua marca na tela" />
         <Num icon={Film} valor={nf(r.totais.videos_publicados)} rotulo={`vídeos publicados · ${r.totais.videos_no_ar} no ar`} />
         <Num icon={Users} valor={nf(r.totais.publico)} rotulo="moradores e visitantes" dica="Público estimado dos prédios onde sua marca aparece." />
         <Num icon={Building2} valor={nf(r.formato.exibicoes_dia_tela)} rotulo="vezes por tela por dia" />
       </div>
+
+      {/* tempo de tela */}
+      <section className={`${CARD} flex flex-wrap items-center gap-4 p-5`}>
+        <div className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#f8e9ec] text-[#9C1E1E]">{r.formato.tela_cheia ? <Crown className="h-6 w-6" /> : <MonitorPlay className="h-6 w-6" />}</div>
+        <div className="min-w-0 flex-1">
+          <div className={EYEBROW}>{r.formato.tela_cheia ? 'Tela cheia' : 'Tempo de tela'}</div>
+          <div className="text-[15px] font-bold text-[#1b1719]">
+            Sua marca ocupa {r.formato.participacao.toLocaleString('pt-BR')}% do tempo de cada tela{r.formato.tela_cheia ? ', sozinha na tela inteira' : ''}: cerca de {nf(r.formato.exibicoes_dia_tela)} exibições e {r.formato.minutos_dia_tela} minutos por dia, em cada uma das {nf(r.totais.telas)} telas.
+          </div>
+        </div>
+      </section>
 
       {/* gráfico */}
       {r.meses.length > 0 && (
@@ -176,7 +187,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-y border-[#f1edee] text-left text-[11px] font-bold uppercase tracking-wide text-[#8b8285]">
-                <th className="px-5 py-2">Prédio</th><th className="px-2 py-2 text-right">Telas</th><th className="px-2 py-2 text-right">No ar</th><th className="px-5 py-2 text-right">Exibições</th>
+                <th className="px-5 py-2">Prédio</th><th className="px-2 py-2 text-right">Telas</th><th className="px-2 py-2 text-right">Por dia</th><th className="px-2 py-2 text-right">Tempo</th><th className="px-5 py-2 text-right">Exibições</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f1edee]">
@@ -184,7 +195,8 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
                 <tr key={p.id}>
                   <td className="px-5 py-2.5"><div className="font-semibold text-[#1b1719]">{p.nome}</div><div className="text-[11.5px] text-[#8b8285]">{p.bairro}</div></td>
                   <td className="px-2 py-2.5 text-right tabular-nums">{p.telas}</td>
-                  <td className="px-2 py-2.5 text-right tabular-nums">{p.disponibilidade.toLocaleString('pt-BR')}%</td>
+                  <td className="px-2 py-2.5 text-right tabular-nums">{nf(p.por_dia_tela * p.telas)}</td>
+                  <td className="px-2 py-2.5 text-right tabular-nums">{nf(p.horas_tela)} h</td>
                   <td className="px-5 py-2.5 text-right font-bold tabular-nums">{nf(p.exibicoes)}</td>
                 </tr>
               ))}
@@ -202,7 +214,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
       <section className={`${CARD} flex gap-3 p-5`}>
         <Info className="mt-0.5 h-4 w-4 flex-none text-[#8b8285]" />
         <div>
-          <div className="text-[13px] font-bold text-[#1b1719]">Como calculamos</div>
+          <div className="text-[13px] font-bold text-[#1b1719]">Como contamos</div>
           <p className="mt-1 text-[12.5px] leading-relaxed text-[#8b8285]">{r.metodologia}</p>
           <p className="mt-1 text-[11.5px] text-[#a79fa2]">Atualizado em {new Date(r.gerado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.</p>
         </div>

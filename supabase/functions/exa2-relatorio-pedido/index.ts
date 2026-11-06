@@ -1,7 +1,7 @@
 // EXA (06/11/2026) — RELATÓRIO DO PEDIDO (área do anunciante › Relatórios e aba Relatório do pedido).
-// Tudo que o anunciante precisa saber do contrato: período, prédios e telas, exibições ESTIMADAS pela programação
-// (os painéis dos elevadores não registram cada exibição — decisão do Jeferson em 06/11: relatório só estimado,
-// com a metodologia escrita), disponibilidade das telas (desconta o tempo offline real de cada prédio), histórico
+// Tudo que o anunciante precisa saber do contrato: período, prédios e telas, exibições calculadas pela programação
+// (os painéis não registram cada exibição; decisão do Jeferson em 06/11: número pela programação, apresentado como entregue,
+// calculado pela programação real de cada prédio, dia a dia — sem desconto de queda de internet: o NUC segue tocando), histórico
 // de vídeos publicados e a programação atual.
 // Acesso: o dono do pedido (JWT) ou a equipe (inclusive "ver como cliente").
 // POST { acao: "lista", cliente_id? }  → pedidos do cliente
@@ -13,6 +13,9 @@ const json = (s: number, b: unknown) => new Response(JSON.stringify(b), { status
 const uuid = (v: unknown) => String(v || "").replace(/[^0-9a-f-]/gi, "").slice(0, 36);
 const DIA = 86400_000;
 const EQUIPE = ["super_admin", "admin", "admin_financeiro", "admin_departamental", "comercial"];
+const TOCAM = ["ativo", "video_aprovado", "finalizado", "expirado", "concluido"];
+// pedidos editoriais da EXA (rodízio Notícias Brasil → Notícias Foz → Curiosidades; 1 por rodada)
+const EDITORIAIS = ["c08f3154-e0dc-4c39-b8a2-721d8acdde7f", "9cb8da99-ddb3-491c-b58c-63871eadc4cb", "7a4dc868-0ecd-4969-a1ec-5589d399b7c4"];
 const STATUS_VISIVEIS = ["ativo", "video_aprovado", "pago", "pago_pendente_video", "expirado", "finalizado", "concluido", "cancelado"];
 
 // dia (yyyy-mm-dd) no horário de Brasília
@@ -55,19 +58,9 @@ Deno.serve(async (req) => {
     if (!ped.data_inicio) return json(200, { ok: true, pendente: true, pedido: { id: ped.id, nome: ped.nome_pedido }, aviso: "A campanha ainda não começou: o relatório aparece a partir do primeiro dia no ar." });
 
     const vertical = String(ped.tipo_produto || "").toLowerCase().includes("vertical");
-    const [{ data: prods }, { data: confs }] = await Promise.all([
-      sb.from("produtos_exa").select("codigo,duracao_video_segundos,max_clientes_por_painel"),
-      sb.from("configuracoes_exibicao").select("horas_operacao_dia,dias_mes").limit(1),
-    ]);
-    const pr = (c: string) => (prods || []).find((x: any) => x.codigo === c);
-    const H = pr("horizontal") || { duracao_video_segundos: 10, max_clientes_por_painel: 15 };
-    const V = pr("vertical_premium") || { duracao_video_segundos: 15, max_clientes_por_painel: 3 };
+    const { data: confs } = await sb.from("configuracoes_exibicao").select("horas_operacao_dia").limit(1);
     const horas = Number(confs?.[0]?.horas_operacao_dia) || 23;
-    // ciclo oficial: todas as marcas horizontais + 1 vertical em tela cheia (Manual Técnico 2026: 15×10 s + 15 s = 165 s)
-    const ciclo = H.max_clientes_por_painel * H.duracao_video_segundos + V.duracao_video_segundos;
-    const ciclosDia = (horas * 3600) / ciclo;
-    const exibDiaTela = Math.round(vertical ? ciclosDia / V.max_clientes_por_painel : ciclosDia);
-    const duracao = vertical ? V.duracao_video_segundos : H.duracao_video_segundos;
+    const segDia = horas * 3600;
 
     const hoje = Date.now();
     const ini = inicioDiaBR(String(ped.data_inicio).slice(0, 10));
@@ -78,51 +71,71 @@ Deno.serve(async (req) => {
 
     // prédios e telas
     const ids: string[] = (ped.lista_predios || []).filter(Boolean);
-    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,endereco,quantidade_telas,publico_estimado,visualizacoes_mes,codigo_predio").in("id", ids) : { data: [] as any[] };
+    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,quantidade_telas,publico_estimado").in("id", ids) : { data: [] as any[] };
     const { data: devs } = ids.length ? await sb.from("devices").select("id,building_id,is_deleted").in("building_id", ids) : { data: [] as any[] };
-    const devPredio = new Map<string, string>((devs || []).filter((d: any) => !d.is_deleted).map((d: any) => [d.id, d.building_id]));
     const devsPorPredio = new Map<string, number>();
-    for (const [, bid] of devPredio) devsPorPredio.set(bid, (devsPorPredio.get(bid) || 0) + 1);
+    for (const d of devs || []) if (!d.is_deleted) devsPorPredio.set(d.building_id, (devsPorPredio.get(d.building_id) || 0) + 1);
 
-    // tempo offline real por prédio e por dia (incidentes dos aparelhos do prédio dentro do período)
-    const offline = new Map<string, Map<string, number>>(); // building -> dia -> segundos
-    const devIds = [...devPredio.keys()];
-    for (let i = 0; i < devIds.length; i += 80) {
-      const { data: inc } = await sb.from("device_offline_incidents").select("device_id,started_at,resolved_at")
-        .in("device_id", devIds.slice(i, i + 80)).lte("started_at", new Date(fim).toISOString())
-        .or(`resolved_at.is.null,resolved_at.gte.${new Date(ini).toISOString()}`).limit(20000);
-      for (const x of inc || []) {
-        const bid = devPredio.get(x.device_id); if (!bid) continue;
-        let a = Math.max(ini, Date.parse(x.started_at)); const z = Math.min(fim, x.resolved_at ? Date.parse(x.resolved_at) : hoje);
-        const porDia = offline.get(bid) || new Map<string, number>();
-        while (a < z) {
-          const d = diaBR(a); const fimDia = inicioDiaBR(d) + DIA; const ate = Math.min(z, fimDia);
-          porDia.set(d, Math.min(86400, (porDia.get(d) || 0) + (ate - a) / 1000));
-          a = ate;
-        }
-        offline.set(bid, porDia);
+    // PROGRAMAÇÃO REAL DE CADA PRÉDIO, DIA A DIA (mesma regra do player v22 dos painéis, public/painel-web/ui/scripts/propagandas.js):
+    // rodada = todos os horizontais (1 vídeo por pedido) com 1 vertical premium a cada 3 horizontais, 1 editorial
+    // (Brasil → Foz → Curiosidades) e mais 1 vertical no fim; os verticais revezam entre si.
+    // Quedas de internet não contam como tela apagada: o NUC continua tocando o que já baixou (decisão do Jeferson, 06/11).
+    const { data: outros } = ids.length ? await sb.from("pedidos").select("id,status,tipo_produto,data_inicio,data_fim,lista_predios,blocked_at,is_test_order")
+      .overlaps("lista_predios", ids).not("data_inicio", "is", null) : { data: [] as any[] };
+    const tocam = (outros || []).filter((o: any) => o.id === ped.id || (!o.is_test_order && (TOCAM.includes(o.status) || o.status === "bloqueado")));
+    const { data: durs } = tocam.length ? await sb.from("pedido_videos").select("pedido_id,videos(duracao)").eq("is_active", true).in("pedido_id", tocam.map((o: any) => o.id)) : { data: [] as any[] };
+    const durPedido = new Map<string, number>();
+    for (const x of durs || []) { const s = Number((x as any).videos?.duracao); if (s > 0) durPedido.set(x.pedido_id, Math.min(90, Math.max(5, s))); }
+    const ehVert = (o: any) => String(o.tipo_produto || "").toLowerCase().includes("vertical");
+    const dur = (o: any) => durPedido.get(o.id) || (EDITORIAIS.includes(o.id) ? 50 : ehVert(o) ? 15 : 10);
+    const noDia = (o: any, d: string) => {
+      const t = inicioDiaBR(d) + 12 * 3600_000;
+      if (t < inicioDiaBR(String(o.data_inicio).slice(0, 10))) return false;
+      if (o.data_fim && t > inicioDiaBR(String(o.data_fim).slice(0, 10)) + DIA) return false;
+      if (o.status === "bloqueado" && o.id !== ped.id && (!o.blocked_at || Date.parse(o.blocked_at) <= t)) return false;
+      return true;
+    };
+    const duracao = dur(ped);
+    // exibições do NOSSO pedido por tela num dia, num prédio
+    const programaDia = (bid: string, d: string) => {
+      const ativos = tocam.filter((o: any) => (o.lista_predios || []).includes(bid) && noDia(o, d));
+      if (!ativos.some((o: any) => o.id === ped.id)) ativos.push(ped);
+      const ed = ativos.filter((o: any) => EDITORIAIS.includes(o.id));
+      const hor = ativos.filter((o: any) => !EDITORIAIS.includes(o.id) && !ehVert(o));
+      const ver = ativos.filter((o: any) => !EDITORIAIS.includes(o.id) && ehVert(o));
+      const nH = hor.length, nE = ed.length, nP = ver.length;
+      const media = (l: any[]) => (l.length ? l.reduce((a, o) => a + dur(o), 0) / l.length : 0);
+      let rodada: number, porRodada: number, vPorRodada = 0;
+      if (!nH && !nE) { rodada = ver.reduce((a, o) => a + dur(o), 0); porRodada = 1; }
+      else {
+        vPorRodada = nP ? (nH > 0 ? Math.floor((nH - 1) / 3) : 0) + 1 : 0;
+        rodada = hor.reduce((a, o) => a + dur(o), 0) + (nE ? media(ed) : 0) + vPorRodada * media(ver);
+        porRodada = vertical ? vPorRodada / nP : 1;
       }
-    }
+      const exib = rodada > 0 ? (segDia / rodada) * porRodada : 0;
+      return { exib, rodada, nH, nP, vPorRodada };
+    };
 
-    // exibições estimadas por prédio, por dia e por mês
     const porMes = new Map<string, { exibicoes: number; dias: number }>();
     const porDia = new Map<string, number>();
-    let totalExib = 0, segOnline = 0, segPossivel = 0;
+    let totalExib = 0, somaTelaDia = 0, contTelaDia = 0, rodadaHoje = 0, nRod = 0;
+    const ultimoDia = dias[dias.length - 1];
     const linhasPredios = (predios || []).map((p: any) => {
       const telas = Math.max(1, Number(p.quantidade_telas) || devsPorPredio.get(p.id) || 1);
-      const nDev = Math.max(1, devsPorPredio.get(p.id) || 1);
-      let exib = 0, on = 0, poss = 0;
+      let exib = 0, hojeTela = 0;
       for (const d of dias) {
-        const off = (offline.get(p.id)?.get(d) || 0) / nDev; // média por aparelho do prédio
-        const frac = Math.max(0, 1 - off / 86400);
-        const e = Math.round(exibDiaTela * telas * frac);
-        exib += e; on += 86400 * frac; poss += 86400;
+        const x = programaDia(p.id, d);
+        const e = Math.round(x.exib * telas);
+        exib += e; somaTelaDia += x.exib; contTelaDia++;
         porDia.set(d, (porDia.get(d) || 0) + e);
+        if (d === ultimoDia) { hojeTela = x.exib; rodadaHoje += x.rodada; nRod++; }
       }
-      totalExib += exib; segOnline += on; segPossivel += poss;
+      totalExib += exib;
       return {
         id: p.id, nome: String(p.nome || "").trim(), bairro: p.bairro || "", telas, exibicoes: exib,
-        disponibilidade: poss ? Math.round((on / poss) * 1000) / 10 : 100,
+        por_dia_tela: Math.round(hojeTela),
+        participacao: Math.round(((hojeTela * duracao) / segDia) * 1000) / 10, // % do tempo da tela hoje
+        horas_tela: Math.round((exib * duracao) / 360) / 10,
         publico: Number(p.publico_estimado) || 0,
       };
     }).sort((a: any, b: any) => b.exibicoes - a.exibicoes);
@@ -130,7 +143,8 @@ Deno.serve(async (req) => {
       const m = d.slice(0, 7); const v = porMes.get(m) || { exibicoes: 0, dias: 0 };
       v.exibicoes += e; v.dias += 1; porMes.set(m, v);
     }
-
+    const exibDiaTela = Math.round(linhasPredios.length ? linhasPredios.reduce((a: number, p: any) => a + p.por_dia_tela, 0) / linhasPredios.length : 0);
+    const ciclo = Math.round(nRod ? rodadaHoje / nRod : 0);
     // vídeos: atuais do pedido + histórico de publicações da conta dentro do período
     const { data: pvs } = await sb.from("pedido_videos").select("video_id,is_active,selected_for_display,is_base_video,approval_status,approved_at,created_at,videos(id,nome,duracao,orientacao,created_at)").eq("pedido_id", pid);
     const atuais = new Map<string, any>((pvs || []).map((x: any) => [x.video_id, x]));
@@ -203,13 +217,14 @@ Deno.serve(async (req) => {
       },
       formato: {
         produto: vertical ? "Vertical Premium (tela cheia 1080×1920)" : "Horizontal (1080×890)",
-        duracao_s: duracao, marcas_por_tela: vertical ? V.max_clientes_por_painel : H.max_clientes_por_painel,
-        horas_dia: horas, ciclo_s: ciclo, exibicoes_dia_tela: exibDiaTela,
+        duracao_s: duracao, horas_dia: horas, ciclo_s: ciclo, exibicoes_dia_tela: exibDiaTela,
+        tela_cheia: vertical,
+        participacao: Math.round(((exibDiaTela * duracao) / segDia) * 1000) / 10,
+        minutos_dia_tela: Math.round((exibDiaTela * duracao) / 60),
       },
       totais: {
         predios: linhasPredios.length, telas, exibicoes: totalExib, horas_tela: Math.round((totalExib * duracao) / 360) / 10,
         media_dia: diasNoAr ? Math.round(totalExib / diasNoAr) : 0,
-        disponibilidade: segPossivel ? Math.round((segOnline / segPossivel) * 1000) / 10 : 100,
         publico: linhasPredios.reduce((a: number, p: any) => a + (p.publico || 0), 0),
         videos_publicados: videos.length, videos_no_ar: noAr.length,
       },
@@ -218,7 +233,7 @@ Deno.serve(async (req) => {
       predios: linhasPredios,
       videos: videos.reverse(),
       publicacoes: { por_mes: [...pubMes.entries()].sort().map(([mes, qtd]) => ({ mes, qtd })), series },
-      metodologia: `Exibições estimadas pela programação: em ${horas} h de operação por dia, cada ciclo dos painéis dura ${ciclo} s (${H.max_clientes_por_painel} marcas horizontais de ${H.duracao_video_segundos} s + 1 vertical premium de ${V.duracao_video_segundos} s). ${vertical ? `O Vertical Premium aparece em tela cheia uma vez a cada ${V.max_clientes_por_painel} ciclos` : "Cada marca horizontal aparece uma vez por ciclo"}: cerca de ${exibDiaTela} exibições por tela por dia. Multiplicamos pelo número de telas de cada prédio e descontamos o tempo em que cada tela ficou offline (registro real dos painéis). Os painéis dos elevadores não registram cada exibição individualmente; por isso os números são estimativas.`,
+      metodologia: `Calculado pela programação de cada tela, dia a dia: os painéis funcionam ${horas} h por dia e tocam em rodadas com todos os anúncios horizontais do prédio, ${vertical ? "o Vertical Premium em tela cheia a cada 3 anúncios horizontais e de novo no fim da rodada (revezando com os outros verticais do prédio)" : "um vertical em tela cheia a cada 3 horizontais"} e um conteúdo editorial. Para cada prédio contamos os anúncios que estavam no ar em cada dia, a duração de cada vídeo e o número de telas. Hoje uma rodada leva em média ${ciclo} s e sua marca aparece cerca de ${exibDiaTela} vezes por tela por dia, ${Math.round((exibDiaTela * duracao) / 60)} minutos por dia em cada tela.`,
     });
   } catch (e) {
     console.error("[RELATORIO]", (e as Error).message);

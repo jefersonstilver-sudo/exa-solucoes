@@ -56,12 +56,12 @@ export async function baixarRelatorioPdf(r: Relatorio) {
 
   // números
   const cards: [string, string][] = [
-    ['Exibições estimadas', nf(r.totais.exibicoes)],
+    ['Exibições', nf(r.totais.exibicoes)],
     ['Média por dia', nf(r.totais.media_dia)],
     ['Horas de tela', nf(r.totais.horas_tela)],
     ['Prédios', nf(r.totais.predios)],
     ['Telas', nf(r.totais.telas)],
-    ['Telas no ar', `${r.totais.disponibilidade.toLocaleString('pt-BR')}%`],
+    ['Minutos/dia por tela', String(r.formato.minutos_dia_tela)],
     ['Vídeos publicados', nf(r.totais.videos_publicados)],
     ['Público dos prédios', nf(r.totais.publico)],
   ];
@@ -76,7 +76,7 @@ export async function baixarRelatorioPdf(r: Relatorio) {
 
   titulo('Como sua marca aparece');
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...TINTA);
-  const como = `Formato ${r.formato.produto}, vídeo de ${r.formato.duracao_s} s. Os painéis funcionam ${r.formato.horas_dia} h por dia; sua marca aparece cerca de ${nf(r.formato.exibicoes_dia_tela)} vezes por tela por dia.`;
+  const como = `Formato ${r.formato.produto}, vídeo de ${r.formato.duracao_s} s. Os painéis funcionam ${r.formato.horas_dia} h por dia. Sua marca ocupa ${r.formato.participacao.toLocaleString('pt-BR')}% do tempo de cada tela${r.formato.tela_cheia ? ', sozinha na tela inteira' : ''}: cerca de ${nf(r.formato.exibicoes_dia_tela)} exibições e ${r.formato.minutos_dia_tela} minutos por dia em cada tela.`;
   doc.splitTextToSize(como, L).forEach((l: string) => { quebra(5); doc.text(l, M, y); y += 4.6; });
 
   titulo('Exibições por mês');
@@ -91,8 +91,8 @@ export async function baixarRelatorioPdf(r: Relatorio) {
   });
 
   titulo('Prédios');
-  tabela(['Prédio', 'Bairro', 'Telas', 'No ar', 'Exibições'], [70, 46, 18, 20, 28],
-    r.predios.map((p) => [p.nome, p.bairro, String(p.telas), `${p.disponibilidade.toLocaleString('pt-BR')}%`, nf(p.exibicoes)]), ['l', 'l', 'r', 'r', 'r']);
+  tabela(['Prédio', 'Bairro', 'Telas', 'Por dia', 'Tempo', 'Exibições'], [58, 40, 14, 22, 22, 26],
+    r.predios.map((p) => [p.nome, p.bairro, String(p.telas), nf(p.por_dia_tela * p.telas), `${nf(p.horas_tela)} h`, nf(p.exibicoes)]), ['l', 'l', 'r', 'r', 'r', 'r']);
 
   titulo('Vídeos publicados');
   const s = r.publicacoes.series;
@@ -101,7 +101,7 @@ export async function baixarRelatorioPdf(r: Relatorio) {
   tabela(['Vídeo', 'Tipo', 'Publicado', 'Situação', 'Exibições'], [78, 22, 24, 26, 32],
     r.videos.map((v) => [v.nome, SERIE[v.serie], dataBR(v.publicado_em), SITUACAO[v.situacao], v.exibicoes != null ? nf(v.exibicoes) : '—']), ['l', 'l', 'l', 'l', 'r']);
 
-  titulo('Metodologia');
+  titulo('Como contamos');
   doc.setFontSize(8); doc.setTextColor(...CINZA);
   doc.splitTextToSize(r.metodologia, L).forEach((l: string) => { quebra(4.5); doc.text(l, M, y); y += 4; });
 
