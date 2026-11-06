@@ -125,7 +125,13 @@
           // no modo câmera emprestada um erro de decodificador (3) é só "não deu tempo de soltar a câmera":
           // a troca cai no modo normal uma vez e o revezamento continua (na noite de 05/11 ele se desligava
           // depois de 2 erros e a TV passava a noite com 20–60 s parada a cada 2 min)
-          if (doisDec && codigo === 3) { pre.src = ''; info.decode_cam = (info.decode_cam || 0) + 1; info.ultimo_erro = 'B:3 (câmera ainda ocupada: troca normal)'; return; }
+          if (doisDec && codigo === 3) {
+            pre.src = ''; info.decode_cam = (info.decode_cam || 0) + 1; info.ultimo_erro = 'B:3 (câmera ainda ocupada: troca normal)';
+            // a TV KTC não solta o decodificador da câmera a tempo (06/11: 70 erros em 10 min, anúncios pulados):
+            // depois de 3 erros o revezamento desliga de vez e a troca fica no modo normal, que é estável
+            if (info.decode_cam >= 3) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; info.ultimo_erro = 'B:3 (2 decodificadores: revezamento desligado)'; devolver(); }
+            return;
+          }
           falhas++; pre.src = ''; info.falhas++;
           // registra o motivo (aparece no replica_saude.tv) para entender as TVs onde o revezamento falha
           try {
@@ -219,7 +225,7 @@
             if (Date.now() - parouEm > 4000) {
               parouEm = Date.now(); travadas++; info.travadas = travadas;
               console.log('tv: anúncio parado, troca normal');
-              if (travadas >= 2 && !doisDec) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; }
+              if (travadas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; devolver(); }
               try { [A, B].forEach(function (x) { if (x !== v) { x.pause(); x.removeAttribute('src'); x.load(); esconder(x); } }); } catch (e) { /* segue */ }
               pre = { el: v === A ? B : A, src: '' };
               devolver();
