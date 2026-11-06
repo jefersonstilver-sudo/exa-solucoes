@@ -378,7 +378,19 @@
     // anúncio para pré-carregar o próximo. A última imagem fica congelada no canvas; depois a câmera volta do mesmo ponto.
     liberar: () => {
       const v = st.video;
-      if (!TV || !v || st.hls || !st.clipeFim || st.liberada || !v.currentSrc) return false;
+      if (!TV || !v || st.liberada || st.carregando) return false;
+      // ao vivo em HLS (gerador de clipes parado): solta o decodificador e, na volta, religa a mesma câmera
+      if (st.hls) {
+        guardarQuadro();
+        v.style.willChange = "transform, opacity";
+        st.liberada = { hls: true, em: Date.now() };
+        v.classList.remove("on");
+        try { st.hls.destroy(); } catch (_) {}
+        st.hls = null;
+        try { v.pause(); v.removeAttribute("src"); v.load(); } catch (_) {}
+        return true;
+      }
+      if (!st.clipeFim || !v.currentSrc) return false;
       guardarQuadro();
       v.style.willChange = "transform, opacity"; // camada própria: soltar/voltar a câmera não redesenha a página inteira (TV KTC)
       st.liberada = { src: v.currentSrc, t: v.currentTime, em: Date.now() };
@@ -391,6 +403,7 @@
       const v = st.video, l = st.liberada;
       if (!v || !l) return;
       st.liberada = null;
+      if (l.hls) { tentar(st.idx, 0); return; }
       const t = l.t + (Date.now() - l.em) / 1000;
       v.addEventListener("loadedmetadata", function um() {
         v.removeEventListener("loadedmetadata", um);

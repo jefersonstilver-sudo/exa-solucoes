@@ -116,9 +116,9 @@
         var doisDec = /[?&]doisdec=1(&|$)/.test(location.search), emprestou = false;
         var devolver = function () { if (!emprestou) return; emprestou = false; try { window.LivePlayer && window.LivePlayer.retomar(); } catch (e) { /* segue */ } };
         var errou = function (ev) {
-          var alvoB = ev && ev.target === B, codigo = alvoB && B.error ? B.error.code : 0;
+          var alvoB = ev && ev.target === B, alvoEl = ev && ev.target, codigo = alvoEl && alvoEl.error ? alvoEl.error.code : 0;
           devolver();
-          if (alvoB && codigo === 3 && !doisDec) {
+          if ((alvoB || alvoEl === A) && codigo === 3 && !doisDec) {
             doisDec = true; info.dois_dec = true; pre.src = ''; info.ultimo_erro = 'B:3 (2 decodificadores: modo câmera emprestada)';
             return;
           }
@@ -147,7 +147,8 @@
               try { emprestou = !!(window.LivePlayer && window.LivePlayer.liberar()); } catch (e) { emprestou = false; }
               // câmera não liberável (ao vivo em HLS, ou já carregando): não há decodificador livre, troca normal
               var camLigada = false; try { var cv = document.querySelector('.camera-video-wrapper video'); camLigada = !!(cv && cv.currentSrc && !cv.paused); } catch (e3) { /* segue */ }
-              if (!emprestou && camLigada) { pre.src = ''; info.sem_vaga = (info.sem_vaga || 0) + 1; return; }
+              // sem a câmera emprestada não há decodificador livre: troca normal (sem tentar e falhar)
+              if (!emprestou && (camLigada || !window.LivePlayer)) { pre.src = ''; info.sem_vaga = (info.sem_vaga || 0) + 1; return; }
             }
             pre.el.preload = 'auto';
             pre.el.src = src;
