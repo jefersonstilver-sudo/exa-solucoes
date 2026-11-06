@@ -5484,6 +5484,39 @@ export type Database = {
           },
         ]
       }
+      cupom_predios: {
+        Row: {
+          building_id: string
+          created_at: string
+          cupom_id: string
+        }
+        Insert: {
+          building_id: string
+          created_at?: string
+          cupom_id: string
+        }
+        Update: {
+          building_id?: string
+          created_at?: string
+          cupom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cupom_predios_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cupom_predios_cupom_id_fkey"
+            columns: ["cupom_id"]
+            isOneToOne: false
+            referencedRelation: "cupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cupom_usos: {
         Row: {
           created_at: string
@@ -5539,7 +5572,10 @@ export type Database = {
           max_usos: number
           min_meses: number
           min_predios: number | null
+          modo_predios: string
+          predios_fora_da_lista: string
           tipo_desconto: string | null
+          tipo_produto: string
           uso_por_usuario: number | null
           usos_atuais: number
           valor_minimo_pedido: number | null
@@ -5559,7 +5595,10 @@ export type Database = {
           max_usos?: number
           min_meses?: number
           min_predios?: number | null
+          modo_predios?: string
+          predios_fora_da_lista?: string
           tipo_desconto?: string | null
+          tipo_produto?: string
           uso_por_usuario?: number | null
           usos_atuais?: number
           valor_minimo_pedido?: number | null
@@ -5579,7 +5618,10 @@ export type Database = {
           max_usos?: number
           min_meses?: number
           min_predios?: number | null
+          modo_predios?: string
+          predios_fora_da_lista?: string
           tipo_desconto?: string | null
+          tipo_produto?: string
           uso_por_usuario?: number | null
           usos_atuais?: number
           valor_minimo_pedido?: number | null
@@ -19900,6 +19942,19 @@ export type Database = {
         }
         Returns: Json
       }
+      cupom_avaliar: {
+        Args: {
+          p_building_ids: string[]
+          p_codigo: string
+          p_meses: number
+          p_pedido_id?: string
+          p_tipo_produto: string
+          p_user: string
+          p_valor: number
+        }
+        Returns: Json
+      }
+      cupom_recontar: { Args: { p_cupom: string }; Returns: undefined }
       daily_financial_reconciliation: { Args: never; Returns: Json }
       detect_duplicate_payments: {
         Args: never
@@ -21133,6 +21188,16 @@ export type Database = {
           p_value: string
         }
         Returns: undefined
+      }
+      validar_cupom: {
+        Args: {
+          p_building_ids?: string[]
+          p_codigo: string
+          p_meses?: number
+          p_tipo_produto?: string
+          p_valor_pedido?: number
+        }
+        Returns: Json
       }
       validate_benefit_token: { Args: { p_token: string }; Returns: Json }
       validate_coupon_secure:

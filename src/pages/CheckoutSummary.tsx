@@ -358,7 +358,7 @@ const CheckoutSummary = () => {
               totalAmount={baseTotal}
               selectedPlan={selectedPlan || 1}
               couponCode={couponCode}
-              tipoDesconto={tipoDesconto}
+              tipoDesconto={tipoDesconto as any}
             />
           )}
           

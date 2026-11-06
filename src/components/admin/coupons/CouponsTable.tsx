@@ -8,6 +8,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Checkbox } from '@/components/ui/checkbox';
 import { MoreHorizontal, Edit, Trash, Eye, Copy, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { Coupon, CouponUsageDetail, formatCouponDiscount } from '@/types/coupon';
+
+const CouponScopeTags: React.FC<{ coupon: Coupon }> = ({ coupon }) => {
+  const prod = coupon.tipo_produto === 'horizontal' ? 'Horizontal' : coupon.tipo_produto === 'vertical_premium' ? 'Vertical' : 'Todos produtos';
+  const qty = coupon.max_predios ? `até ${coupon.max_predios}` : coupon.min_predios ? `${coupon.min_predios}+` : '';
+  const pred = coupon.modo_predios === 'especificos' ? 'Prédios específicos'
+    : coupon.modo_predios === 'quantidade' ? `Escolhe ${qty} prédios`
+    : coupon.modo_predios === 'combinado' ? `Escolhe ${qty} da lista` : 'Todos prédios';
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium">{prod}</span>
+      <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium">{pred}</span>
+    </div>
+  );
+};
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CouponDetailsHoverCard from './CouponDetailsHoverCard';
@@ -201,6 +215,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                   {getCategoryBadge(coupon.categoria)}
                   <span className="font-semibold text-emerald-600">{formatCouponDiscount(coupon)}</span>
                 </div>
+                <div className="mb-2"><CouponScopeTags coupon={coupon} /></div>
                 
                 {/* Barra de uso */}
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-3">
@@ -438,6 +453,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                   </TableCell>
                   <TableCell>
                     {formatCouponDiscount(coupon)}
+                    <CouponScopeTags coupon={coupon} />
                     {coupon.min_meses > 1 && (
                       <div className="text-xs text-muted-foreground">
                         Min. {coupon.min_meses} meses

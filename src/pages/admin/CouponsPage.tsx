@@ -28,7 +28,8 @@ const CouponsPage: React.FC = () => {
     createCoupon,
     updateCoupon,
     deleteCoupon,
-    getCouponUsageDetails
+    getCouponUsageDetails,
+    getCouponBuildings
   } = useCouponsData();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -210,6 +211,7 @@ const CouponsPage: React.FC = () => {
           onSubmit={handleFormSubmit}
           onGenerateCode={generateCouponCode}
           editingCoupon={editingCoupon}
+          getCouponBuildings={getCouponBuildings}
         />
       </div>
     );
@@ -286,6 +288,7 @@ const CouponsPage: React.FC = () => {
         onSubmit={handleFormSubmit}
         onGenerateCode={generateCouponCode}
         editingCoupon={editingCoupon}
+        getCouponBuildings={getCouponBuildings}
       />
     </div>
   );
