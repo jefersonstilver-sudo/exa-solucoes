@@ -1,3 +1,4 @@
+// deploy pelo GitHub (workflow deploy-supabase.yml), 06/11/2026
 // EXA (06/11/2026) — RELATÓRIO DO PEDIDO (área do anunciante › Relatórios e aba Relatório do pedido).
 // Tudo que o anunciante precisa saber do contrato: período, prédios e telas, exibições calculadas pela programação
 // (os painéis não registram cada exibição; decisão do Jeferson em 06/11: número pela programação, apresentado como entregue,
