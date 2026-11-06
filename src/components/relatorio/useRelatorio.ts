@@ -1,5 +1,6 @@
 // EXA (06/11/2026) — dados do Relatório do pedido (função exa2-relatorio-pedido).
 import { useQuery } from '@tanstack/react-query';
+import { useEffect as useEffectVivo, useState as useStateVivo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type RelatorioVideo = {
@@ -69,3 +70,23 @@ export const periodoTexto = (v: RelatorioVideo) => {
   return prog ? `Em pausa · ${prog}` : 'Em pausa';
 };
 export const mesCurto = (m: string) => MES_LONGO[Number(m.slice(5, 7)) - 1];
+
+/**
+ * Contador ao vivo das exibições (06/11/2026): o total do relatório já conta o dia de hoje inteiro pela programação;
+ * o contador mostra só a parte do dia que já passou e sobe a cada segundo, no ritmo real da programação
+ * (ex.: Cine ≈ 1 exibição a cada 7 s somando as telas). À meia-noite bate exatamente com o total.
+ */
+export const useExibicoesAoVivo = (r?: Relatorio | null) => {
+  const calc = () => {
+    if (!r) return 0;
+    const ult = r.dias?.[r.dias.length - 1];
+    const hojeBR = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+    if (!ult || ult.dia !== hojeBR) return r.totais.exibicoes; // contrato encerrado ou sem dado de hoje: total fechado
+    const agora = new Date(Date.now() - 3 * 3600e3);
+    const frac = (agora.getUTCHours() * 3600 + agora.getUTCMinutes() * 60 + agora.getUTCSeconds()) / 86400;
+    return Math.floor(r.totais.exibicoes - ult.exibicoes * (1 - frac));
+  };
+  const [v, setV] = useStateVivo(calc);
+  useEffectVivo(() => { setV(calc()); const t = setInterval(() => setV(calc()), 1000); return () => clearInterval(t); }, [r]); // eslint-disable-line react-hooks/exhaustive-deps
+  return v;
+};

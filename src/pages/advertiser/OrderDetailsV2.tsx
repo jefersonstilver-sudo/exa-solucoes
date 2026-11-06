@@ -42,6 +42,7 @@ import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import { EsqueletoPedido } from '@/components/pedido-v2/Esqueletos';
 import { AvisoCobranca, FaturasPedido, useParcelas } from '@/components/cobranca/FaturasPedido';
 import PagamentosContrato, { usePagamentosContrato } from '@/components/cobranca/PagamentosContrato';
+import { useRelatorio, useExibicoesAoVivo } from '@/components/relatorio/useRelatorio';
 
 type Aba = 'videos' | 'agenda' | 'predios' | 'relatorio' | 'empresa' | 'contrato';
 const ABAS: { id: Aba; label: string; icon: React.ElementType }[] = [
@@ -132,7 +133,8 @@ const ContratoResumo: React.FC<{ order: any; orient: string; predios: number; me
  * (data da compra, telas, público, cupom, confirmação do pagamento). Substitui os 3 blocos antigos
  * (emojis, título repetido e estimativas inventadas de "exibições").
  */
-const MaisDetalhes: React.FC<{ order: any; telas: number; pessoas: number }> = ({ order, telas, pessoas }) => {
+const MaisDetalhes: React.FC<{ order: any; relatorio?: any }> = ({ order, relatorio }) => {
+  const exibicoes = useExibicoesAoVivo(relatorio || null);
   const [aberto, setAberto] = useState(false);
   const [cupom, setCupom] = useState<{ codigo: string; desconto_percentual?: number | null } | null>(null);
   useEffect(() => {
@@ -148,8 +150,7 @@ const MaisDetalhes: React.FC<{ order: any; telas: number; pessoas: number }> = (
   const linhas = ([
     ['Número do pedido', `#${String(order.id).slice(0, 8).toUpperCase()}`],
     order.created_at ? ['Data da compra', dataHora(order.created_at)] : null,
-    telas > 0 ? ['Telas', `${telas} ${telas === 1 ? 'tela' : 'telas'}`] : null,
-    pessoas > 0 ? ['Público estimado', `${pessoas.toLocaleString('pt-BR')} pessoas`] : null,
+    relatorio?.totais ? ['Exibições realizadas', <span key="ex" className="inline-flex items-center gap-1.5 tabular-nums"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#13a24a]" />{exibicoes.toLocaleString('pt-BR')}</span>] : null,
     order.cupom_id ? ['Cupom', cupom ? `${cupom.codigo}${cupom.desconto_percentual ? ` · ${cupom.desconto_percentual}% off` : ''}` : 'Aplicado'] : null,
     cortesia ? ['Cobrança', 'Cortesia · sem custo'] : null,
     !cortesia && order.forma_cobranca !== 'boleto' && pagoEm ? ['1º pagamento', `Confirmado em ${dataHora(pagoEm)}`] : null,
@@ -161,7 +162,7 @@ const MaisDetalhes: React.FC<{ order: any; telas: number; pessoas: number }> = (
         <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#f3f1f2] text-[#554e50]"><Receipt className="h-4 w-4" /></span>
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-extrabold tracking-tight text-[#1b1719]">Mais detalhes</span>
-          <span className="block text-[12.5px] text-[#8b8285]">Compra, telas e pagamento</span>
+          <span className="block text-[12.5px] text-[#8b8285]">Compra, exibições e pagamento</span>
         </span>
         <ChevronRight className={`h-4 w-4 flex-none text-[#b3aaad] transition-transform ${aberto ? 'rotate-90' : ''}`} />
       </button>
@@ -247,7 +248,9 @@ const OrderDetailsV2 = () => {
   const videoSlotsComNoAr = useMemo(() => videoSlots.map((s: any) => (s?.id && s.approval_status === 'approved' ? { ...s, _noArAgora: s.id === slotNoArId } : s)), [videoSlots, slotNoArId]);
   const empresas = usePedidoEmpresas(id || '', order?.client_id);
   const { parcelas } = useParcelas(id || null);
-  const pagamentos = usePagamentosContrato(id || null);
+  const pagamentosEstado = usePagamentosContrato(id || null);
+  const pagamentos = pagamentosEstado.dados;
+  const relatorioPedido = useRelatorio(aba === 'contrato' ? id || null : null);
 
   // ---- carregar pedido + tempo real (igual à página original) ----
   const loadOrder = async () => {
@@ -602,12 +605,12 @@ const OrderDetailsV2 = () => {
           {aba === 'contrato' && (
             <div className="space-y-3">
               <ContratoResumo order={order} orient={orient} predios={buildings.length} mensalContrato={pagamentos?.resumo?.valor_mensal} totalContrato={pagamentos?.resumo?.total_contrato} />
-              <PagamentosContrato dados={pagamentos} />
+              <PagamentosContrato estado={pagamentosEstado} relatorio={relatorioPedido.data} />
               <FaturasPedido pedido={order} parcelas={parcelas} />
               {order.is_fidelidade && order.total_parcelas && order.forma_cobranca !== 'boleto' && (
                 <OrderInstallmentsSection orderId={order.id} tipoPagamento={order.tipo_pagamento || 'pix_fidelidade'} totalParcelas={order.total_parcelas} />
               )}
-              <MaisDetalhes order={order} telas={totalScreens} pessoas={totalAudience} />
+              <MaisDetalhes order={order} relatorio={relatorioPedido.data} />
             </div>
           )}
         </div>

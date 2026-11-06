@@ -79,12 +79,17 @@ async function conciliarLote(l: any) {
   const pt = await asaas("GET", "/payments/" + l.asaas_payment_id + "/billingInfo");
   if (pt.ok) pix = pt.j?.pix?.endToEndIdentifier || null;
   const { data: pcs } = await sb.from("cobranca_auditoria").select("id,valor").eq("pix_lote_id", l.id).eq("status", "aberto");
+  const cheio = (pcs || []).reduce((a: number, p: any) => a + Number(p.valor), 0) || 1;
+  const fator = Math.min(1, Number(l.valor) / cheio); // desconto do pagamento único das atrasadas
+  const obs = l.forma === "boleto" ? "Pago pelo boleto" : fator < 0.999 ? `Pago no Pix único das atrasadas com ${Math.round((1 - fator) * 100)}% de desconto` : (pcs || []).length > 1 ? "Pago no Pix das atrasadas" : "Pago pelo Pix";
   for (const p of pcs || []) {
-    await sb.from("cobranca_auditoria").update({ status: "pago", pago_em: new Date(pagoEm + "T12:00:00-03:00").toISOString(), valor_pago: p.valor, asaas_payment_id: l.asaas_payment_id, pix_transacao_id: pix, comprovante_url: comp, observacao: "Pago pelo Pix de regularização", updated_at: new Date().toISOString() }).eq("id", p.id);
+    await sb.from("cobranca_auditoria").update({ status: "pago", pago_em: new Date(pagoEm + "T12:00:00-03:00").toISOString(), valor_pago: Math.round(Number(p.valor) * fator * 100) / 100, asaas_payment_id: l.asaas_payment_id, pix_transacao_id: pix, comprovante_url: comp, observacao: obs, updated_at: new Date().toISOString() }).eq("id", p.id);
   }
   await logEv("AUDITORIA_COBRANCA_PIX_PAGO", { pedido: l.pedido_id, lote: l.id, asaas: l.asaas_payment_id, valor: l.valor, parcelas: (pcs || []).length });
   return true;
 }
+
+const publico = (l: any) => ({ id: l.id, forma: l.forma || "pix", valor: l.valor, vencimento: l.vencimento, parcelas: l.parcelas, desconto_pct: l.desconto_pct || 0, pix_copia_cola: l.pix_copia_cola, pix_qr_base64: l.pix_qr_base64, boleto_url: l.boleto_url, linha_digitavel: l.linha_digitavel, invoice_url: l.invoice_url, status: l.status });
 
 // ---------- leitura com a situação de cada parcela ----------
 async function montar(pid: string) {
@@ -167,13 +172,77 @@ Deno.serve(async (req) => {
       const { data: lib } = await sb.from("cobranca_auditoria").select("id").eq("pedido_id", pid).eq("visivel_cliente", true).limit(1);
       if (!lib?.length) return json({ ok: true, parcelas: [], resumo: null });
       const m = await montar(pid);
-      const parcelas = m.parcelas.filter((p: any) => p.visivel_cliente).map((p: any) => ({
+      // só as pagas/cortesia/atrasadas e a PRÓXIMA a vencer; as outras futuras aparecem quando a anterior vencer
+      const lib = m.parcelas.filter((p: any) => p.visivel_cliente);
+      const prox = lib.find((p: any) => p.situacao === "a_vencer");
+      const parcelas = lib.filter((p: any) => p.situacao !== "a_vencer" || p.id === prox?.id).map((p: any) => ({
         numero: p.numero, competencia: p.competencia, data_vencimento: p.data_vencimento, valor: p.valor, situacao: p.situacao, dias_atraso: p.dias_atraso,
         pago_em: p.pago_em, valor_pago: p.valor_pago, comprovante_url: p.comprovante_url, pix_transacao_id: p.pix_transacao_id,
+        em_cobranca: !!p.pix_lote_id,
       }));
+      const abertas = (m.lotes || []).filter((l: any) => l.status === "aberto").map(publico);
+      // criação de vídeos inclusa no plano: vídeos feitos pela Sofia para este pedido
+      const { count: sofiaVideos } = await sb.from("sofia_video_jobs").select("id", { count: "exact", head: true }).eq("pedido_id", pid).in("status", ["sent", "ready"]);
       const vals = parcelas.filter((p: any) => p.situacao !== "cortesia").map((p: any) => Number(p.valor));
       const mensal = vals.length ? vals.sort((a: number, b: number) => vals.filter((v: number) => v === a).length - vals.filter((v: number) => v === b).length).pop() : null;
-      return json({ ok: true, parcelas, resumo: { ...m.resumo, valor_mensal: mensal }, plano: { inicio: m.pedido?.data_inicio_cobranca || m.pedido?.data_inicio, fim: m.pedido?.data_fim } });
+      return json({ ok: true, parcelas, cobrancas_abertas: abertas, sofia_videos: sofiaVideos || 0, desconto_atrasadas: 35, total_lib: lib.length, resumo: { ...m.resumo, valor_mensal: mensal }, plano: { inicio: m.pedido?.data_inicio_cobranca || m.pedido?.data_inicio, fim: m.pedido?.data_fim } });
+    }
+
+    // ===== cliente: pagar uma parcela (Pix ou boleto, valor cheio) ou todas as atrasadas num Pix único com 35% de desconto =====
+    if (action === "cliente_pagar") {
+      if (!pid || quem.tipo === "anon") return json({ ok: false, erro: "Entre na sua conta." }, 401);
+      if (!admin) {
+        const { data: dono } = await sb.from("pedidos").select("id").eq("id", pid).eq("client_id", quem.uid!).maybeSingle();
+        if (!dono) return json({ ok: false, erro: "pedido não encontrado" }, 404);
+      }
+      const forma = b.forma === "boleto" ? "boleto" : "pix";
+      const atual = await montar(pid);
+      const liberadas = atual.parcelas.filter((p: any) => p.visivel_cliente && p.status === "aberto");
+      const todasAtrasadas = b.atrasadas === true;
+      let alvo: any[];
+      if (todasAtrasadas) alvo = liberadas.filter((p: any) => p.situacao === "atrasado");
+      else {
+        const proxima = liberadas.find((p: any) => p.situacao === "a_vencer");
+        alvo = liberadas.filter((p: any) => p.numero === Number(b.numero) && (p.situacao === "atrasado" || p.id === proxima?.id));
+      }
+      if (!alvo.length) return json({ ok: false, erro: "Não há parcela para pagar." }, 409);
+      const DESC = todasAtrasadas && forma === "pix" && alvo.length > 1 ? 0.35 : 0;
+      const cheio = alvo.reduce((a: number, p: any) => a + Number(p.valor), 0);
+      const valor = Math.round(cheio * (1 - DESC) * 100) / 100;
+      const nums = alvo.map((p: any) => p.numero).sort((a: number, b: number) => a - b);
+      // reaproveita a cobrança aberta igual (mesmas parcelas, mesma forma)
+      const { data: abertos } = await sb.from("cobranca_auditoria_pix").select("*").eq("pedido_id", pid).eq("status", "aberto");
+      for (const l of abertos || []) if (await conciliarLote(l)) return json({ ok: true, ja_pago: true });
+      const igual = (abertos || []).find((l: any) => (l.forma || "pix") === forma && JSON.stringify([...(l.parcelas || [])].sort((a: number, b: number) => a - b)) === JSON.stringify(nums) && Math.abs(Number(l.valor) - valor) < 0.01);
+      if (igual) return json({ ok: true, cobranca: publico(igual) });
+      // outra cobrança aberta com alguma dessas parcelas: cancela antes (nunca duas cobranças para a mesma parcela)
+      for (const l of (abertos || []).filter((l: any) => (l.parcelas || []).some((n: number) => nums.includes(n)))) {
+        if (l.asaas_payment_id) await asaas("DELETE", "/payments/" + l.asaas_payment_id);
+        await sb.from("cobranca_auditoria_pix").update({ status: "cancelado" }).eq("id", l.id);
+        await sb.from("cobranca_auditoria").update({ pix_lote_id: null }).eq("pix_lote_id", l.id).eq("status", "aberto");
+      }
+      const cid = await clienteDoPedido(pid, atual.parcelas);
+      if (!cid) return json({ ok: false, erro: "Não consegui gerar agora. Tente de novo em instantes." }, 409);
+      let nd = await asaas("PUT", "/customers/" + cid, { notificationDisabled: true });
+      if (!nd.ok && [404, 405].includes(nd.status)) nd = await asaas("POST", "/customers/" + cid, { notificationDisabled: true });
+      const venc = addDias(hojeBR(), forma === "boleto" ? 3 : 1);
+      const { data: lote, error: eL } = await sb.from("cobranca_auditoria_pix").insert({ pedido_id: pid, valor, vencimento: venc, parcelas: nums, criado_por: quem.uid, forma, desconto_pct: DESC * 100 }).select("*").single();
+      if (eL || !lote) return json({ ok: false, erro: "Não consegui gerar agora." }, 500);
+      const desc = alvo.map((p: any) => p.competencia || p.numero).join(", ");
+      const r = await asaas("POST", "/payments", {
+        customer: cid, billingType: forma === "boleto" ? "BOLETO" : "PIX", value: valor, dueDate: venc,
+        description: `EXA Mídia · ${String(atual.pedido?.nome_pedido || "campanha").slice(0, 60)} · mensalidade${alvo.length > 1 ? "s" : ""} ${desc}${DESC ? " · 35% de desconto" : ""}`.slice(0, 480),
+        externalReference: "auditoria:" + lote.id,
+      });
+      if (!r.ok || !r.j?.id) { await sb.from("cobranca_auditoria_pix").delete().eq("id", lote.id); console.error("[AUDITORIA] asaas", erroAsaas(r)); return json({ ok: false, erro: "Não consegui gerar agora. Tente de novo em instantes." }, 502); }
+      const up: any = { asaas_payment_id: r.j.id, invoice_url: r.j.invoiceUrl || null, boleto_url: r.j.bankSlipUrl || null };
+      const qr = await asaas("GET", "/payments/" + r.j.id + "/pixQrCode");
+      if (qr.ok) { up.pix_copia_cola = qr.j?.payload || null; up.pix_qr_base64 = qr.j?.encodedImage || null; }
+      if (forma === "boleto") { const lin = await asaas("GET", "/payments/" + r.j.id + "/identificationField"); if (lin.ok) up.linha_digitavel = lin.j?.identificationField || null; }
+      await sb.from("cobranca_auditoria_pix").update(up).eq("id", lote.id);
+      await sb.from("cobranca_auditoria").update({ pix_lote_id: lote.id, updated_at: new Date().toISOString() }).in("id", alvo.map((p: any) => p.id));
+      await logEv("AUDITORIA_COBRANCA_CLIENTE_GEROU", { pedido: pid, lote: lote.id, asaas: r.j.id, forma, valor, parcelas: nums, desconto: DESC, por: quem.uid });
+      return json({ ok: true, cobranca: publico({ ...lote, ...up }) });
     }
 
     if (!admin) return json({ ok: false, erro: "Só a equipe EXA pode ver a auditoria." }, 401);

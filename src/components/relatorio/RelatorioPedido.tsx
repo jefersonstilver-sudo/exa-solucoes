@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Info, Loader2, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLogoEmpresa } from '@/hooks/exa2/useLogoEmpresa';
-import { useRelatorio, nf, dataBR, mesCurto, periodoTexto, SERIE, type Relatorio, type RelatorioVideo } from './useRelatorio';
+import { useRelatorio, useExibicoesAoVivo, nf, dataBR, mesCurto, periodoTexto, SERIE, type Relatorio, type RelatorioVideo } from './useRelatorio';
 import { miniaturaDoVideo, montarMapa } from './midia';
 import { baixarRelatorioPdf } from './relatorioPdf';
 
@@ -23,6 +23,12 @@ export const useMiniatura = (v?: RelatorioVideo | null, pedidoId?: string) => {
     return () => { vivo = false; };
   }, [v?.id, v?.url, v?.miniatura, pedidoId]);
   return src;
+};
+
+/** número do herói subindo ao vivo, no ritmo da programação */
+const ContadorVivo: React.FC<{ r: Relatorio }> = ({ r }) => {
+  const v = useExibicoesAoVivo(r);
+  return <span className="tabular-nums">{nf(v)}</span>;
 };
 
 const Miniatura = ({ v, className, pedidoId }: { v?: RelatorioVideo | null; className: string; pedidoId?: string }) => {
@@ -243,7 +249,11 @@ export const RelatorioPedido = ({ pedidoId, compacto = false }: { pedidoId: stri
         <div className="min-w-0 flex-[999_1_420px] space-y-4">
           <div className="text-[15px] font-semibold text-[#F4CFD3]">Desde {dataBR(r.pedido.inicio)}, a sua marca apareceu</div>
           <div className="text-[52px] font-extrabold leading-[.95] tracking-[-0.04em] sm:text-[72px]">
-            {nf(r.totais.exibicoes)}<span className="text-[24px] font-bold tracking-normal sm:text-[30px]"> vezes</span>
+            <ContadorVivo r={r} /><span className="text-[24px] font-bold tracking-normal sm:text-[30px]"> vezes</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[12.5px] font-semibold text-[#F9E4E6]">
+            <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3DDC84] opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-[#3DDC84]" /></span>
+            Ao vivo · {nf(Math.max(1, Math.round((r.dias?.[r.dias.length - 1]?.exibicoes || r.totais.media_dia) / 1440)))} exibições por minuto agora
           </div>
           <div className="max-w-[520px] text-[16px] leading-relaxed text-[#F9E4E6]">
             {r.formato.tela_cheia ? 'em tela cheia, ' : ''}nos elevadores de <strong className="text-white">{r.totais.predios} prédios</strong> de Foz do Iguaçu, onde moradores passam todos os dias.

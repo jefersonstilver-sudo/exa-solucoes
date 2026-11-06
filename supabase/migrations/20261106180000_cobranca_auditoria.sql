@@ -51,3 +51,5 @@ revoke all on public.cobranca_auditoria, public.cobranca_auditoria_pix from anon
 alter table public.cobranca_auditoria drop constraint if exists cobranca_auditoria_status_check;
 alter table public.cobranca_auditoria add constraint cobranca_auditoria_status_check check (status in ('aberto','pago','perdoado','cancelado','cortesia'));
 alter table public.cobranca_auditoria add column if not exists visivel_cliente boolean not null default false;
+-- cobrança gerada pelo cliente (Pix ou boleto; Pix único das atrasadas com desconto)
+alter table public.cobranca_auditoria_pix add column if not exists forma text not null default 'pix', add column if not exists desconto_pct numeric(5,2) not null default 0, add column if not exists boleto_url text, add column if not exists linha_digitavel text;

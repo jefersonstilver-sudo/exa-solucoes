@@ -145,7 +145,9 @@ Deno.serve(async (req) => {
       const fimAnt = d.data_fim ? String(d.data_fim).slice(0, 10) : "9999";
       return mesmoCliente && fimAnt >= String(ped.data_inicio).slice(0, 10);
     });
-    const inicioReal = [String(ped.data_inicio).slice(0, 10), ...antecessores.map((d: any) => String(d.data_inicio).slice(0, 10))].sort()[0];
+    // o relatório bate sempre com o início do contrato (data_inicio_cobranca, quando a equipe definiu); senão, o 1º dia no ar
+    const inicioContrato = ped.data_inicio_cobranca ? String(ped.data_inicio_cobranca).slice(0, 10) : null;
+    const inicioReal = inicioContrato || [String(ped.data_inicio).slice(0, 10), ...antecessores.map((d: any) => String(d.data_inicio).slice(0, 10))].sort()[0];
     const segmentos = [
       ...antecessores.map((d: any) => ({ de: String(d.data_inicio).slice(0, 10), ate: diaBR(inicioDiaBR(String(ped.data_inicio).slice(0, 10)) - 3600_000), lista: (d.lista_predios || []) as string[] })),
       { de: String(ped.data_inicio).slice(0, 10), ate: "9999-12-31", lista: (ped.lista_predios || []) as string[] },
