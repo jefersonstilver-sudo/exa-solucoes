@@ -84,7 +84,9 @@ jobs:
         if: steps.token.outputs.ok == '1' && steps.lista.outputs.funcoes != ''
         run: |
           set -euo pipefail
+          # o CLI novo recusa a seção [inbucket] (só serve para o Supabase local); troca só aqui no CI, sem mexer no repositório
+          sed -i 's/^\[inbucket\]/[local_smtp]/' supabase/config.toml
           for f in ${{ steps.lista.outputs.funcoes }}; do
             echo "== $f"
-            supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api
+            supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api || supabase functions deploy "$f" --project-ref "$PROJECT_REF" --use-api --debug
           done
