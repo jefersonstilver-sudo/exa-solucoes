@@ -707,7 +707,7 @@ async function pedidoRecente(c: Contexto): Promise<string> {
 // se for arte pronta/modelo, a pessoa precisa ter respondido a confirmacao do entendimento
 async function travaReferencia(c: Contexto): Promise<string | null> {
   const ra = await referenciaAtiva(c.sb, c.tel);
-  const doTurno = Object.entries(c.midias).filter(([, m]) => m.mime.startsWith("image/") || m.mime.includes("pdf")).map(([id]) => id);
+  const doTurno = Object.entries(c.midias).filter(([, m]) => !(m as any).gerado && (m.mime.startsWith("image/") || m.mime.includes("pdf"))).map(([id]) => id);
   const naoLidas = doTurno.filter((id) => !ra?.midias.includes(id));
   if (naoLidas.length) return `NÃO criei: chegou imagem/PDF (${naoLidas.join(", ")}) que ainda não foi lida. Use ler_referencia com esses midia_ids (e os outros da mesma série, na ordem) antes de criar qualquer aviso.`;
   if (ra && (ra.ref.arte_pronta || ra.ref.cartoes.length > 1) && !ra.respondeu) {
@@ -942,9 +942,9 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const caminho = `recebidas/${id}.pdf`;
       const { error } = await sb.storage.from(BUCKET).upload(caminho, bytes, { contentType: "application/pdf", upsert: true });
       if (error) return `Não consegui montar o documento: ${error.message}`;
-      c.midias[id] = { mime: "application/pdf", caminho, url: urlPublica(c, caminho) };
+      c.midias[id] = { mime: "application/pdf", caminho, url: urlPublica(c, caminho), gerado: true } as any; // feito pelo Nando: não precisa de ler_referencia
       c.registros.push(`comunicado em texto virou documento: midia_id=${id} (${texto.length} caracteres)`);
-      return `Documento do comunicado completo criado: midia_id=${id}. Agora use criar_opcoes_documento com midia_id="${id}", o resumo (o quê, até quando, o que o morador faz) e, se o texto tiver uma lista de orientações, os itens. Não pergunte antes: mande a prévia com as opções e pergunte qual ele quer.`;
+      return `Documento do comunicado completo criado: midia_id=${id} (já está lido: NÃO use ler_referencia nele). Agora use criar_opcoes_documento com midia_id="${id}", o resumo (o quê, até quando, o que o morador faz) e, se o texto tiver uma lista de orientações, os itens. Não pergunte antes: mande a prévia com as opções e pergunte qual ele quer.`;
     }
     case "criar_opcoes_documento": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
@@ -1517,6 +1517,7 @@ COMUNICADO LONGO COLADO COMO TEXTO (vários parágrafos, e-mail, circular — ma
 - Nunca vira um cartão com o textão, e nunca um resumo seco sem saída para o texto completo. O foco é o síndico se comunicar BEM e com profissionalismo.
 - Faça: texto_para_documento (texto completo EXATO) → criar_opcoes_documento com o midia_id que voltou: resumo claro (o quê, até quando, o que o morador faz) + QR do comunicado completo, cartões com os pontos principais quando houver orientações, e o comunicado completo. Mande o link e pergunte qual opção ele quer (pode ser mais de uma, e dá para ajustar: mais cartões, mais detalhe, outro resumo).
 - Se ele pedir "mais informação" ou "mais cartões", refaça a opção com mais cartões/itens tirados do texto dele — sem inventar.
+- Ao mandar a prévia: UMA mensagem curta com o link e "Qual opção você quer?". Nunca descreva cartão por cartão nem repita o conteúdo (ele vê na prévia).
 
 DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
 - Você ENXERGA as imagens e PDFs. Quando chegar um, use ler_referencia (leitura precisa, guardada) e leia TUDO antes de responder. Se precisar de novo de um arquivo de mensagens anteriores, use ver_arquivo com o midia_id. Nunca diga que não consegue ler um arquivo sem antes usar ver_arquivo.
