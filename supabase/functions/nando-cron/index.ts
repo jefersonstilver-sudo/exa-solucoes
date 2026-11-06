@@ -8,10 +8,12 @@
 // 6) limpeza de previas vencidas
 // 7) vigia dos paineis: queda real -> Jeferson + tecnicos com diagnostico; voltou; resumo da noite (nando-paineis.ts)
 // 8) contratos dos predios: envia os pedidos agendados pela ClickSign e guarda os assinados (predio-contratos.ts)
+// 9) NUNCA uma mensagem sem resposta sem a EXA saber: mensagem recebida há 5+ min sem resposta do Nando nem de
+//    uma pessoa da EXA vira ocorrência (Nando > WhatsApp do Jeferson + aviso no app), uma vez por mensagem
 // =====================================================================
 import {
   db, removerDoPainel, enviarTexto, fmtData, primeiroNome, horaLocalIso, ALERTA_NUMERO, MODO_TESTE, telefoneCanonico,
-  chavesTelefone, historico,
+  chavesTelefone, historico, registrarOcorrencia, ehAdmin,
 } from "../_shared/nando-core.ts";
 import { gerarOcorrencias } from "../_shared/nando-agente.ts";
 import { vigiarPaineis, diagnosticarPainel } from "../_shared/nando-paineis.ts";
@@ -140,5 +142,60 @@ Deno.serve(async (req) => {
   // 8) contratos dos predios (pedidos agendados -> ClickSign; assinados -> Painel do Sindico)
   try { log.push(...await rotinaContratos(sb)); } catch (e) { log.push(`contratos falharam: ${(e as Error).message.slice(0, 160)}`); }
 
+  // 9) mensagens sem resposta (06/11/2026: o Nando ficou mudo para o Jeferson das 10h45 às 18h30 sem ninguém saber)
+  try { log.push(...await vigiarSemResposta(sb, agora)); } catch (e) { log.push(`vigia de respostas falhou: ${(e as Error).message.slice(0, 160)}`); }
+
   return json(200, { ok: true, log });
 });
+
+async function vigiarSemResposta(sb: ReturnType<typeof db>, agora: Date): Promise<string[]> {
+  const out: string[] = [];
+  const de = new Date(agora.getTime() - 6 * 3600000).toISOString();
+  const ate = new Date(agora.getTime() - 5 * 60000).toISOString();
+  const { data: recebidas } = await sb.from("nando_mensagens").select("id,telefone,created_at,conteudo")
+    .eq("papel", "sindico").gte("created_at", de).lte("created_at", ate).order("id", { ascending: false }).limit(300);
+  // a última mensagem recebida de cada número nesse intervalo
+  const ultima = new Map<string, any>();
+  for (const m of recebidas || []) if (!ultima.has(m.telefone)) ultima.set(m.telefone, m);
+  for (const [tel, m] of ultima) {
+    // depois dela, o Nando respondeu, uma pessoa da EXA respondeu ou o Nando registrou que decidiu não responder?
+    const { data: depois } = await sb.from("nando_mensagens").select("id").eq("telefone", tel).in("papel", ["nando", "humano", "sistema"]).gt("id", m.id).limit(1);
+    if (depois?.length) continue;
+    // atendimento assumido por alguém da EXA no CRM: silêncio é de propósito
+    const { data: at } = await sb.from("nando_atendimento").select("modo,humano_ate").eq("telefone", tel).maybeSingle().then((r) => r, () => ({ data: null }));
+    if (at?.modo === "humano" && (!at.humano_ate || new Date(at.humano_ate).getTime() > agora.getTime())) continue;
+    // modo teste: número que o Nando nunca atende de propósito (não é o Jeferson e nunca recebeu resposta em 60 dias)
+    if (!ehAdmin(tel)) {
+      const { count } = await sb.from("nando_mensagens").select("id", { count: "exact", head: true }).eq("telefone", tel).eq("papel", "nando")
+        .gte("created_at", new Date(agora.getTime() - 60 * 86400000).toISOString());
+      if (!count) continue;
+    }
+    // uma ocorrência por mensagem
+    const marca = `msg #${m.id}`;
+    const { data: ja } = await sb.from("nando_ocorrencias").select("id").eq("tipo", "sem_resposta").like("descricao", `%${marca}%`).limit(1);
+    if (ja?.length) continue;
+    const min = Math.round((agora.getTime() - new Date(m.created_at).getTime()) / 60000);
+    const c = m.conteudo || {};
+    const oque = String(c.texto || (c.midia ? `[${c.midia}]` : "(mensagem)")).replace(/\s+/g, " ").slice(0, 160);
+    const nome = ehAdmin(tel) ? "Jeferson" : String(c.nome_whatsapp || "");
+    await registrarOcorrencia(sb, {
+      tipo: "sem_resposta", telefone: tel, nome,
+      descricao: `⚠️ Recebi uma mensagem há ${min} min e NÃO respondi (${marca}).\n"${oque}"\nVeja nos registros do nando-webhook o que falhou e responda pelo CRM se for preciso.`,
+    });
+    await pushCeo(sb, `Nando sem responder · ${nome || tel}`, `${min} min sem resposta: ${oque}`, "/super_admin/crm-evolution/conversas/nando?telefone=" + tel);
+    out.push(`sem resposta: ${tel} (${marca}, ${min} min)`);
+  }
+  return out;
+}
+
+async function pushCeo(sb: ReturnType<typeof db>, titulo: string, corpo: string, url: string) {
+  try {
+    const { data } = await sb.from("exa2_config").select("valor").eq("chave", "cron_token").maybeSingle();
+    if (!data?.valor) return;
+    await fetch(Deno.env.get("SUPABASE_URL") + "/functions/v1/exa2-push", {
+      method: "POST", signal: AbortSignal.timeout(5000),
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), "x-exa2-cron": String(data.valor) },
+      body: JSON.stringify({ action: "enviar", para: "ceo", titulo, corpo: corpo.slice(0, 300), url, tag: "nando-sem-resposta", tipo: "alerta" }),
+    });
+  } catch (_) { /* aviso no app nunca derruba a rotina */ }
+}
