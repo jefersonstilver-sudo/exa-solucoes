@@ -92,6 +92,24 @@ serve(async (req) => {
       proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
     }
 
+    // Cupom: mesma regra única do banco (produto, prédios, plano, limites, datas)
+    if (couponId) {
+      const { data: cupomRow } = await supabase.from('cupons').select('codigo').eq('id', couponId).maybeSingle();
+      const buildingIds = [...new Set(listaPaineis.map((p: any) => p.building_id).filter(Boolean))];
+      const { data: aval, error: avalErr } = await supabase.rpc('cupom_avaliar', {
+        p_codigo: cupomRow?.codigo || '',
+        p_user: user.id,
+        p_valor: totalPrice,
+        p_meses: selectedPlan,
+        p_building_ids: buildingIds,
+        p_tipo_produto: 'horizontal',
+        p_pedido_id: null,
+      });
+      if (avalErr || !(aval as any)?.valid) {
+        throw new Error((aval as any)?.error || 'Cupom inválido');
+      }
+    }
+
     console.log('[FIDELITY-CHECKOUT] Criando pedido...');
 
     const { data: pedido, error: pedidoError } = await supabase
