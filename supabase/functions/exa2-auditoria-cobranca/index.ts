@@ -155,8 +155,28 @@ Deno.serve(async (req) => {
       let pagos = 0; for (const l of lotes || []) if (await conciliarLote(l)) pagos++;
       return json({ ok: true, verificados: (lotes || []).length, pagos });
     }
-    if (!admin) return json({ ok: false, erro: "Só a equipe EXA pode ver a auditoria." }, 401);
     const pid = String(b.pedido_id || "");
+
+    // ===== área do cliente (aba Contrato): só as parcelas já liberadas para o cliente; nada é enviado a ninguém =====
+    if (action === "cliente") {
+      if (!pid || quem.tipo === "anon") return json({ ok: false, erro: "Entre na sua conta." }, 401);
+      if (!admin) {
+        const { data: dono } = await sb.from("pedidos").select("id").eq("id", pid).eq("client_id", quem.uid!).maybeSingle();
+        if (!dono) return json({ ok: false, erro: "pedido não encontrado" }, 404);
+      }
+      const { data: lib } = await sb.from("cobranca_auditoria").select("id").eq("pedido_id", pid).eq("visivel_cliente", true).limit(1);
+      if (!lib?.length) return json({ ok: true, parcelas: [], resumo: null });
+      const m = await montar(pid);
+      const parcelas = m.parcelas.filter((p: any) => p.visivel_cliente).map((p: any) => ({
+        numero: p.numero, competencia: p.competencia, data_vencimento: p.data_vencimento, valor: p.valor, situacao: p.situacao, dias_atraso: p.dias_atraso,
+        pago_em: p.pago_em, valor_pago: p.valor_pago, comprovante_url: p.comprovante_url, pix_transacao_id: p.pix_transacao_id,
+      }));
+      const vals = parcelas.filter((p: any) => p.situacao !== "cortesia").map((p: any) => Number(p.valor));
+      const mensal = vals.length ? vals.sort((a: number, b: number) => vals.filter((v: number) => v === a).length - vals.filter((v: number) => v === b).length).pop() : null;
+      return json({ ok: true, parcelas, resumo: { ...m.resumo, valor_mensal: mensal }, plano: { inicio: m.pedido?.data_inicio_cobranca || m.pedido?.data_inicio, fim: m.pedido?.data_fim } });
+    }
+
+    if (!admin) return json({ ok: false, erro: "Só a equipe EXA pode ver a auditoria." }, 401);
 
     if (action === "listar") {
       if (!pid) return json({ ok: false, erro: "pedido_id" }, 400);

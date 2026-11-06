@@ -41,6 +41,7 @@ import { useVisaoInterna } from '@/hooks/exa2/useVisaoInterna';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import { EsqueletoPedido } from '@/components/pedido-v2/Esqueletos';
 import { AvisoCobranca, FaturasPedido, useParcelas } from '@/components/cobranca/FaturasPedido';
+import PagamentosContrato, { usePagamentosContrato } from '@/components/cobranca/PagamentosContrato';
 
 type Aba = 'videos' | 'agenda' | 'predios' | 'relatorio' | 'empresa' | 'contrato';
 const ABAS: { id: Aba; label: string; icon: React.ElementType }[] = [
@@ -77,18 +78,22 @@ const CONTRATO: Record<string, { t: string; c: string }> = {
 };
 
 /** Aba Contrato: o essencial num cartão só (plano, período com o tempo que falta, valor e assinatura). */
-const ContratoResumo: React.FC<{ order: any; orient: string; predios: number }> = ({ order, orient, predios }) => {
-  const ini = order.data_inicio ? new Date(order.data_inicio + 'T12:00:00').getTime() : null;
+const ContratoResumo: React.FC<{ order: any; orient: string; predios: number; mensalContrato?: number | null; totalContrato?: number | null }> = ({ order, orient, predios, mensalContrato, totalContrato }) => {
+  const inicioPlano = order.data_inicio_cobranca || order.data_inicio;
+  const ini = inicioPlano ? new Date(String(inicioPlano).slice(0, 10) + 'T12:00:00').getTime() : null;
   const fim = order.data_fim ? new Date(order.data_fim + 'T12:00:00').getTime() : null;
   const agora = Date.now();
   const pct = ini && fim && fim > ini ? Math.min(100, Math.max(0, ((agora - ini) / (fim - ini)) * 100)) : null;
   const faltam = fim ? Math.max(0, Math.ceil((fim - agora) / 86400000)) : null;
+  const mensal = Number(order.valor_mensal) > 0 ? Number(order.valor_mensal) : mensalContrato || (Number(order.valor_total) > 10 && order.plano_meses ? Number(order.valor_total) / Number(order.plano_meses) : null);
+  const total = totalContrato || (Number(order.valor_total) > 10 ? Number(order.valor_total) : null);
   const ct = order.contrato_status ? CONTRATO[order.contrato_status] : order.contrato_assinado_em ? CONTRATO.assinado : null;
   const linhas: [string, React.ReactNode][] = [
     ['Plano', `${order.plano_meses || '—'} ${order.plano_meses === 1 ? 'mês' : 'meses'} · ${orient}`],
     ['Prédios', String(predios)],
-    ...(order.valor_mensal ? ([['Mensalidade', brl(order.valor_mensal)]] as [string, React.ReactNode][]) : []),
-    ['Valor total', brl(order.valor_total)],
+    // mensalidade sempre aparece (pedido → contrato auditado → total ÷ meses); valor simbólico de pedido interno (R$ 1) não aparece
+    ...(mensal ? ([['Mensalidade', brl(mensal)]] as [string, React.ReactNode][]) : []),
+    ...(total ? ([['Valor do contrato', brl(total)]] as [string, React.ReactNode][]) : []),
     ['Pagamento', order.forma_cobranca === 'boleto' ? `Boleto · todo dia ${order.dia_vencimento || 10}` : order.tipo_pagamento === 'pix_automatico' ? 'Pix Automático' : 'Pix'],
   ];
   return (
@@ -101,7 +106,7 @@ const ContratoResumo: React.FC<{ order: any; orient: string; predios: number }> 
         {pct !== null && (
           <div className="mt-3">
             <div className="mb-1.5 flex items-baseline justify-between text-[12.5px]">
-              <span className="font-semibold text-[#554e50]">{fmtData(order.data_inicio)} → {fmtData(order.data_fim)}</span>
+              <span className="font-semibold text-[#554e50]">{fmtData(inicioPlano ? String(inicioPlano).slice(0, 10) : null)} → {fmtData(order.data_fim)}</span>
               <span className="font-bold text-[#1b1719]">{faltam ? `${faltam} dias restantes` : 'Encerrado'}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-[#1b1719]/[0.06]">
@@ -242,6 +247,7 @@ const OrderDetailsV2 = () => {
   const videoSlotsComNoAr = useMemo(() => videoSlots.map((s: any) => (s?.id && s.approval_status === 'approved' ? { ...s, _noArAgora: s.id === slotNoArId } : s)), [videoSlots, slotNoArId]);
   const empresas = usePedidoEmpresas(id || '', order?.client_id);
   const { parcelas } = useParcelas(id || null);
+  const pagamentos = usePagamentosContrato(id || null);
 
   // ---- carregar pedido + tempo real (igual à página original) ----
   const loadOrder = async () => {
@@ -595,7 +601,8 @@ const OrderDetailsV2 = () => {
 
           {aba === 'contrato' && (
             <div className="space-y-3">
-              <ContratoResumo order={order} orient={orient} predios={buildings.length} />
+              <ContratoResumo order={order} orient={orient} predios={buildings.length} mensalContrato={pagamentos?.resumo?.valor_mensal} totalContrato={pagamentos?.resumo?.total_contrato} />
+              <PagamentosContrato dados={pagamentos} />
               <FaturasPedido pedido={order} parcelas={parcelas} />
               {order.is_fidelidade && order.total_parcelas && order.forma_cobranca !== 'boleto' && (
                 <OrderInstallmentsSection orderId={order.id} tipoPagamento={order.tipo_pagamento || 'pix_fidelidade'} totalParcelas={order.total_parcelas} />

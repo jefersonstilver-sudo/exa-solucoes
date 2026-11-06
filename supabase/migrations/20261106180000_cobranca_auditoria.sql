@@ -46,3 +46,8 @@ create index if not exists idx_cobranca_auditoria_pix_aberto on public.cobranca_
 alter table public.cobranca_auditoria enable row level security;
 alter table public.cobranca_auditoria_pix enable row level security;
 revoke all on public.cobranca_auditoria, public.cobranca_auditoria_pix from anon, authenticated;
+
+-- 06/11/2026 (tarde): parcela de cortesia e liberação para a área do cliente (aba Contrato)
+alter table public.cobranca_auditoria drop constraint if exists cobranca_auditoria_status_check;
+alter table public.cobranca_auditoria add constraint cobranca_auditoria_status_check check (status in ('aberto','pago','perdoado','cancelado','cortesia'));
+alter table public.cobranca_auditoria add column if not exists visivel_cliente boolean not null default false;
