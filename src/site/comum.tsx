@@ -1,4 +1,5 @@
 import { useCorNavegador } from '@/lib/corNavegador';
+import { usePromocoesValendo, vagasRestantes, type PromocaoExa } from '@/hooks/usePromocoesExa';
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './site.css';
@@ -70,17 +71,26 @@ const IconeWhats = () => (
 );
 export { IconeWhats };
 
-/** Promoção de novembro/2026: R$ 99 por prédio por mês. Só aparece de 1 a 30/11/2026 (horário de Brasília). */
+/** Promoção por prédio (R$ 99 em novembro/2026). O valor e o período vêm de Admin → Produtos (tabela promocoes_exa);
+ *  enquanto o banco não responde, vale o padrão abaixo. */
 export const PROMO_PRECO = 99;
 export function promoNovembroAtiva(agora: Date = new Date()): boolean {
   const sp = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
   return sp.getFullYear() === 2026 && sp.getMonth() === 10;
 }
+/** Promoção por prédio valendo agora: { ativa, preco, meses, titulo }. */
+export function usePromoPredio() {
+  const { data } = usePromocoesValendo();
+  const p = data.find((x) => x.unidade === 'predio' && x.produto === 'horizontal');
+  if (p) return { ativa: true, preco: Number(p.preco), meses: p.plano_meses, titulo: p.titulo, promo: p };
+  return { ativa: data.length === 0 && promoNovembroAtiva(), preco: PROMO_PRECO, meses: 6, titulo: `R$ ${PROMO_PRECO} por prédio, por mês`, promo: null as PromocaoExa | null };
+}
 export const TarjaPromo: React.FC = () => {
-  if (!promoNovembroAtiva()) return null;
+  const pp = usePromoPredio();
+  if (!pp.ativa) return null;
   return (
-    <a className="tarja-promo" href={waSofia('Oi Sofia! Vi a promoção de novembro de R$ 99 por prédio e quero saber mais.')} target="_blank" rel="noopener noreferrer">
-      <strong>Só em novembro:</strong> R$ {PROMO_PRECO} por prédio, por mês. <span>Falar com a Sofia →</span>
+    <a className="tarja-promo" href={waSofia(`Oi Sofia! Vi a promoção de R$ ${pp.preco} por prédio e quero saber mais.`)} target="_blank" rel="noopener noreferrer">
+      <strong>Só em novembro:</strong> R$ {pp.preco} por prédio, por mês. <span>Falar com a Sofia →</span>
     </a>
   );
 };

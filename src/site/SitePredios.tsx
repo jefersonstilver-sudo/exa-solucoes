@@ -1,7 +1,8 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCorNavegador } from '@/lib/corNavegador';
-import { CabecalhoSite, RodapeSite, VideoLeve, IconeWhats, waSofia, useFonteSite, useTituloPagina, promoNovembroAtiva, PROMO_PRECO } from './comum';
+import { CabecalhoSite, RodapeSite, VideoLeve, IconeWhats, waSofia, useFonteSite, useTituloPagina, usePromoPredio } from './comum';
+import { usePromocoesValendo, vagasRestantes } from '@/hooks/usePromocoesExa';
 import { usePrediosPublicos } from './usePrediosPublicos';
 import { useCart } from '@/contexts/SimpleCartContext';
 import { adaptBuildingToPanel } from '@/services/buildingToPanelAdapter';
@@ -42,7 +43,11 @@ export default function SitePredios() {
   useTituloPagina('Prédios e preços · EXA Mídia', 'Veja os prédios de Foz do Iguaçu com tela EXA no elevador e o preço por mês de cada um. Monte a sua lista e a Sofia fecha com você pelo WhatsApp.');
   const { predios, carregando } = usePrediosPublicos();
   const { cartItems, addToCart, removeFromCart, isItemInCart } = useCart() as any;
-  const promo = promoNovembroAtiva();
+  const pp = usePromoPredio();
+  const promo = pp.ativa;
+  const PROMO_PRECO = pp.preco;
+  const { data: promosRede } = usePromocoesValendo();
+  const ofertasRede = promosRede.filter((x) => x.unidade === 'rede');
   const [ordem, setOrdem] = useState<Ordem>('moradores');
   const [busca, setBusca] = useState('');
   const [endereco, setEndereco] = useState('');
@@ -152,6 +157,25 @@ export default function SitePredios() {
           )}
         </div>
       </section>
+
+      {ofertasRede.length > 0 && (
+        <section style={{ background: '#0B0B0D', paddingBlock: '0 26px' }} aria-label="Ofertas para a rede inteira">
+          <div className="w" style={{ maxWidth: 1240, display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+            {ofertasRede.map((o) => {
+              const rest = vagasRestantes(o);
+              return (
+                <a key={o.id} className="oferta-rede" href={waSofia(`Oi Sofia! Vi no site a oferta "${o.titulo}" (R$ ${o.preco}/mês) e quero garantir a minha vaga.`)} target="_blank" rel="noopener noreferrer">
+                  <span className="or-tag">{o.produto === 'vertical_premium' ? 'Vertical Premium' : 'Rede completa'}{rest != null ? ` · ${rest === 1 ? 'última vaga' : `${rest} vagas`}` : ''}</span>
+                  <strong>{o.titulo}</strong>
+                  <span className="or-preco">{reais(Number(o.preco))}<small>/mês · {o.plano_meses} meses{o.inclui_videos ? ' · vídeos inclusos' : ''}</small></span>
+                  {o.descricao && <span className="or-desc">{o.descricao}</span>}
+                  <span className="or-cta">Garantir com a Sofia →</span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section style={{ paddingBlock: '20px 120px' }}>
         <div className="w" style={{ maxWidth: 1240, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -294,7 +318,7 @@ export default function SitePredios() {
                   {promo ? (
                     <div className="gl-promo">
                       <strong>Promoção de novembro</strong>
-                      <span>R$ {PROMO_PRECO} por prédio, por mês.</span>
+                      <span>R$ {PROMO_PRECO} por prédio, por mês{pp.meses ? ` · ${pp.meses} meses` : ''}{pp.promo?.inclui_videos ? ' · vídeos inclusos' : ''}.</span>
                     </div>
                   ) : (
                     <div className="planos" role="group" aria-label="Plano">
