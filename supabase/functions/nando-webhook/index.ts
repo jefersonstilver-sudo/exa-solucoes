@@ -279,6 +279,20 @@ async function responder(sb: ReturnType<typeof db>, tel: string, minhaMsg: numbe
   const blocos: any[] = [];
   for (const l of novas) {
     const c = l.conteudo || {};
+    // 06/11/2026: um VÍDEO de 10h45 do Jeferson derrubava o Nando — baixar o vídeo inteiro em base64 estourava a
+    // memória da função (desligava sem erro e sem resposta). E como a mensagem nunca era respondida, cada mensagem
+    // nova tentava baixar o mesmo vídeo de novo: o Nando ficou mudo para esse número. Agora vídeo, figurinha e
+    // arquivo acima de 12 MB não são baixados (o Nando avisa que recebeu) e a chave é apagada para não tentar de novo.
+    const bruta = c.mensagem || {};
+    const tam = Number(bruta.videoMessage?.fileLength || bruta.documentMessage?.fileLength || bruta.documentWithCaptionMessage?.message?.documentMessage?.fileLength || bruta.audioMessage?.fileLength || bruta.imageMessage?.fileLength || 0);
+    if (c.midia && c.key && (c.midia === "video" || c.midia === "figurinha" || tam > 12_000_000)) {
+      await sb.from("nando_mensagens").update({ conteudo: { ...c, key: undefined, mensagem: undefined, nao_baixada: c.midia === "video" ? "video" : "grande" } }).eq("id", l.id);
+      blocos.push({ type: "text", text: c.midia === "video"
+        ? "[vídeo recebido – eu não consigo assistir vídeos. Peça com gentileza uma foto, um print ou que escreva o que precisa]"
+        : `[${c.midia} recebido, mas é grande demais para eu abrir (${Math.round(tam / 1e6)} MB) – peça uma foto/print ou um arquivo menor]` });
+      if (c.texto) blocos.push({ type: "text", text: c.texto });
+      continue;
+    }
     if (c.midia && c.key) {
       const m = await baixarMidia(sb, { key: c.key });
       if (m) {
