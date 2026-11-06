@@ -164,7 +164,8 @@
 
   // ---------- TV box: clipes leves da câmera (workflow camera-clipes: 720x540, ~1 min de atraso) ----------
   const CLIPES = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/camera-clipes/";
-  const chaveDe = (live) => { const m = String(live && live.url || "").match(/portaldacidade\/([a-z0-9]+)\.stream\//i); return m ? m[1] : null; };
+  // câmeras do Portal (portaldacidade/<chave>.stream) e câmeras IP locais (camera-clipes/<chave>.stream, só clipe)
+  const chaveDe = (live) => { const m = String(live && live.url || "").match(/(?:portaldacidade|camera-clipes)\/([a-z0-9]+)\.stream\//i); return m ? m[1] : null; };
   const clipeAtual = async (chave) => {
     try {
       const r = await fetch(CLIPES + chave + "/atual.json?t=" + Date.now(), { cache: "no-store" });

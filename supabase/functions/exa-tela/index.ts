@@ -34,6 +34,14 @@ const CAMERAS_PADRAO: { chave: string; nome: string }[] = [
   { chave: 'fozpontedaintegracao', nome: 'Ponte da Integração · Paraguai' },
 ];
 const NOME_CAMERA = new Map(CAMERAS_PADRAO.map((c) => [c.chave, c.nome]));
+// Câmeras IP locais (06/11/2026, teste Tapo C510W): um PC na rede da câmera grava 30 s por RTSP, reduz e sobe
+// para camera-clipes/<chave>/ pela ação camera_local (token próprio, só sobe clipes). A TV toca como os clipes do Portal.
+// Não entram na lista padrão: só aparecem na tela que escolher a câmera (config.cameras.ids).
+const CLIPES_BASE = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/camera-clipes';
+const CAMERAS_LOCAIS: { chave: string; nome: string; credito: string; token_sha256: string }[] = [
+  { chave: 'tapocasa', nome: 'Câmera EXA · teste', credito: 'EXA Mídia', token_sha256: 'f0681d56fc9f3101e128e0ad12936ece4e2f0c2953a6c125790903a52dee75dd' },
+];
+const camerasLocais = () => CAMERAS_LOCAIS.map((c) => ({ url: `${CLIPES_BASE}/${c.chave}.stream/playlist.m3u8`, nome: c.nome, credito: c.credito, segundos: 14 }));
 const STATUS_TOCANDO = ['ativo', 'video_aprovado', 'video_enviado'];
 const RITMO_PADRAO = { casa_a_cada: 3, editorial_a_cada: 2, camera: true, noticias: true, noticias_foz: true, noticias_brasil: true };
 
@@ -98,7 +106,8 @@ async function cameras() {
  */
 function camerasDaTela(cams: any[], cfg: any) {
   const ids: string[] = Array.isArray(cfg?.ids) ? cfg.ids.map(String) : [];
-  let out = ids.length ? ids.map((u) => cams.find((c) => c.url === u)).filter(Boolean) : cams;
+  const todas = [...cams, ...camerasLocais()];
+  let out = ids.length ? ids.map((u) => todas.find((c) => c.url === u)).filter(Boolean) : cams;
   if (!out.length) out = cams;
   const seg = Number(cfg?.segundos);
   return seg ? out.map((c: any) => ({ ...c, segundos: Math.min(Math.max(seg, 5), 600) })) : out;
@@ -508,6 +517,34 @@ Deno.serve(async (req) => {
     if (acao === 'cameras_lista') {
       const cs: any[] = await cameras();
       return json({ ok: true, cameras: cs.map((c) => ({ url: c.url, nome: c.nome, credito: c.credito })) });
+    }
+
+    // ---------- câmera IP local: o PC da rede da câmera pede onde subir o clipe e depois avisa que subiu ----------
+    if (acao === 'camera_local') {
+      const cam = CAMERAS_LOCAIS.find((c) => c.chave === String(b.chave || ''));
+      if (!cam || (await sha256(String(b.token || ''))) !== cam.token_sha256) return json({ ok: false, erro: 'não autorizado' }, 401);
+      const bucket = admin.storage.from('camera-clipes');
+      if (b.passo === 'url') {
+        const t = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+        const caminho = `${cam.chave}/${t}.mp4`;
+        const { data, error } = await bucket.createSignedUploadUrl(caminho);
+        if (error) return json({ ok: false, erro: error.message }, 500);
+        return json({ ok: true, caminho, url: data.signedUrl });
+      }
+      if (b.passo === 'pronto') {
+        const caminho = String(b.caminho || '');
+        if (!new RegExp(`^${cam.chave}/\\d{8}T\\d{6}Z\\.mp4$`).test(caminho)) return json({ ok: false, erro: 'caminho inválido' }, 400);
+        const seg = Math.round(Number(b.seg) || 30);
+        const atual = new Blob([JSON.stringify({ arquivo: caminho, em: new Date().toISOString(), seg })], { type: 'application/json' });
+        const { error } = await bucket.upload(`${cam.chave}/atual.json`, atual, { upsert: true, contentType: 'application/json', cacheControl: '0' });
+        if (error) return json({ ok: false, erro: error.message }, 500);
+        // fica com os 4 clipes mais novos
+        const { data: lista } = await bucket.list(cam.chave, { limit: 100, sortBy: { column: 'name', order: 'desc' } });
+        const velhos = (lista || []).map((o: any) => o.name).filter((n: string) => /\.mp4$/.test(n)).slice(4).map((n: string) => `${cam.chave}/${n}`);
+        if (velhos.length) await bucket.remove(velhos);
+        return json({ ok: true, apagados: velhos.length });
+      }
+      return json({ ok: false, erro: 'passo inválido' }, 400);
     }
 
     // ---------- quantas notícias de Foz e do Brasil chegam do ExaSistema (dados públicos, para conferência) ----------
