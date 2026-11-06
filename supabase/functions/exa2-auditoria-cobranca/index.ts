@@ -130,17 +130,38 @@ async function montar(pid: string) {
 }
 
 // cliente no Asaas: o mesmo das cobranças já pagas deste pedido
+// Cliente do Asaas para cobrar este pedido. Nunca usa cliente REMOVIDO (o Asaas recusa cobrança para ele):
+// 1) ativo ligado ao pedido/às parcelas pagas; 2) ativo com o mesmo CPF/CNPJ; 3) restaura o removido (mantém o histórico).
+// Não grava nada no pedido (a régua da exa2-cobranca não pode passar a enxergar este cliente).
 async function clienteDoPedido(pid: string, rows: any[]) {
   const { data: ped } = await sb.from("pedidos").select("asaas_customer_id,client_id").eq("id", pid).maybeSingle();
-  if (ped?.asaas_customer_id) return ped.asaas_customer_id as string;
+  const candidatos: string[] = [];
+  if (ped?.asaas_customer_id) candidatos.push(String(ped.asaas_customer_id));
   for (const p of rows.filter((x) => x.asaas_payment_id)) {
     const r = await asaas("GET", "/payments/" + p.asaas_payment_id);
-    if (r.ok && r.j?.customer) return String(r.j.customer);
+    if (r.ok && r.j?.customer && !candidatos.includes(String(r.j.customer))) candidatos.push(String(r.j.customer));
+  }
+  const docs: string[] = [];
+  const removidos: string[] = [];
+  for (const id of candidatos) {
+    const c = await asaas("GET", "/customers/" + id);
+    if (!c.ok) continue;
+    if (!c.j?.deleted) return id;
+    removidos.push(id);
+    const d = digits(c.j?.cpfCnpj); if (d && !docs.includes(d)) docs.push(d);
   }
   if (ped?.client_id) {
     const { data: u } = await sb.from("users").select("empresa_documento,cpf").eq("id", ped.client_id).maybeSingle();
-    const doc = digits(u?.empresa_documento || u?.cpf);
-    if (doc) { const r = await asaas("GET", "/customers?cpfCnpj=" + doc); if (r.ok && r.j?.data?.[0]?.id) return String(r.j.data[0].id); }
+    for (const x of [u?.empresa_documento, u?.cpf]) { const d = digits(x); if (d && !docs.includes(d)) docs.push(d); }
+  }
+  for (const d of docs) {
+    const r = await asaas("GET", "/customers?cpfCnpj=" + d);
+    const ativo = (r.j?.data || []).find((c: any) => !c.deleted);
+    if (r.ok && ativo?.id) return String(ativo.id);
+  }
+  for (const id of removidos) {
+    const r = await asaas("POST", "/customers/" + id + "/restore");
+    if (r.ok) { await logEv("AUDITORIA_COBRANCA_CLIENTE_RESTAURADO", { pedido: pid, cliente_asaas: id }); return id; }
   }
   return null;
 }
@@ -225,6 +246,8 @@ Deno.serve(async (req) => {
       if (!cid) { await logEv("AUDITORIA_COBRANCA_CLIENTE_FALHOU", { pedido: pid, motivo: "sem cliente no Asaas" }); return json({ ok: false, erro: admin ? "Cliente sem cadastro no Asaas." : "Não consegui gerar agora. Tente de novo em instantes." }, 409); }
       let nd = await asaas("PUT", "/customers/" + cid, { notificationDisabled: true });
       if (!nd.ok && [404, 405].includes(nd.status)) nd = await asaas("POST", "/customers/" + cid, { notificationDisabled: true });
+      // fase de auditoria: o Asaas não pode mandar e-mail/SMS/WhatsApp para o cliente — sem isso, não gera
+      if (!nd.ok) { await logEv("AUDITORIA_COBRANCA_CLIENTE_FALHOU", { pedido: pid, motivo: "avisos do Asaas não desligados: " + erroAsaas(nd), cliente_asaas: cid }); return json({ ok: false, erro: admin ? "Asaas (avisos): " + erroAsaas(nd) : "Não consegui gerar agora. Tente de novo em instantes." }, 502); }
       const venc = addDias(hojeBR(), forma === "boleto" ? 3 : 1);
       const { data: lote, error: eL } = await sb.from("cobranca_auditoria_pix").insert({ pedido_id: pid, valor, vencimento: venc, parcelas: nums, criado_por: quem.uid, forma, desconto_pct: DESC * 100 }).select("*").single();
       if (eL || !lote) return json({ ok: false, erro: "Não consegui gerar agora." }, 500);
