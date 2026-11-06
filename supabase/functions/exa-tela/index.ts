@@ -37,9 +37,9 @@ const NOME_CAMERA = new Map(CAMERAS_PADRAO.map((c) => [c.chave, c.nome]));
 // Câmeras IP AO VIVO da rede local (06/11/2026, teste Tapo C510W): o PC ao lado da câmera converte e serve o vídeo
 // só na rede local (mediamtx, nada gravado); o app da TV (CameraLocal.kt, APK 1.0.13+) busca https://lan.exa.local/<ip>/<porta>/...
 // na própria rede. Não entram na lista padrão nem no cameras_lista: só na tela que tiver o endereço em config.cameras.ids.
-// telas = únicas telas que podem receber a câmera (trava dupla além do config.cameras.ids)
-const CAMERAS_LOCAIS: { url: string; nome: string; credito: string; telas: string[] }[] = [
-  { url: 'https://lan.exa.local/192.168.1.28/8888/tapo/index.m3u8', nome: 'Câmera EXA · ao vivo', credito: 'EXA Mídia', telas: ['ac53d6d7-6398-4a97-9ced-f374dcbdd499', 'a8f45459-adff-4814-aec0-3e98233e6365'] },
+// predios = únicos prédios cujas telas podem receber a câmera (trava dupla além da escolha de câmeras)
+const CAMERAS_LOCAIS: { url: string; nome: string; credito: string; predios: string[] }[] = [
+  { url: 'https://lan.exa.local/192.168.1.28/8888/tapo/index.m3u8', nome: 'Câmera EXA · ao vivo', credito: 'EXA Mídia', predios: ['969f12ca-32da-4e3d-8afd-6d9a89b9d30b'] }, // LOCAL DE TESTE NOVO
 ];
 const STATUS_TOCANDO = ['ativo', 'video_aprovado', 'video_enviado'];
 const RITMO_PADRAO = { casa_a_cada: 3, editorial_a_cada: 2, camera: true, noticias: true, noticias_foz: true, noticias_brasil: true };
@@ -103,9 +103,27 @@ async function cameras() {
  * Câmeras escolhidas para esta tela (config.cameras = { ids: [url…], segundos }): só as escolhidas, na ordem escolhida,
  * e o tempo de cada uma. Uma só = câmera fixa, sem trocar. Nada escolhido (ou nenhuma ainda existe) = todas.
  */
-function camerasDaTela(cams: any[], cfg: any, telaId = '') {
+/**
+ * 06/11/2026: o PRÉDIO manda na configuração das telas (buildings.telas_config: cameras, avisos, layout_v, layout_h)
+ * e cada tela pode ter exceção (exa_telas.config.cameras / .avisos / .layout_proprio). Orientação e giro são sempre da tela.
+ * Notícias e clima já vinham assim (buildings.telas_ritmo + config.ritmo da tela).
+ */
+function configEfetiva(tela: any, building: any) {
+  const p = (building?.telas_config || {}) as any;
+  const t = (tela?.config || {}) as any;
+  const proprio: string[] = [];
+  const cameras = t.cameras !== undefined ? (proprio.push('cameras'), t.cameras) : p.cameras;
+  const avisos = t.avisos !== undefined ? (proprio.push('avisos'), t.avisos) : p.avisos;
+  const vertical = t.orientacao === 'vertical' || /^(V\d|R)$/.test(String(tela?.layout || ''));
+  const doPredio = vertical ? p.layout_v : p.layout_h;
+  const layout = t.layout_proprio || !doPredio ? (t.layout_proprio && proprio.push('layout'), tela?.layout) : doPredio;
+  if (t.ritmo && Object.keys(t.ritmo).length) proprio.push('ritmo');
+  return { cameras, avisos: avisos !== false, layout, proprio };
+}
+
+function camerasDaTela(cams: any[], cfg: any, predioId = '') {
   const ids: string[] = Array.isArray(cfg?.ids) ? cfg.ids.map(String) : [];
-  const locais = CAMERAS_LOCAIS.filter((c) => telaId && c.telas.includes(telaId)).map((c) => ({ url: c.url, nome: c.nome, credito: c.credito, segundos: 14 }));
+  const locais = CAMERAS_LOCAIS.filter((c) => predioId && c.predios.includes(predioId)).map((c) => ({ url: c.url, nome: c.nome, credito: c.credito, segundos: 14 }));
   const todas = [...cams, ...locais];
   let out = ids.length ? ids.map((u) => todas.find((c) => c.url === u)).filter(Boolean) : cams;
   // 06/11/2026: segue a escolha fielmente — câmeras escolhidas que não estão disponíveis não viram "todas"
@@ -519,8 +537,10 @@ Deno.serve(async (req) => {
     if (acao === 'cameras_lista') {
       const cs: any[] = await cameras();
       // câmera IP local (ao vivo, só na rede da TV): só entra na lista da tela autorizada
-      const tid = String(b.tela_id || '');
-      const locais = CAMERAS_LOCAIS.filter((c) => tid && c.telas.includes(tid)).map((c) => ({ url: c.url, nome: c.nome, credito: c.credito, local: true }));
+      // pelo prédio (building_id) ou pela tela (tela_id -> prédio dela)
+      let pid = String(b.building_id || '');
+      if (!pid && b.tela_id) { const { data: tt } = await admin.from('exa_telas').select('building_id').eq('id', String(b.tela_id)).maybeSingle(); pid = tt?.building_id || ''; }
+      const locais = CAMERAS_LOCAIS.filter((c) => pid && c.predios.includes(pid)).map((c) => ({ url: c.url, nome: c.nome, credito: c.credito, local: true }));
       return json({ ok: true, cameras: [...locais, ...cs.map((c) => ({ url: c.url, nome: c.nome, credito: c.credito }))] });
     }
 
@@ -545,17 +565,17 @@ Deno.serve(async (req) => {
       if (arq === 'cameras') {
         // 03/11/2026: a réplica (TV vertical em prédio) passa a respeitar as câmeras escolhidas para a TV
         // (antes tocava a lista padrão da tela dos NUCs, com Argentina e Ponte da Integração, mesmo com uma câmera fixa)
-        const { data: cfgTela } = await admin.from('exa_telas').select('config').eq('id', tela.id).maybeSingle();
-        const cfgC = ((cfgTela?.config || {}) as any).cameras;
+        const { data: bCfg } = await admin.from('buildings').select('id, telas_config').eq('id', tela.building_id).maybeSingle();
+        const cfgC = configEfetiva(tela, bCfg).cameras;
         const escolhidas = Array.isArray(cfgC?.ids) && cfgC.ids.length > 0;
-        const cs = camerasDaTela(await cameras(), cfgC, tela.id);
+        const cs = camerasDaTela(await cameras(), cfgC, tela.building_id);
         return json({ ok: true, escolhidas, lives: cs.map((c: any) => ({ url: c.url, nome: c.nome, timing: c.segundos })) });
       }
       if (arq === 'clima') {
         const r = await fetch('http://18.228.252.149:8000/api/clima', { signal: AbortSignal.timeout(12000) });
         return new Response(await r.text(), { status: r.status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' } });
       }
-      const { data: predio } = await admin.from('buildings').select('nome').eq('id', tela.building_id).maybeSingle();
+      const { data: predio } = await admin.from('buildings').select('nome, telas_config').eq('id', tela.building_id).maybeSingle();
       const j = await updatesDoPredio(tela.building_id);
       if (!j) return json({ ok: false, erro: 'A tela desse prédio ainda não tem programação.' }, 404);
       if (arq === 'arquivo') {
@@ -577,7 +597,7 @@ Deno.serve(async (req) => {
         upd.ScreenName = n === n.toUpperCase() ? n.toLowerCase().replace(/(^|\s)\S/g, (x) => x.toUpperCase()) : n;
       }
       // tela com config.avisos = false não mostra os avisos do prédio (não apaga nada: só esta TV deixa de exibir)
-      if (((tela as any).config || {}).avisos === false) upd.CondominiumNotices = [];
+      if (!configEfetiva(tela, predio).avisos) upd.CondominiumNotices = [];
       return json({ ok: true, predio: predio?.nome || '', updates: upd, avisos: Array.isArray(upd.CondominiumNotices) ? upd.CondominiumNotices.length : 0 });
     }
 
@@ -638,14 +658,17 @@ Deno.serve(async (req) => {
 
       await admin.from('exa_telas').update(patch).eq('id', tela.id);
       const { data: building } = await admin.from('buildings')
-        .select('id, nome, bairro, endereco, tipo_local, segmento_local, pedido_casa_id, telas_ritmo')
+        .select('id, nome, bairro, endereco, tipo_local, segmento_local, pedido_casa_id, telas_ritmo, telas_config')
         .eq('id', tela.building_id).maybeSingle();
       if (!building) return json({ ok: true, pareada: false, codigo: null, erro: 'local apagado' });
+      const efetiva = configEfetiva(tela, building);
+      tela.layout = efetiva.layout;
+      tela.config = { ...((tela.config as any) || {}), cameras: efetiva.cameras, avisos: efetiva.avisos };
 
       const ritmo = { ...RITMO_PADRAO, ...(building.telas_ritmo || {}), ...((tela.config || {}).ritmo || {}) };
       const [prog, cams, nots] = await Promise.all([
         programacaoDoLocal(admin, building).catch((e) => { console.error('[exa-tela] programação', e); return { anuncios: [], casa: [] }; }),
-        ritmo.camera === false ? Promise.resolve([]) : cameras().then((cs: any[]) => camerasDaTela(cs, (tela.config || {}).cameras, tela.id)),
+        ritmo.camera === false ? Promise.resolve([]) : cameras().then((cs: any[]) => camerasDaTela(cs, efetiva.cameras, building.id)),
         ritmo.noticias === false ? Promise.resolve([]) : noticias().then((ns: any[]) => {
           // o local escolhe Foz, Brasil ou as duas (intercaladas)
           const foz = ritmo.noticias_foz === false ? [] : ns.filter((n) => n.escopo !== 'brasil');
@@ -657,7 +680,7 @@ Deno.serve(async (req) => {
       ]);
       // prédio: quantos avisos do síndico há na programação do NUC (a TV horizontal intercala os avisos)
       let avisos = 0;
-      if (building.tipo_local !== 'comercio') {
+      if (building.tipo_local !== 'comercio' && efetiva.avisos) {
         try { const j = await updatesDoPredio(building.id); avisos = Array.isArray(j?.CondominiumNotices) ? j.CondominiumNotices.length : 0; } catch { /* sem ExaSistema: sem avisos */ }
       }
       const conteudo = { anuncios: prog.anuncios, casa: prog.casa, cameras: cams, noticias: nots, avisos };

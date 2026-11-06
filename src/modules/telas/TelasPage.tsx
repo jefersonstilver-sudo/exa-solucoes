@@ -21,6 +21,7 @@ import { EscolherOrientacao, GradeLayouts, MiniLayout, ehLayoutVertical, infoLay
 import { EscolherCameras } from './EscolherCameras';
 import { SaudeTela } from './SaudeTela';
 import { LerQR } from './LerQR';
+import { ConfigPredio, SeloConfigTela } from './ConfigPredio';
 
 const db = supabase as any;
 const LINKS = {
@@ -38,7 +39,7 @@ interface Tela {
   codigo: string | null; plataforma: string | null; info: any; versao_player: string | null; ultimo_sinal: string | null;
   tocando: any; erros: string[] | null; comando: string | null; pareada_em: string | null; criado_em: string;
 }
-interface Local { id: string; nome: string; bairro: string | null; endereco: string | null; status: string | null; tipo_local: string | null; segmento_local: string | null; pedido_casa_id: string | null; telas_ritmo: any }
+interface Local { id: string; nome: string; bairro: string | null; endereco: string | null; status: string | null; tipo_local: string | null; segmento_local: string | null; pedido_casa_id: string | null; telas_ritmo: any; telas_config?: any }
 
 const minutos = (iso?: string | null) => (iso ? (Date.now() - new Date(iso).getTime()) / 60000 : Infinity);
 const quando = (iso?: string | null) => {
@@ -48,6 +49,13 @@ const quando = (iso?: string | null) => {
   if (m < 60) return `há ${Math.round(m)} min`;
   if (m < 48 * 60) return `há ${Math.round(m / 60)} h`;
   return new Date(iso!).toLocaleDateString('pt-BR');
+};
+/** Layout que a TV mostra de fato: o do prédio (pela orientação dela), a não ser que a TV tenha layout próprio. */
+const layoutEfetivo = (t: Tela, l?: Local | null) => {
+  const c = t.config || {}, p = l?.telas_config || {};
+  if (c.layout_proprio) return t.layout;
+  const v = c.orientacao === 'vertical' || ehLayoutVertical(t.layout);
+  return (v ? p.layout_v : p.layout_h) || t.layout;
 };
 const estadoDe = (t: Tela) => (t.status !== 'ativa' ? 'aguardando' : minutos(t.ultimo_sinal) <= 3 ? 'ao_vivo' : 'sem_sinal');
 const SELO: Record<string, { txt: string; cls: string }> = {
@@ -94,7 +102,7 @@ export default function TelasPage() {
   const locais = useQuery({
     queryKey: ['exa-telas-locais'],
     queryFn: async () => {
-      const { data, error } = await db.from('buildings').select('id, nome, bairro, endereco, status, tipo_local, segmento_local, pedido_casa_id, telas_ritmo').order('nome');
+      const { data, error } = await db.from('buildings').select('id, nome, bairro, endereco, status, tipo_local, segmento_local, pedido_casa_id, telas_ritmo, telas_config').order('nome');
       if (error) throw error;
       return (data || []) as Local[];
     },
@@ -175,11 +183,18 @@ export default function TelasPage() {
         </div>
       )}
 
+      {[...new Set(lista.filter((t) => t.building_id).map((t) => t.building_id as string))].map((bid) => {
+        const l = localPor.get(bid);
+        if (!l) return null;
+        return <ConfigPredio key={bid} predio={l} telas={lista.filter((t) => t.building_id === bid)} onSalvo={recarregar} />;
+      })}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {lista.map((t) => {
           const st = estadoDe(t);
           const local = t.building_id ? localPor.get(t.building_id) : null;
-          const lay = infoLayout(t.layout);
+          const layEf = layoutEfetivo(t, local);
+          const lay = infoLayout(layEf);
           return (
             <article key={t.id} className={`flex min-w-0 flex-col gap-3 rounded-3xl p-4 ${vidro}`}>
               <div className="flex items-start justify-between gap-3">
@@ -199,7 +214,7 @@ export default function TelasPage() {
                 </button>
               )}
               <button type="button" onClick={() => setLayoutDe(t)} className="flex min-w-0 items-center gap-3 rounded-2xl bg-black/[0.035] p-2 text-left hover:bg-black/[0.06]">
-                <MiniLayout id={t.layout} largura={112} className="shrink-0" />
+                <MiniLayout id={layEf} largura={112} className="shrink-0" />
                 <div className="min-w-0">
                   <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6A6B70]">Layout {lay.id}</div>
                   <div className="truncate text-[15px] font-bold">{lay.nome}</div>
@@ -207,6 +222,7 @@ export default function TelasPage() {
                 </div>
               </button>
 
+              {local && <SeloConfigTela tela={t} predio={local.telas_config} onMudou={recarregar} />}
               <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">
                 <dt className="text-[#6A6B70]">Tocando</dt>
                 <dd className="truncate font-semibold">{t.tocando?.cliente || t.tocando?.titulo || '—'}</dd>
@@ -566,7 +582,8 @@ export function EscolherLayout({ tela, predio, onFechar, onSalvo, onAtualizou, e
   const escolher = async (id: string) => {
     if (id === atual) { if (!embutido) onFechar(); return; }
     setAplicando(id);
-    const { error } = await db.from('exa_telas').update({ layout: id }).eq('id', tela.id);
+    // escolher o layout aqui é personalizar ESTA TV (deixa de seguir o layout do prédio até normalizar)
+    const { error } = await db.from('exa_telas').update({ layout: id, config: { ...(tela.config || {}), layout_proprio: true } }).eq('id', tela.id);
     if (error) { toast.error(error.message); setAplicando(null); return; }
     toast.success(`Layout ${id} aplicado`, { description: 'A TV troca em até 1 minuto.' });
     setAtual(id); setAplicando(null);
@@ -621,7 +638,11 @@ export function ConfigTela({ tela, locais, onFechar, onSalvo, embutido = false }
   const salvar = async () => {
     setSalvando(true);
     try {
-      const { error } = await db.from('exa_telas').update({ nome: nome.trim() || null, building_id: localId || null, ambiente }).eq('id', tela.id);
+      // trocou de prédio: a TV assume tudo do prédio novo (some com as personalizações; orientação e giro ficam)
+      const mudouPredio = (localId || null) !== (tela.building_id || null);
+      const cfgNova = { ...(tela.config || {}) };
+      if (mudouPredio) for (const k of ['cameras', 'avisos', 'layout_proprio', 'ritmo']) delete cfgNova[k];
+      const { error } = await db.from('exa_telas').update({ nome: nome.trim() || null, building_id: localId || null, ambiente, ...(mudouPredio ? { config: cfgNova } : {}) }).eq('id', tela.id);
       if (error) throw error;
       if (casaPedido && limite !== null) {
         const { error: e3 } = await db.from('pedidos').update({ telas_comercio: Math.max(0, Math.min(50, limite)) }).eq('id', casaPedido);
@@ -712,7 +733,7 @@ export function TelaDetalhe() {
   const locais = useQuery({
     queryKey: ['exa-telas-locais'],
     queryFn: async () => {
-      const { data, error } = await db.from('buildings').select('id, nome, bairro, endereco, status, tipo_local, segmento_local, pedido_casa_id, telas_ritmo').order('nome');
+      const { data, error } = await db.from('buildings').select('id, nome, bairro, endereco, status, tipo_local, segmento_local, pedido_casa_id, telas_ritmo, telas_config').order('nome');
       if (error) throw error;
       return (data || []) as Local[];
     },
@@ -787,6 +808,7 @@ export function TelaDetalhe() {
           </div>
         ))}
       </div>
+      {local && <SeloConfigTela tela={t} predio={local.telas_config} onMudou={atualizar} />}
       {t.comando && <div className="rounded-2xl bg-[#FFF6E5] px-4 py-3 text-[13px] font-semibold text-[#8A5A00]">Comando pendente: {t.comando} — a TV recebe no próximo batimento (até 1 min). Um comando novo substitui o pendente.</div>}
       {st === 'aguardando' && <div className="rounded-2xl bg-[#FFF1D6] px-4 py-3 text-[13px] font-semibold text-[#8A5A00]">Esta TV está mostrando o código {t.codigo || '…'}. Conecte pela lista de telas (Adicionar tela).</div>}
 
@@ -805,7 +827,7 @@ export function TelaDetalhe() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <div className="min-w-0 space-y-5">
           <EscolherLayout tela={t} predio={predio} embutido onFechar={() => {}} onSalvo={atualizar} onAtualizou={atualizar} />
-          <EscolherCameras titulo={t.nome || 'tela'} telaId={t.id} atual={t.config?.cameras} embutido onFechar={() => {}}
+          <EscolherCameras titulo={`Só nesta TV · ${t.nome || 'tela'}`} telaId={t.id} atual={t.config?.cameras ?? local?.telas_config?.cameras} embutido onFechar={() => {}}
             onSalvar={async (c) => {
               const { error } = await db.from('exa_telas').update({ config: { ...(t.config || {}), cameras: c } }).eq('id', t.id);
               if (error) throw error;

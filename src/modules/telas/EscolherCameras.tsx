@@ -16,13 +16,14 @@ type Cam = { url: string; nome: string; local?: boolean };
 
 // por tela: a câmera IP local (ao vivo, só na rede da TV) só aparece na lista da tela autorizada
 const cacheLista = new Map<string, Cam[]>();
-async function listaDeCameras(telaId = ''): Promise<Cam[]> {
-  const guardada = cacheLista.get(telaId);
+async function listaDeCameras(telaId = '', predioId = ''): Promise<Cam[]> {
+  const chave = `${telaId}|${predioId}`;
+  const guardada = cacheLista.get(chave);
   if (guardada) return guardada;
-  const r = await fetch(FUNCAO, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: ANON, Authorization: `Bearer ${ANON}` }, body: JSON.stringify({ acao: 'cameras_lista', tela_id: telaId || undefined }) });
+  const r = await fetch(FUNCAO, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: ANON, Authorization: `Bearer ${ANON}` }, body: JSON.stringify({ acao: 'cameras_lista', tela_id: telaId || undefined, building_id: predioId || undefined }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !Array.isArray(j.cameras)) throw new Error(j.erro || 'Não consegui carregar as câmeras');
-  cacheLista.set(telaId, j.cameras);
+  cacheLista.set(chave, j.cameras);
   return j.cameras;
 }
 
@@ -36,8 +37,8 @@ export function resumoCameras(cfg?: Partial<CamerasConfig> | null, nomes?: Map<s
 
 const TEMPOS = [10, 15, 20, 30, 60, 120];
 
-export function EscolherCameras({ titulo, telaId = '', atual, onFechar, onSalvar, embutido = false }: {
-  titulo: string; telaId?: string; atual?: Partial<CamerasConfig> | null; onFechar: () => void; onSalvar: (c: CamerasConfig) => Promise<void>; embutido?: boolean;
+export function EscolherCameras({ titulo, telaId = '', predioId = '', atual, onFechar, onSalvar, embutido = false }: {
+  titulo: string; telaId?: string; predioId?: string; atual?: Partial<CamerasConfig> | null; onFechar: () => void; onSalvar: (c: CamerasConfig) => Promise<void>; embutido?: boolean;
 }) {
   const [lista, setLista] = useState<Cam[] | null>(null);
   const [erro, setErro] = useState('');
@@ -46,7 +47,7 @@ export function EscolherCameras({ titulo, telaId = '', atual, onFechar, onSalvar
   const [seg, setSeg] = useState<number>(Number(atual?.segundos) || 15);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => { listaDeCameras(telaId).then(setLista).catch((e) => setErro((e as Error).message)); }, [telaId]);
+  useEffect(() => { listaDeCameras(telaId, predioId).then(setLista).catch((e) => setErro((e as Error).message)); }, [telaId, predioId]);
 
   const alternar = (u: string) => {
     if (modo === 'fixa') { setIds([u]); return; }
