@@ -104,6 +104,7 @@
         var fonteDe = function (it) { return '/cache/' + encodeURI(it.video); };
         var plusDe = function (it) { return it && (it.isPlus === true || it.isPlus === 'true'); };
         // TV com só 2 decodificadores (TV KTC/MediaTek: anúncio + câmera ocupam tudo, o 3º dá PIPELINE_ERROR_DECODE):
+        // (no premium em tela cheia a câmera está coberta: o empréstimo começa 3,2 s antes, como no Zeta)
         // na troca a câmera é emprestada por ~1,5 s (LivePlayer.liberar/retomar) e o próximo anúncio carrega no lugar dela
         var doisDec = /[?&]doisdec=1(&|$)/.test(location.search), emprestou = false;
         var devolver = function () { if (!emprestou) return; emprestou = false; try { window.LivePlayer && window.LivePlayer.retomar(); } catch (e) { /* segue */ } };
@@ -140,7 +141,7 @@
         setInterval(function () {
           try {
             var v = videoElement;
-            if (v && isFinite(v.duration) && v.duration > 0 && v.duration - v.currentTime < (doisDec ? 1.6 : 3.2)) carregar();
+            if (v && isFinite(v.duration) && v.duration > 0 && v.duration - v.currentTime < (doisDec && v.getAttribute('data-fullscreen') !== 'true' ? 1.6 : 3.2)) carregar();
           } catch (e) { /* segue */ }
         }, 300);
 
