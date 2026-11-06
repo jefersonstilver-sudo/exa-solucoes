@@ -133,7 +133,40 @@ const ContratoResumo: React.FC<{ order: any; orient: string; predios: number; me
  * (data da compra, telas, público, cupom, confirmação do pagamento). Substitui os 3 blocos antigos
  * (emojis, título repetido e estimativas inventadas de "exibições").
  */
-const MaisDetalhes: React.FC<{ order: any; relatorio?: any }> = ({ order, relatorio }) => {
+/** Número inteiro por extenso em português (até trilhões): 2011958 → "dois milhões, onze mil, novecentos e cinquenta e oito". */
+const porExtenso = (n: number): string => {
+  n = Math.floor(Math.abs(n));
+  if (n === 0) return 'zero';
+  const U = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const D = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const C = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+  const ate999 = (x: number): string => {
+    if (x === 100) return 'cem';
+    const c = Math.floor(x / 100), r = x % 100, p: string[] = [];
+    if (c) p.push(C[c]);
+    if (r < 20) { if (r) p.push(U[r]); } else { p.push(D[Math.floor(r / 10)]); if (r % 10) p.push(U[r % 10]); }
+    return p.join(' e ');
+  };
+  const escalas: [string, string][] = [['', ''], ['mil', 'mil'], ['milhão', 'milhões'], ['bilhão', 'bilhões'], ['trilhão', 'trilhões']];
+  const grupos: number[] = [];
+  for (let x = n; x > 0; x = Math.floor(x / 1000)) grupos.push(x % 1000);
+  const partes: { txt: string; g: number }[] = [];
+  for (let i = grupos.length - 1; i >= 0; i--) {
+    const g = grupos[i];
+    if (!g) continue;
+    const nome = i === 0 ? '' : g === 1 ? escalas[i][0] : escalas[i][1];
+    const num = i === 1 && g === 1 ? '' : ate999(g);
+    partes.push({ txt: [num, nome].filter(Boolean).join(' '), g });
+  }
+  // "e" antes do último grupo quando ele é < 100 ou centena redonda (ex.: "mil e duzentos", "dois mil e cinco")
+  return partes.map((p, i) => {
+    if (i === 0) return p.txt;
+    const ultimo = i === partes.length - 1;
+    return (ultimo && (p.g < 100 || p.g % 100 === 0) ? ' e ' : ', ') + p.txt;
+  }).join('');
+};
+
+const MaisDetalhes: React.FC<{ order: any; relatorio?: any; telas?: number }> = ({ order, relatorio, telas }) => {
   const exibicoes = useExibicoesAoVivo(relatorio || null);
   const [aberto, setAberto] = useState(false);
   const [cupom, setCupom] = useState<{ codigo: string; desconto_percentual?: number | null } | null>(null);
@@ -150,7 +183,11 @@ const MaisDetalhes: React.FC<{ order: any; relatorio?: any }> = ({ order, relato
   const linhas = ([
     ['Número do pedido', `#${String(order.id).slice(0, 8).toUpperCase()}`],
     order.created_at ? ['Data da compra', dataHora(order.created_at)] : null,
-    relatorio?.totais ? ['Exibições realizadas', <span key="ex" className="inline-flex items-center gap-1.5 tabular-nums"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#13a24a]" />{exibicoes.toLocaleString('pt-BR')}</span>] : null,
+    (relatorio?.totais?.telas || telas) ? ['Telas', `${relatorio?.totais?.telas || telas} telas`] : null,
+    relatorio?.totais ? ['Exibições realizadas', <span key="ex" className="flex flex-col items-end gap-0.5">
+      <span className="inline-flex items-center gap-1.5 tabular-nums"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#13a24a]" />{exibicoes.toLocaleString('pt-BR')}</span>
+      <span className="max-w-[260px] text-[12px] font-medium leading-snug text-[#8b8285] first-letter:uppercase">{porExtenso(exibicoes)}{/(milhão|milhões|bilhão|bilhões|trilhão|trilhões)$/.test(porExtenso(exibicoes)) ? ' de' : ''} exibições</span>
+    </span>] : null,
     order.cupom_id ? ['Cupom', cupom ? `${cupom.codigo}${cupom.desconto_percentual ? ` · ${cupom.desconto_percentual}% off` : ''}` : 'Aplicado'] : null,
     cortesia ? ['Cobrança', 'Cortesia · sem custo'] : null,
     !cortesia && order.forma_cobranca !== 'boleto' && pagoEm ? ['1º pagamento', `Confirmado em ${dataHora(pagoEm)}`] : null,
@@ -610,7 +647,7 @@ const OrderDetailsV2 = () => {
               {order.is_fidelidade && order.total_parcelas && order.forma_cobranca !== 'boleto' && (
                 <OrderInstallmentsSection orderId={order.id} tipoPagamento={order.tipo_pagamento || 'pix_fidelidade'} totalParcelas={order.total_parcelas} />
               )}
-              <MaisDetalhes order={order} relatorio={relatorioPedido.data} />
+              <MaisDetalhes order={order} relatorio={relatorioPedido.data} telas={totalScreens} />
             </div>
           )}
         </div>
