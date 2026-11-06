@@ -95,3 +95,8 @@
 # Fila 06/11/2026 (tarde)
 - [x] Deploy exa2-relatorio-pedido do commit edf9964 (miniaturas no bucket existente building-images/miniaturas-videos, sem criar bucket novo). Sem alterar arquivos.
 - [x] Main 482925e: deploy exa-tela + site publicado (tv.js com correção de lentidão do Zeta). Sem alterar arquivos, sem migrations, sem funções protegidas.
+
+# Deploys 06/11 (tarde)
+- [ ] Deploy exa-tela (config telas pelo prédio, commit 8690777+) — BLOQUEADO: 8690777 não chegou à main (remota está em 746c59422); aguardando push vazio.
+- [ ] Deploy exa2-relatorio-pedido (commit c8eb077+) — BLOQUEADO: c8eb077 não chegou à main; aguardando push vazio.
+- [ ] Publicar site (src/modules/telas/*, tv.js, lives.js, src/components/relatorio/*) — aguarda os dois commits acima; publicar uma única vez no final.
