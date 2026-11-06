@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 type Parcela = {
   numero: number; competencia: string | null; data_vencimento: string; valor: number; situacao: string; dias_atraso: number;
   pago_em: string | null; valor_pago: number | null; comprovante_url: string | null; pix_transacao_id: string | null; em_cobranca?: boolean;
+  periodo_inicio?: string | null; periodo_fim?: string | null; observacao?: string | null; pagador?: string | null;
 };
 type Cobranca = { id: string; forma: 'pix' | 'boleto'; valor: number; vencimento: string; parcelas: number[]; desconto_pct: number; pix_copia_cola?: string | null; pix_qr_base64?: string | null; boleto_url?: string | null; linha_digitavel?: string | null; invoice_url?: string | null };
 type Dados = { parcelas: Parcela[]; resumo: any; plano?: any; cobrancas_abertas?: Cobranca[]; sofia_videos?: number; desconto_atrasadas?: number };
@@ -22,7 +23,8 @@ const CARD = 'rounded-[20px] bg-white shadow-[0_1px_2px_rgba(30,15,18,.05),0_8px
 const brl = (v: number) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dataBR = (s?: string | null) => (s ? String(s).slice(0, 10).split('-').reverse().join('/') : '');
 const mesLongo = (p: Parcela) => {
-  const d = new Date(String(p.data_vencimento).slice(0, 10) + 'T12:00:00Z');
+  // o mês da mensalidade é o do início do período (pagamento adiantado não muda o mês de referência)
+  const d = new Date(String(p.periodo_inicio || p.data_vencimento).slice(0, 10) + 'T12:00:00Z');
   const m = d.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
   return m.charAt(0).toUpperCase() + m.slice(1) + ' ' + d.getUTCFullYear();
 };
@@ -35,6 +37,7 @@ const somaMeses = (iso: string, n: number) => {
   return alvo;
 };
 const periodoDa = (p: Parcela, inicioPlano?: string | null) => {
+  if (p.periodo_inicio && p.periodo_fim) return `${dataBR(p.periodo_inicio)} a ${dataBR(p.periodo_fim)}`; // período gravado na parcela (ex.: cortesia de dias)
   const base = String(inicioPlano || p.data_vencimento).slice(0, 10);
   const de = inicioPlano ? somaMeses(base, p.numero - 1) : somaMeses(base, 0);
   const ate = somaMeses(de.toISOString(), 1); ate.setUTCDate(ate.getUTCDate() - 1);
@@ -149,8 +152,8 @@ const PagamentosContrato: React.FC<{ estado: ReturnType<typeof usePagamentosCont
                         <div className={`text-[14.5px] font-extrabold ${c.titulo}`}>{mesLongo(p)}</div>
                         <div className={`text-[11.5px] font-semibold tabular-nums ${c.sub} opacity-90`}>Período {periodoDa(p, dados.plano?.inicio)}</div>
                         <div className={`text-[12.5px] ${c.sub}`}>
-                          {p.situacao === 'cortesia' ? <><span className="line-through">{brl(p.valor)}</span> · cortesia EXA</> :
-                            p.situacao === 'pago' ? <>{brl(p.valor_pago || p.valor)} · paga em {p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : ''}</> :
+                          {p.situacao === 'cortesia' ? <><span className="line-through">{brl(p.valor)}</span> · {p.observacao ? p.observacao.replace(/^Cortesia\s*·\s*/i, 'cortesia · ') : 'cortesia EXA'}</> :
+                            p.situacao === 'pago' ? <>{brl(p.valor_pago || p.valor)} · paga em {p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : ''}{p.pagador ? ` · por ${p.pagador}` : ''}</> :
                             p.situacao === 'atrasado' ? <>{brl(p.valor)} · vencida há <b>{p.dias_atraso} {p.dias_atraso === 1 ? 'dia' : 'dias'}</b></> :
                             <>{brl(p.valor)} · vence {dataBR(p.data_vencimento)}</>}
                         </div>

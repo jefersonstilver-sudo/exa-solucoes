@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
       const parcelas = lib.filter((p: any) => p.situacao !== "a_vencer" || p.id === prox?.id).map((p: any) => ({
         numero: p.numero, competencia: p.competencia, data_vencimento: p.data_vencimento, valor: p.valor, situacao: p.situacao, dias_atraso: p.dias_atraso,
         pago_em: p.pago_em, valor_pago: p.valor_pago, comprovante_url: p.comprovante_url, pix_transacao_id: p.pix_transacao_id,
-        em_cobranca: !!p.pix_lote_id,
+        em_cobranca: !!p.pix_lote_id, periodo_inicio: p.periodo_inicio || null, periodo_fim: p.periodo_fim || null, observacao: p.observacao || null, pagador: p.pagador || null,
       }));
       const abertas = (m.lotes || []).filter((l: any) => l.status === "aberto").map(publico);
       // criação de vídeos inclusa no plano: vídeos feitos pela Sofia para este pedido

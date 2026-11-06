@@ -166,7 +166,7 @@ const porExtenso = (n: number): string => {
   }).join('');
 };
 
-const MaisDetalhes: React.FC<{ order: any; relatorio?: any; telas?: number }> = ({ order, relatorio, telas }) => {
+const MaisDetalhes: React.FC<{ order: any; relatorio?: any; telas?: number; mensal?: number | null }> = ({ order, relatorio, telas, mensal }) => {
   const exibicoes = useExibicoesAoVivo(relatorio || null);
   const [aberto, setAberto] = useState(false);
   const [cupom, setCupom] = useState<{ codigo: string; desconto_percentual?: number | null } | null>(null);
@@ -180,10 +180,17 @@ const MaisDetalhes: React.FC<{ order: any; relatorio?: any; telas?: number }> = 
   const pagoEm: string | null = lp.pix_data?.pago_em || lp.paid_at || null;
   const transacao: string | null = lp.asaas_payment_id || lp.pix_data?.asaas_id || null;
   const dataHora = (s: string) => new Date(s).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const nTelas = Number(relatorio?.totais?.telas || telas || 0);
+  const mensalOk = Number(mensal) > 50 ? Number(mensal) : Number(order.valor_mensal) > 50 ? Number(order.valor_mensal) : Number(order.valor_total) > 50 && Number(order.plano_meses) > 0 ? Number(order.valor_total) / Number(order.plano_meses) : 0;
+  const custoDia = mensalOk ? mensalOk / 30 : 0;
+  const brl2 = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const linhas = ([
     ['Número do pedido', `#${String(order.id).slice(0, 8).toUpperCase()}`],
     order.created_at ? ['Data da compra', dataHora(order.created_at)] : null,
     (relatorio?.totais?.telas || telas) ? ['Telas', `${relatorio?.totais?.telas || telas} telas`] : null,
+    // custo do plano (Jeferson, 06/11/2026: sempre em todos os pedidos) = mensalidade ÷ 30 dias, e ÷ telas
+    custoDia ? ['Custo por dia', brl2(custoDia)] : null,
+    custoDia && nTelas ? ['Custo por tela por dia', brl2(custoDia / nTelas)] : null,
     relatorio?.totais ? ['Exibições realizadas', <span key="ex" className="flex flex-col items-end gap-0.5">
       <span className="inline-flex items-center gap-1.5 tabular-nums"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#13a24a]" />{exibicoes.toLocaleString('pt-BR')}</span>
       <span className="max-w-[260px] text-[12px] font-medium leading-snug text-[#8b8285] first-letter:uppercase">{porExtenso(exibicoes)}{/(milhão|milhões|bilhão|bilhões|trilhão|trilhões)$/.test(porExtenso(exibicoes)) ? ' de' : ''} exibições</span>
@@ -649,7 +656,7 @@ const OrderDetailsV2 = () => {
               {order.is_fidelidade && order.total_parcelas && order.forma_cobranca !== 'boleto' && (
                 <OrderInstallmentsSection orderId={order.id} tipoPagamento={order.tipo_pagamento || 'pix_fidelidade'} totalParcelas={order.total_parcelas} />
               )}
-              <MaisDetalhes order={order} relatorio={relatorioPedido.data} telas={totalScreens} />
+              <MaisDetalhes order={order} relatorio={relatorioPedido.data} telas={totalScreens} mensal={pagamentos?.resumo?.valor_mensal} />
             </div>
           )}
         </div>
