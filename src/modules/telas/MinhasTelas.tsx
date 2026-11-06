@@ -214,7 +214,7 @@ export default function MinhasTelas() {
       )}
 
       {camerasDe && (
-        <EscolherCameras titulo={camerasDe.nome || 'tela'} atual={camerasDe.config?.cameras} onFechar={() => setCamerasDe(null)}
+        <EscolherCameras titulo={camerasDe.nome || 'tela'} telaId={camerasDe.id} atual={camerasDe.config?.cameras} onFechar={() => setCamerasDe(null)}
           onSalvar={async (c) => { await chamar({ acao: 'cliente_atualizar', tela_id: camerasDe.id, cameras: c }); recarregar(); }} />
       )}
       {conectarEm && <Conectar local={conectarEm} codigoInicial={codigoQR} onFechar={() => { setConectarEm(null); setCodigoQR(''); }} onPronto={() => { setConectarEm(null); setCodigoQR(''); recarregar(); }} />}

@@ -516,7 +516,10 @@ Deno.serve(async (req) => {
     // ---------- câmeras disponíveis (para escolher no admin e na área do cliente; são transmissões públicas) ----------
     if (acao === 'cameras_lista') {
       const cs: any[] = await cameras();
-      return json({ ok: true, cameras: cs.map((c) => ({ url: c.url, nome: c.nome, credito: c.credito })) });
+      // câmera IP local (ao vivo, só na rede da TV): só entra na lista da tela autorizada
+      const tid = String(b.tela_id || '');
+      const locais = CAMERAS_LOCAIS.filter((c) => tid && c.telas.includes(tid)).map((c) => ({ url: c.url, nome: c.nome, credito: c.credito, local: true }));
+      return json({ ok: true, cameras: [...locais, ...cs.map((c) => ({ url: c.url, nome: c.nome, credito: c.credito }))] });
     }
 
     // ---------- quantas notícias de Foz e do Brasil chegam do ExaSistema (dados públicos, para conferência) ----------

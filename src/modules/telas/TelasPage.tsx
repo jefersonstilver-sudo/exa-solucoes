@@ -241,7 +241,7 @@ export default function TelasPage() {
       {layoutDe && <EscolherLayout tela={layoutDe} predio={(locais.data || []).find((l) => l.id === layoutDe.building_id)?.tipo_local !== 'comercio'} onFechar={() => setLayoutDe(null)} onSalvo={() => { setLayoutDe(null); recarregar(); }} onAtualizou={recarregar} />}
       {saudeDe && <SaudeTela tela={(telas.data || []).find((x: Tela) => x.id === saudeDe.id) || saudeDe} onFechar={() => setSaudeDe(null)} onAtualizou={recarregar} />}
       {camerasDe && (
-        <EscolherCameras titulo={camerasDe.nome || 'tela'} atual={camerasDe.config?.cameras} onFechar={() => setCamerasDe(null)}
+        <EscolherCameras titulo={camerasDe.nome || 'tela'} telaId={camerasDe.id} atual={camerasDe.config?.cameras} onFechar={() => setCamerasDe(null)}
           onSalvar={async (c) => {
             const { error } = await db.from('exa_telas').update({ config: { ...(camerasDe.config || {}), cameras: c } }).eq('id', camerasDe.id);
             if (error) throw error;
@@ -805,7 +805,7 @@ export function TelaDetalhe() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <div className="min-w-0 space-y-5">
           <EscolherLayout tela={t} predio={predio} embutido onFechar={() => {}} onSalvo={atualizar} onAtualizou={atualizar} />
-          <EscolherCameras titulo={t.nome || 'tela'} atual={t.config?.cameras} embutido onFechar={() => {}}
+          <EscolherCameras titulo={t.nome || 'tela'} telaId={t.id} atual={t.config?.cameras} embutido onFechar={() => {}}
             onSalvar={async (c) => {
               const { error } = await db.from('exa_telas').update({ config: { ...(t.config || {}), cameras: c } }).eq('id', t.id);
               if (error) throw error;

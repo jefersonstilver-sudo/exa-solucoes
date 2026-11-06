@@ -12,16 +12,18 @@ const FUNCAO = 'https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/exa-tela';
 const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFha2Vub2xqc3ljeXJjcmNoZ3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5MDM3NTUsImV4cCI6MjA2MjQ3OTc1NX0.wEKVfJKfQiybyne0yn0dOUwbujb_WXkZHAzlyfHb0lk';
 
 export interface CamerasConfig { ids: string[]; segundos: number | null }
-type Cam = { url: string; nome: string };
+type Cam = { url: string; nome: string; local?: boolean };
 
-let cacheLista: Cam[] | null = null;
-async function listaDeCameras(): Promise<Cam[]> {
-  if (cacheLista) return cacheLista;
-  const r = await fetch(FUNCAO, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: ANON, Authorization: `Bearer ${ANON}` }, body: JSON.stringify({ acao: 'cameras_lista' }) });
+// por tela: a câmera IP local (ao vivo, só na rede da TV) só aparece na lista da tela autorizada
+const cacheLista = new Map<string, Cam[]>();
+async function listaDeCameras(telaId = ''): Promise<Cam[]> {
+  const guardada = cacheLista.get(telaId);
+  if (guardada) return guardada;
+  const r = await fetch(FUNCAO, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: ANON, Authorization: `Bearer ${ANON}` }, body: JSON.stringify({ acao: 'cameras_lista', tela_id: telaId || undefined }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !Array.isArray(j.cameras)) throw new Error(j.erro || 'Não consegui carregar as câmeras');
-  cacheLista = j.cameras;
-  return cacheLista!;
+  cacheLista.set(telaId, j.cameras);
+  return j.cameras;
 }
 
 /** Texto curto para o cartão da tela. */
@@ -34,8 +36,8 @@ export function resumoCameras(cfg?: Partial<CamerasConfig> | null, nomes?: Map<s
 
 const TEMPOS = [10, 15, 20, 30, 60, 120];
 
-export function EscolherCameras({ titulo, atual, onFechar, onSalvar, embutido = false }: {
-  titulo: string; atual?: Partial<CamerasConfig> | null; onFechar: () => void; onSalvar: (c: CamerasConfig) => Promise<void>; embutido?: boolean;
+export function EscolherCameras({ titulo, telaId = '', atual, onFechar, onSalvar, embutido = false }: {
+  titulo: string; telaId?: string; atual?: Partial<CamerasConfig> | null; onFechar: () => void; onSalvar: (c: CamerasConfig) => Promise<void>; embutido?: boolean;
 }) {
   const [lista, setLista] = useState<Cam[] | null>(null);
   const [erro, setErro] = useState('');
@@ -44,7 +46,7 @@ export function EscolherCameras({ titulo, atual, onFechar, onSalvar, embutido = 
   const [seg, setSeg] = useState<number>(Number(atual?.segundos) || 15);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => { listaDeCameras().then(setLista).catch((e) => setErro((e as Error).message)); }, []);
+  useEffect(() => { listaDeCameras(telaId).then(setLista).catch((e) => setErro((e as Error).message)); }, [telaId]);
 
   const alternar = (u: string) => {
     if (modo === 'fixa') { setIds([u]); return; }
@@ -94,6 +96,7 @@ export function EscolherCameras({ titulo, atual, onFechar, onSalvar, embutido = 
                     </span>
                     <Video className="h-4 w-4 shrink-0 text-[#8b8285]" />
                     <span className="min-w-0 flex-1 truncate font-semibold">{c.nome}</span>
+                    {c.local && <span className="shrink-0 rounded-full bg-emerald-600/10 px-2 py-0.5 text-[11px] font-bold text-emerald-700">Ao vivo · rede local · sem gravação</span>}
                   </button>
                 );
               })}
