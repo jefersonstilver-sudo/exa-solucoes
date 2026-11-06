@@ -97,6 +97,7 @@ serve(async (req) => {
     const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
       body: {
         agentKey: 'exa_alert',
+        codigo: true, // código de acesso: única exceção que ainda sai pelo número de notificações (temporário)
         phone: telefone,
         message: `🔐 *Código de Verificação EXA Alerts*\n\nSeu código de verificação é:\n\n*${codigo}*\n\nEste código expira em 5 minutos.\n\n⚠️ Não compartilhe este código com ninguém.`,
         skipSplit: true,

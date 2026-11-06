@@ -155,6 +155,7 @@ Deno.serve(async (req) => {
     const { data: sendData, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
       body: {
         agentKey: 'exa_alert',
+        codigo: true, // código de acesso: única exceção que ainda sai pelo número de notificações (temporário)
         phone: telefoneAlvo,
         message: mensagem,
         skipSplit: true,

@@ -1,4 +1,5 @@
 // EXA 2.0 — Cobrança mensal (boleto com Pix), régua de avisos da Sofia, conciliador e pedido de confiança.
+// 06/11/2026: pedidos com pedidos.livia_cobranca = true saem desta régua — quem cobra é a Lívia (livia-cron).
 //
 // Regras do CEO (29/10/2026):
 //  - padrão é Pix Automático; boleto só quando o cliente pede à Sofia (troca só pela Sofia);
@@ -378,6 +379,7 @@ async function gerarDoMes(out: any) {
   for (const pc of pcs || []) {
     const { data: ped } = await sb.from("pedidos").select("*").eq("id", pc.pedido_id).maybeSingle();
     if (!ped || INATIVOS.includes(ped.status) || ped.status === "pendente") continue;
+    if (ped.livia_cobranca) continue; // 06/11/2026: pedido cobrado pela Lívia (livia-cron), nunca pelas duas réguas
     const g = await gerarBoleto(pc, ped);
     if (!g.ok) { if (g.erro !== "outra geração em andamento") await avisarCeo(`ALERTA cobrança: não consegui gerar o boleto da parcela ${pc.numero_parcela} de ${nomePedido(ped)}: ${g.erro}`); continue; }
     out.gerados++;
@@ -390,6 +392,7 @@ async function regua(out: any) {
   for (const pc of pcs || []) {
     const { data: ped } = await sb.from("pedidos").select("*").eq("id", pc.pedido_id).maybeSingle();
     if (!ped || INATIVOS.includes(ped.status)) continue;
+    if (ped.livia_cobranca) continue; // 06/11/2026: pedido cobrado pela Lívia (livia-cron), nunca pelas duas réguas
     const primeiraVenda = ped.status === "pendente" && pc.numero_parcela === 1; // ainda não virou pedido ativo: não há o que suspender
     const d = difDias(pc.data_vencimento, hoje); // dias até o vencimento (negativo = atraso)
     const ct = await contatos(ped);

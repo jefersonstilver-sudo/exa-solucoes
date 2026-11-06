@@ -72,6 +72,15 @@ serve(async (req) => {
 
     // 🔄 EVOLUTION SHIM: notifications (agentKey='exa_alert') route via connected Evolution instance.
     // Keeps the entire pipeline (dedup, split, logs, messages persist) — only swaps the transport.
+    // 06/11/2026 (Jeferson): a instância de notificações virou o WhatsApp da LÍVIA (financeiro, 45 99942-9820).
+    // Pelo número dela não sai mais nenhum aviso genérico (tarefas, propostas, painéis, relatórios...).
+    // Exceção TEMPORÁRIA: códigos de login/verificação (codigo: true), até a troca para e-mail ficar pronta.
+    if (agentKey === 'exa_alert' && requestBody?.codigo !== true) {
+      console.warn('[ZAPI-SEND] exa_alert bloqueado (número da Lívia). Origem sem codigo:true. Telefone', String(phone || '').slice(0, 6) + '****');
+      return new Response(JSON.stringify({ success: false, skipped: 'numero_da_livia', message: 'Avisos genéricos não saem mais pelo número da Lívia.' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const useEvolution = agentKey === 'exa_alert';
     let evolutionInstanceName: string | null = null;
     let evolutionApiUrl: string | null = null;
