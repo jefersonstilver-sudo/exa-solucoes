@@ -151,6 +151,12 @@
               if (!emprestou && (camLigada || !window.LivePlayer)) { pre.src = ''; info.sem_vaga = (info.sem_vaga || 0) + 1; return; }
             }
             pre.el.preload = 'auto';
+            if (emprestou) {
+              // a TV leva uns 300 ms para soltar o decodificador da câmera: carregar antes disso dá erro 3
+              var alvo = pre.el;
+              setTimeout(function () { if (pre.el === alvo && pre.src === src && window.__tvDuplo) { alvo.src = src; alvo.load(); } }, 350);
+              return;
+            }
             pre.el.src = src;
             pre.el.load();
           } catch (e) { /* segue */ }
@@ -158,7 +164,7 @@
         setInterval(function () {
           try {
             var v = videoElement;
-            if (v && isFinite(v.duration) && v.duration > 0 && v.duration - v.currentTime < (doisDec && v.getAttribute('data-fullscreen') !== 'true' ? 1.6 : 3.2)) carregar();
+            if (v && isFinite(v.duration) && v.duration > 0 && v.duration - v.currentTime < (doisDec && v.getAttribute('data-fullscreen') !== 'true' ? 2.4 : 3.2)) carregar();
           } catch (e) { /* segue */ }
         }, 300);
 
