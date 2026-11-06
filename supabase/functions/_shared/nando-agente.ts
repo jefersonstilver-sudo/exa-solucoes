@@ -824,7 +824,16 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
           `   {código interno ${idCurto(a.id)}; criado por ${a.criado_por_nome || "?"}${a.conteudo?.incerto ? "; NÃO CONFIRMADO na lista oficial do painel" : ""}}`,
         ).join("\n"));
       }
-      return blocos.join("\n\n") + "\n\n(Mostre ao síndico exatamente nesse formato, um abaixo do outro, SEM o trecho entre chaves {…}. Não fale de rascunhos nem ofereça publicar avisos antigos não publicados.)";
+      // 06/11/2026: as TVs Android do prédio podem estar com o quadro de avisos desligado (buildings.telas_config.avisos=false
+      // ou exceção na TV). Aí "no ar" vale só para o painel do elevador — o Nando tem que dizer isso, senão parece mentira.
+      let notaTv = "";
+      try {
+        const { data: bt } = await sb.from("buildings").select("telas_config").eq("id", p.id).maybeSingle();
+        const { data: tvs } = await sb.from("exa_telas").select("nome,config").eq("building_id", p.id);
+        const desl = (tvs || []).filter((t: any) => (t.config?.avisos ?? (bt as any)?.telas_config?.avisos) === false).map((t: any) => t.nome || "TV");
+        if (desl.length) notaTv = `\n\nATENÇÃO (diga ao síndico): nas TVs ${desl.join(", ")} deste prédio o quadro de avisos está DESLIGADO na configuração das telas (admin > Telas). Lá esses avisos NÃO aparecem; aparecem só no painel do elevador. Para mostrar, é preciso religar "Avisos do síndico" no admin.`;
+      } catch (_) { /* segue */ }
+      return blocos.join("\n\n") + notaTv + "\n\n(Mostre ao síndico exatamente nesse formato, um abaixo do outro, SEM o trecho entre chaves {…}. Não fale de rascunhos nem ofereça publicar avisos antigos não publicados.)";
     }
     case "criar_aviso_nando": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
