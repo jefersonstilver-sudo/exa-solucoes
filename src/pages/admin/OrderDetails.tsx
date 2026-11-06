@@ -19,6 +19,7 @@ import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
 import { pedidoStatusInfo } from '@/lib/pedidoStatus';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 import CobrancaPedidoAdmin from '@/components/admin/orders/CobrancaPedidoAdmin';
+import AuditoriaCobrancaPedido from '@/components/admin/orders/AuditoriaCobrancaPedido';
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -139,6 +140,7 @@ const OrderDetails = () => {
           </TabsContent>
           <TabsContent value="cobranca">
             <div className="space-y-4">
+              <AuditoriaCobrancaPedido pedidoId={orderDetails.id} />
               <CobrancaPedidoAdmin pedidoId={orderDetails.id} clientId={orderDetails.client_id} onChanged={refetch} />
               <details className="group rounded-2xl border border-gray-200 bg-white">
                 <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-gray-700">Valores, parcelas e histórico do pedido</summary>

@@ -681,3 +681,6 @@ verify_jwt = false
 
 [functions.exa2-relatorio-pedido]
 verify_jwt = false
+
+[functions.exa2-auditoria-cobranca]
+verify_jwt = false
