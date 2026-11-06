@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
         await sb.from("cobranca_auditoria").update({ pix_lote_id: null }).eq("pix_lote_id", l.id).eq("status", "aberto");
       }
       const cid = await clienteDoPedido(pid, atual.parcelas);
-      if (!cid) return json({ ok: false, erro: "Não consegui gerar agora. Tente de novo em instantes." }, 409);
+      if (!cid) { await logEv("AUDITORIA_COBRANCA_CLIENTE_FALHOU", { pedido: pid, motivo: "sem cliente no Asaas" }); return json({ ok: false, erro: admin ? "Cliente sem cadastro no Asaas." : "Não consegui gerar agora. Tente de novo em instantes." }, 409); }
       let nd = await asaas("PUT", "/customers/" + cid, { notificationDisabled: true });
       if (!nd.ok && [404, 405].includes(nd.status)) nd = await asaas("POST", "/customers/" + cid, { notificationDisabled: true });
       const venc = addDias(hojeBR(), forma === "boleto" ? 3 : 1);
@@ -234,7 +234,13 @@ Deno.serve(async (req) => {
         description: `EXA Mídia · ${String(atual.pedido?.nome_pedido || "campanha").slice(0, 60)} · mensalidade${alvo.length > 1 ? "s" : ""} ${desc}${DESC ? " · 35% de desconto" : ""}`.slice(0, 480),
         externalReference: "auditoria:" + lote.id,
       });
-      if (!r.ok || !r.j?.id) { await sb.from("cobranca_auditoria_pix").delete().eq("id", lote.id); console.error("[AUDITORIA] asaas", erroAsaas(r)); return json({ ok: false, erro: "Não consegui gerar agora. Tente de novo em instantes." }, 502); }
+      if (!r.ok || !r.j?.id) {
+        await sb.from("cobranca_auditoria_pix").delete().eq("id", lote.id);
+        const motivo = erroAsaas(r); console.error("[AUDITORIA] asaas", motivo);
+        await logEv("AUDITORIA_COBRANCA_CLIENTE_FALHOU", { pedido: pid, forma, valor, parcelas: nums, status: r.status, motivo, cliente_asaas: cid });
+        // equipe vê o motivo real; cliente vê a mensagem amigável
+        return json({ ok: false, erro: admin ? "Asaas: " + motivo : "Não consegui gerar agora. Tente de novo em instantes." }, 502);
+      }
       const up: any = { asaas_payment_id: r.j.id, invoice_url: r.j.invoiceUrl || null, boleto_url: r.j.bankSlipUrl || null };
       const qr = await asaas("GET", "/payments/" + r.j.id + "/pixQrCode");
       if (qr.ok) { up.pix_copia_cola = qr.j?.payload || null; up.pix_qr_base64 = qr.j?.encodedImage || null; }
