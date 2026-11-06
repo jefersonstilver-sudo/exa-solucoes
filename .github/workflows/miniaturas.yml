@@ -1,0 +1,58 @@
+name: miniaturas
+# EXA (06/11/2026) — miniatura de cada vídeo dos pedidos, gerada no servidor (ffmpeg).
+# O relatório capturava o quadro no navegador do cliente; vídeo em HEVC/H.265 (ex.: os da Gotas de Ouro) dá "Format error"
+# no Chrome e ficava só o ícone de play. Aqui qualquer codec vira um JPEG 360 px em building-images/miniaturas-videos/<id>.jpg
+# + linha em video_miniaturas (o relatório e o PDF já leem dali). Só cria o que falta; nunca sobrescreve.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "37 * * * *"
+concurrency:
+  group: miniaturas
+  cancel-in-progress: false
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SURL: ${{ secrets.SUPABASE_URL }}
+      KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: ffmpeg
+        run: |
+          curl -sSL --retry 3 -o /tmp/ff.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
+          mkdir -p /tmp/ff && tar -xJf /tmp/ff.tar.xz -C /tmp/ff --strip-components=1
+          echo "/tmp/ff/bin" >> "$GITHUB_PATH"
+      - name: gerar
+        run: |
+          set +e
+          H=(-H "Authorization: Bearer $KEY" -H "apikey: $KEY")
+          curl -s "${H[@]}" "$SURL/rest/v1/pedido_videos?select=video_id,videos(url)&limit=5000" > /tmp/pv.json
+          curl -s "${H[@]}" "$SURL/rest/v1/video_miniaturas?select=video_id&limit=20000" > /tmp/ja.json
+          python3 - <<'PY'
+          import json
+          pv = json.load(open('/tmp/pv.json')); ja = {x['video_id'] for x in json.load(open('/tmp/ja.json'))}
+          vistos, n = set(), 0
+          with open('/tmp/fila.tsv', 'w') as f:
+              for x in pv:
+                  vid, url = x.get('video_id'), ((x.get('videos') or {}).get('url'))
+                  if not vid or not url or vid in ja or vid in vistos: continue
+                  vistos.add(vid); f.write(f"{vid}\t{url}\n"); n += 1
+                  if n >= 80: break
+          print(n, 'vídeos sem miniatura')
+          PY
+          mkdir -p /tmp/m
+          while IFS=$'\t' read -r vid url; do
+            ffmpeg -nostdin -loglevel error -y -ss 2.5 -i "$url" -frames:v 1 -vf "scale=360:-2:flags=lanczos" -q:v 4 /tmp/m/$vid.jpg \
+              || ffmpeg -nostdin -loglevel error -y -i "$url" -frames:v 1 -vf "scale=360:-2:flags=lanczos" -q:v 4 /tmp/m/$vid.jpg
+            [ -s /tmp/m/$vid.jpg ] || ffmpeg -nostdin -loglevel error -y -i "$url" -frames:v 1 -vf "scale=360:-2:flags=lanczos" -q:v 4 /tmp/m/$vid.jpg
+            if [ ! -s /tmp/m/$vid.jpg ]; then echo "sem quadro: $vid"; continue; fi
+            path="miniaturas-videos/$vid.jpg"
+            h=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SURL/storage/v1/object/building-images/$path" "${H[@]}" \
+              -H "Content-Type: image/jpeg" -H "x-upsert: true" -H "Cache-Control: max-age=31536000" --data-binary @/tmp/m/$vid.jpg)
+            [ "$h" = "200" ] || { echo "upload $h: $vid"; continue; }
+            r=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SURL/rest/v1/video_miniaturas" "${H[@]}" \
+              -H "Content-Type: application/json" -H "Prefer: resolution=ignore-duplicates,return=minimal" \
+              -d "{\"video_id\":\"$vid\",\"path\":\"$path\"}")
+            echo "ok $vid ($(du -k /tmp/m/$vid.jpg | cut -f1)KB) $r"
+          done < /tmp/fila.tsv
