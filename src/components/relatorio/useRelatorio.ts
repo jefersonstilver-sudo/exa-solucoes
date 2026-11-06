@@ -112,3 +112,13 @@ export const useExibicoesAoVivo = (r?: Relatorio | null) => {
   useEffectVivo(() => { setV(calc()); const t = setInterval(() => setV(calc()), 1000); return () => clearInterval(t); }, [r]); // eslint-disable-line react-hooks/exhaustive-deps
   return v;
 };
+
+/**
+ * Fonte ÚNICA do número de telas de um pedido para o cliente (Jeferson, 06/11/2026: "não contar mais prédios, contar telas").
+ * Vem do relatório (prédios ativos onde o anúncio roda × telas de cada um). Use isto em todo lugar que mostra o tamanho do pedido.
+ */
+export const useTelasPedido = (pedidoId?: string | null) => {
+  const q = useRelatorio(pedidoId);
+  return q.data && !q.data.pendente ? q.data.totais?.telas || null : null;
+};
+export const telasTexto = (n?: number | null) => (n ? `${n} ${n === 1 ? 'tela' : 'telas'}` : '');

@@ -33,6 +33,7 @@ interface Props {
   slots: AgendaSlot[];
   rules: AgendaRule[];
   totalPredios: number;
+  totalTelas?: number | null; // fonte única: relatório do pedido
   /** Slot que o servidor marcou como exibindo agora (fonte da verdade dos painéis). */
   serverActiveSlotId?: string | null;
   onAgendar: () => void;
@@ -45,7 +46,7 @@ interface Props {
   vertical?: boolean;
 }
 
-export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverActiveSlotId, onAgendar, onVerTela, onEnviar, carregando, vertical }) => {
+export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, totalTelas, serverActiveSlotId, onAgendar, onVerTela, onEnviar, carregando, vertical }) => {
   const { now, atual, proximo } = useNoArAgora(slots, rules, serverActiveSlotId);
 
   // Progresso da janela atual (do início do trecho de hoje até a próxima troca).
@@ -107,7 +108,7 @@ export const OnAirCard: React.FC<Props> = ({ slots, rules, totalPredios, serverA
             <TipoBadge tipo={tipoAtual} />
             <span className="text-[12.5px] text-[#8b8285]">
               {descreverRegra(atual.rule)}
-              {totalPredios > 0 && <> · nos {totalPredios} prédios</>}
+              {!!totalTelas && <> · em {totalTelas} telas</>}
             </span>
           </div>
           {proximo && (

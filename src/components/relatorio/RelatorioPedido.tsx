@@ -255,7 +255,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false, noArVideoId }: { p
             Ao vivo · {nf(Math.max(1, Math.round((r.dias?.[r.dias.length - 1]?.exibicoes || r.totais.media_dia) / 1440)))} exibições por minuto agora
           </div>
           <div className="max-w-[520px] text-[16px] leading-relaxed text-[#F9E4E6]">
-            {r.formato.tela_cheia ? 'em tela cheia, ' : ''}nos elevadores de <strong className="text-white">{r.totais.predios} prédios</strong> de Foz do Iguaçu, onde moradores passam todos os dias.
+            {r.formato.tela_cheia ? 'em tela cheia, ' : ''}em <strong className="text-white">{r.totais.telas} telas</strong> nos elevadores de Foz do Iguaçu, onde moradores passam todos os dias.
           </div>
           <div className="max-w-[520px] space-y-2">
             <div className="flex justify-between text-[13px] text-[#F4CFD3]">
@@ -279,7 +279,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false, noArVideoId }: { p
           [nf(r.totais.media_dia), 'exibições por dia', 'somando todas as telas onde a sua marca está'],
           [`${r.formato.minutos_dia_tela} min`, 'por dia em cada tela', `${r.formato.participacao.toLocaleString('pt-BR')}% de todo o tempo da tela${r.formato.tela_cheia ? ', em tela cheia' : ''}`],
           [`${nf(r.totais.horas_tela)} h`, 'da sua marca na tela', 'desde o início do contrato'],
-          [`${r.totais.predios} · ${r.totais.telas}`, 'prédios · telas', 'residenciais de Foz do Iguaçu'],
+          [`${r.totais.telas}`, 'telas', 'nos elevadores residenciais de Foz do Iguaçu'],
         ].map(([v, t, d]) => (
           <div key={t} className={`${CARD} p-5`}>
             <div className="text-[26px] font-extrabold tracking-tight text-[#1b1719] tabular-nums sm:text-[30px]">{v}</div>
@@ -326,7 +326,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false, noArVideoId }: { p
         <div className="min-w-0 flex-[1_1_360px] space-y-3.5">
           <div>
             <div className={EYEBROW}>Onde</div>
-            <h2 className={H2}>{r.totais.predios} prédios · {r.totais.telas} telas</h2>
+            <h2 className={H2}>{r.totais.telas} telas</h2>
           </div>
           <Mapa r={r} />
         </div>
@@ -346,7 +346,7 @@ export const RelatorioPedido = ({ pedidoId, compacto = false, noArVideoId }: { p
             </div>
           ))}
           {r.predios.length > 6 && (
-            <button onClick={() => setTodosPredios((x) => !x)} className="px-1 py-1.5 text-sm font-bold text-[#9C1E1E]">{todosPredios ? 'Mostrar menos' : `Ver os ${r.predios.length} prédios`}</button>
+            <button onClick={() => setTodosPredios((x) => !x)} className="px-1 py-1.5 text-sm font-bold text-[#9C1E1E]">{todosPredios ? 'Mostrar menos' : 'Ver todos os locais'}</button>
           )}
         </div>
       </section>

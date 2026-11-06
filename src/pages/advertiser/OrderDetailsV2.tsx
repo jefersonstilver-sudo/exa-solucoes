@@ -42,7 +42,7 @@ import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import { EsqueletoPedido } from '@/components/pedido-v2/Esqueletos';
 import { AvisoCobranca, FaturasPedido, useParcelas } from '@/components/cobranca/FaturasPedido';
 import PagamentosContrato, { usePagamentosContrato } from '@/components/cobranca/PagamentosContrato';
-import { useRelatorio, useExibicoesAoVivo } from '@/components/relatorio/useRelatorio';
+import { useRelatorio, useExibicoesAoVivo, telasTexto } from '@/components/relatorio/useRelatorio';
 
 type Aba = 'videos' | 'agenda' | 'predios' | 'relatorio' | 'empresa' | 'contrato';
 const ABAS: { id: Aba; label: string; icon: React.ElementType }[] = [
@@ -287,7 +287,8 @@ const OrderDetailsV2 = () => {
   const { parcelas } = useParcelas(id || null);
   const pagamentosEstado = usePagamentosContrato(id || null);
   const pagamentos = pagamentosEstado.dados;
-  const relatorioPedido = useRelatorio(aba === 'contrato' ? id || null : null);
+  const relatorioPedido = useRelatorio(id || null); // fonte única: telas, exibições e "no ar agora"
+  const telasPedido = relatorioPedido.data && !relatorioPedido.data.pendente ? relatorioPedido.data.totais?.telas || null : null;
 
   // ---- carregar pedido + tempo real (igual à página original) ----
   const loadOrder = async () => {
@@ -437,7 +438,7 @@ const OrderDetailsV2 = () => {
               <p className="mt-0.5 text-[13px] text-[#8b8285]">
                 {!celular && <>#{order.id.slice(0, 8)} · </>}
                 {order.data_inicio && order.data_fim && <>{fmtData(String(order.data_inicio_cobranca || order.data_inicio).slice(0, 10))} → {fmtData(order.data_fim)}</>}
-                {' · '}{buildings.length} {buildings.length === 1 ? 'prédio' : 'prédios'}
+                {telasPedido ? <>{' · '}{telasTexto(telasPedido)}</> : null}
               </p>
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 <span className={`rounded-full px-3 py-1.5 text-[12px] font-bold ${st.c}`}>{st.t}</span>
@@ -499,6 +500,7 @@ const OrderDetailsV2 = () => {
                       slots={agenda.slots}
                       rules={agenda.rules}
                       totalPredios={buildings.length}
+                      totalTelas={telasPedido}
                       serverActiveSlotId={serverActive}
                       onAgendar={() => setAba('agenda')}
                       onVerTela={() => setAba('predios')}
@@ -617,7 +619,7 @@ const OrderDetailsV2 = () => {
           )}
 
           {aba === 'predios' && (
-            <PrediosTab predios={buildings as any} slots={agenda.slots} rules={agenda.rules} serverActiveSlotId={serverActive} bloqueado={bloqueado} visaoInterna={visaoInterna} />
+            <PrediosTab totalTelas={telasPedido} predios={buildings as any} slots={agenda.slots} rules={agenda.rules} serverActiveSlotId={serverActive} bloqueado={bloqueado} visaoInterna={visaoInterna} />
           )}
 
           {aba === 'empresa' && (

@@ -34,6 +34,7 @@ const imgUrl = (b: PredioInfo): string | null => {
 
 
 interface Props {
+  totalTelas?: number | null; // fonte única: relatório do pedido
   /** Apenas prédios ATIVOS do pedido. */
   predios: PredioInfo[];
   slots: AgendaSlot[];
@@ -45,7 +46,7 @@ interface Props {
   visaoInterna?: boolean;
 }
 
-export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiveSlotId, bloqueado, visaoInterna }) => {
+export const PrediosTab: React.FC<Props> = ({ totalTelas, predios, slots, rules, serverActiveSlotId, bloqueado, visaoInterna }) => {
   const [q, setQ] = useState('');
   const [aberto, setAberto] = useState<PredioInfo | null>(null);
   const { atual } = useNoArAgora(slots, rules, serverActiveSlotId, 30000);
@@ -58,7 +59,7 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
         .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
     [predios, q],
   );
-  const telas = predios.reduce((s, b) => s + (b.quantidade_telas || b.numero_elevadores || 0), 0);
+  const telas = totalTelas || predios.reduce((s, b) => s + (b.quantidade_telas || b.numero_elevadores || 0), 0);
   const publico = predios.reduce((s, b) => s + (b.publico_estimado || 0), 0);
 
   return (
@@ -67,7 +68,6 @@ export const PrediosTab: React.FC<Props> = ({ predios, slots, rules, serverActiv
       <div className="px-0.5">
         <h2 className="text-[22px] font-extrabold tracking-tight text-[#1b1719] sm:text-2xl">Prédios</h2>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px] text-[#8b8285]">
-          <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{predios.length} {predios.length === 1 ? 'prédio' : 'prédios'}</span>
           {telas > 0 && <span className="inline-flex items-center gap-1"><Monitor className="h-3.5 w-3.5" />{telas} telas</span>}
           {publico > 0 && <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{publico.toLocaleString('pt-BR')} pessoas/mês</span>}
         </p>

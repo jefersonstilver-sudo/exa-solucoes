@@ -87,7 +87,7 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
   const total = nf(o.exibicoes ?? exibicoesAte(r)); doc.text(total, M, 82); // mesmo número do contador da página
   const wTot = doc.getTextWidth(total);
   txt('vezes', M + wTot + 2.5, 82, { size: 14, bold: true, cor: [255, 255, 255] });
-  txt(`em ${r.totais.predios} prédios residenciais de Foz do Iguaçu`, M, 90, { size: 9.5, cor: [249, 228, 230] });
+  txt(`em ${r.totais.telas} telas nos elevadores de Foz do Iguaçu`, M, 90, { size: 9.5, cor: [249, 228, 230] });
   // barra do contrato
   txt(`${r.pedido.dias_no_ar} dias no ar`, M, 102, { size: 8, cor: ROSA });
   if (r.pedido.dias_restantes != null) txt(`${r.pedido.dias_restantes} dias restantes`, M + 125, 102, { size: 8, cor: ROSA, align: 'right' });
@@ -104,7 +104,7 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
     [nf(r.totais.media_dia), 'exibições por dia, somando as telas'],
     [`${r.formato.minutos_dia_tela} min`, `por dia em cada tela${r.formato.tela_cheia ? ', em tela cheia' : ''}`],
     [`${nf(r.totais.horas_tela)} h`, 'da sua marca na tela'],
-    [`${r.totais.predios} · ${r.totais.telas}`, 'prédios · telas'],
+    [`${r.totais.telas}`, 'telas nos elevadores'],
   ];
   const kw = (L - 9) / 4;
   kpis.forEach(([v, t], i) => {
@@ -190,7 +190,7 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
   // mapa e prédios
   y += 6;
   if (y + 70 > 278) y = await novaPagina();
-  rotulo(`Onde sua marca aparece · ${r.totais.predios} prédios, ${r.totais.telas} telas`, M, y); y += 4;
+  rotulo(`Onde sua marca aparece · ${r.totais.telas} telas`, M, y); y += 4;
   if (mapa) { doc.addImage(mapa, 'JPEG', M, y, L, L * (470 / 900)); y += L * (470 / 900) + 6; }
   const colW = (L - 8) / 2;
   r.predios.forEach((p, i) => {

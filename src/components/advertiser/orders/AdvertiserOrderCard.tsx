@@ -5,6 +5,7 @@ import { Loader2, Monitor, Smartphone, Clock, Crown, ChevronRight } from 'lucide
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useOrderCurrentVideoData } from '@/hooks/useOrderCurrentVideoData';
 import { MiniaturaPedido } from './MiniaturaPedido';
+import { useTelasPedido, telasTexto } from '@/components/relatorio/useRelatorio';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { MoveToGroupMenu } from '@/components/orders/MoveToGroupMenu';
 import { OrderGroup } from '@/hooks/useOrderGroups';
@@ -51,6 +52,9 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
 }) => {
   const statusInfo = useOrderStatus(item, handleGeneratePix, handleStripePayment);
   const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
+  // tamanho do pedido em TELAS (fonte única: relatório). Carrinho/tentativa ainda sem relatório mostra os prédios escolhidos.
+  const telas = useTelasPedido(item.type === 'order' ? item.id : null);
+  const tamanho = telas ? telasTexto(telas) : item.type === 'order' ? '' : `${painelsList.length} ${painelsList.length === 1 ? 'prédio' : 'prédios'}`;
 
   // Video slot usage
   const usedSlots = item.videos?.length || 0;
@@ -163,8 +167,8 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
               {item.type === 'order' && item.is_master && <Crown className="h-3.5 w-3.5 flex-none text-amber-500" />}
             </span>
             <span className="mt-0.5 block truncate text-[12.5px] text-[#8b8285]">
-              {painelsList.length} {painelsList.length === 1 ? 'prédio' : 'prédios'}
-              {item.type === 'order' && item.plano_meses ? ` · ${item.plano_meses} ${item.plano_meses === 1 ? 'mês' : 'meses'}` : ''}
+              {tamanho}
+              {item.type === 'order' && item.plano_meses ? `${tamanho ? ' · ' : ''}${item.plano_meses} ${item.plano_meses === 1 ? 'mês' : 'meses'}` : ''}
               {restante ? ` · ${restante}` : ''}
             </span>
             <span className={cn('mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold', tom)}>{String(statusInfo.label || '').charAt(0).toUpperCase() + String(statusInfo.label || '').slice(1).toLowerCase()}</span>
@@ -261,7 +265,7 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
             {[
               { k: 'Duração', v: item.type === 'order' ? `${item.plano_meses} meses` : '1 mês' },
-              { k: 'Prédios', v: String(painelsList.length) },
+              telas ? { k: 'Telas', v: String(telas) } : { k: 'Prédios', v: String(painelsList.length) },
               { k: 'Exibições/mês', v: impressions.toLocaleString('pt-BR') },
             ].map((m) => (
               <div key={m.k}>
