@@ -11,7 +11,7 @@ import { executar, type Contexto } from "../_shared/nando-agente.ts";
 import { lerReferencia, revisarAviso, aprovacaoValida } from "../_shared/nando-qualidade.ts";
 
 // ferramentas do Nando que a equipe pode usar pelo CRM na conversa de um sindico (nunca publica nem remove: isso so com o sindico)
-const FERRAMENTAS_CRM = ["logo_do_predio", "ler_referencia", "criar_aviso_nando", "criar_opcoes_documento", "listar_avisos", "salvar_preferencia", "ver_arquivo"];
+const FERRAMENTAS_CRM = ["ver_contrato", "logo_do_predio", "ler_referencia", "criar_aviso_nando", "criar_opcoes_documento", "listar_avisos", "salvar_preferencia", "ver_arquivo"];
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const json = (status: number, b: unknown) => new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });

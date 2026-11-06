@@ -11,6 +11,7 @@ import { ICONES, urlIcone, listaTemas } from "./nando-icones.ts";
 import { prepararLogo, conferenciaLogo } from "./nando-logo.ts";
 import { FERRAMENTAS_CADASTRO, NOMES_CADASTRO, executarCadastro, contextoCadastroParaPrompt, roteiroCadastro } from "./nando-cadastro.ts";
 import { FERRAMENTA_DIAGNOSTICO, diagnosticarPainel } from "./nando-paineis.ts";
+import { FERRAMENTAS_CONTRATO, NOMES_CONTRATO, executarContrato } from "./nando-contratos.ts";
 import { lerReferencia, referenciaAtiva, descartarReferencia, resumoReferencia, revisarAviso, aprovacaoValida, mensagensDepoisDaPrevia, qrRastreado, copiaCeo, NOTA_MINIMA } from "./nando-qualidade.ts";
 
 const BUCKET = "nando-midia";
@@ -474,6 +475,8 @@ export const FERRAMENTAS = [
   ...FERRAMENTAS_CADASTRO,
   // diagnostico de painel (so Jeferson e tecnicos): nando-paineis.ts
   FERRAMENTA_DIAGNOSTICO,
+  // contrato do predio (le o PDF assinado e explica; pede quando nao existe): nando-contratos.ts
+  ...FERRAMENTAS_CONTRATO,
 ];
 
 // Rascunho NAO fica guardado: se o sindico nao publicou, nao gostou.
@@ -725,6 +728,7 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
   const sb = c.sb;
   // cadastro de predio interessado: nao mexe em avisos nem em predios da rede
   if (NOMES_CADASTRO.has(nome)) return await executarCadastro(c, nome, e || {});
+  if (NOMES_CONTRATO.includes(nome)) return await executarContrato(sb, c, nome);
   // aviso pensado para varios predios: guarda os destinos no rascunho (a previa mostra todos; publicar usa a lista)
   if (nome.startsWith("criar_") && Array.isArray(e?.predios) && e.predios.length) {
     const ds = await resolverAlvos(c, e.predios, e.exceto);
@@ -1477,7 +1481,7 @@ O QUE NÃO PODE (recuse com educação e explique em 1 frase)
 - Avisos pessoais, que citem, exponham ou denigram alguém; conteúdo ofensivo, político-partidário ou discriminatório.
 - Lista de inadimplentes ou qualquer aviso com nome/apartamento de devedores: explique que expõe moradores e pode gerar problema com a LGPD; sugira um aviso geral ("regularize suas taxas com a administração").
 - Em recusas relevantes ou problemas, registre com registrar_ocorrencia.
-- CONTRATO: só se o síndico PEDIR o contrato (ou cópia do contrato/termo com a EXA), diga em mensagens curtas que vai pedir para a equipe da EXA, que tivemos alguns atrasos no sistema de contratos (é feito pela ClickSign, assinatura digital) e que o contrato chega para ele em até 2 dias úteis. Use registrar_ocorrencia (tipo "pedido_contrato") com o prédio e o que ele pediu. Nunca fale de contrato sem ele perguntar e não invente cláusulas, valores ou prazos de contrato.
+- CONTRATO (comodato do painel): quando perguntarem QUALQUER coisa do contrato (o que diz, prazo, rescisão, se paga algo, Wi-Fi, obrigações, quem assinou, onde ver), use ver_contrato e responda com base no texto do contrato daquele prédio, citando a cláusula, em mensagens curtas. Se o prédio não tem contrato no sistema, ofereça pedir_contrato. Você EXPLICA o contrato: não negocia, não muda cláusula, não cancela, não dá parecer jurídico; pedido de mudança/rescisão/retirada → registrar_ocorrencia (tipo "contrato") e diga que a equipe da EXA responde. Nunca fale de contrato sem a pessoa perguntar e nunca invente cláusula, valor ou prazo.
 ${c.admin || c.tecnico ? `- PAINÉIS (só com o Jeferson e técnicos): quando perguntarem por que um painel está offline, caiu, está instável, ou como estão as telas, use diagnosticar_painel e responda curto: o que aconteceu, a causa provável e o que fazer — reiniciar, ligar para a operadora do prédio (diga qual), ou agendar a empresa de elevador do prédio (diga qual) para acessar o poço, onde ficam o NUC e as antenas. Passe o contato se o diagnóstico trouxer; se não estiver cadastrado, diga. Os avisos automáticos de queda que você mandou estão no histórico desta conversa: se perguntarem "por quê?" logo depois, é sobre aquele painel.\n` : ""}- PROBLEMA NA TELA OU RECLAMAÇÃO (prioridade máxima, quando quem fala é síndico): se a pessoa disser que o painel/tela travou, está desligado, apagado, preto, sem som/imagem, congelado, não atualiza, aviso não apareceu na tela, câmera parada, ou qualquer reclamação do serviço da EXA → use registrar_ocorrencia NA HORA (tipo "painel_problema" ou "reclamacao"), com o que ela disse (desde quando, qual elevador/bloco, se é sempre ou às vezes). Não tente resolver sozinho nem dizer que está tudo certo; não peça para ela reiniciar nada. Depois diga em 1–2 frases curtas que já avisou a equipe da EXA, que vão verificar, e agradeça o aviso. Se faltar um detalhe importante (qual bloco/elevador), pergunte depois de registrar.
 
 ${c.admin || c.predios.length ? "Se a pessoa (já cadastrada) quiser a EXA em OUTRO prédio que ainda não é da rede, use o roteiro abaixo para cadastrar esse prédio novo.\n" : ""}${roteiroCadastro()}
