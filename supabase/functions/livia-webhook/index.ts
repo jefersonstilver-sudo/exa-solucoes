@@ -7,7 +7,7 @@
 // ?action=passagem (sistema)     → a Sofia ou o Nando passam um assunto de dinheiro: {de, telefone, pedido_id?, contexto}.
 // Regras: falha nunca vira mensagem para o cliente (vai ao Jeferson). Modo teste: só o Jeferson e os testadores.
 // =====================================================================
-import { db, DB, LIVIA_VERSAO, telefoneCanonico, ehCeo, ehTestador, config, avisarCeo, clienteDoTelefone, instanciaLivia, logEv } from "../_shared/livia-core.ts";
+import { db, DB, LIVIA_VERSAO, telefoneCanonico, ehCeo, ehTestador, config, avisarCeo, clienteDoTelefone, instanciaLivia, logEv, asaas, contatosDoPedido, addDias, hojeBR, brl, dataBR, horaWhats, SB_URL } from "../_shared/livia-core.ts";
 import { responder, rodarTarefa } from "../_shared/livia-conversa.ts";
 import { exigirSistema, exigirEquipe, urlWebhookEvolution, webhookEvolutionOk } from "../_shared/guarda.ts";
 
@@ -48,6 +48,35 @@ Deno.serve(async (req) => {
     });
     await logEv(sb, "LIVIA_WEBHOOK_SETUP", { instancia: inst, status: r.status });
     return json(r.ok ? 200 : 502, { instancia: inst, status: r.status, resposta: (await r.text()).slice(0, 300) });
+  }
+
+  // ---- Asaas: webhook PRÓPRIO da Lívia (não mexe na asaas-webhook protegida) ----
+  if (action === "asaas_setup") {
+    if (!(await exigirSistema(req)) && !(await exigirEquipe(req, ["super_admin"]))) return json(401, { erro: "não autorizado" });
+    const sb = db();
+    const tok = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, "0")).join("");
+    await sb.from("livia_config").upsert({ chave: "asaas_token", valor: tok, updated_at: new Date().toISOString() });
+    const atual = await asaas("GET", "/webhooks?limit=50");
+    const meu = (atual.j?.data || []).find((w: any) => String(w.url || "").includes("/livia-webhook"));
+    const corpo = {
+      name: "Lívia (financeiro EXA)", url: `${SB_URL}/functions/v1/livia-webhook?action=asaas`, email: Deno.env.get("SOFIA_CEO_EMAIL") || "jefersonstilver@gmail.com",
+      enabled: true, interrupted: false, apiVersion: 3, authToken: tok, sendType: "SEQUENTIALLY",
+      events: ["PIX_AUTOMATIC_RECURRING_PAYMENT_INSTRUCTION_REFUSED", "PIX_AUTOMATIC_RECURRING_AUTHORIZATION_CANCELLED", "PIX_AUTOMATIC_RECURRING_AUTHORIZATION_EXPIRED"],
+    };
+    const r = meu ? await asaas("PUT", "/webhooks/" + meu.id, corpo) : await asaas("POST", "/webhooks", corpo);
+    await logEv(sb, "LIVIA_ASAAS_WEBHOOK", { ok: r.ok, status: r.status, id: r.j?.id || meu?.id, erro: r.ok ? null : r.j });
+    return json(r.ok ? 200 : 502, { ok: r.ok, status: r.status, id: r.j?.id || meu?.id || null, erro: r.ok ? null : r.j });
+  }
+  if (action === "asaas") {
+    const sb = db();
+    const cfg = await config(sb, true);
+    const tok = req.headers.get("asaas-access-token") || "";
+    if (!cfg.asaas_token || tok !== cfg.asaas_token) return json(401, { erro: "não autorizado" });
+    const ev = await req.json().catch(() => ({}));
+    const tarefa = trabalhar(() => eventoAsaas(sb, ev));
+    // @ts-ignore EdgeRuntime existe no Supabase
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(tarefa); else await tarefa;
+    return json(200, { ok: true });
   }
 
   if (action === "passagem") {
@@ -141,3 +170,48 @@ async function processar(sb: DB, tel: string, minha: number, pushName: string, t
   finally { await sb.rpc("livia_soltar_trava", { p_tel: tel }).then(() => {}, () => {}); }
 }
 
+
+/** Pix Automático: débito recusado / autorização cancelada → a Lívia avisa (cliente liberado) ou só o Jeferson. */
+async function eventoAsaas(sb: DB, ev: any) {
+  const nome = String(ev?.event || "");
+  const chave = String(ev?.id || ev?.paymentInstruction?.id || ev?.authorization?.id || "") + ":" + nome;
+  const { error: dup } = await sb.from("livia_avisos").insert({ tipo: "asaas:" + chave, canal: "sistema", destino: "" });
+  if (dup) return; // o Asaas manda "pelo menos uma vez": já tratado
+  await logEv(sb, "LIVIA_ASAAS_EVENTO", { nome, chave, pi: ev?.paymentInstruction || null, aut: ev?.authorization ? { id: ev.authorization.id, status: ev.authorization.status, customerId: ev.authorization.customerId } : null });
+
+  // acha o pedido: cobrança → cliente do Asaas → pedido
+  let customer = String(ev?.authorization?.customerId || "");
+  let pay: any = null;
+  if (ev?.paymentInstruction?.paymentId) { const r = await asaas("GET", "/payments/" + ev.paymentInstruction.paymentId); if (r.ok) { pay = r.j; customer = customer || String(r.j?.customer || ""); } }
+  let pedidoId = "";
+  if (customer) {
+    const { data: p1 } = await sb.from("pedidos").select("id").eq("asaas_customer_id", customer).not("status", "in", "(cancelado,cancelado_automaticamente,finalizado)").limit(1);
+    pedidoId = p1?.[0]?.id || "";
+    if (!pedidoId) { const { data: c1 } = await sb.from("sofia_cobrancas").select("pedido_id").eq("customer_id", customer).not("pedido_id", "is", null).order("created_at", { ascending: false }).limit(1); pedidoId = String(c1?.[0]?.pedido_id || ""); }
+  }
+  if (!pedidoId) { await avisarCeo(sb, `⚠️ Asaas: ${nome} (cliente Asaas ${customer || "?"}), mas não achei o pedido. Confere?`); return; }
+  const ct = await contatosDoPedido(sb, pedidoId);
+  const { data: ped } = await sb.from("pedidos").select("livia_cobranca").eq("id", pedidoId).maybeSingle();
+  const valor = pay?.value ? brl(pay.value) : "";
+  const tentativa = Number(ev?.paymentInstruction?.retryAttempt || 0);
+
+  if (nome.endsWith("PAYMENT_INSTRUCTION_REFUSED")) {
+    // pede nova tentativa para amanhã (só funciona se a autorização foi criada permitindo; se não, segue sem)
+    let reagendou = false;
+    if (ev?.paymentInstruction?.id && tentativa < 3) {
+      const rr = await asaas("POST", `/pix/automatic/paymentInstructions/${ev.paymentInstruction.id}/retries`, { dueDate: addDias(hojeBR(), 1) });
+      reagendou = rr.ok;
+    }
+    await avisarCeo(sb, `💳 Pix Automático de ${ct.nomePedido} ${valor} não passou${tentativa ? ` (tentativa ${tentativa + 1})` : ""}. ${reagendou ? "Pedi nova tentativa para amanhã." : "Não deu para reagendar (autorização sem retentativa)."}${ped?.livia_cobranca ? " Já estou falando com o cliente." : " Cobrança deste pedido ainda não liberada para mim: não falei com o cliente."}`);
+    if (ped?.livia_cobranca && ct.cobrar.fone) {
+      const msg = tentativa === 0
+        ? `O débito do Pix Automático de ${ct.nomePedido} (${valor}) não passou hoje. Avise o cliente de forma leve e natural (nada de cobrança dura): o banco dele costuma tentar de novo ainda hoje${reagendou ? " e, se não der, o sistema tenta amanhã" : ""}. Ofereça mandar um Pix agora para resolver de uma vez (gerar_pagamento). Não fale de multa.`
+        : `O Pix Automático de ${ct.nomePedido} (${valor}) falhou de novo. Fale no estilo "ops, ontem não deu certo o débito…" e ofereça o Pix agora (gerar_pagamento), sem multa nem juros se pagar hoje.`;
+      if (horaWhats()) await rodarTarefa(sb, ct.cobrar.fone, msg);
+      else await sb.from("livia_passagens").insert({ de: "livia", para: "livia", telefone: ct.cobrar.fone, pedido_id: pedidoId, contexto: msg });
+    }
+    return;
+  }
+  // autorização cancelada/expirada: o cliente desligou o Pix Automático — decisão do Jeferson
+  await avisarCeo(sb, `🔕 ${ct.nomePedido}: a autorização do Pix Automático foi ${nome.endsWith("EXPIRED") ? "encerrada (fim da vigência)" : "cancelada"}. As próximas mensalidades não vão debitar sozinhas. Quer que eu ofereça o boleto ao cliente?`);
+}

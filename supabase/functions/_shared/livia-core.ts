@@ -6,7 +6,7 @@
 // =====================================================================
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-export const LIVIA_VERSAO = "2026-11-06.1-inicio";
+export const LIVIA_VERSAO = "2026-11-06.2-vencimento-pix-automatico";
 export const CEO_NUMERO = (Deno.env.get("LIVIA_CEO") || "5545998090000").replace(/\D/g, "");
 export const LIVIA_NUMERO = "5545999429820";
 export const SOFIA_NUMERO = "5545991415920";

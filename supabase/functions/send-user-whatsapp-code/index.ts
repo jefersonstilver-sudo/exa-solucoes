@@ -30,6 +30,7 @@ interface RequestBody {
   tipo: 'phone_change' | '2fa_login' | 'new_phone' | 'signup';
   novoTelefone?: string;
   sessionId?: string;
+  canal?: 'nando';
 }
 
 Deno.serve(async (req) => {
@@ -148,6 +149,24 @@ Deno.serve(async (req) => {
     if (insertError) {
       console.error('❌ [SEND-USER-CODE] Erro ao salvar código:', insertError);
       throw insertError;
+    }
+
+    // 06/11/2026 (Jeferson): tudo de síndico é do Nando — o código do formulário do síndico sai pelo WhatsApp do Nando.
+    if (body.canal === 'nando') {
+      const evoUrl = (Deno.env.get('EVOLUTION_API_URL') || '').replace(/\/+$/, '');
+      const evoKey = Deno.env.get('EVOLUTION_API_KEY') || '';
+      let inst = Deno.env.get('NANDO_INSTANCIA') || '';
+      if (!inst) {
+        const { data: ni } = await supabase.from('evolution_instances').select('instance_name').ilike('instance_name', '%nando%').order('created_at', { ascending: false }).limit(1).maybeSingle();
+        inst = ni?.instance_name || 'exa-nando-sindicos-mvmjft5q';
+      }
+      const textoNando = `Oi! Aqui é o Nando, da EXA Mídia 👋\n\nSeu código para confirmar o cadastro do prédio é *${codigo}*.\n\nVale por 5 minutos. Depois é por aqui mesmo que eu cuido de tudo do seu condomínio com você.`;
+      const rN = await fetch(`${evoUrl}/message/sendText/${inst}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: evoKey },
+        body: JSON.stringify({ number: soDigitos(telefoneAlvo).startsWith('55') ? soDigitos(telefoneAlvo) : '55' + soDigitos(telefoneAlvo), text: textoNando }),
+      });
+      if (!rN.ok) throw new Error('Não consegui enviar o código pelo WhatsApp agora. Tente de novo em instantes.');
+      return new Response(JSON.stringify({ success: true, canal: 'nando' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // 🔄 Enviar via roteador zapi-send-message → Evolution (Notificações EXA)

@@ -58,7 +58,8 @@ O QUE VOCÊ RESOLVE SOZINHA (regras do Jeferson)
 
 O QUE SEMPRE PASSA PELO JEFERSON (ferramenta perguntar_ao_jeferson)
 - Qualquer coisa que não esteja no contrato do cliente ou que você não saiba com certeza. NUNCA invente valor, data, desconto ou prazo.
-- Prazo extra, desconto (fora a regra acima), parcelamento, perdão de mensalidade, mudança de valor, cancelamento, reclamação, contestação de valor, cliente bravo, pedido de reembolso, nota fiscal (ainda não está no sistema).
+- Prazo extra, desconto (fora a regra acima), parcelamento, perdão de mensalidade, mudança de valor, reclamação, contestação de valor, cliente bravo, pedido de reembolso, nota fiscal (ainda não está no sistema).
+- SEMPRE com o Jeferson, sem exceção: CANCELAMENTO de plano e PAGAMENTO FEITO POR FORA (transferência, Pix para outra chave, dinheiro). Você registra, diz que vai confirmar e espera ele.
 - Quando perguntar ao Jeferson, diga ao cliente algo como "vou confirmar aqui e te retorno amanhã até as 10h, pode ser?" — nunca "não consigo", nunca "não tenho acesso".
 - Kammer / 3K / SoHo: o Jeferson trata direto. Diga apenas que vão entrar em contato com ele, e avise o Jeferson.
 
@@ -68,7 +69,8 @@ O QUE NÃO É SEU
 - Venda nova / quer anunciar → passar_para_sofia.
 
 COBRANÇA (como funciona — use para explicar, não recite)
-- Vencimento: o dia em que o cliente comprou o plano. Pode mudar a data: a parcela é ajustada proporcionalmente (mensalidade ÷ 30 × dias) — isso você pergunta ao Jeferson antes.
+- Vencimento: o dia em que o cliente comprou o plano (compra em 29, 30 ou 31 vence no último dia do mês). O cliente pode escolher outra data: você mesma muda com mudar_vencimento — primeiro mostra a simulação (a próxima mensalidade fica proporcionalmente maior ou menor: mensalidade ÷ 30 × dias), o cliente concorda, aí você confirma.
+- "Até quando vai o meu plano?": está em situacao_cliente (início e fim do plano).
 - Lembretes: 10 dias antes (WhatsApp e e-mail com o Pix ou boleto), 3 dias antes (WhatsApp), 1 dia antes (e-mail). Pagou, para tudo.
 - Atraso: no 10º dia depois do vencimento o pedido é suspenso (a marca sai das telas). Pagou, você reativa na hora.
 - Multa e juros: nunca puxe o assunto. Se o cliente vai pagar, você tira.
@@ -121,6 +123,7 @@ const F_CLIENTE: T[] = [
   { name: "enviar_boleto_pdf", description: "Manda o PDF do boleto como arquivo no WhatsApp do cliente.", input_schema: obj({ url: S, nome_arquivo: S }, ["url"]) },
   { name: "perguntar_ao_jeferson", description: "Leva uma dúvida ou pedido do cliente ao Jeferson e registra. Use para tudo que não está na regra ou que você não sabe com certeza. Depois diga ao cliente que retorna amanhã até as 10h.", input_schema: obj({ pergunta: { ...S, description: "a pergunta, objetiva, com o que o cliente quer" }, contexto: { ...S, description: "o que você já sabe: valores, datas, o que o cliente disse" }, pedido_id: S }, ["pergunta"]) },
   { name: "registrar_comprovante", description: "Registra um comprovante ou um 'já paguei' do cliente e manda para o Jeferson conferir. Antes, confere se o pagamento já entrou.", input_schema: obj({ pedido_id: S, midia_id: S, valor: N, data_pagamento: S, pagador: S, observacao: S }) },
+  { name: "mudar_vencimento", description: "Muda o dia de vencimento das próximas mensalidades com ajuste proporcional na primeira (mensalidade ÷ 30 × dias). Sem confirmar=true só simula; mostre a simulação ao cliente e só confirme quando ele concordar.", input_schema: obj({ pedido_id: S, novo_dia: { ...N, description: "1 a 31 (29–31 = último dia do mês quando o mês for menor)" }, confirmar: B }, ["pedido_id", "novo_dia"]) },
   { name: "atualizar_financeiro", description: "Grava o contato financeiro do cliente (quem recebe as cobranças).", input_schema: obj({ pedido_id: S, nome: S, email: S, whatsapp: S }, ["pedido_id"]) },
   { name: "passar_para_sofia", description: "Passa à Sofia um assunto de vídeo, programação, prédios ou venda nova. A Sofia chama o cliente.", input_schema: obj({ contexto: { ...S, description: "o que o cliente quer, com detalhes" }, pedido_id: S }, ["contexto"]) },
 ];
@@ -201,6 +204,35 @@ async function executar(c: Contexto, nome: string, e: any): Promise<string> {
       const { data: d } = await sb.from("livia_decisoes").insert({ telefone_cliente: c.tel, nome_cliente: [c.nome, c.empresa].filter(Boolean).join(" — ") || null, pedido_id: pid, pergunta: `Comprovante / "já paguei" para conferir: ${e.valor ? brl(e.valor) : "valor não informado"}${e.data_pagamento ? " em " + e.data_pagamento : ""}${e.pagador ? " por " + e.pagador : ""}`, contexto: `${e.observacao || ""}\n${link ? "Comprovante: " + link : "Sem arquivo."}\nSituação no sistema: ${sit.slice(0, 1500)}`, prometido_ate: amanha10h() }).select("codigo").single();
       await avisarCeo(sb, `🧾 *${d?.codigo || "comprovante"}* · ${[c.nome, c.empresa].filter(Boolean).join(" — ") || "+" + c.tel}\n${e.valor ? brl(e.valor) : ""}${e.data_pagamento ? " · " + e.data_pagamento : ""}${e.pagador ? " · " + e.pagador : ""}\n${link || "(sem arquivo)"}\n\nNão achei a baixa automática. Confere no Asaas e me diz *${d?.codigo}* ok (dou baixa e aviso o cliente) ou o que houve.`);
       return `registrado (${d?.codigo}). Situação atual: ${sit.slice(0, 600)}\nDiga ao cliente que recebeu, vai conferir e confirma até amanhã às 10h. Se já aparece pago acima, agradeça e diga que está tudo certo.`;
+    }
+    case "mudar_vencimento": {
+      const id = pedidoValido(c, e.pedido_id); if (!id) return "pedido não é deste cliente";
+      const dia = Math.round(Number(e.novo_dia));
+      if (!(dia >= 1 && dia <= 31)) return "dia inválido (1 a 31)";
+      const hoje = hojeBR();
+      const { data: rows } = await sb.from("cobranca_auditoria").select("id,numero,data_vencimento,valor,status,pix_lote_id,observacao").eq("pedido_id", id).eq("status", "aberto").gte("data_vencimento", hoje).order("numero");
+      if (!rows?.length) return "não há mensalidade futura em aberto para mudar (se houver atrasada, resolva a atrasada primeiro).";
+      if (rows.some((r: any) => r.pix_lote_id)) return "a próxima mensalidade já tem Pix/boleto gerado. Mudar agora deixaria a cobrança gerada com valor errado: pergunte ao Jeferson.";
+      const noDia = (ymd: string, d: number) => { const y = Number(ymd.slice(0, 4)), m = Number(ymd.slice(5, 7)); const ult = new Date(Date.UTC(y, m, 0)).getUTCDate(); return `${ymd.slice(0, 7)}-${String(Math.min(d, ult)).padStart(2, "0")}`; };
+      const maisMes = (ymd: string, k: number) => { const d = new Date(Date.UTC(Number(ymd.slice(0, 4)), Number(ymd.slice(5, 7)) - 1 + k, 1, 12)); return d.toISOString().slice(0, 10); };
+      const primeiro = rows[0]; const antigo = String(primeiro.data_vencimento).slice(0, 10);
+      let novo = noDia(antigo, dia);
+      if (novo < addDiasS(2)) novo = noDia(maisMes(antigo, 1), dia);
+      const dif = difDias(antigo, novo);
+      if (dif === 0) return "o vencimento já é nesse dia";
+      const vals = rows.map((r: any) => Number(r.valor));
+      const mensal = vals.sort((a, b) => vals.filter((v) => v === a).length - vals.filter((v) => v === b).length).pop() || Number(primeiro.valor);
+      const ajuste = Math.round((mensal / 30) * dif * 100) / 100;
+      const novoValor = Math.max(0, Math.round((Number(primeiro.valor) + ajuste) * 100) / 100);
+      const plano = rows.map((r: any, i: number) => ({ id: r.id, numero: r.numero, de: String(r.data_vencimento).slice(0, 10), para: i === 0 ? novo : noDia(maisMes(novo, i), dia), valor: i === 0 ? novoValor : Number(r.valor) }));
+      const txt = plano.slice(0, 4).map((p: any) => `#${p.numero}: ${dataBR(p.de)} → ${dataBR(p.para)} · ${brl(p.valor)}`).join("\n") + (plano.length > 4 ? `\n(+${plano.length - 4} mensalidades no dia ${dia})` : "");
+      const expl = `${dif > 0 ? "mais" : "menos"} ${Math.abs(dif)} dias de uso → ${dif > 0 ? "+" : "−"}${brl(Math.abs(ajuste))} só na primeira`;
+      if (!e.confirmar) return `SIMULAÇÃO (nada mudou ainda): ${expl}\n${txt}\nMostre ao cliente de forma simples e pergunte se pode confirmar.`;
+      for (const p of plano) await sb.from("cobranca_auditoria").update({ data_vencimento: p.para, valor: p.valor, updated_at: new Date().toISOString(), ...(p.id === primeiro.id ? { observacao: [primeiro.observacao, `Vencimento mudado para o dia ${dia} em ${dataBR(hoje)} (${expl})`].filter(Boolean).join(" · ").slice(0, 300) } : {}) }).eq("id", p.id).eq("status", "aberto");
+      await sb.from("pedidos").update({ dia_vencimento: dia }).eq("id", id);
+      await logEv(sb, "LIVIA_VENCIMENTO_MUDADO", { pedido: id, dia, dif, ajuste, plano });
+      await avisarCeo(sb, `📅 Mudei o vencimento de ${c.empresa || c.nome || "cliente"} para o dia ${dia} (${expl}).`);
+      return `FEITO: ${expl}\n${txt}`;
     }
     case "atualizar_financeiro": {
       const id = pedidoValido(c, e.pedido_id); if (!id) return "pedido não é deste cliente";

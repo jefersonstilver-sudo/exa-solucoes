@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
   const cfg = await config(sb, true);
   if (cfg.ligada !== "1" && b.forcar !== true) return json(200, { ok: true, pausada: true });
   await passo("retornos", () => retornos(sb));
+  await passo("pendentes", () => pendentes(sb));
   if (cfg.regua === "1" || b.regua === true) await passo("regua", () => regua(sb, !!b.simular));
   await passo("resumo", () => resumo(sb, Number(cfg.resumo_hora || 19), !!b.resumo_agora));
   return json(200, { ok: true, ...out });
@@ -52,6 +53,17 @@ async function retornos(sb: DB) {
     }
   }
   return { abertas: (data || []).length, satisfacoes: feitos };
+}
+
+// mensagens que a Lívia guardou para o horário comercial (ex.: Pix Automático recusado à noite)
+async function pendentes(sb: DB) {
+  if (!horaWhats()) return "fora do horário";
+  const { data } = await sb.from("livia_passagens").select("*").eq("status", "aberta").eq("para", "livia").eq("de", "livia").order("id").limit(10);
+  for (const p of data || []) {
+    const ok = await rodarTarefa(sb, p.telefone, p.contexto).catch(() => false);
+    await sb.from("livia_passagens").update({ status: ok ? "feita" : "falhou", feita_em: new Date().toISOString() }).eq("id", p.id);
+  }
+  return (data || []).length;
 }
 
 // ---------------- 2. régua ----------------

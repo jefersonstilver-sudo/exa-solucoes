@@ -77,6 +77,7 @@ export const WhatsAppVerifyBlock: React.FC<Props> = ({ whatsappRaw }) => {
           telefone: e164,
           tipo: 'signup',
           sessionId: sindico.verificationSessionId,
+          canal: 'nando', // síndico: o código sai pelo WhatsApp do Nando
         },
       });
       if (err || (data as any)?.error) {
@@ -86,7 +87,7 @@ export const WhatsAppVerifyBlock: React.FC<Props> = ({ whatsappRaw }) => {
       setSecondsLeft(5 * 60);
       setResendInSec(60);
       setCode('');
-      toast.success('Código enviado pelo WhatsApp');
+      toast.success('O Nando, da EXA, te mandou o código no WhatsApp');
     } catch (e: any) {
       console.error('[WhatsAppVerifyBlock] sendCode error:', e);
       setPhase('idle');
