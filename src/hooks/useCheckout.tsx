@@ -66,7 +66,8 @@ export const useCheckout = () => {
       couponCode,
       validationResult?.categoria,
       tipoDesconto,
-      precoFinal
+      precoFinal,
+      { parcial: validationResult?.desconto_parcial, elegiveis: validationResult?.predios_elegiveis }
     );
     
     console.log("✅ [useCheckout] Preço calculado:", {
@@ -95,8 +96,13 @@ export const useCheckout = () => {
     const currentOrderValue = calculateTotalPriceWrapper();
     const quantidadePredios = cartItems.length;
     console.log('[useCheckout] Validando cupom com valor:', { code, planMonths, currentOrderValue, quantidadePredios });
-    return await validateCouponOriginal(code, currentOrderValue, quantidadePredios);
-  }, [validateCouponOriginal, calculateTotalPriceWrapper, cartItems.length]);
+    const buildingIds = Array.from(new Set(cartItems
+      .map(item => String((item.panel as any)?.buildings?.id || (item.panel as any)?.building_id || ''))
+      .filter(Boolean)));
+    return await validateCouponOriginal(code, currentOrderValue, quantidadePredios, {
+      buildingIds, planMonths, tipoProduto: 'horizontal'
+    });
+  }, [validateCouponOriginal, calculateTotalPriceWrapper, cartItems]);
 
   // Navegação entre etapas - CORRIGIDO: redirecionar para /checkout/resumo
   const handleNextStep = useCallback(() => {

@@ -14,7 +14,7 @@ interface PaymentMethodSelectorProps {
   totalAmount: number;
   selectedPlan: number;
   couponCode?: string;
-  tipoDesconto?: 'percentual' | 'valor_fixo' | 'preco_final';
+  tipoDesconto?: 'percentual' | 'valor_fixo' | 'preco_final' | 'mensal_fixo';
 }
 
 const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({

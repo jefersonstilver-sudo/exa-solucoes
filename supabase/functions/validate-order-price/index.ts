@@ -214,92 +214,43 @@ serve(async (req) => {
     let couponDetails = null;
 
     if (couponCode) {
-      // Special test coupons
-      if (couponCode === '573040') {
-        console.log('🎯 [VALIDATE_PRICE] Special test coupon 573040 detected');
-        return new Response(
-          JSON.stringify({
-            isValid: true,
-            serverPrice: 0.05,
-            clientPrice,
-            priceDifference: Math.abs(0.05 - clientPrice),
-            isPotentialFraud: false,
-            breakdown,
-            couponApplied: { code: '573040', discount: 100, type: 'test' },
-            signature: await generateSignature(`0.05-${Date.now()}`, hmacSecret),
-            message: 'Test coupon applied - R$ 0.05'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (couponCode === 'CORTESIA_ADMIN') {
-        console.log('🎁 [VALIDATE_PRICE] Courtesy coupon detected');
-        return new Response(
-          JSON.stringify({
-            isValid: true,
-            serverPrice: 0.00,
-            clientPrice,
-            priceDifference: Math.abs(0 - clientPrice),
-            isPotentialFraud: false,
-            breakdown,
-            couponApplied: { code: 'CORTESIA_ADMIN', discount: 100, type: 'courtesy' },
-            signature: await generateSignature(`0-${Date.now()}`, hmacSecret),
-            message: 'Courtesy order - R$ 0.00'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Fetch regular coupon from database
-      const { data: coupon, error: couponError } = await supabase
-        .from('cupons')
-        .select('*')
-        .eq('codigo', couponCode.toUpperCase())
-        .eq('ativo', true)
-        .single();
-
-      if (couponError || !coupon) {
-        console.warn('⚠️ [VALIDATE_PRICE] Invalid or inactive coupon:', couponCode);
+      // Regra única do banco: produto, prédios, plano, limites e datas
+      const { data: avaliacao, error: avalError } = await supabase.rpc('cupom_avaliar', {
+        p_codigo: String(couponCode),
+        p_user: userId || null,
+        p_valor: subtotal,
+        p_meses: planMonths,
+        p_building_ids: buildingIds,
+        p_tipo_produto: 'horizontal',
+        p_pedido_id: null,
+      });
+      const coupon: any = avaliacao;
+      if (avalError || !coupon?.valid) {
+        console.warn('⚠️ [VALIDATE_PRICE] Cupom recusado:', couponCode, avalError?.message || coupon?.error);
       } else {
-        // Check if coupon is expired
-        if (coupon.data_expiracao && new Date(coupon.data_expiracao) < new Date()) {
-          console.warn('⚠️ [VALIDATE_PRICE] Expired coupon:', couponCode);
-        } else if (coupon.min_meses && planMonths < coupon.min_meses) {
-          console.warn('⚠️ [VALIDATE_PRICE] Plan too short for coupon:', { planMonths, minRequired: coupon.min_meses });
+        couponValid = true;
+        const valor = Number(coupon.desconto_percentual) || 0;
+        const elegiveis: string[] = Array.isArray(coupon.predios_elegiveis) ? coupon.predios_elegiveis : buildingIds;
+        const baseDesconto = coupon.desconto_parcial
+          ? breakdown.filter((b) => elegiveis.includes(b.buildingId)).reduce((s, b) => s + b.calculatedPrice, 0)
+          : subtotal;
+        const resto = subtotal - baseDesconto;
+        if (coupon.tipo_desconto === 'preco_final') {
+          afterCoupon = valor;
+          couponDiscount = 100;
+          couponDetails = { code: coupon.codigo, discount: valor, type: 'preco_final' };
+        } else if (coupon.tipo_desconto === 'valor_fixo') {
+          couponDiscount = valor;
+          afterCoupon = Math.max(resto + Math.max(baseDesconto - valor, 0), 0.05);
+          couponDetails = { code: coupon.codigo, discount: valor, type: 'valor_fixo' };
+        } else if (coupon.tipo_desconto === 'mensal_fixo') {
+          couponDiscount = valor;
+          afterCoupon = resto + valor * (planMonths || 1);
+          couponDetails = { code: coupon.codigo, discount: valor, type: 'mensal_fixo' };
         } else {
-          couponValid = true;
-          
-          // Handle different coupon types
-          if (coupon.tipo_desconto === 'preco_final') {
-            // PREÇO FINAL: O valor é o preço final exato
-            console.log('💰 [VALIDATE_PRICE] Coupon tipo PREÇO FINAL:', coupon.desconto_percentual);
-            afterCoupon = coupon.desconto_percentual;
-            couponDiscount = 100; // Display purpose
-            couponDetails = {
-              code: coupon.codigo,
-              discount: coupon.desconto_percentual,
-              type: 'preco_final'
-            };
-          } else if (coupon.tipo_desconto === 'valor_fixo') {
-            // VALOR FIXO: Subtrai do subtotal
-            couponDiscount = coupon.desconto_percentual || 0;
-            afterCoupon = Math.max(subtotal - couponDiscount, 0.05);
-            couponDetails = {
-              code: coupon.codigo,
-              discount: couponDiscount,
-              type: 'valor_fixo'
-            };
-          } else {
-            // PERCENTUAL: Aplica porcentagem
-            couponDiscount = coupon.desconto_percentual || 0;
-            afterCoupon = subtotal * (1 - couponDiscount / 100);
-            couponDetails = {
-              code: coupon.codigo,
-              discount: couponDiscount,
-              type: 'percentage'
-            };
-          }
+          couponDiscount = valor;
+          afterCoupon = resto + baseDesconto * (1 - valor / 100);
+          couponDetails = { code: coupon.codigo, discount: valor, type: 'percentage' };
         }
       }
     }

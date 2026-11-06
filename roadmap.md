@@ -82,3 +82,8 @@
 
 # Nando .45 (commit 4f50799)
 - [ ] Deploy nando-webhook, nando-crm, nando-painel, nando-cron e conferir versao 2026-11-04.45-logo-js — BLOQUEADO: commit 4f50799 existe no repositório mas não está no HEAD (d0b9e2028); disco difere em _shared/nando-core.ts e _shared/nando-logo.ts. Aguardando push vazio na main.
+
+# Fila 06/11/2026
+- [ ] Deploy exa2-relatorio-pedido (main 246a3b5) + publicar site (cupons novos + relatório + exibições v22). Sem alterar arquivos.
+- [ ] Redeploy exa2-relatorio-pedido com commit 50d4214 — BLOQUEADO: commit ainda não chegou (último da função é 4987eb5). Aguardando push.
+- [ ] Deploy exa-tela (809ed19, ação camera_local) + teste {"acao":"camera_local","chave":"tapocasa","token":"x"} deve dar 401.
