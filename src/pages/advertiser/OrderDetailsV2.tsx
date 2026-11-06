@@ -396,7 +396,7 @@ const OrderDetailsV2 = () => {
               )}
               <p className="mt-0.5 text-[13px] text-[#8b8285]">
                 {!celular && <>#{order.id.slice(0, 8)} · </>}
-                {order.data_inicio && order.data_fim && <>{fmtData(order.data_inicio)} → {fmtData(order.data_fim)}</>}
+                {order.data_inicio && order.data_fim && <>{fmtData(String(order.data_inicio_cobranca || order.data_inicio).slice(0, 10))} → {fmtData(order.data_fim)}</>}
                 {' · '}{buildings.length} {buildings.length === 1 ? 'prédio' : 'prédios'}
               </p>
               <div className="mt-2.5 flex flex-wrap gap-1.5">
