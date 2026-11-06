@@ -348,16 +348,24 @@ export const FERRAMENTAS = [
     input_schema: { type: "object", properties: {} },
   },
   {
-    name: "texto_para_documento",
-    description: "COMUNICADO LONGO COLADO COMO TEXTO (e-mail, circular, mensagem grande do síndico): transforma o texto COMPLETO num documento (PDF bonito, com título e assinatura) e devolve um midia_id. Depois use criar_opcoes_documento com esse midia_id: assim o síndico recebe as mesmas opções de um documento (resumo + QR do comunicado completo, cartões com tudo, comunicado completo na tela). Copie o texto EXATAMENTE como ele mandou.",
+    name: "criar_pdf_comunicado",
+    description: "Cria o PDF PROFISSIONAL de um comunicado (cores e logo do condomínio, título forte, quadro de destaque, seções, assinatura, protocolo no rodapé), MANDA o PDF para a pessoa no WhatsApp e devolve um midia_id para o aviso da tela levar um resumo com QR que abre o documento. Só use depois que a pessoa disser que quer o PDF. Use SÓ informações do texto dela (pode reorganizar e corrigir o português; não invente data, horário, número ou regra).",
     input_schema: {
       type: "object",
       properties: {
-        titulo: { type: "string", description: "Título do comunicado (ex: 'Sanepar: manutenção na rede')" },
-        texto: { type: "string", description: "O texto COMPLETO do síndico, sem cortar nem mudar nada" },
-        assinatura: { type: "string", description: "Quem assina (ex: 'Administração do Condomínio X')" },
+        categoria: { type: "string", description: "Assunto em poucas palavras, vai em caixa alta acima do título (ex: 'Abastecimento de água')" },
+        titulo: { type: "string", description: "Título forte em até 2 linhas curtas separadas por \n (ex: 'Manutenção na rede.\nUso consciente da água.')" },
+        subtitulo: { type: "string", description: "Uma frase explicando do que se trata" },
+        destaque: { type: "object", description: "Opcional: o dado mais importante em destaque (horário, data, prazo)", properties: { rotulo: { type: "string" }, valor: { type: "string", description: "curto: '10h30', '15/11', 'Até sábado'" }, nota: { type: "string" } } },
+        saudacao: { type: "string", description: "Padrão 'Prezados moradores,'" },
+        paragrafos: { type: "array", items: { type: "string" }, description: "O corpo do comunicado, em parágrafos curtos, com todas as informações do texto" },
+        secoes: { type: "array", items: { type: "object", properties: { titulo: { type: "string" }, texto: { type: "string" } } }, description: "Seções com título (ex: 'Como colaborar')" },
+        encerramento: { type: "string", description: "Ex: 'Agradecemos a compreensão e a colaboração de todos.'" },
+        assinatura: { type: "string", description: "Ex: 'Administração do Condomínio X' (o que a pessoa usa)" },
+        rodape: { type: "object", description: "Opcional: acompanhamento (ex: rotulo 'Acompanhamento', texto 'Protocolo Sanepar: 2026...')", properties: { rotulo: { type: "string" }, texto: { type: "string" } } },
+        cor: { type: "string", description: "Cor do condomínio em #RRGGBB (das preferências/logo do prédio). Sem cor: verde-escuro sóbrio." },
       },
-      required: ["titulo", "texto"],
+      required: ["titulo", "paragrafos"],
     },
   },
   {
@@ -933,18 +941,29 @@ export async function executar(c: Contexto, nome: string, e: any): Promise<Saida
       const ativos = await avisosAtivos(c, p.id);
       return `Rascunho criado [${idCurto(a.id)}]. Link de prévia (vale 10 min): ${link}\nAvisos já no ar neste prédio: ${ativos}${ativos === 0 ? " (este será o único: não fale de segundos de tela)" : ""}.`;
     }
-    case "texto_para_documento": {
+    case "criar_pdf_comunicado": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
-      const texto = String(e.texto || "").trim();
-      if (texto.length < 80) return "Texto curto demais para virar documento: faça um aviso normal.";
-      const bytes = await pdfDoComunicado(String(e.titulo || "Comunicado"), texto, String(e.assinatura || `Administração do ${p.nome}`));
+      const { data: pf } = await sb.from("nando_predio_perfil").select("preferencias").eq("building_id", p.id).maybeSingle();
+      const pref: any = pf?.preferencias || {};
+      let logo: Uint8Array | null = null;
+      if (pref.logo?.url && String(pref.usar_logo || "").toLowerCase() !== "nao") {
+        try { const r = await fetch(pref.logo.url, { signal: AbortSignal.timeout(10000) }); if (r.ok) logo = new Uint8Array(await r.arrayBuffer()); } catch (_) { logo = null; }
+      }
+      const corP = [e.cor, pref.cor, pref.cor_destaque, pref.logo?.tom].find((x) => /^#?[0-9a-f]{6}$/i.test(String(x || "")));
+      const nomeCond = String(p.nome).trim();
+      const bytes = await pdfComunicado({ ...e, condominio: nomeCond, cor: corP ? String(corP) : undefined, logo, logoClara: pref.logo?.placa === "escura",
+        assinatura: e.assinatura || `Administração do ${nomeCond}` });
       const id = "t" + crypto.randomUUID().replace(/-/g, "").slice(0, 10);
       const caminho = `recebidas/${id}.pdf`;
       const { error } = await sb.storage.from(BUCKET).upload(caminho, bytes, { contentType: "application/pdf", upsert: true });
-      if (error) return `Não consegui montar o documento: ${error.message}`;
-      c.midias[id] = { mime: "application/pdf", caminho, url: urlPublica(c, caminho), gerado: true } as any; // feito pelo Nando: não precisa de ler_referencia
-      c.registros.push(`comunicado em texto virou documento: midia_id=${id} (${texto.length} caracteres)`);
-      return `Documento do comunicado completo criado: midia_id=${id} (já está lido: NÃO use ler_referencia nele). Agora use criar_opcoes_documento com midia_id="${id}", o resumo (o quê, até quando, o que o morador faz) e, se o texto tiver uma lista de orientações, os itens. Não pergunte antes: mande a prévia com as opções e pergunte qual ele quer.`;
+      if (error) return `Não consegui montar o PDF: ${error.message}`;
+      const url = urlPublica(c, caminho);
+      c.midias[id] = { mime: "application/pdf", caminho, url, gerado: true } as any; // feito pelo Nando: não precisa de ler_referencia
+      const nomeArq = `Comunicado - ${String(e.categoria || e.titulo || "aviso").replace(/\n/g, " ").replace(/[^\p{L}\p{N} -]/gu, "").trim().slice(0, 50)} - ${nomeCond.slice(0, 30)}.pdf`;
+      try { await enviarDocumento(sb, c.tel, url, nomeArq, ""); }
+      catch (er) { return `O PDF ficou pronto mas não consegui mandar no WhatsApp (${(er as Error).message.slice(0, 120)}). Mande este link para a pessoa: ${url}`; }
+      c.registros.push(`PDF profissional do comunicado criado e enviado: midia_id=${id} ${url}`);
+      return `PDF profissional criado e JÁ ENVIADO para a pessoa no WhatsApp (midia_id=${id}, já lido: NÃO use ler_referencia nele). Agora diga em UMA frase curta que mandou o PDF e pergunte se ela quer que você coloque na tela do elevador um resumo com QR code que abre esse documento. Se ela quiser: criar_opcoes_documento com midia_id="${id}" e o resumo (o quê, até quando, o que o morador faz).`;
     }
     case "criar_opcoes_documento": {
       const p = c.predioAtual; if (!p) return "Escolha o prédio primeiro (escolher_predio).";
@@ -1367,42 +1386,99 @@ CONFIRA a imagem acima: a logo tem que estar inteira, nítida, sem pedaço comid
 
 function clampSeg(s: unknown) { const n = Math.round(Number(s) || 15); return Math.max(5, Math.min(120, n)); }
 
-// comunicado colado como texto -> PDF A4 legível no celular (abre pelo QR do aviso). Fonte padrão do PDF (sem emoji).
-async function pdfDoComunicado(titulo: string, texto: string, assinatura: string): Promise<Uint8Array> {
-  const limpo = (t: string) => t.replace(/\*/g, "").replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, "-")
-    .replace(/[•▪●◦]/g, "-").replace(/[^\x20-\x7E\u00A0-\u00FF\n]/g, "").replace(/[ \t]+/g, " ");
+// 06/11/2026 — PDF PROFISSIONAL do comunicado (modelo aprovado pelo Jeferson: "Condomínio Azaleia"): faixa e cor do
+// condomínio, logo (se houver), categoria, título forte, quadro de destaque (horário/data/prazo), seções, assinatura e
+// rodapé de acompanhamento (protocolo). Fonte padrão do PDF (emojis saem). O síndico recebe o PDF no WhatsApp e o aviso
+// da tela pode levar um resumo com QR que abre este documento.
+type DocComunicado = {
+  condominio: string; categoria?: string; titulo: string; subtitulo?: string;
+  destaque?: { rotulo?: string; valor?: string; nota?: string };
+  saudacao?: string; paragrafos?: string[]; secoes?: { titulo?: string; texto?: string }[]; encerramento?: string;
+  assinatura?: string; rodape?: { rotulo?: string; texto?: string }; cor?: string; logo?: Uint8Array | null; logoClara?: boolean;
+};
+function hexRgb(h: string, padrao = "#1F4D3A") {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(h || "").trim()) || /^#?([0-9a-f]{6})$/i.exec(padrao)!;
+  const n = parseInt(m[1], 16); return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
+}
+async function pdfComunicado(d: DocComunicado): Promise<Uint8Array> {
+  const limpo = (t: unknown) => String(t || "").replace(/\*/g, "").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-")
+    .replace(/[▪●◦]/g, "•").replace(/[^\x20-\x7E -ÿ•\n]/g, "").replace(/[ \t]+/g, " ").trim();
   const doc = await PDFDocument.create();
-  const fonte = await doc.embedFont(StandardFonts.Helvetica);
-  const negrito = await doc.embedFont(StandardFonts.HelveticaBold);
-  const L = 595, A = 842, M = 56, larg = L - 2 * M;
-  let pg = doc.addPage([L, A]); let y = A - M;
-  const quebrar = (t: string, f: any, tam: number) => {
+  doc.setTitle(limpo(d.titulo).replace(/\n/g, " ")); doc.setAuthor(limpo(d.assinatura || d.condominio)); doc.setProducer("EXA Mídia");
+  const F = await doc.embedFont(StandardFonts.Helvetica), B = await doc.embedFont(StandardFonts.HelveticaBold);
+  const c0 = hexRgb(d.cor || ""), cor = rgb(c0.r, c0.g, c0.b);
+  const tinta = rgb(1 - (1 - c0.r) * 0.1, 1 - (1 - c0.g) * 0.1, 1 - (1 - c0.b) * 0.1);
+  const texto = rgb(0.17, 0.18, 0.2), cinza = rgb(0.45, 0.46, 0.5), linhaC = rgb(0.86, 0.87, 0.88);
+  const L = 595.28, A = 841.89, M = 56, W = L - 2 * M;
+  let pg = doc.addPage([L, A]); let y = A - 64;
+  const faixa = () => pg.drawRectangle({ x: 0, y: A - 12, width: L, height: 12, color: cor });
+  faixa();
+  const quebra = (t: string, f: any, tam: number, larg = W) => {
     const out: string[] = [];
     for (const par of t.split("\n")) {
-      if (!par.trim()) { out.push(""); continue; }
-      let linha = "";
-      for (const w of par.trim().split(" ")) {
-        const tst = linha ? linha + " " + w : w;
-        if (f.widthOfTextAtSize(tst, tam) > larg && linha) { out.push(linha); linha = w; } else linha = tst;
-      }
-      out.push(linha);
+      let l = "";
+      for (const w of par.split(" ").filter(Boolean)) { const tt = l ? l + " " + w : w; if (f.widthOfTextAtSize(tt, tam) > larg && l) { out.push(l); l = w; } else l = tt; }
+      out.push(l);
     }
     return out;
   };
-  const escrever = (linhas: string[], f: any, tam: number, alt: number, cor = rgb(0.13, 0.13, 0.15)) => {
-    for (const l of linhas) {
-      if (y < M + alt) { pg = doc.addPage([L, A]); y = A - M; }
-      if (l) pg.drawText(l, { x: M, y: y - tam, size: tam, font: f, color: cor });
-      y -= l ? alt : alt * 0.6;
-    }
+  const espaco = (h: number) => { if (y - h < 70) { pg = doc.addPage([L, A]); faixa(); y = A - 64; } };
+  const bloco = (t: string, f: any, tam: number, alt: number, c = texto, x = M, larg = W) => {
+    for (const l of quebra(t, f, tam, larg)) { espaco(alt); if (l) pg.drawText(l, { x, y: y - tam, size: tam, font: f, color: c }); y -= alt; }
   };
-  pg.drawRectangle({ x: 0, y: A - 10, width: L, height: 10, color: rgb(0.61, 0.12, 0.12) });
-  escrever(quebrar(limpo(titulo), negrito, 22), negrito, 22, 29);
-  y -= 10;
-  escrever(quebrar(limpo(texto).replace(/\n{3,}/g, "\n\n"), fonte, 12.5), fonte, 12.5, 18.5);
-  y -= 14;
-  escrever(quebrar(limpo(assinatura), negrito, 12.5), negrito, 12.5, 18.5);
-  escrever(["Comunicado publicado na tela do elevador pela EXA Mídia"], fonte, 9.5, 14, rgb(0.45, 0.45, 0.48));
+  // cabeçalho: logo (ou monograma) + nome do condomínio
+  let logoOk = false;
+  if (d.logo) {
+    try {
+      const img = d.logo[0] === 0x89 ? await doc.embedPng(d.logo) : await doc.embedJpg(d.logo);
+      const s = Math.min(46 / img.width, 46 / img.height);
+      if (d.logoClara) pg.drawRectangle({ x: M - 4, y: y - 50, width: 54, height: 54, color: cor });
+      pg.drawImage(img, { x: M + (46 - img.width * s) / 2, y: y - 46 + (46 - img.height * s) / 2, width: img.width * s, height: img.height * s });
+      logoOk = true;
+    } catch (_) { logoOk = false; }
+  }
+  if (!logoOk) {
+    pg.drawCircle({ x: M + 23, y: y - 23, size: 22, borderColor: cor, borderWidth: 1.6 });
+    const ini = limpo(d.condominio).replace(/^(condom[ií]nio|edif[ií]cio|residencial)\s+/i, "").charAt(0).toUpperCase() || "C";
+    pg.drawText(ini, { x: M + 23 - B.widthOfTextAtSize(ini, 20) / 2, y: y - 30, size: 20, font: B, color: cor });
+  }
+  pg.drawText(limpo(d.condominio).toUpperCase().slice(0, 40), { x: M + 62, y: y - 20, size: 17, font: B, color: cor });
+  pg.drawText("ADMINISTRAÇÃO  /  COMUNICADO AOS MORADORES", { x: M + 62, y: y - 36, size: 8, font: F, color: cinza });
+  y -= 70; pg.drawLine({ start: { x: M, y }, end: { x: L - M, y }, thickness: 0.8, color: linhaC }); y -= 26;
+  if (d.categoria) { bloco(limpo(d.categoria).toUpperCase(), B, 8.5, 20, cor); y -= 4; }
+  bloco(limpo(d.titulo), B, 25, 31, cor); y -= 4;
+  if (d.subtitulo) bloco(limpo(d.subtitulo), F, 10.5, 15, cinza);
+  y -= 20;
+  // quadro de destaque
+  if (d.destaque?.valor) {
+    const notaL = quebra(limpo(d.destaque.nota), F, 9, W * 0.55);
+    const h = Math.max(70, 40 + notaL.length * 12);
+    espaco(h + 10);
+    pg.drawRectangle({ x: M, y: y - h, width: W, height: h, color: tinta });
+    pg.drawRectangle({ x: M, y: y - h, width: 3, height: h, color: cor });
+    pg.drawText(limpo(d.destaque.rotulo || "Destaque").toUpperCase(), { x: M + 16, y: y - 20, size: 7.5, font: B, color: cor });
+    pg.drawText(limpo(d.destaque.valor).slice(0, 18), { x: M + 16, y: y - 48, size: 22, font: B, color: cor });
+    notaL.forEach((l, k) => pg.drawText(l, { x: M + W * 0.4, y: y - 38 - k * 12, size: 9, font: F, color: cinza }));
+    y -= h + 26;
+  }
+  if (d.saudacao !== "") { bloco(limpo(d.saudacao || "Prezados moradores,"), B, 10.5, 20); y -= 2; }
+  for (const par of d.paragrafos || []) { bloco(limpo(par), F, 10.5, 16); y -= 8; }
+  for (const sc of d.secoes || []) {
+    y -= 6;
+    if (sc.titulo) { bloco(limpo(sc.titulo).toUpperCase(), B, 8, 18, cor); }
+    if (sc.texto) bloco(limpo(sc.texto), F, 10.5, 16);
+    y -= 8;
+  }
+  if (d.encerramento) { y -= 4; bloco(limpo(d.encerramento), F, 10.5, 16); }
+  y -= 14; bloco(limpo(d.assinatura || `Administração do ${d.condominio}`), B, 11, 18, cor);
+  if (d.rodape?.texto) {
+    y -= 12; espaco(50);
+    pg.drawLine({ start: { x: M, y }, end: { x: L - M, y }, thickness: 0.8, color: linhaC }); y -= 20;
+    bloco(limpo(d.rodape.rotulo || "Acompanhamento").toUpperCase(), B, 7.5, 15, cinza);
+    bloco(limpo(d.rodape.texto), F, 9.5, 14);
+  }
+  const pags = doc.getPages();
+  pags.forEach((p2, k) => p2.drawText(`Comunicado preparado com a EXA Mídia${pags.length > 1 ? `  •  página ${k + 1} de ${pags.length}` : ""}`, { x: M, y: 40, size: 7.5, font: F, color: cinza }));
   return await doc.save();
 }
 
@@ -1514,9 +1590,10 @@ Trabalhe como um designer cuidadoso: devagar e certo, para a pessoa não precisa
 - Na dúvida sobre o que a pessoa quer, pergunte UMA coisa objetiva antes de criar. Uma pergunta certa vale mais que três prévias erradas.
 
 COMUNICADO LONGO COLADO COMO TEXTO (vários parágrafos, e-mail, circular — mais de ~350 caracteres)
-- Nunca vira um cartão com o textão, e nunca um resumo seco sem saída para o texto completo. O foco é o síndico se comunicar BEM e com profissionalismo.
-- Faça: texto_para_documento (texto completo EXATO) → criar_opcoes_documento com o midia_id que voltou: resumo claro (o quê, até quando, o que o morador faz) + QR do comunicado completo, cartões com os pontos principais quando houver orientações, e o comunicado completo. Mande o link e pergunte qual opção ele quer (pode ser mais de uma, e dá para ajustar: mais cartões, mais detalhe, outro resumo).
-- Se ele pedir "mais informação" ou "mais cartões", refaça a opção com mais cartões/itens tirados do texto dele — sem inventar.
+- O foco é o síndico se comunicar BEM e com profissionalismo. Nunca vira um cartão com o textão, nunca um resumo seco sem saída para o texto completo.
+- PRIMEIRO pergunte, em 1 frase curta: "Quer que eu transforme esse comunicado num PDF profissional, com as cores e o logo do condomínio? Aí coloco um resumo na tela do elevador com um QR code que abre o documento."
+- SIM → criar_pdf_comunicado (organize em título forte, destaque com o horário/data/prazo principal, parágrafos curtos, seção "Como colaborar" quando houver orientação, protocolo no rodapé; use só o que está no texto dele). O PDF já vai para ele no WhatsApp. Depois ofereça o resumo com QR e, se ele quiser, criar_opcoes_documento com o midia_id do PDF.
+- NÃO → faça os cartões com os pontos principais (mais cartões se ele pedir mais informação), sem inventar.
 - Ao mandar a prévia: UMA mensagem curta com o link e "Qual opção você quer?". Nunca descreva cartão por cartão nem repita o conteúdo (ele vê na prévia).
 
 DOCUMENTOS, PDFs E IMAGENS COM TEXTO (comunicados, regras, cartazes)
