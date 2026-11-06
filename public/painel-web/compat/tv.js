@@ -12,6 +12,30 @@
     // mascote: na TV fica só o boneco parado com "SEM AVISOS NO MOMENTO" (sem vídeo: não abre outro decodificador)
     window.__mascoteEstatico = true;
 
+    // 06/11/2026 — app Android 1.0.14+: a abertura da EXA e a tela de carregamento são do próprio app (nativas).
+    // A página manda o andamento real (ExaTela.progresso) e libera quando está fluida (ExaTela.liberar).
+    var ponte = null;
+    try { ponte = window.ExaTela || (window.parent !== window && window.parent.ExaTela) || null; } catch (e) { ponte = null; }
+    var nativo = !!(ponte && ponte.progresso && ponte.liberar);
+    if (nativo) { try { ponte.segurar(); } catch (e) { /* segue */ } }
+    // enquanto a abertura (vídeo do app) toca, os vídeos da página esperam: não disputam o decodificador
+    // (a KTC tem só 2). Só atrasa o play; a carga (download, primeiro quadro) já vai acontecendo.
+    if (ponte && ponte.introVideo) {
+      var playOrig = HTMLMediaElement.prototype.play;
+      var naAbertura = function () { try { return !!ponte.introVideo(); } catch (e) { return false; } };
+      HTMLMediaElement.prototype.play = function () {
+        var el = this, args = arguments;
+        if (!naAbertura() || typeof Promise === 'undefined') return playOrig.apply(el, args);
+        return new Promise(function (ok, ko) {
+          var t = setInterval(function () {
+            if (naAbertura()) return;
+            clearInterval(t);
+            try { var r = playOrig.apply(el, args); if (r && r.then) r.then(ok, ko); else ok(); } catch (e) { ko(e); }
+          }, 300);
+        });
+      };
+    }
+
     var desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
     if (!desc || !desc.set || !desc.get) return;
     var preparar = function () {
@@ -92,6 +116,7 @@
           '<div style="margin-top:28px;font-size:34px;font-weight:700">Preparando a tela</div>' +
           '<div id="tv-espera-passos" style="margin-top:36px;font-size:28px;line-height:1.7;opacity:.85;text-align:left;min-width:640px"></div>' +
           '<div style="margin-top:36px;width:640px;height:10px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden"><div id="tv-espera-barra" style="height:100%;width:3%;background:#EA251D"></div></div>';
+        if (nativo) cx.style.display = 'none'; // o app desenha a tela de carregamento (por cima de tudo)
         (document.body || document.documentElement).appendChild(cx);
         var passosEl = document.getElementById('tv-espera-passos'), barra = document.getElementById('tv-espera-barra');
         var est = { total: 0, prontos: 0, feito: false, rodando: false, sem_leve: 0 };
@@ -135,11 +160,21 @@
               '<div>' + ck(fluido) + ' Fluidez: ' + (fps ? Math.round(fps) + ' quadros/s' : 'medindo') + '</div>';
             var p = (est.total ? 0.55 * est.prontos / est.total : 0.05) + (adOk ? 0.15 : 0) + (camOk ? 0.1 : 0) + (fluido ? 0.1 : 0) + (okDesde ? 0.1 * Math.min(1, (Date.now() - okDesde) / 4000) : 0);
             barra.style.width = Math.max(3, Math.round(p * 100)) + '%';
+            if (nativo) {
+              var tit, det = '';
+              if (!videosOk) { tit = 'Guardando os anúncios no aparelho'; det = est.total ? est.prontos + ' de ' + est.total : 'conferindo a programação'; }
+              else if (!adOk) { tit = 'Ligando o player de anúncios'; det = 'anúncios guardados ✓'; }
+              else if (!camOk) { tit = 'Conectando a câmera ao vivo'; det = 'anúncio tocando ✓'; }
+              else if (!fluido) { tit = 'Conferindo a fluidez'; det = fps ? Math.round(fps) + ' quadros/s' : 'medindo'; }
+              else { tit = 'Tudo pronto'; det = ''; }
+              try { ponte.progresso(Math.min(0.97, p), tit, det); } catch (e) { /* segue */ }
+            }
             var estourou = Date.now() - t0 > 360000;
             if ((okDesde && Date.now() - okDesde >= 4000) || estourou) {
               fim = true; clearInterval(tique);
               var info = window.__tvInfo = window.__tvInfo || {};
-              info.boot_s = Math.round((Date.now() - t0) / 1000); info.boot_ok = !estourou;
+              info.boot_s = Math.round((Date.now() - t0) / 1000); info.boot_ok = !estourou; info.boot_nativo = nativo;
+              if (nativo) { try { ponte.progresso(1, 'Tudo pronto', ''); ponte.liberar(); } catch (e) { /* segue */ } }
               cx.style.opacity = '0'; setTimeout(function () { try { cx.remove(); } catch (e) { cx.style.display = 'none'; } }, 700);
             }
           } catch (e) { /* segue */ }

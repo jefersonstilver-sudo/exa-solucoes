@@ -90,6 +90,9 @@ class MainActivity : Activity() {
 
     // diagnóstico da carga atual
     private var paginaPronta = false
+    // 1.0.14: a página (tela do prédio) avisa que vai mandar o andamento real e só libera quando está fluida
+    private var segurando = false
+    private var ultimoProgresso = 0L
     private var carregaComecou = 0L
     private var problema: String? = null      // o que a TV mostra/relata
     private var tipoProblema = ""              // data | certificado | internet | navegador | js | travou
@@ -132,7 +135,7 @@ class MainActivity : Activity() {
         aplicarGiroNativo(intro)
         // primeira vez: antes de tudo, a pessoa diz como a TV está instalada (deitada ou em pé, e para que lado)
         val primeiraVez = !prefs().getBoolean("giro_escolhido", false)
-        if (!primeiraVez) intro.tocar()
+        if (!primeiraVez) intro.tocar(comVideo = true)
 
         dica = TextView(this).apply {
             text = "Para a tela abrir sozinha ao ligar: aperte OK no controle e permita \"Sobrepor a outros apps\" (ou defina a EXA Tela como app inicial)."
@@ -157,7 +160,7 @@ class MainActivity : Activity() {
         vigiarRede()
         if (primeiraVez) {
             intro.visibility = View.GONE
-            mostrarEscolha { intro.visibility = View.VISIBLE; intro.tocar(); criarWeb(); h.postDelayed(vigia, 30_000) }
+            mostrarEscolha { intro.visibility = View.VISIBLE; intro.tocar(comVideo = true); criarWeb(); h.postDelayed(vigia, 30_000) }
         } else {
             // o navegador (WebView) leva vários segundos para abrir em TV fraca e trava a tela enquanto isso:
             // primeiro desenha a intro da EXA, depois abre o navegador (antes ficava ~10 s preto depois do boot)
@@ -413,6 +416,8 @@ class MainActivity : Activity() {
     private fun novaCarga() {
         if (paginaPronta || !intro.tocando) { intro.tocar(); focoSoNaFrente(true) }
         paginaPronta = false
+        segurando = false
+        h.removeCallbacks(liberarForcado)
         carregaComecou = System.currentTimeMillis()
         if (tipoProblema != "data" && tipoProblema != "certificado") { problema = null; tipoProblema = "" }
         relatou = false
@@ -422,6 +427,18 @@ class MainActivity : Activity() {
             mostrarProblema("navegador", "Navegador do sistema antigo demais",
                 "Este aparelho usa o navegador do sistema na versão Chrome $versaoChrome. O player da EXA precisa do 51 ou mais novo.\nAtualize o \"Android System WebView\" (Play Store) ou use outro aparelho.",
                 botoes = listOf("Atualizar navegador" to { abrirLoja("com.google.android.webview") }))
+        }
+    }
+
+    /** Teto: segurando há 6,5 min ou sem notícia da página há 90 s, mostra a tela assim mesmo (o vigia de travadas cuida do resto). */
+    private val liberarForcado: Runnable = object : Runnable {
+        override fun run() {
+            if (!segurando || !intro.tocando) return
+            val agora = System.currentTimeMillis()
+            if (agora - carregaComecou > 390_000 || agora - ultimoProgresso > 90_000) {
+                segurando = false
+                intro.esconder { if (menu.visibility != View.VISIBLE) { focoSoNaFrente(false); web?.requestFocus() }; talvezMostrarDica() }
+            } else h.postDelayed(this, 5_000)
         }
     }
 
@@ -995,7 +1012,7 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun temIntro(): Boolean = true
 
-        /** A página abriu e desenhou a primeira tela: a intro some. */
+        /** A página abriu e desenhou a primeira tela: a intro some (se a página não pediu para segurar). */
         @JavascriptInterface
         fun pronto() {
             h.post {
@@ -1006,9 +1023,49 @@ class MainActivity : Activity() {
                 h.removeCallbacks(tentarDeNovo)
                 intro.diag.visibility = View.GONE
                 intro.status.visibility = View.VISIBLE
+                if (segurando) return@post
                 intro.esconder { if (menu.visibility != View.VISIBLE) { focoSoNaFrente(false); web?.requestFocus() }; talvezMostrarDica() }
             }
         }
+
+        /** 1.0.14: a página vai mandar o andamento real; a tela de carregamento fica até ela liberar. */
+        @JavascriptInterface
+        fun segurar() {
+            h.post {
+                if (segurando) return@post
+                segurando = true
+                paginaPronta = true
+                ultimoProgresso = System.currentTimeMillis()
+                h.removeCallbacks(prazo)
+                if (intro.tocando) intro.cancelarEsconder()
+                h.removeCallbacks(liberarForcado)
+                h.postDelayed(liberarForcado, 5_000)
+            }
+        }
+
+        /** Andamento real (0..1), título da etapa e detalhe ("3 de 12", "24 quadros/s"). */
+        @JavascriptInterface
+        fun progresso(f: Double, titulo: String?, detalhe: String?) {
+            h.post {
+                ultimoProgresso = System.currentTimeMillis()
+                if (!segurando) segurar()
+                intro.progresso(f.toFloat(), titulo, detalhe)
+            }
+        }
+
+        /** Tudo pronto e fluido de verdade: a tela de carregamento some. */
+        @JavascriptInterface
+        fun liberar() {
+            h.post {
+                segurando = false
+                h.removeCallbacks(liberarForcado)
+                intro.esconder { if (menu.visibility != View.VISIBLE) { focoSoNaFrente(false); web?.requestFocus() }; talvezMostrarDica() }
+            }
+        }
+
+        /** A abertura (vídeo) ainda está tocando: a página espera para dar play nos vídeos dela. */
+        @JavascriptInterface
+        fun introVideo(): Boolean = intro.videoTocando
 
         @JavascriptInterface
         fun erroJs(msg: String?) {

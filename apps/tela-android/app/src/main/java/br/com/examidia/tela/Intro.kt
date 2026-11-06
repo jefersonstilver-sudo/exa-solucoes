@@ -1,87 +1,103 @@
 package br.com.examidia.tela
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
-import android.graphics.Shader
+import android.graphics.SurfaceTexture
+import android.graphics.SweepGradient
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaPlayer
+import android.net.Uri
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.Surface
+import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.LinearInterpolator
-import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
- * Intro da EXA desenhada pelo próprio app (não depende do navegador do aparelho):
- * luzes vermelha e magenta acendendo, a logo subindo com um brilho que passa por ela, um traço que vira
- * barra de carregamento e "EXA Mídia · Foz do Iguaçu". Fica em loop suave até a página avisar que abriu.
- * Só anima transform/opacidade (leve em TV box fraco). Embaixo, a linha de status e o painel de diagnóstico.
+ * 06/11/2026 (APK 1.0.14) — abertura da EXA + tela de carregamento de verdade.
+ *
+ *  - Ao LIGAR o app: toca a abertura oficial (res/raw/exa_intro.mp4, 12 s, 1080x1920) pelo próprio Android.
+ *  - Quando ela acaba, fica o último quadro parado (res/drawable-nodpi/exa_intro_fundo.jpg, o mesmo quadro sem o
+ *    texto) e o app desenha por cima: um anel de progresso em volta do logo com o andamento REAL que a página manda
+ *    (ExaTela.progresso), um cometa girando (sinal de vida) e o texto da etapa. Sem vídeo em loop: nada disputa o
+ *    decodificador com os anúncios e a câmera que a página está preparando atrás.
+ *  - Ao RECARREGAR / ATUALIZAR: a mesma tela, sem a abertura ("Atualizando a tela").
+ *  - Só some quando a página confirma que está tudo fluido (ExaTela.liberar) — ou a página antiga avisa pronto.
+ * Tudo desenhado por tempo (não depende da escala de animações do sistema, que TV box costuma vir desligada).
+ * Coordenadas do desenho = as do vídeo (1080x1920), encaixadas na tela (TV deitada: o quadro fica no centro).
  */
 class Intro(ctx: Context) : FrameLayout(ctx) {
 
-    private val suave = PathInterpolator(0.2f, 0.8f, 0.2f, 1f)
-    private val rapido = PathInterpolator(0.7f, 0f, 0.2f, 1f)
-    private val animadores = mutableListOf<ValueAnimator>()
-
-    private val luzA = View(ctx)
-    private val luzB = View(ctx)
-    private val logo = LogoComBrilho(ctx)
-    private val trilho = FrameLayout(ctx)
-    private val traco = View(ctx)
-    private val corredor = View(ctx)
-    private val frase = TextView(ctx)
+    private val fundo = ImageView(ctx)
+    private val video = TextureView(ctx)
+    private val anel = Anel(ctx)
     val status = TextView(ctx)
+    private val etapa = TextView(ctx)
+    private val marca = TextView(ctx)
     val diag = LinearLayout(ctx)
     val diagTitulo = TextView(ctx)
     val diagTexto = TextView(ctx)
     val diagBotoes = LinearLayout(ctx)
 
+    private var mp: MediaPlayer? = null
+    private var superficie: Surface? = null
+    private var querVideo = false
+
     var tocando = false
+        private set
+    /** A abertura (vídeo) ainda está tocando: a página segura os vídeos dela até acabar (não disputa decodificador). */
+    @Volatile var videoTocando = false
         private set
     var comecouEm = 0L
         private set
+    var unidade = 10f
+        private set
+
+    private var escala = 1f
+    private var sumir: Runnable? = null
 
     init {
-        setBackgroundColor(Color.rgb(7, 3, 10))
-        isClickable = true // por cima da página: segura os toques enquanto aparece
-        clipChildren = true
+        setBackgroundColor(Color.rgb(6, 5, 7))
+        isClickable = true
+        fundo.scaleType = ImageView.ScaleType.FIT_CENTER
+        try { fundo.setImageBitmap(BitmapFactory.decodeResource(ctx.resources, R.drawable.exa_intro_fundo)) } catch (_: Throwable) { }
+        addView(fundo, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        video.isOpaque = false
+        video.alpha = 0f
+        video.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+            override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) { superficie = Surface(st); if (querVideo) abrirVideo() }
+            override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {}
+            override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean { soltarVideo(); superficie?.release(); superficie = null; return true }
+            override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
+        }
+        addView(video)
+        addView(anel, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
 
-        luzA.background = radial(Color.argb(150, 234, 37, 29))
-        luzB.background = radial(Color.argb(150, 156, 30, 110))
-        addView(luzA)
-        addView(luzB)
-
-        trilho.background = GradientDrawable().apply { setColor(Color.argb(26, 255, 255, 255)); cornerRadius = 8f }
-        traco.background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Color.rgb(234, 37, 29), Color.rgb(255, 90, 74), Color.rgb(255, 195, 90)))
-        corredor.background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Color.argb(0, 255, 90, 74), Color.rgb(255, 90, 74), Color.rgb(255, 195, 90), Color.argb(0, 255, 195, 90)))
-        trilho.addView(traco, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        trilho.addView(corredor)
-
-        frase.text = "EXAMIDIA.COM.BR"
-        frase.setTextColor(Color.argb(200, 255, 255, 255))
-        frase.typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-        frase.gravity = Gravity.CENTER
-        frase.isSingleLine = true
-
-        status.setTextColor(Color.argb(140, 255, 255, 255))
+        status.setTextColor(Color.WHITE)
+        status.typeface = Typeface.create("sans-serif", Typeface.BOLD)
         status.gravity = Gravity.CENTER
-        status.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        status.text = "Preparando a tela"
+        status.isSingleLine = true
+        status.text = "Iniciando o sistema"
+        etapa.setTextColor(Color.argb(200, 255, 255, 255))
+        etapa.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        etapa.gravity = Gravity.CENTER
+        etapa.isSingleLine = true
+        marca.setTextColor(Color.argb(120, 255, 255, 255))
+        marca.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        marca.gravity = Gravity.CENTER
+        marca.text = "EXA Mídia · mídia nos elevadores"
+        addView(status); addView(etapa); addView(marca)
 
         diag.orientation = LinearLayout.VERTICAL
         diag.gravity = Gravity.CENTER_HORIZONTAL
@@ -94,46 +110,34 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
         diagTexto.gravity = Gravity.CENTER
         diagBotoes.orientation = LinearLayout.HORIZONTAL
         diagBotoes.gravity = Gravity.CENTER
-        diag.addView(diagTitulo)
-        diag.addView(diagTexto)
-        diag.addView(diagBotoes)
-
-        addView(logo)
-        addView(trilho)
-        addView(frase)
-        addView(status)
+        diag.addView(diagTitulo); diag.addView(diagTexto); diag.addView(diagBotoes)
         addView(diag)
+        camadas(0f)
     }
 
-    private fun radial(cor: Int) = GradientDrawable().apply {
-        shape = GradientDrawable.OVAL
-        gradientType = GradientDrawable.RADIAL_GRADIENT
-        colors = intArrayOf(cor, Color.argb(0, Color.red(cor), Color.green(cor), Color.blue(cor)))
-        gradientRadius = 1000f // ajustado no onLayout
-    }
+    /** Textos e anel visíveis (1) ou não (0: durante a abertura, que já traz os dela). */
+    private fun camadas(a: Float) { anel.alpha = a; status.alpha = a; etapa.alpha = a; marca.alpha = a }
 
-    /** Tamanhos proporcionais à tela (como vmin na web): fica igual em TV 720p, 1080p e 4K. */
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w == 0 || h == 0) return
-        val u = minOf(w, h) / 100f
-        val luz = (120 * u).toInt()
-        luzA.layoutParams = LayoutParams(luz, luz).apply { leftMargin = (-30 * u).toInt(); topMargin = h - luz + (62 * u).toInt() }
-        luzB.layoutParams = LayoutParams(luz, luz).apply { leftMargin = w - luz + (38 * u).toInt(); topMargin = (-60 * u).toInt() }
-        (luzA.background as GradientDrawable).gradientRadius = luz / 2f
-        (luzB.background as GradientDrawable).gradientRadius = luz / 2f
+        unidade = minOf(w, h) / 100f
+        val s = minOf(w / 1080f, h / 1920f)
+        escala = s
+        val vw = (1080 * s).toInt(); val vh = (1920 * s).toInt()
+        val oy = (h - vh) / 2
+        video.layoutParams = LayoutParams(vw, vh, Gravity.CENTER)
+        fun texto(t: TextView, y: Float, tam: Float) {
+            t.setTextSize(TypedValue.COMPLEX_UNIT_PX, tam * s)
+            t.layoutParams = LayoutParams(vw, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = oy + (y * s).toInt() }
+        }
+        texto(status, 1438f, 60f)
+        texto(etapa, 1540f, 34f)
+        texto(marca, 1606f, 28f)
+        if (android.os.Build.VERSION.SDK_INT >= 21) marca.letterSpacing = 0.04f
+        anel.encaixar(w / 2f, oy + 850f * s, s)
 
-        val lh = (15 * u).toInt()
-        val lw = (lh * 1000f / 324f).toInt()
-        val meio = h / 2
-        logo.layoutParams = LayoutParams(lw, lh).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = meio - (13 * u).toInt() }
-        trilho.layoutParams = LayoutParams((44 * u).toInt(), maxOf(2, (0.45f * u).toInt())).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = meio + (7 * u).toInt() }
-        corredor.layoutParams = LayoutParams((13 * u).toInt(), ViewGroup.LayoutParams.MATCH_PARENT)
-        frase.setTextSize(TypedValue.COMPLEX_UNIT_PX, 1.9f * u)
-        frase.layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = meio + (10.5f * u).toInt() }
-        status.setTextSize(TypedValue.COMPLEX_UNIT_PX, 1.8f * u)
-        status.layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { bottomMargin = (6 * u).toInt() }
-
+        val u = unidade
         diagTitulo.setTextSize(TypedValue.COMPLEX_UNIT_PX, 3f * u)
         diagTexto.setTextSize(TypedValue.COMPLEX_UNIT_PX, 2f * u)
         diagTexto.setLineSpacing(0f, 1.25f)
@@ -141,76 +145,113 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
         val pad = (3f * u).toInt()
         diag.setPadding(pad, (2.6f * u).toInt(), pad, (2.6f * u).toInt())
         diag.layoutParams = LayoutParams((w * 0.74f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = (5 * u).toInt() }
-        unidade = u
-        post { if (!tocando) estadoInicial() }
     }
 
-    var unidade = 10f
-        private set
-
-    private fun estadoInicial() {
-        luzA.alpha = 0f; luzB.alpha = 0f
-        logo.alpha = 0f; logo.translationY = 4 * unidade; logo.scaleX = 0.88f; logo.scaleY = 0.88f
-        traco.pivotX = 0f; traco.scaleX = 0f; traco.alpha = 1f
-        corredor.alpha = 0f
-        frase.alpha = 0f
-        status.alpha = 0f
-    }
-
-    /** Toca a intro desde o começo (abrir o app, depois de instalar/atualizar, ao recarregar a página). */
-    fun tocar() {
+    /**
+     * Mostra a tela desde o começo. comVideo = abrir o app (toca a abertura); sem vídeo = recarga/atualização.
+     */
+    fun tocar(comVideo: Boolean = false) {
         garantirAnimacoes()
-        parar()
+        cancelarEsconder()
+        animate().cancel()
         visibility = View.VISIBLE
-        alpha = 1f; scaleX = 1f; scaleY = 1f
+        alpha = 1f
         diag.visibility = View.GONE
-        status.text = "Preparando a tela"
         tocando = true
         comecouEm = System.currentTimeMillis()
-        estadoInicial()
-
-        luzA.animate().alpha(1f).setStartDelay(100).setDuration(1600).start()
-        luzB.animate().alpha(1f).setStartDelay(350).setDuration(1600).start()
-        anim(9000, 1700, ValueAnimator.REVERSE) { v -> luzA.translationX = 14 * unidade * v; luzA.translationY = -8 * unidade * v; luzA.scaleX = 1 + .12f * v; luzA.scaleY = 1 + .12f * v }
-        anim(11000, 2000, ValueAnimator.REVERSE) { v -> luzB.translationX = -12 * unidade * v; luzB.translationY = 10 * unidade * v; luzB.scaleX = 1 + .08f * v; luzB.scaleY = 1 + .08f * v }
-
-        logo.animate().alpha(1f).translationY(0f).scaleX(1f).scaleY(1f).setStartDelay(350).setDuration(1100).setInterpolator(suave).start()
-        // brilho: passa pela logo e espera, a cada 4,6 s
-        anim(4600, 1250, ValueAnimator.RESTART, PathInterpolator(0.5f, 0f, 0.2f, 1f)) { v -> logo.fase = -0.6f + v * 5f; logo.invalidate() }
-
-        traco.animate().scaleX(1f).setStartDelay(150).setDuration(1000).setInterpolator(rapido).withEndAction {
-            traco.animate().alpha(0.18f).setStartDelay(450).setDuration(600).start()
-        }.start()
-        corredor.animate().alpha(1f).setStartDelay(1700).setDuration(400).start()
-        anim(1500, 1700, ValueAnimator.RESTART, PathInterpolator(0.45f, 0f, 0.25f, 1f)) { v ->
-            val tw = trilho.width.toFloat(); val cw = corredor.width.toFloat()
-            corredor.translationX = -cw + (tw + cw) * v
+        anel.zerar()
+        etapa.text = ""
+        if (comVideo) {
+            status.text = "Iniciando o sistema"
+            querVideo = true
+            videoTocando = true
+            fundo.alpha = 0f
+            camadas(0f)
+            if (superficie != null) abrirVideo()
+            // vídeo que não abriu em 4 s (decodificador ocupado/erro): segue sem ele
+            postDelayed({ if (videoTocando && mp?.isPlaying != true) fimDoVideo() }, 4000)
+        } else {
+            if (videoTocando) return // a abertura está tocando: não interrompe
+            status.text = "Atualizando a tela"
+            fundo.alpha = 1f
+            video.alpha = 0f
+            camadas(1f)
         }
-
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            anim(1300, 1050, 0, suave, repetir = false) { v -> frase.letterSpacing = 1.2f - 0.65f * v; frase.alpha = v }
-        }
-        status.animate().alpha(1f).setStartDelay(2200).setDuration(800).start()
+        anel.rodar(true)
     }
 
-    /** Some suavemente (a intro toca pelo menos uma vez inteira, ~2,8 s). */
+    private fun abrirVideo() {
+        val sf = superficie ?: return
+        if (!querVideo || mp != null) return
+        querVideo = false
+        try {
+            val p = MediaPlayer()
+            mp = p
+            p.setSurface(sf)
+            p.setDataSource(context, Uri.parse("android.resource://${context.packageName}/${R.raw.exa_intro}"))
+            p.setVolume(0f, 0f)
+            p.setOnPreparedListener { it.start(); video.alpha = 1f }
+            p.setOnCompletionListener { fimDoVideo() }
+            p.setOnErrorListener { _, _, _ -> fimDoVideo(); true }
+            p.prepareAsync()
+        } catch (_: Throwable) { fimDoVideo() }
+    }
+
+    /** A abertura acabou: o quadro final fica parado e entram o anel e os textos de verdade. */
+    private fun fimDoVideo() {
+        if (!videoTocando) return
+        fundo.alpha = 1f
+        camadas(1f)
+        video.animate().alpha(0f).setDuration(450).withEndAction { soltarVideo(); videoTocando = false }.start()
+        // sem animação do sistema o withEndAction pode não vir: garante
+        postDelayed({ if (videoTocando) { video.alpha = 0f; soltarVideo(); videoTocando = false } }, 900)
+    }
+
+    private fun soltarVideo() {
+        try { mp?.setOnCompletionListener(null); mp?.stop() } catch (_: Throwable) { }
+        try { mp?.release() } catch (_: Throwable) { }
+        mp = null
+    }
+
+    /** Andamento real vindo da página (0..1) e o que está acontecendo agora. */
+    fun progresso(f: Float, titulo: String?, detalhe: String?) {
+        anel.alvo = f.coerceIn(0f, 1f)
+        if (!titulo.isNullOrBlank() && !videoTocando) status.text = titulo
+        if (detalhe != null && !videoTocando) etapa.text = detalhe
+    }
+
+    /** Some suavemente — nunca no meio da abertura. */
     fun esconder(depois: (() -> Unit)? = null) {
         if (!tocando) { depois?.invoke(); return }
-        val falta = maxOf(0L, 3800L - (System.currentTimeMillis() - comecouEm))
-        postDelayed({
-            animate().alpha(0f).scaleX(1.06f).scaleY(1.06f).setStartDelay(0).setDuration(800).setInterpolator(suave).setListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    animate().setListener(null)
+        cancelarEsconder()
+        val r = object : Runnable {
+            override fun run() {
+                if (videoTocando) { postDelayed(this, 300); return }
+                anel.alvo = 1f
+                animate().alpha(0f).setDuration(700).start()
+                postDelayed({
+                    if (sumir !== this) return@postDelayed
+                    sumir = null
                     visibility = View.GONE
+                    alpha = 1f
                     tocando = false
-                    parar()
+                    anel.rodar(false)
                     depois?.invoke()
-                }
-            }).start()
-        }, falta)
+                }, 750)
+            }
+        }
+        sumir = r
+        // a tela de carregamento fica pelo menos 1,5 s (sem piscar)
+        postDelayed(r, maxOf(0L, 1500L - (System.currentTimeMillis() - comecouEm)))
     }
 
-    /** TV box costuma vir com as animações do sistema desligadas (escala 0): aí todo ValueAnimator pula para o fim e a intro congela. */
+    /** A página avisou que ainda não está pronta de verdade: cancela um sumiço agendado. */
+    fun cancelarEsconder() {
+        sumir?.let { removeCallbacks(it) }
+        sumir = null
+        if (tocando) { animate().cancel(); alpha = 1f; visibility = View.VISIBLE }
+    }
+
     private fun garantirAnimacoes() {
         try {
             if (android.os.Build.VERSION.SDK_INT >= 26 && ValueAnimator.areAnimatorsEnabled()) return
@@ -219,48 +260,59 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
     }
 
     fun parar() {
-        animadores.forEach { it.cancel() }
-        animadores.clear()
-        listOf<View>(luzA, luzB, logo, traco, corredor, frase, status, this).forEach { it.animate().cancel() }
+        anel.rodar(false)
+        soltarVideo()
+        videoTocando = false
+        animate().cancel()
     }
 
-    private fun anim(
-        duracao: Long, atraso: Long, modo: Int, interp: android.animation.TimeInterpolator = LinearInterpolator(),
-        repetir: Boolean = true, f: (Float) -> Unit,
-    ) {
-        val a = ValueAnimator.ofFloat(0f, 1f)
-        a.duration = duracao
-        a.startDelay = atraso
-        a.interpolator = interp
-        if (repetir) { a.repeatCount = ValueAnimator.INFINITE; a.repeatMode = if (modo == 0) ValueAnimator.RESTART else modo }
-        a.addUpdateListener { f(it.animatedValue as Float) }
-        a.start()
-        animadores.add(a)
-    }
+    /** Anel de progresso em volta do logo (sobre o círculo interno do vídeo) + um cometa girando no círculo de fora. */
+    class Anel(ctx: Context) : View(ctx) {
+        private var cx = 0f; private var cy = 0f; private var s = 1f
+        private val trilho = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = Color.argb(34, 255, 255, 255); strokeCap = Paint.Cap.ROUND }
+        private val arco = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+        private val cometa = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val halo = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val r1 = RectF()
+        private var mostrado = 0f
+        var alvo = 0f
+        private var ativo = false
+        private var t0 = System.nanoTime()
 
-    /** A logo da EXA com um brilho dourado recortado no formato das letras. */
-    class LogoComBrilho(ctx: Context) : View(ctx) {
-        private val bmp: Bitmap? = try { BitmapFactory.decodeResource(ctx.resources, R.drawable.exa_logo) } catch (_: Throwable) { null }
-        private val pLogo = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
-        private val pBrilho = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP) }
-        private val r = RectF()
-        var fase = -1f
+        fun encaixar(x: Float, y: Float, esc: Float) {
+            cx = x; cy = y; s = esc
+            trilho.strokeWidth = 5f * s
+            arco.strokeWidth = 7f * s
+            arco.shader = SweepGradient(cx, cy, intArrayOf(Color.rgb(234, 37, 29), Color.rgb(255, 120, 100), Color.WHITE, Color.rgb(234, 37, 29)), floatArrayOf(0f, 0.45f, 0.8f, 1f))
+            invalidate()
+        }
 
-        init { setLayerType(View.LAYER_TYPE_HARDWARE, null) }
+        fun zerar() { mostrado = 0f; alvo = 0f; t0 = System.nanoTime() }
+        fun rodar(sim: Boolean) { ativo = sim; if (sim) invalidate() }
 
         override fun onDraw(c: Canvas) {
-            val b = bmp ?: return
-            r.set(0f, 0f, width.toFloat(), height.toFloat())
-            val camada = c.saveLayer(r, null)
-            c.drawBitmap(b, null, r, pLogo)
-            if (fase > -0.5f && fase < 1.5f) {
-                val w = width * 0.35f
-                val x = fase * width
-                pBrilho.shader = LinearGradient(x - w / 2, 0f, x + w / 2, height * 0.35f,
-                    intArrayOf(Color.argb(0, 255, 255, 255), Color.argb(242, 255, 215, 160), Color.argb(0, 255, 255, 255)), null, Shader.TileMode.CLAMP)
-                c.drawRect(r, pBrilho)
+            if (s <= 0f) return
+            // o anel anda suave até o valor real (nunca passa dele)
+            mostrado += (alvo - mostrado) * 0.06f
+            val r = 310f * s
+            r1.set(cx - r, cy - r, cx + r, cy + r)
+            c.drawCircle(cx, cy, r, trilho)
+            if (mostrado > 0.003f) {
+                c.save(); c.rotate(-90f, cx, cy)
+                c.drawArc(r1, 0f, 360f * mostrado, false, arco)
+                c.restore()
             }
-            c.restoreToCount(camada)
+            // cometa: uma volta a cada 3,2 s no círculo de fora
+            val t = (System.nanoTime() - t0) / 1e9f
+            val ang = Math.toRadians((t / 3.2f * 360f - 90f).toDouble())
+            val rc = 365f * s
+            val x = cx + rc * Math.cos(ang).toFloat(); val y = cy + rc * Math.sin(ang).toFloat()
+            halo.color = Color.argb(60, 255, 255, 255)
+            c.drawCircle(x, y, 16f * s, halo)
+            cometa.color = Color.WHITE
+            c.drawCircle(x, y, 5f * s, cometa)
+            // ~30 quadros/s bastam para o anel e poupam a TV box (a página está carregando atrás)
+            if (ativo) postInvalidateDelayed(if (alpha < 0.01f) 250L else 33L)
         }
     }
 }

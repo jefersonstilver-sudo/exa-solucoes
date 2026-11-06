@@ -69,7 +69,17 @@ const Aviso = ({ texto }: { texto: string }) => (
 export function ReplicaElevador({ predioId, alternativa, camera = true }: { predioId: string; alternativa: React.ReactNode; camera?: boolean }) {
   const [ok, setOk] = useState<boolean | null>(null);
   const ref = useRef<HTMLIFrameElement>(null);
-  useEffect(() => { let vivo = true; prepararReplica().then((v) => { if (vivo) setOk(v); }); return () => { vivo = false; }; }, []);
+  useEffect(() => {
+    // app Android 1.0.14+: a tela de carregamento do app fica até a tela do prédio confirmar que está fluida
+    // (o tv.js dentro dela manda o andamento e libera). Chamado antes do "pronto" da página.
+    try { (window as any).ExaTela?.segurar?.(); } catch { /* app antigo */ }
+    let vivo = true;
+    prepararReplica().then((v) => {
+      if (!v) { try { (window as any).ExaTela?.liberar?.(); } catch { /* */ } } // sem réplica: não prende a tela
+      if (vivo) setOk(v);
+    });
+    return () => { vivo = false; };
+  }, []);
 
   // prova de exibição: acompanha o vídeo que a tela do elevador está tocando
   useEffect(() => {
