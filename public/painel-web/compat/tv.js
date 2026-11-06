@@ -103,11 +103,16 @@
         var falhas = 0;
         var fonteDe = function (it) { return '/cache/' + encodeURI(it.video); };
         var plusDe = function (it) { return it && (it.isPlus === true || it.isPlus === 'true'); };
-        var errou = function () {
+        var errou = function (ev) {
           falhas++; pre.src = ''; info.falhas++;
+          // registra o motivo (aparece no replica_saude.tv) para entender as TVs onde o revezamento falha
+          try {
+            var alvo = ev && ev.target, er = alvo && alvo.error;
+            info.ultimo_erro = (alvo === B ? 'B' : alvo === A ? 'A' : 'play') + ':' + (er ? er.code + ' ' + String(er.message || '').slice(0, 80) : String((ev && ev.message) || ev || '').slice(0, 80));
+          } catch (e2) { /* segue */ }
           if (falhas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; console.log('tv: revezamento desligado'); }
         };
-        B.addEventListener('error', errou); A.addEventListener('error', function () { if (pre.el === A) errou(); });
+        B.addEventListener('error', errou); A.addEventListener('error', function (ev) { if (pre.el === A) errou(ev); });
         var carregar = function () {
           try {
             if (!window.__tvDuplo || !playlist.length) return;
@@ -159,7 +164,7 @@
             };
             el.addEventListener('playing', function um() { el.removeEventListener('playing', um); mostrar(); });
             setTimeout(mostrar, 1500);
-            try { await el.play(); } catch (e) { feito = true; errou(); currentIdx = i - 1; el.style.visibility = 'hidden'; return normal(); }
+            try { await el.play(); } catch (e) { feito = true; errou(e); currentIdx = i - 1; el.style.visibility = 'hidden'; return normal(); }
             if (el.currentTime > 0.05) mostrar();
           } catch (e) { console.error('tv: revezamento falhou, troca normal', e); return normal(); }
         };
@@ -169,6 +174,9 @@
         setInterval(function () {
           try {
             var v = videoElement;
+            // com o revezamento desligado o vigia não age: senão, com o vídeo ainda baixando (prédio novo, sem cache),
+            // ele pulava anúncio a cada 4 s e a tela ficava preta piscando o QR (TV KTC, Rio Negro, 05/11)
+            if (!window.__tvDuplo) { ultT = -1; parouEm = Date.now(); return; }
             if (!v || !v.currentSrc) return;
             if (v.currentTime !== ultT) { ultT = v.currentTime; parouEm = Date.now(); return; }
             if (v.ended) return;
