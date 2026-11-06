@@ -33,7 +33,7 @@
               var c = document.getElementById('tv-ultimo-quadro');
               if (!c) {
                 c = document.createElement('canvas'); c.id = 'tv-ultimo-quadro';
-                c.style.cssText = 'position:absolute;pointer-events:none;z-index:3;object-fit:cover';
+                c.style.cssText = 'position:absolute;pointer-events:none;z-index:3;object-fit:cover;will-change:transform,opacity;opacity:0';
                 v.parentNode.insertBefore(c, v.nextSibling);
               }
               c.width = Math.min(960, v.videoWidth); c.height = Math.round(c.width * v.videoHeight / v.videoWidth);
@@ -41,10 +41,10 @@
               c.style.left = v.offsetLeft + 'px'; c.style.top = v.offsetTop + 'px';
               c.style.width = v.offsetWidth + 'px'; c.style.height = v.offsetHeight + 'px';
               try { c.style.objectFit = getComputedStyle(v).objectFit || 'cover'; } catch (e2) {}
-              c.style.display = 'block';
-              var some = function () { v.removeEventListener('playing', some); setTimeout(function () { c.style.display = 'none'; }, 120); };
+              c.style.opacity = '1';
+              var some = function () { v.removeEventListener('playing', some); setTimeout(function () { c.style.opacity = '0'; }, 120); };
               v.addEventListener('playing', some);
-              setTimeout(function () { c.style.display = 'none'; }, 6000);
+              setTimeout(function () { c.style.opacity = '0'; }, 6000);
             }
           } catch (e) { /* segue */ }
           try {
