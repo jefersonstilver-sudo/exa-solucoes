@@ -708,6 +708,17 @@ async function revisar(c: Contexto, p: Predio, criados: any[], dados: any[], e: 
   const rv = await revisarAviso({ pedido: await pedidoRecente(c), ref: ra?.ref || null, cartoes: dados, refCartoes: Array.isArray(e?.ref_cartoes) ? e.ref_cartoes.map(Number) : undefined });
   c.registros.push(`revisor de design: nota ${rv.nota}/100${rv.problemas.length ? ` · ${rv.problemas.join(" | ").slice(0, 600)}` : ""}`);
   if (rv.aprovado) { (c as any).ultimaNota = rv.nota; return null; }
+  // 06/11/2026: com nota mínima 99 e um comunicado longo o revisor reprovava sempre (55, 90, 85) e o síndico ficava SEM
+  // prévia ("vou caprichar com a equipe"). O síndico sempre recebe o link: na 2ª tentativa basta 90, na 3ª basta 80
+  // (o Jeferson recebe a nota na cópia da prévia). Só abaixo de 80 na 3ª o Nando não manda.
+  const tentativa = (c.revisoes || 0) + 1;
+  const limite = tentativa >= 3 ? 80 : tentativa === 2 ? 90 : NOTA_MINIMA;
+  const travaTexto = rv.problemas.some((x) => /idêntic|identic|diferente da arte/i.test(x)) && rv.nota < 90;
+  if (rv.nota >= limite && !travaTexto) {
+    (c as any).ultimaNota = rv.nota;
+    c.registros.push(`revisor: aprovado na ${tentativa}ª tentativa com nota ${rv.nota} (limite ${limite})`);
+    return null;
+  }
   await c.sb.from("nando_avisos").update({ status: "removido", removido_por: `reprovado pelo revisor de design (nota ${rv.nota})`, removido_em: new Date().toISOString() })
     .in("id", criados.map((a) => a.id)).eq("status", "rascunho");
   c.revisoes = (c.revisoes || 0) + 1;

@@ -163,6 +163,10 @@ Dê uma nota de 0 a 100 de quanto o aviso cumpre EXATAMENTE o pedido. Desconte:
 - -10 QR faltando quando a referência/documento tem QR; assinatura errada.
 Não desconte por ícones diferentes (a biblioteca é fixa) nem por enfeites (corações, folhas).
 Se a referência é DOCUMENTO (arte_pronta=false: regimento, comunicado, foto de papel), os itens podem ser encurtados para caber na tela, mas sem perder nenhuma regra, data, horário ou nome, e sem mudar o sentido.
+COMUNICADO LONGO colado como texto (e-mail, WhatsApp, circular): o aviso de tela é um RESUMO para ler em segundos — NUNCA o textão.
+Resumir é o CERTO. Basta ter o essencial: o que está acontecendo, o que o morador deve fazer, até quando / data e horário-chave, e quem assina.
+NÃO desconte por omitir número de protocolo, explicação técnica, histórico ("conforme comunicado de ontem"), justificativas, agradecimentos e cortesias.
+Desconte -15 se algum cartão tiver texto longo demais para tela (mais de ~140 caracteres no texto ou mais de 4 itens).
 Se a referência é ARTE PRONTA, o texto tem que ser idêntico.
 Só desconte por problema CONCRETO desta lista; sem problema concreto a nota é 100. Gosto pessoal não desconta.
 Devolva SÓ JSON: {"nota": 0-100, "problemas": ["frase curta e concreta, com o que corrigir"], "ok": ["o que está certo"]}`;
