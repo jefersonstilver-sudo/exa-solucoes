@@ -1,3 +1,4 @@
+// verify_jwt=false (supabase/config.toml): a Evolution não manda JWT; autorização por ?token= e x-exa2-cron.
 // =====================================================================
 // LÍVIA — webhook do WhatsApp (instância de notificações: 45 99942-9820).
 // POST (Evolution, ?token=)      → mensagem recebida: junta as que chegam em sequência e responde com a Lívia.

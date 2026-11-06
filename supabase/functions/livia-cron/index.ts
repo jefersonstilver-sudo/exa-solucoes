@@ -1,3 +1,4 @@
+// verify_jwt=false (supabase/config.toml): a Evolution não manda JWT; autorização por ?token= e x-exa2-cron.
 // =====================================================================
 // LÍVIA — rotina (cron a cada 10 min, header x-exa2-cron).
 //  1. Retornos: pergunta ao Jeferson sem resposta → a Lívia cumpre o "te retorno até as 10h" e lembra o Jeferson.
