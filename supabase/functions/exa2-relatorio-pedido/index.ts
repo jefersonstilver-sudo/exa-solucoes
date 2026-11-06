@@ -170,6 +170,20 @@ Deno.serve(async (req) => {
     const { data: outros } = ids.length ? await sb.from("pedidos").select("id,status,tipo_produto,data_inicio,data_fim,lista_predios,blocked_at,is_test_order")
       .overlaps("lista_predios", ids).not("data_inicio", "is", null) : { data: [] as any[] };
     const tocam = (outros || []).filter((o: any) => o.id === ped.id || (!o.is_test_order && (TOCAM.includes(o.status) || o.status === "bloqueado")));
+    // pedidos que já foram apagados do banco também dividiam a rodada enquanto estavam no ar (até o dia em que foram apagados);
+    // sem eles os meses antigos saíam inflados (ex.: Kammer em mar/2026 com a tela quase só para ela)
+    const idsAntecessores = new Set(antecessores.map((d: any) => d.id));
+    const jaTem = new Set(tocam.map((o: any) => o.id));
+    for (const x of apagados || []) {
+      const d: any = x.pedido_data || {};
+      if (!d.id || jaTem.has(d.id) || idsAntecessores.has(d.id) || !d.data_inicio) continue;
+      if (d.is_test_order === true || d.is_test_order === "true" || !TOCAM.includes(d.status)) continue;
+      if (!(d.lista_predios || []).some((b: string) => ids.includes(b))) continue;
+      const apagadoEm = x.deleted_at ? diaBR(Date.parse(x.deleted_at)) : null;
+      const fimD = [d.data_fim ? String(d.data_fim).slice(0, 10) : null, apagadoEm].filter(Boolean).sort()[0] || null;
+      tocam.push({ ...d, data_fim: fimD, blocked_at: null });
+      jaTem.add(d.id);
+    }
     const { data: durs } = tocam.length ? await sb.from("pedido_videos").select("pedido_id,videos(duracao)").eq("is_active", true).in("pedido_id", tocam.map((o: any) => o.id)) : { data: [] as any[] };
     const durPedido = new Map<string, number>();
     for (const x of durs || []) { const s = Number((x as any).videos?.duracao); if (s > 0) durPedido.set(x.pedido_id, Math.min(90, Math.max(5, s))); }
