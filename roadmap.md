@@ -91,3 +91,8 @@
 - [ ] Commit 1c5e7a2: rodar migration 20261106130000_telas_24h.sql (horas_operacao_dia=24), deploy exa2-relatorio-pedido do main, publicar site de novo.
 - [ ] Redeploy exa2-relatorio-pedido com commit 50d4214 — BLOQUEADO: commit ainda não chegou.
 - [x] Commit 1c5e7a2: migration telas_24h executada (horas_operacao_dia=24), exa2-relatorio-pedido deployada do main, site publicado com cupons + relatório novo. Build OK.
+
+# Fila 06/11/2026 (tarde)
+- [x] Deploy exa2-relatorio-pedido com commit f6e9de7 (programações semanais do cinema pela Conta Interna + título com datas reais). Sem alterar arquivos, sem publicar site.
+- [ ] Deploy exa-tela com commit 08c1cb4 ou mais novo (câmeras da TV seguindo a configuração fielmente, câmera de teste local, nome do prédio nos avisos) + publicar site (mudou src/tela/widgets.tsx e public/painel-web/ui/scripts/lives.js) — BLOQUEADO: 08c1cb4 ainda não chegou; origin/main está em f6e9de7. Aguardando push.
+- [ ] Redeploy exa2-relatorio-pedido com commit 50d4214 — BLOQUEADO: commit ainda não chegou.
