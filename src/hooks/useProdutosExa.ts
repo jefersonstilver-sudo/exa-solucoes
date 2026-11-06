@@ -1,3 +1,4 @@
+import { calcularRodada } from '@/lib/exibicoesRodada';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -85,7 +86,7 @@ export function useProdutosExa() {
     produtosAtivos: ProdutoExa[] = [],
     config: ConfiguracaoExibicao | null = null
   ): CalculosExibicao => {
-    const horasOperacao = config?.horas_operacao_dia ?? 21;
+    const horasOperacao = config?.horas_operacao_dia ?? 23;
     const diasMes = config?.dias_mes ?? 30;
     
     // Calcular tempo total do ciclo
@@ -113,10 +114,24 @@ export function useProdutosExa() {
       d.percentualCiclo = Math.round((d.tempoTotal / tempoCicloSegundos) * 100);
     });
 
-    const segundosPorDia = horasOperacao * 3600;
-    const ciclosPorDia = Math.floor(segundosPorDia / tempoCicloSegundos);
-    const exibicoesPorDia = ciclosPorDia;
-    const exibicoesPorMes = ciclosPorDia * diasMes;
+    // Regra real do player v22 (src/lib/exibicoesRodada.ts), prédio lotado
+    const h = produtosAtivos.find(p => p.codigo === 'horizontal');
+    const v = produtosAtivos.find(p => p.codigo === 'vertical_premium');
+    const rod = calcularRodada({
+      horasDia: horasOperacao, diasMes,
+      horizontais: h?.max_clientes_por_painel, duracaoHorizontal: h?.duracao_video_segundos,
+      verticais: v?.max_clientes_por_painel, duracaoVertical: v?.duracao_video_segundos,
+    });
+    tempoCicloSegundos = rod.rodadaSegundos;
+    detalheProdutos.forEach(d => {
+      const seg = d.codigo === 'horizontal' ? rod.horizontal.dia * (h?.duracao_video_segundos ?? 10) * (h?.max_clientes_por_painel ?? 15)
+        : d.codigo === 'vertical_premium' ? rod.vertical.dia * (v?.duracao_video_segundos ?? 15) * (v?.max_clientes_por_painel ?? 3) : 0;
+      d.percentualCiclo = Math.round((seg / rod.segundosDia) * 100);
+    });
+    const segundosPorDia = rod.segundosDia;
+    const ciclosPorDia = rod.rodadasDia;
+    const exibicoesPorDia = rod.horizontal.dia;
+    const exibicoesPorMes = rod.horizontal.mes;
 
     return {
       tempoCicloSegundos,

@@ -1,3 +1,4 @@
+import { EXIBICOES_PADRAO } from '@/lib/exibicoesRodada';
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -629,11 +630,11 @@ const PropostaDetalhesPage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <BarChart3 className="h-4 w-4 text-gray-400" />
-                    <span><strong>15.060</strong> exibições/mês por painel</span>
+                    <span><strong>{EXIBICOES_PADRAO.horizontal.mes.toLocaleString('pt-BR')}</strong> exibições/mês por painel</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-gray-400" />
-                    <span><strong>{(502 * totalScreens).toLocaleString('pt-BR')}</strong> vezes/dia (total)</span>
+                    <span><strong>{(EXIBICOES_PADRAO.horizontal.dia * totalScreens).toLocaleString('pt-BR')}</strong> vezes/dia (total)</span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mt-3 italic flex items-center gap-1.5">

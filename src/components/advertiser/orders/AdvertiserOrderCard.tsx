@@ -1,3 +1,4 @@
+import { EXIBICOES_PADRAO, exibicoesMesPorTela } from '@/lib/exibicoesRodada';
 import React, { useRef, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Loader2, Monitor, Smartphone, Clock, Crown, ChevronRight } from 'lucide-react';
@@ -113,8 +114,8 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   };
 
   // Estimated impressions
-  // Exibições por mês (padrão oficial EXA por tela: horizontal 15.060 · vertical premium 5.010)
-  const porTela = String((item as any).tipo_produto || '').startsWith('vertical') ? 5010 : 15060;
+  // Exibições por mês (padrão oficial EXA por tela, regra do player v22: horizontal 9.030 · vertical premium 15.060)
+  const porTela = exibicoesMesPorTela((item as any).tipo_produto);
   const impressions = item.type === 'order' && item.total_visualizacoes_mes
     ? item.total_visualizacoes_mes
     : (painelsList.length || 0) * porTela;

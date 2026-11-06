@@ -1,4 +1,5 @@
 
+import { EXIBICOES_PADRAO, exibicoesMesPorTela } from '@/lib/exibicoesRodada';
 import React from 'react';
 import { motion } from 'framer-motion';
 import PlanSelector from './PlanSelector';
@@ -69,9 +70,9 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
     }, 0);
   }, [cartItems]);
 
-  // Total de exibições/mês — padrão oficial 2026 horizontal: 15.060/painel/mês
+  // Total de exibições/mês — padrão oficial horizontal (regra do player v22, prédio lotado)
   const totalExibicoesMes = React.useMemo(() => {
-    return panelCount * 15060;
+    return panelCount * EXIBICOES_PADRAO.horizontal.mes;
   }, [panelCount]);
 
   return (

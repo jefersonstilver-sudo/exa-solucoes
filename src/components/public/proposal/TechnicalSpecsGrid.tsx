@@ -1,3 +1,4 @@
+import { EXIBICOES_PADRAO, exibicoesMesPorTela } from '@/lib/exibicoesRodada';
 import React from 'react';
 import { Clock, Monitor, Users, Triangle, TrendingUp, Maximize, Timer, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -35,8 +36,8 @@ export const TechnicalSpecsGrid: React.FC<TechnicalSpecsGridProps> = ({
     resolucao: specifications?.vertical.resolucao ?? '1080×1920',
     proporcao: specifications?.vertical.proporcao ?? '9:16',
     maxClientes: specifications?.vertical.maxClientesPainel ?? 3,
-    exibicoesMes: specifications?.vertical.exibicoesPorMes ?? 5010,
-    exibicoesDia: specifications?.vertical.exibicoesPorDia ?? 167,
+    exibicoesMes: specifications?.vertical.exibicoesPorMes ?? EXIBICOES_PADRAO.vertical.mes,
+    exibicoesDia: specifications?.vertical.exibicoesPorDia ?? EXIBICOES_PADRAO.vertical.dia,
     presencaMin: specifications?.vertical.presencaMinutosDia ?? 42,
     badgeLabel: 'Tela Cheia · Memória Absoluta',
     presencaLabel: 'tela 100% sua/dia',
@@ -46,8 +47,8 @@ export const TechnicalSpecsGrid: React.FC<TechnicalSpecsGridProps> = ({
     resolucao: specifications?.horizontal.resolucao ?? '1080×890',
     proporcao: specifications?.horizontal.proporcao ?? '6:5',
     maxClientes: specifications?.horizontal.maxClientesPainel ?? 15,
-    exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? 15060,
-    exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? 502,
+    exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? EXIBICOES_PADRAO.horizontal.mes,
+    exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? EXIBICOES_PADRAO.horizontal.dia,
     presencaMin: specifications?.horizontal.presencaMinutosDia ?? 83,
     badgeLabel: 'Volume + Frequência',
     presencaLabel: 'min de presença/dia',

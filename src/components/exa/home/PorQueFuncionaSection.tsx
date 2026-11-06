@@ -13,7 +13,7 @@ const reasons = [
   {
     icon: Calendar,
     title: 'Presença Diária',
-    description: 'Cada morador vê a tela todos os dias, gerando 502 exibições diárias por vídeo.',
+    description: 'Cada morador vê a tela todos os dias, com centenas de exibições por dia: cerca de 300 no horizontal e 500 em tela cheia no Vertical Premium.',
   },
   {
     icon: Users,

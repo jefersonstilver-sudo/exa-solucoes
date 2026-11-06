@@ -1,3 +1,4 @@
+import { calcularRodada } from '@/lib/exibicoesRodada';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
@@ -278,20 +279,18 @@ export class ProposalPDFExporter {
           proporcao: isVertical ? '9:16' : '6:5',
           formato: isVertical ? 'Vertical Premium' : 'Horizontal',
           maxClientes: isVertical ? 3 : 15,
-          exibicoesMes: isVertical ? 5010 : 15060,
-          exibicoesDia: isVertical ? 167 : 502,
+          exibicoesMes: isVertical ? 15060 : 9030,
+          exibicoesDia: isVertical ? 502 : 301,
         };
       }
 
       const horasOperacao = config?.horas_operacao_dia ?? 23;
       const diasMes = config?.dias_mes ?? 30;
       const segundosDia = horasOperacao * 3600;
-      // Ciclo oficial 2026: 15 horizontais (10s) + 1 vertical (15s) = 165s
-      const tempoCiclo = 165;
-      const ciclosPorDia = Math.floor(segundosDia / tempoCiclo); // ~502
       const isVerticalProd = tipo === 'vertical_premium';
-      // Vertical é dividido entre 3 marcas → ciclos/3
-      const exibicoesDia = isVerticalProd ? Math.floor(ciclosPorDia / 3) : ciclosPorDia;
+      // Regra real do player v22 (src/lib/exibicoesRodada.ts), prédio lotado
+      const rod = calcularRodada({ horasDia: horasOperacao, diasMes });
+      const exibicoesDia = isVerticalProd ? rod.vertical.dia : rod.horizontal.dia;
       const exibicoesPorMes = exibicoesDia * diasMes;
 
       return {
@@ -312,8 +311,8 @@ export class ProposalPDFExporter {
         proporcao: isVertical ? '9:16' : '6:5',
         formato: isVertical ? 'Vertical Premium' : 'Horizontal',
         maxClientes: isVertical ? 3 : 15,
-        exibicoesMes: isVertical ? 5010 : 15060,
-        exibicoesDia: isVertical ? 167 : 502,
+        exibicoesMes: isVertical ? 15060 : 9030,
+        exibicoesDia: isVertical ? 502 : 301,
       };
     }
   }

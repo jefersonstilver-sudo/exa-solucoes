@@ -1,3 +1,4 @@
+import { calcularRodada } from '@/lib/exibicoesRodada';
 import React, { useState, useEffect } from 'react';
 import { useProdutosExa, ProdutoExa, ConfiguracaoExibicao } from '@/hooks/useProdutosExa';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,15 +89,19 @@ const ProdutosPage = () => {
   }, [configuracao]);
 
   // Cálculos em tempo real
-  const horasOperacao = editConfig.horas_operacao_dia || 21;
+  // Regra real do player v22 (src/lib/exibicoesRodada.ts), prédio lotado
+  const horasOperacao = editConfig.horas_operacao_dia || 23;
   const diasMes = editConfig.dias_mes || 30;
-  const segundosDia = horasOperacao * 3600;
-
+  const rod = calcularRodada({
+    horasDia: horasOperacao, diasMes,
+    horizontais: editHorizontal.max_clientes_por_painel || 0, duracaoHorizontal: editHorizontal.duracao_video_segundos || 0,
+    verticais: editVertical.max_clientes_por_painel || 0, duracaoVertical: editVertical.duracao_video_segundos || 0,
+  });
+  const segundosDia = rod.segundosDia;
   const tempoHorizontal = (editHorizontal.duracao_video_segundos || 0) * (editHorizontal.max_clientes_por_painel || 0);
-  const tempoVertical = (editVertical.duracao_video_segundos || 0) * (editVertical.max_clientes_por_painel || 0);
-  const tempoCicloTotal = tempoHorizontal + tempoVertical;
-  const ciclosDia = tempoCicloTotal > 0 ? Math.floor(segundosDia / tempoCicloTotal) : 0;
-  const exibicoesMes = ciclosDia * diasMes;
+  const tempoVertical = (editVertical.duracao_video_segundos || 0) * rod.verticaisPorRodada;
+  const tempoCicloTotal = rod.rodadaSegundos;
+  const ciclosDia = rod.rodadasDia;
 
   const handleSalvarHorizontal = async () => {
     if (produtoHorizontal) {
@@ -270,17 +275,17 @@ const ProdutosPage = () => {
                 <p className="text-[10px] font-medium text-blue-700 uppercase tracking-wide">Métricas</p>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-blue-600">Tempo no ciclo</span>
+                  <span className="text-xs text-blue-600">Tempo na rodada</span>
                   <span className="text-sm font-semibold text-blue-800">{tempoHorizontal}s</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <div className="bg-white/60 rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-green-600">{ciclosDia.toLocaleString('pt-BR')}</p>
+                    <p className="text-lg font-bold text-green-600">{rod.horizontal.dia.toLocaleString('pt-BR')}</p>
                     <p className="text-[9px] text-muted-foreground">exib/dia</p>
                   </div>
                   <div className="bg-white/60 rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-green-600">{exibicoesMes.toLocaleString('pt-BR')}</p>
+                    <p className="text-lg font-bold text-green-600">{rod.horizontal.mes.toLocaleString('pt-BR')}</p>
                     <p className="text-[9px] text-muted-foreground">exib/mês</p>
                   </div>
                 </div>
@@ -463,17 +468,17 @@ const ProdutosPage = () => {
                 <p className="text-[10px] font-medium text-purple-700 uppercase tracking-wide">Métricas</p>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-purple-600">Tempo no ciclo</span>
+                  <span className="text-xs text-purple-600">Tempo na rodada ({rod.verticaisPorRodada} verticais)</span>
                   <span className="text-sm font-semibold text-purple-800">{tempoVertical}s</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <div className="bg-white/60 rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-green-600">{ciclosDia.toLocaleString('pt-BR')}</p>
+                    <p className="text-lg font-bold text-green-600">{rod.vertical.dia.toLocaleString('pt-BR')}</p>
                     <p className="text-[9px] text-muted-foreground">exib/dia</p>
                   </div>
                   <div className="bg-white/60 rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-green-600">{exibicoesMes.toLocaleString('pt-BR')}</p>
+                    <p className="text-lg font-bold text-green-600">{rod.vertical.mes.toLocaleString('pt-BR')}</p>
                     <p className="text-[9px] text-muted-foreground">exib/mês</p>
                   </div>
                 </div>
@@ -552,7 +557,7 @@ const ProdutosPage = () => {
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Ciclo completo</Label>
+                <Label className="text-[10px] text-muted-foreground">Rodada completa (+ notícia 50s)</Label>
                 <div className="h-8 px-3 flex items-center bg-muted/50 rounded-md">
                   <span className="text-sm font-medium">{tempoCicloTotal}s</span>
                 </div>
@@ -563,16 +568,16 @@ const ProdutosPage = () => {
             <div className="bg-gradient-to-r from-gray-50 to-slate-100 rounded-xl p-3">
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <p className="text-xs text-muted-foreground">Ciclos/dia</p>
+                  <p className="text-xs text-muted-foreground">Rodadas/dia</p>
                   <p className="text-base font-bold text-foreground">{ciclosDia.toLocaleString('pt-BR')}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Exib/dia</p>
-                  <p className="text-base font-bold text-green-600">{ciclosDia.toLocaleString('pt-BR')}</p>
+                  <p className="text-xs text-muted-foreground">Exib/dia (horiz. · vert.)</p>
+                  <p className="text-base font-bold text-green-600">{rod.horizontal.dia.toLocaleString('pt-BR')} · {rod.vertical.dia.toLocaleString('pt-BR')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Exib/mês</p>
-                  <p className="text-base font-bold text-green-600">{exibicoesMes.toLocaleString('pt-BR')}</p>
+                  <p className="text-base font-bold text-green-600">{rod.horizontal.mes.toLocaleString('pt-BR')} · {rod.vertical.mes.toLocaleString('pt-BR')}</p>
                 </div>
               </div>
             </div>

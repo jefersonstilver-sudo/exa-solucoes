@@ -1,3 +1,4 @@
+import { EXIBICOES_PADRAO, exibicoesMesPorTela } from '@/lib/exibicoesRodada';
 import React, { useEffect, useState } from 'react';
 import ReplicaPainel from '@/components/pedido-v2/ReplicaPainel';
 import { Clock, Users, Triangle, Monitor, BarChart3, TrendingUp, Smartphone, RectangleHorizontal } from 'lucide-react';
@@ -48,8 +49,8 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
         resolucao: specifications?.vertical.resolucao ?? '1080×1920',
         proporcao: specifications?.vertical.proporcao ?? '9:16',
         maxClientes: specifications?.vertical.maxClientesPainel ?? 3,
-        exibicoesMes: specifications?.vertical.exibicoesPorMes ?? 5010,
-        exibicoesDia: specifications?.vertical.exibicoesPorDia ?? 167,
+        exibicoesMes: specifications?.vertical.exibicoesPorMes ?? EXIBICOES_PADRAO.vertical.mes,
+        exibicoesDia: specifications?.vertical.exibicoesPorDia ?? EXIBICOES_PADRAO.vertical.dia,
         presencaMin: specifications?.vertical.presencaMinutosDia ?? 42,
         marcasLabel: 'apenas',
         unidadeMarcas: 'marcas',
@@ -62,8 +63,8 @@ export const ProductShowcaseCard: React.FC<ProductShowcaseCardProps> = ({ tipo, 
         resolucao: (specifications?.horizontal.resolucao || '1080×890').replace('x', '×'),
         proporcao: (specifications?.horizontal.proporcao || '6:5') + ' (quase quadrado)',
         maxClientes: specifications?.horizontal.maxClientesPainel ?? 15,
-        exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? 15060,
-        exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? 502,
+        exibicoesMes: specifications?.horizontal.exibicoesPorMes ?? EXIBICOES_PADRAO.horizontal.mes,
+        exibicoesDia: specifications?.horizontal.exibicoesPorDia ?? EXIBICOES_PADRAO.horizontal.dia,
         presencaMin: specifications?.horizontal.presencaMinutosDia ?? 83,
         marcasLabel: 'Até',
         unidadeMarcas: 'empresas por prédio',

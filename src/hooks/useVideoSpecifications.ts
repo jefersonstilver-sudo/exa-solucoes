@@ -1,10 +1,11 @@
+import { calcularRodada } from '@/lib/exibicoesRodada';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Especificações oficiais 2026:
- * - Horizontal: 502 exib/dia · 15.060/mês · 83 min presença/dia · até 15 marcas
- * - Vertical Premium: 167 exib/dia · 5.010/mês · 42 min tela cheia/dia · apenas 3 marcas
+ * - Horizontal: ~301 exib/dia · 9.030/mês · 50 min/dia · até 15 marcas (regra do player v22, prédio lotado)
+ * - Vertical Premium: ~502 exib/dia · 15.060/mês · 125 min em tela cheia/dia · apenas 3 marcas
  * - Operação: 23h/dia · Ciclo: 165s (15×10s + 1×15s)
  */
 
@@ -74,26 +75,19 @@ export function useVideoSpecifications() {
       const diasMes = config?.dias_mes ?? 30;
       const segundosDia = horasOperacao * 3600;
       
-      // Ciclo oficial 2026: 15 horizontais (10s) + 1 vertical (15s) = 165s
+      // Regra real do player v22 (src/lib/exibicoesRodada.ts), com o prédio lotado
       const duracaoHorizontal = horizontal?.duracao_video_segundos ?? 10;
       const maxHorizontal = horizontal?.max_clientes_por_painel ?? 15;
       const duracaoVertical = vertical?.duracao_video_segundos ?? 15;
-      
-      const tempoCiclo = (duracaoHorizontal * maxHorizontal) + duracaoVertical || 165;
-      
-      // Por ciclo: cada horizontal aparece 1x; o vertical aparece 1x (mas em 1 a cada 3 ciclos = 1/3)
-      const ciclosPorDia = Math.floor(segundosDia / tempoCiclo); // ~502
-      
-      // Horizontal: 1 exibição por ciclo
-      const exibicoesHorizontalDia = ciclosPorDia; // ~502
-      const exibicoesHorizontalMes = exibicoesHorizontalDia * diasMes; // ~15.060
-      const presencaHorizontalMin = Math.round((exibicoesHorizontalDia * duracaoHorizontal) / 60); // ~83 min
-      
-      // Vertical Premium: divide entre 3 marcas — cada marca tem 1/3 dos ciclos
       const maxVertical = vertical?.max_clientes_por_painel ?? 3;
-      const exibicoesVerticalDia = Math.floor(ciclosPorDia / maxVertical); // ~167
-      const exibicoesVerticalMes = exibicoesVerticalDia * diasMes; // ~5.010
-      const presencaVerticalMin = Math.round((exibicoesVerticalDia * duracaoVertical) / 60); // ~42 min
+      const rod = calcularRodada({ horasDia: horasOperacao, diasMes, horizontais: maxHorizontal, duracaoHorizontal, verticais: maxVertical, duracaoVertical });
+      const tempoCiclo = rod.rodadaSegundos; // ~275 s
+      const exibicoesHorizontalDia = rod.horizontal.dia; // ~301
+      const exibicoesHorizontalMes = rod.horizontal.mes; // ~9.030
+      const presencaHorizontalMin = rod.horizontal.minutosDia; // ~50 min
+      const exibicoesVerticalDia = rod.vertical.dia; // ~502
+      const exibicoesVerticalMes = rod.vertical.mes; // ~15.060
+      const presencaVerticalMin = rod.vertical.minutosDia; // ~125 min em tela cheia
       
       return {
         horizontal: {

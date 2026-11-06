@@ -14,7 +14,7 @@ const FAQSection = () => {
     },
     {
       question: "Quantas pessoas vão ver meu anúncio?",
-      answer: "Cada painel exibe em média 502 vezes por dia (mais de 15.000 exibições por mês), atingindo moradores, visitantes e funcionários que utilizam os elevadores regularmente."
+      answer: "No horizontal, sua marca aparece cerca de 300 vezes por dia em cada painel (cerca de 9.000 por mês); no Vertical Premium, em tela cheia, cerca de 500 vezes por dia (15.000 por mês), atingindo moradores, visitantes e funcionários que utilizam os elevadores regularmente."
     },
     {
       question: "É seguro investir nessa mídia nova?",

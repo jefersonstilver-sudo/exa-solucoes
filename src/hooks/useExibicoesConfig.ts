@@ -3,12 +3,13 @@
  * FONTE ÚNICA DE VERDADE para todo o sistema
  * 
  * Baseado no Manual Técnico Oficial 2026:
- * - Horizontal: 1080×890 (6:5), 10s, até 15 marcas — 502 exib/dia · 15.060/mês · 83 min presença/dia
- * - Vertical Premium: 1080×1920 (9:16), 15s, apenas 3 marcas — 167 exib/dia · 5.010/mês · 42 min tela cheia/dia
+ * - Horizontal: 1080×890 (6:5), 10s, até 15 marcas — ~301 exib/dia · 9.030/mês · 50 min/dia
+ * - Vertical Premium: 1080×1920 (9:16), 15s, apenas 3 marcas — ~502 exib/dia · 15.060/mês · 125 min em tela cheia/dia
  * - 23h operação/dia, 30 dias/mês
- * - Ciclo: 165s (15×10s horizontal + 1×15s vertical)
+ * - Rodada do player v22 (prédio lotado): 15×10s + 5 verticais×15s + 1 editorial 50s = 275s (src/lib/exibicoesRodada.ts)
  */
 
+import { calcularRodada } from '@/lib/exibicoesRodada';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,8 +39,12 @@ export interface CalculosExibicao {
   tempoCicloSegundos: number;
   segundosPorDia: number;
   ciclosPorDia: number;
-  exibicoesPorDia: number;
-  exibicoesPorMes: number;
+  exibicoesPorDia: number; // horizontal
+  exibicoesPorMes: number; // horizontal
+  exibicoesVerticalDia: number;
+  exibicoesVerticalMes: number;
+  minutosHorizontalDia: number;
+  minutosVerticalDia: number;
 }
 
 export interface EspecificacoesTecnicas {
@@ -160,24 +165,23 @@ export function useExibicoesConfig() {
     }
   };
 
-  // Calcular métricas de exibição conforme Manual 2026
-  // Ciclo oficial: 15 horizontais (10s) + 1 vertical (15s) = 165s
+  // Regra real do player v22 (src/lib/exibicoesRodada.ts), com o prédio lotado (mínimo garantido)
   const calcularExibicoes = (): CalculosExibicao => {
-    const tempoHorizontal = especificacoes.horizontal.duracao * especificacoes.horizontal.maxClientes; // 10×15=150
-    const tempoVertical = especificacoes.vertical.duracao; // 1 vertical por ciclo = 15s
-    const tempoCicloSegundos = tempoHorizontal + tempoVertical; // 150 + 15 = 165s
-    
-    const segundosPorDia = configuracao.horas_operacao_dia * 3600; // 23h = 82.800s
-    const ciclosPorDia = Math.floor(segundosPorDia / tempoCicloSegundos); // ~502
-    const exibicoesPorDia = ciclosPorDia; // Cada ciclo = 1 exibição por cliente horizontal
-    const exibicoesPorMes = exibicoesPorDia * configuracao.dias_mes; // ~15.060
-
+    const rod = calcularRodada({
+      horasDia: configuracao.horas_operacao_dia, diasMes: configuracao.dias_mes,
+      horizontais: especificacoes.horizontal.maxClientes, duracaoHorizontal: especificacoes.horizontal.duracao,
+      verticais: especificacoes.vertical.maxClientes, duracaoVertical: especificacoes.vertical.duracao,
+    });
     return {
-      tempoCicloSegundos,
-      segundosPorDia,
-      ciclosPorDia,
-      exibicoesPorDia,
-      exibicoesPorMes
+      tempoCicloSegundos: rod.rodadaSegundos,
+      segundosPorDia: rod.segundosDia,
+      ciclosPorDia: rod.rodadasDia,
+      exibicoesPorDia: rod.horizontal.dia,
+      exibicoesPorMes: rod.horizontal.mes,
+      exibicoesVerticalDia: rod.vertical.dia,
+      exibicoesVerticalMes: rod.vertical.mes,
+      minutosHorizontalDia: rod.horizontal.minutosDia,
+      minutosVerticalDia: rod.vertical.minutosDia,
     };
   };
 
@@ -193,10 +197,10 @@ export function useExibicoesConfig() {
       duracaoTexto: `${spec.duracao} segundos`,
       tipoExibicao: spec.tipoExibicao,
       formato: spec.formato,
-      exibicoesDia: calculos.exibicoesPorDia,
-      exibicoesMes: calculos.exibicoesPorMes,
-      exibicoesDiaFormatado: calculos.exibicoesPorDia.toLocaleString('pt-BR'),
-      exibicoesMesFormatado: calculos.exibicoesPorMes.toLocaleString('pt-BR')
+      exibicoesDia: tipo === 'vertical' ? calculos.exibicoesVerticalDia : calculos.exibicoesPorDia,
+      exibicoesMes: tipo === 'vertical' ? calculos.exibicoesVerticalMes : calculos.exibicoesPorMes,
+      exibicoesDiaFormatado: (tipo === 'vertical' ? calculos.exibicoesVerticalDia : calculos.exibicoesPorDia).toLocaleString('pt-BR'),
+      exibicoesMesFormatado: (tipo === 'vertical' ? calculos.exibicoesVerticalMes : calculos.exibicoesPorMes).toLocaleString('pt-BR')
     };
   };
 
@@ -207,8 +211,8 @@ export function useExibicoesConfig() {
   };
 
   // Calcular exibições por quantidade de telas
-  const calcularExibicoesPorTelas = (quantidadeTelas: number): number => {
-    return calculos.exibicoesPorMes * quantidadeTelas;
+  const calcularExibicoesPorTelas = (quantidadeTelas: number, tipo: 'horizontal' | 'vertical' = 'horizontal'): number => {
+    return (tipo === 'vertical' ? calculos.exibicoesVerticalMes : calculos.exibicoesPorMes) * quantidadeTelas;
   };
 
   return {

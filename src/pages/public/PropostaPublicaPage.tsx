@@ -1,3 +1,4 @@
+import { EXIBICOES_PADRAO, exibicoesMesPorTela } from '@/lib/exibicoesRodada';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
@@ -1495,8 +1496,8 @@ const PropostaPublicaPage = () => {
     : totalPanels;
   
   // Exibições estimadas para venda futura — oficial 2026:
-  // Horizontal: 15.060/mês por tela · Vertical Premium: 5.010/mês por tela
-  const exibicoesPorTelaMes = proposal.tipo_produto === 'vertical_premium' ? 5010 : 15060;
+  // Horizontal: 9.030/mês por tela · Vertical Premium: 15.060/mês por tela (regra do player v22)
+  const exibicoesPorTelaMes = exibicoesMesPorTela(proposal.tipo_produto);
   const displayImpressions = isVendaFutura 
     ? displayPanelsCount * exibicoesPorTelaMes 
     : totalImpressions;
