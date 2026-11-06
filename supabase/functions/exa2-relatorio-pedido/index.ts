@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
     // prédios e telas
     const ids: string[] = (ped.lista_predios || []).filter(Boolean);
-    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,quantidade_telas,publico_estimado").in("id", ids) : { data: [] as any[] };
+    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,quantidade_telas,publico_estimado,status").in("id", ids).neq("status", "interno") : { data: [] as any[] }; // telas internas da EXA (entrada, sala de reunião, tablet) não entram no relatório do cliente
     const { data: devs } = ids.length ? await sb.from("devices").select("id,building_id,is_deleted").in("building_id", ids) : { data: [] as any[] };
     const devsPorPredio = new Map<string, number>();
     for (const d of devs || []) if (!d.is_deleted) devsPorPredio.set(d.building_id, (devsPorPredio.get(d.building_id) || 0) + 1);
@@ -157,7 +157,15 @@ Deno.serve(async (req) => {
     const todos = new Map<string, any>();
     for (const v of hist || []) todos.set(v.id, v);
     for (const x of pvs || []) if (x.videos) todos.set(x.video_id, x.videos);
-    const lista = [...todos.values()].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    // o mesmo vídeo enviado mais de uma vez (mesmo nome em até 48 h) aparece uma vez só: fica o que está no pedido
+    const ordenados = [...todos.values()].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    const nomeChave = (n: string) => String(n || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const peso = (v: any) => { const pv = atuais.get(v.id); return pv ? (pv.is_active !== false ? 2 : 1) : 0; };
+    const lista: any[] = [];
+    for (const v of ordenados) {
+      const j = lista.findIndex((w) => nomeChave(w.nome) === nomeChave(v.nome) && Math.abs(Date.parse(v.created_at) - Date.parse(w.created_at)) < 2 * DIA);
+      if (j < 0) lista.push(v); else if (peso(v) >= peso(lista[j])) lista[j] = v;
+    }
 
     // período estimado no ar: atual → desde a publicação; substituído → até a publicação seguinte da mesma série
     const SEM = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -181,12 +189,14 @@ Deno.serve(async (req) => {
         periodo: ate ? { de: new Date(desde).toISOString(), ate: new Date(ate).toISOString() } : null,
       };
     });
-    // exibições estimadas por vídeo NO AR (divide o dia entre os vídeos no ar, desde a publicação de cada um)
+    // exibições por vídeo: em cada dia, as exibições do pedido se dividem entre os vídeos que estavam no ar
+    // (atual: desde a publicação; substituído: até entrar o seguinte da mesma série — o sistema não guarda a hora exata da troca)
     const noAr = videos.filter((v) => v.situacao === "no_ar");
-    for (const v of noAr) (v as any).exibicoes = 0;
+    const comPeriodo = videos.filter((v) => v.periodo);
+    for (const v of comPeriodo) (v as any).exibicoes = 0;
     for (const d of dias) {
       const t = inicioDiaBR(d) + 12 * 3600_000;
-      const ativos = noAr.filter((v) => Date.parse(v.periodo!.de) <= t);
+      const ativos = comPeriodo.filter((v) => Date.parse(v.periodo!.de) <= t && Date.parse(v.periodo!.ate) >= t - 12 * 3600_000);
       if (!ativos.length) continue;
       for (const v of ativos) (v as any).exibicoes += Math.round((porDia.get(d) || 0) / ativos.length);
     }
