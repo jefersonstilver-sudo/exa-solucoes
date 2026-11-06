@@ -37,8 +37,9 @@ const NOME_CAMERA = new Map(CAMERAS_PADRAO.map((c) => [c.chave, c.nome]));
 // Câmeras IP AO VIVO da rede local (06/11/2026, teste Tapo C510W): o PC ao lado da câmera converte e serve o vídeo
 // só na rede local (mediamtx, nada gravado); o app da TV (CameraLocal.kt, APK 1.0.13+) busca https://lan.exa.local/<ip>/<porta>/...
 // na própria rede. Não entram na lista padrão nem no cameras_lista: só na tela que tiver o endereço em config.cameras.ids.
-const CAMERAS_LOCAIS: { url: string; nome: string; credito: string }[] = [
-  { url: 'https://lan.exa.local/192.168.1.28/8888/tapo/index.m3u8', nome: 'Câmera EXA · ao vivo', credito: 'EXA Mídia' },
+// telas = únicas telas que podem receber a câmera (trava dupla além do config.cameras.ids)
+const CAMERAS_LOCAIS: { url: string; nome: string; credito: string; telas: string[] }[] = [
+  { url: 'https://lan.exa.local/192.168.1.28/8888/tapo/index.m3u8', nome: 'Câmera EXA · ao vivo', credito: 'EXA Mídia', telas: ['ac53d6d7-6398-4a97-9ced-f374dcbdd499'] },
 ];
 const STATUS_TOCANDO = ['ativo', 'video_aprovado', 'video_enviado'];
 const RITMO_PADRAO = { casa_a_cada: 3, editorial_a_cada: 2, camera: true, noticias: true, noticias_foz: true, noticias_brasil: true };
@@ -102,9 +103,10 @@ async function cameras() {
  * Câmeras escolhidas para esta tela (config.cameras = { ids: [url…], segundos }): só as escolhidas, na ordem escolhida,
  * e o tempo de cada uma. Uma só = câmera fixa, sem trocar. Nada escolhido (ou nenhuma ainda existe) = todas.
  */
-function camerasDaTela(cams: any[], cfg: any) {
+function camerasDaTela(cams: any[], cfg: any, telaId = '') {
   const ids: string[] = Array.isArray(cfg?.ids) ? cfg.ids.map(String) : [];
-  const todas = [...cams, ...CAMERAS_LOCAIS.map((c) => ({ ...c, segundos: 14 }))];
+  const locais = CAMERAS_LOCAIS.filter((c) => telaId && c.telas.includes(telaId)).map((c) => ({ url: c.url, nome: c.nome, credito: c.credito, segundos: 14 }));
+  const todas = [...cams, ...locais];
   let out = ids.length ? ids.map((u) => todas.find((c) => c.url === u)).filter(Boolean) : cams;
   if (!out.length) out = cams;
   const seg = Number(cfg?.segundos);
@@ -541,7 +543,7 @@ Deno.serve(async (req) => {
         const { data: cfgTela } = await admin.from('exa_telas').select('config').eq('id', tela.id).maybeSingle();
         const cfgC = ((cfgTela?.config || {}) as any).cameras;
         const escolhidas = Array.isArray(cfgC?.ids) && cfgC.ids.length > 0;
-        const cs = camerasDaTela(await cameras(), cfgC);
+        const cs = camerasDaTela(await cameras(), cfgC, tela.id);
         return json({ ok: true, escolhidas, lives: cs.map((c: any) => ({ url: c.url, nome: c.nome, timing: c.segundos })) });
       }
       if (arq === 'clima') {

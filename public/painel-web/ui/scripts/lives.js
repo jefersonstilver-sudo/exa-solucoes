@@ -335,7 +335,8 @@
         if (!r.ok) continue;
         const data = await r.json();
         const lista = Array.isArray(data) ? data : (data && data.lives);
-        if (Array.isArray(lista)) return comExtras(lista.filter(x => x && x.url));
+        // câmeras escolhidas para a tela (exa-tela): só elas, sem as extras do Portal
+        if (Array.isArray(lista)) return data && data.escolhidas ? lista.filter(x => x && x.url) : comExtras(lista.filter(x => x && x.url));
       } catch (e) {
         console.warn("⚠️ Erro ao ler", url, e);
       }
