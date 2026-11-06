@@ -169,8 +169,8 @@ Deno.serve(async (req) => {
         const { data: dono } = await sb.from("pedidos").select("id").eq("id", pid).eq("client_id", quem.uid!).maybeSingle();
         if (!dono) return json({ ok: false, erro: "pedido não encontrado" }, 404);
       }
-      const { data: lib } = await sb.from("cobranca_auditoria").select("id").eq("pedido_id", pid).eq("visivel_cliente", true).limit(1);
-      if (!lib?.length) return json({ ok: true, parcelas: [], resumo: null });
+      const { data: liberou } = await sb.from("cobranca_auditoria").select("id").eq("pedido_id", pid).eq("visivel_cliente", true).limit(1);
+      if (!liberou?.length) return json({ ok: true, parcelas: [], resumo: null });
       const m = await montar(pid);
       // só as pagas/cortesia/atrasadas e a PRÓXIMA a vencer; as outras futuras aparecem quando a anterior vencer
       const lib = m.parcelas.filter((p: any) => p.visivel_cliente);
