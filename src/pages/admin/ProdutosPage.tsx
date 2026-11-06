@@ -90,7 +90,7 @@ const ProdutosPage = () => {
 
   // Cálculos em tempo real
   // Regra real do player v22 (src/lib/exibicoesRodada.ts), prédio lotado
-  const horasOperacao = editConfig.horas_operacao_dia || 23;
+  const horasOperacao = editConfig.horas_operacao_dia || 24;
   const diasMes = editConfig.dias_mes || 30;
   const rod = calcularRodada({
     horasDia: horasOperacao, diasMes,

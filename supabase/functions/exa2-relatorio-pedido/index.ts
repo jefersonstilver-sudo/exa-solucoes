@@ -22,6 +22,20 @@ const STATUS_VISIVEIS = ["ativo", "video_aprovado", "pago", "pago_pendente_video
 const diaBR = (t: number) => new Date(t - 3 * 3600_000).toISOString().slice(0, 10);
 const inicioDiaBR = (d: string) => Date.parse(d + "T03:00:00Z");
 
+const SUPA = Deno.env.get("SUPABASE_URL")!;
+const fotoPredio = (path?: string | null) => !path ? null : String(path).startsWith("http") ? path : `${SUPA}/storage/v1/object/public/building-images/${path}`;
+const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const dm = (iso: string) => { const d = new Date(Date.parse(iso) - 3 * 3600_000); return `${String(d.getUTCDate()).padStart(2, "0")}/${MES[d.getUTCMonth()]}`; };
+function tituloVideo(v: any): string {
+  if (v.serie === "cinema") {
+    if (!v.periodo) return "Programação do cinema";
+    return v.situacao === "no_ar" ? `Programação do cinema · desde ${dm(v.periodo.de)}` : `Programação do cinema · ${dm(v.periodo.de)} a ${dm(v.periodo.ate)}`;
+  }
+  let t = String(v.nome || "").replace(/^v[ií]deo\s*\d*\s*/i, "").replace(/\bv\d+\b/gi, "").replace(/\s+/g, " ").trim();
+  if (t.length < 6) t = v.serie === "hotel" ? "Hotel" : "Campanha";
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 function serie(nome: string): string {
   const n = String(nome || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   if (/\bcine|cinema/.test(n)) return "cinema";
@@ -59,7 +73,7 @@ Deno.serve(async (req) => {
 
     const vertical = String(ped.tipo_produto || "").toLowerCase().includes("vertical");
     const { data: confs } = await sb.from("configuracoes_exibicao").select("horas_operacao_dia").limit(1);
-    const horas = Number(confs?.[0]?.horas_operacao_dia) || 23;
+    const horas = Number(confs?.[0]?.horas_operacao_dia) || 24; // telas ligadas 24 h (Jeferson, 06/11/2026)
     const segDia = horas * 3600;
 
     const hoje = Date.now();
@@ -71,7 +85,7 @@ Deno.serve(async (req) => {
 
     // prédios e telas
     const ids: string[] = (ped.lista_predios || []).filter(Boolean);
-    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,quantidade_telas,publico_estimado,status").in("id", ids).neq("status", "interno") : { data: [] as any[] }; // telas internas da EXA (entrada, sala de reunião, tablet) não entram no relatório do cliente
+    const { data: predios } = ids.length ? await sb.from("buildings").select("id,nome,bairro,quantidade_telas,publico_estimado,status,imagem_principal,latitude,longitude,manual_latitude,manual_longitude").in("id", ids).neq("status", "interno") : { data: [] as any[] }; // telas internas da EXA (entrada, sala de reunião, tablet) não entram no relatório do cliente
     const { data: devs } = ids.length ? await sb.from("devices").select("id,building_id,is_deleted").in("building_id", ids) : { data: [] as any[] };
     const devsPorPredio = new Map<string, number>();
     for (const d of devs || []) if (!d.is_deleted) devsPorPredio.set(d.building_id, (devsPorPredio.get(d.building_id) || 0) + 1);
@@ -119,6 +133,7 @@ Deno.serve(async (req) => {
     const porMes = new Map<string, { exibicoes: number; dias: number }>();
     const porDia = new Map<string, number>();
     let totalExib = 0, somaTelaDia = 0, contTelaDia = 0, rodadaHoje = 0, nRod = 0;
+    const rodadasHoje: { nH: number; nP: number; vPorRodada: number; rodada: number }[] = [];
     const ultimoDia = dias[dias.length - 1];
     const linhasPredios = (predios || []).map((p: any) => {
       const telas = Math.max(1, Number(p.quantidade_telas) || devsPorPredio.get(p.id) || 1);
@@ -128,7 +143,7 @@ Deno.serve(async (req) => {
         const e = Math.round(x.exib * telas);
         exib += e; somaTelaDia += x.exib; contTelaDia++;
         porDia.set(d, (porDia.get(d) || 0) + e);
-        if (d === ultimoDia) { hojeTela = x.exib; rodadaHoje += x.rodada; nRod++; }
+        if (d === ultimoDia) { hojeTela = x.exib; rodadaHoje += x.rodada; nRod++; rodadasHoje.push(x); }
       }
       totalExib += exib;
       return {
@@ -137,6 +152,8 @@ Deno.serve(async (req) => {
         participacao: Math.round(((hojeTela * duracao) / segDia) * 1000) / 10, // % do tempo da tela hoje
         horas_tela: Math.round((exib * duracao) / 360) / 10,
         publico: Number(p.publico_estimado) || 0,
+        foto: fotoPredio(p.imagem_principal),
+        lat: Number(p.manual_latitude ?? p.latitude) || null, lng: Number(p.manual_longitude ?? p.longitude) || null,
       };
     }).sort((a: any, b: any) => b.exibicoes - a.exibicoes);
     for (const [d, e] of porDia) {
@@ -145,14 +162,16 @@ Deno.serve(async (req) => {
     }
     const exibDiaTela = Math.round(linhasPredios.length ? linhasPredios.reduce((a: number, p: any) => a + p.por_dia_tela, 0) / linhasPredios.length : 0);
     const ciclo = Math.round(nRod ? rodadaHoje / nRod : 0);
+    // a rodada "típica" de hoje (mediana dos prédios) para o desenho "como sua marca aparece"
+    const tipica = [...rodadasHoje].sort((a, b) => a.rodada - b.rodada)[Math.floor(rodadasHoje.length / 2)] || { nH: 0, nP: 1, vPorRodada: 1, rodada: 0 };
     // vídeos: atuais do pedido + histórico de publicações da conta dentro do período
-    const { data: pvs } = await sb.from("pedido_videos").select("video_id,is_active,selected_for_display,is_base_video,approval_status,approved_at,created_at,videos(id,nome,duracao,orientacao,created_at)").eq("pedido_id", pid);
+    const { data: pvs } = await sb.from("pedido_videos").select("video_id,is_active,selected_for_display,is_base_video,approval_status,approved_at,created_at,videos(id,nome,duracao,orientacao,created_at,url)").eq("pedido_id", pid);
     const atuais = new Map<string, any>((pvs || []).map((x: any) => [x.video_id, x]));
     const { data: regras } = await sb.from("campaign_video_schedules").select("video_id,campaign_schedule_rules(days_of_week,start_time,end_time,is_all_day,is_active,rule_type,label),campaigns_advanced!inner(pedido_id)").eq("campaigns_advanced.pedido_id", pid);
     const regrasPorVideo = new Map<string, any[]>();
     for (const r of regras || []) regrasPorVideo.set(r.video_id, [...(regrasPorVideo.get(r.video_id) || []), ...((r as any).campaign_schedule_rules || []).filter((x: any) => x.is_active)]);
 
-    const { data: hist } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem")
+    const { data: hist } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url")
       .eq("client_id", ped.client_id).gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString()).order("created_at");
     const todos = new Map<string, any>();
     for (const v of hist || []) todos.set(v.id, v);
@@ -182,13 +201,17 @@ Deno.serve(async (req) => {
       const ate = noAr ? fim : prox ? Math.min(fim, Date.parse(prox.created_at)) : null;
       const rs = regrasPorVideo.get(v.id) || [];
       return {
-        id: v.id, nome: String(v.nome || "Vídeo").trim(), publicado_em: v.created_at, duracao: Number(v.duracao) || duracao,
+        id: v.id, nome: String(v.nome || "Vídeo").trim(), url: v.url || null, emPedido: !!pv, publicado_em: v.created_at, duracao: Number(v.duracao) || duracao,
         orientacao: v.orientacao || (vertical ? "vertical" : "horizontal"), serie: serie(v.nome),
         situacao: noAr ? "no_ar" : pv ? "pausado" : "substituido",
         principal: !!pv?.is_base_video, programacao: rs.length ? descreverRegras(rs) : noAr ? "todos os dias, o dia todo" : null,
         periodo: ate ? { de: new Date(desde).toISOString(), ate: new Date(ate).toISOString() } : null,
       };
     });
+    // tira o que nunca foi ao ar (enviado e trocado na mesma hora, ou teste) e dá um título limpo para o cliente
+    const limpos = videos.filter((v: any) => !/\bteste?\b/i.test(v.nome) && (v.periodo || v.emPedido));
+    videos.length = 0; videos.push(...limpos);
+    for (const v of videos as any[]) v.titulo = tituloVideo(v);
     // exibições por vídeo: em cada dia, as exibições do pedido se dividem entre os vídeos que estavam no ar
     // (atual: desde a publicação; substituído: até entrar o seguinte da mesma série — o sistema não guarda a hora exata da troca)
     const noAr = videos.filter((v) => v.situacao === "no_ar");
@@ -220,11 +243,12 @@ Deno.serve(async (req) => {
       ok: true,
       gerado_em: new Date().toISOString(),
       pedido: {
-        id: ped.id, nome: ped.nome_pedido || "Campanha EXA", status: ped.status, cliente: ped.client_name || null,
+        id: ped.id, nome: ped.nome_pedido || "Campanha EXA", status: ped.status, cliente: ped.client_name || null, client_id: ped.client_id,
         produto: vertical ? "vertical_premium" : "horizontal", inicio: ped.data_inicio, fim: ped.data_fim, plano_meses: ped.plano_meses,
         dias_no_ar: diasNoAr, dias_restantes: ped.data_fim ? Math.max(0, Math.ceil((fimContrato - hoje) / DIA)) : null,
         progresso: Math.min(100, Math.round((diasNoAr / totalDias) * 100)),
       },
+      rodada_tipica: { horizontais: tipica.nH, verticais: tipica.nP, verticais_por_rodada: tipica.vPorRodada, segundos: Math.round(tipica.rodada) },
       formato: {
         produto: vertical ? "Vertical Premium (tela cheia 1080×1920)" : "Horizontal (1080×890)",
         duracao_s: duracao, horas_dia: horas, ciclo_s: ciclo, exibicoes_dia_tela: exibDiaTela,

@@ -114,7 +114,7 @@ export const AdvertiserOrderCard: React.FC<AdvertiserOrderCardProps> = ({
   };
 
   // Estimated impressions
-  // Exibições por mês (padrão oficial EXA por tela, regra do player v22: horizontal 9.030 · vertical premium 15.060)
+  // Exibições por mês (padrão oficial EXA por tela, regra do player v22: horizontal 9.420 · vertical premium 15.720)
   const porTela = exibicoesMesPorTela((item as any).tipo_produto);
   const impressions = item.type === 'order' && item.total_visualizacoes_mes
     ? item.total_visualizacoes_mes
