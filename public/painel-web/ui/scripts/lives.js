@@ -125,6 +125,9 @@
     const v = st.video;
     if (!v || v.readyState < 2 || v.videoWidth === 0 || v.paused) return;
     try {
+      // mesma proporção do vídeo (com 640x360 fixo a câmera 3:2 aparecia esticada/ampliada ao congelar)
+      const larg = Math.min(v.videoWidth, 720), alt = Math.round(larg * v.videoHeight / v.videoWidth);
+      if (st.canvas.width !== larg || st.canvas.height !== alt) { st.canvas.width = larg; st.canvas.height = alt; }
       st.ctx.drawImage(v, 0, 0, st.canvas.width, st.canvas.height);
       st.canvas.classList.add("on");
     } catch (_) {}
@@ -157,6 +160,7 @@
     }
   };
 
+  const ehLocal = (live) => /\/\/lan\.exa\.local\//.test(String(live && live.url || ""));
   const agendar = (ms) => {
     if (st.timer) clearTimeout(st.timer);
     st.timer = setTimeout(() => tentar(st.idx + 1, 0), ms);
@@ -236,7 +240,8 @@
     const aoTocar = () => terminar(true);
     const limite = setTimeout(() => terminar(false, "demorou"), TEMPO_MAX_CARREGAR);
 
-    const hls = new Hls(HLS_CONFIG);
+    // câmera IP da rede local (lan.exa.local): o mais ao vivo possível (1 segmento atrás, acelera se atrasar)
+    const hls = new Hls(ehLocal(live) ? { ...HLS_CONFIG, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 3, maxLiveSyncPlaybackRate: 1.5, maxBufferLength: 4, maxMaxBufferLength: 6 } : HLS_CONFIG);
     st.hls = hls;
     v.addEventListener("playing", aoTocar);
     hls.on(Hls.Events.MANIFEST_PARSED, () => { v.play().catch(() => {}); });
@@ -284,6 +289,7 @@
     diag("ok " + (index + 1) + "/" + st.lives.length + " " + st.video.videoWidth + "x" + st.video.videoHeight);
     const tempo = Math.max((Number.parseInt(live.timing, 10) || 30) * 1000, TEMPO_MIN_NO_AR);
     barra(tempo);
+    if (st.lives.length === 1) { if (st.timer) clearTimeout(st.timer); st.timer = null; return; }
     agendar(tempo);
   };
 
@@ -380,6 +386,7 @@
     liberar: () => {
       const v = st.video;
       if (!TV || !v || st.liberada || st.carregando) return false;
+      if (ehLocal(st.lives[st.idx])) return false; // câmera ao vivo da rede local: fica sempre tocando
       // ao vivo em HLS (gerador de clipes parado): solta o decodificador e, na volta, religa a mesma câmera
       if (st.hls) {
         guardarQuadro();
