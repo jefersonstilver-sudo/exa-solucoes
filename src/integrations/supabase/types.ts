@@ -19352,6 +19352,32 @@ export type Database = {
         }
         Relationships: []
       }
+      video_miniaturas: {
+        Row: {
+          criado_em: string
+          path: string
+          video_id: string
+        }
+        Insert: {
+          criado_em?: string
+          path: string
+          video_id: string
+        }
+        Update: {
+          criado_em?: string
+          path?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_miniaturas_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: true
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_playback_logs: {
         Row: {
           building_id: string
