@@ -178,7 +178,11 @@ export function CameraAoVivo({ cam, onFalha, onPronta }: { cam: Camera; onFalha?
         const Hls = await carregarHls();
         if (acabou) return;
         if (Hls?.isSupported()) {
-          hls = new Hls({ maxBufferLength: 8, backBufferLength: 0, liveSyncDurationCount: 2, enableWorker: true });
+          // câmera IP da rede local (lan.exa.local, servida pelo app da TV): o mais ao vivo possível
+          const local = /\/\/lan\.exa\.local\//.test(cam.url);
+          hls = new Hls(local
+            ? { maxBufferLength: 4, maxMaxBufferLength: 6, backBufferLength: 0, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 3, maxLiveSyncPlaybackRate: 1.5, enableWorker: true }
+            : { maxBufferLength: 8, backBufferLength: 0, liveSyncDurationCount: 2, enableWorker: true });
           hls.on(Hls.Events.ERROR, (_: unknown, d: any) => { if (d?.fatal) falha(`hls ${d.type}`); });
           hls.loadSource(cam.url);
           hls.attachMedia(el);

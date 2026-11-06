@@ -108,7 +108,9 @@ function camerasDaTela(cams: any[], cfg: any, telaId = '') {
   const locais = CAMERAS_LOCAIS.filter((c) => telaId && c.telas.includes(telaId)).map((c) => ({ url: c.url, nome: c.nome, credito: c.credito, segundos: 14 }));
   const todas = [...cams, ...locais];
   let out = ids.length ? ids.map((u) => todas.find((c) => c.url === u)).filter(Boolean) : cams;
-  if (!out.length) out = cams;
+  // 06/11/2026: segue a escolha fielmente — câmeras escolhidas que não estão disponíveis não viram "todas"
+  // (a TV horizontal mostrava todas as da ponte quando só a câmera de teste estava escolhida)
+  if (!ids.length && !out.length) out = cams;
   const seg = Number(cfg?.segundos);
   return seg ? out.map((c: any) => ({ ...c, segundos: Math.min(Math.max(seg, 5), 600) })) : out;
 }
@@ -643,7 +645,7 @@ Deno.serve(async (req) => {
       const ritmo = { ...RITMO_PADRAO, ...(building.telas_ritmo || {}), ...((tela.config || {}).ritmo || {}) };
       const [prog, cams, nots] = await Promise.all([
         programacaoDoLocal(admin, building).catch((e) => { console.error('[exa-tela] programação', e); return { anuncios: [], casa: [] }; }),
-        ritmo.camera === false ? Promise.resolve([]) : cameras().then((cs: any[]) => camerasDaTela(cs, (tela.config || {}).cameras)),
+        ritmo.camera === false ? Promise.resolve([]) : cameras().then((cs: any[]) => camerasDaTela(cs, (tela.config || {}).cameras, tela.id)),
         ritmo.noticias === false ? Promise.resolve([]) : noticias().then((ns: any[]) => {
           // o local escolhe Foz, Brasil ou as duas (intercaladas)
           const foz = ritmo.noticias_foz === false ? [] : ns.filter((n) => n.escopo !== 'brasil');
