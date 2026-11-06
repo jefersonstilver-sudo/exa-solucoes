@@ -212,9 +212,37 @@
         // vigia: se o anúncio que aparece ficar 4 s sem andar (fora da tela cheia de carregamento), sai do revezamento
         // nesta troca e segue pela troca normal; duas vezes = desliga o revezamento até a próxima recarga
         var ultT = -1, ultQ = -1, parouEm = 0, travadas = 0, tempos = [];
+        // 06/11/2026 — AUTO-CURA da página: se o anúncio não troca há 3 min (ou o vídeo não mostra quadro novo há 90 s),
+        // recarrega a página sozinha. No máximo 3 vezes por hora (depois o vigia do servidor reinicia o app e o Nando avisa).
+        var curaSrc = '', curaTrocou = Date.now(), curaT = 0, curaQ = -1, curaQEm = Date.now();
+        var autoCura = function (v) {
+          try {
+            var agora = Date.now();
+            var src = (v && (v.currentSrc || v.src)) || '';
+            var ct = (v && v.currentTime) || 0;
+            // trocou de anúncio, ou o mesmo anúncio recomeçou (prédio com 1 anúncio só repete o mesmo arquivo)
+            if (src !== curaSrc || ct + 1 < curaT) { curaSrc = src; curaTrocou = agora; }
+            curaT = ct;
+            var q = 0;
+            try { q = v && v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality().totalVideoFrames : ((v && v.webkitDecodedFrameCount) || 0); } catch (e) { q = 0; }
+            if (q !== curaQ || (v && v.paused && !v.ended)) { curaQ = q; curaQEm = agora; }
+            var longo = v && isFinite(v.duration) && v.duration > 150;
+            var parado = (!longo && agora - curaTrocou > 180000) || (q && agora - curaQEm > 90000);
+            if (!parado) return;
+            var hist = [];
+            try { hist = JSON.parse(localStorage.getItem('exa_autocura') || '[]').filter(function (x) { return agora - x < 3600000; }); } catch (e) { hist = []; }
+            if (hist.length >= 3) return;
+            hist.push(agora);
+            try { localStorage.setItem('exa_autocura', JSON.stringify(hist)); } catch (e) { /* segue */ }
+            console.log('tv: auto-cura — anúncio parado, recarregando a página');
+            location.reload();
+          } catch (e) { /* segue */ }
+        };
+        try { info.autocura_1h = JSON.parse(localStorage.getItem('exa_autocura') || '[]').filter(function (x) { return Date.now() - x < 3600000; }).length; } catch (e) { /* segue */ }
         setInterval(function () {
           try {
             var v = videoElement;
+            autoCura(v);
             // com o revezamento desligado o vigia não age: senão, com o vídeo ainda baixando (prédio novo, sem cache),
             // ele pulava anúncio a cada 4 s e a tela ficava preta piscando o QR (TV KTC, Rio Negro, 05/11)
             if (!window.__tvDuplo) { ultT = -1; parouEm = Date.now(); return; }

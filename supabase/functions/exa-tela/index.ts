@@ -452,6 +452,122 @@ async function vigiar(admin: any) {
   return { telas: lista.length, mudancas: out };
 }
 
+// ======================================================================================
+// 06/11/2026 — AUTO-CURA + ALERTA das telas Android (TV box / Android TV). Nunca uma tela travada sem a EXA saber.
+// Camadas: (1) a página da TV se recarrega sozinha se o anúncio não troca (compat/tv.js); (2) o app recria o navegador
+// se a página não responde (MainActivity.vigia); (3) AQUI, a cada 5 min (cron exa-telas-vigia): tela sem sinal ou com
+// os anúncios parados -> manda recarregar -> manda reiniciar o app -> se não voltar, o Nando abre ocorrência
+// (nando_ocorrencias), avisa o Jeferson no WhatsApp e fica o alerta no admin (exa_telas_eventos tipo 'alerta').
+// Estado em exa_telas.vigia { problema, desde, passo, passo_em, avisado_em }.
+// ======================================================================================
+const NANDO_ALERTA = (Deno.env.get('NANDO_ALERTA_NUMERO') || '5545998090000').replace(/\D/g, '');
+async function nandoAvisar(admin: any, texto: string) {
+  const url = (Deno.env.get('EVOLUTION_API_URL') || '').replace(/\/+$/, '');
+  const key = Deno.env.get('EVOLUTION_API_KEY') || '';
+  if (!url || !key) throw new Error('Evolution sem configuração');
+  let inst = Deno.env.get('NANDO_INSTANCIA') || '';
+  if (!inst) {
+    const { data } = await admin.from('evolution_instances').select('instance_name').ilike('instance_name', '%nando%').order('created_at', { ascending: false }).limit(1).maybeSingle();
+    inst = data?.instance_name || '';
+  }
+  if (!inst) throw new Error('instância do Nando não achada');
+  const r = await fetch(`${url}/message/sendText/${inst}`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: key }, body: JSON.stringify({ number: NANDO_ALERTA, text: texto, linkPreview: false }), signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error(`Evolution ${r.status}`);
+  try { await admin.from('nando_mensagens').insert({ telefone: NANDO_ALERTA, papel: 'nando', conteudo: { texto, origem: 'vigia_telas' } }); } catch { /* conversa é só contexto */ }
+}
+
+/** Situação da tela agora: 'sem_sinal' | 'travada' | null (ok). */
+async function problemaDaTela(admin: any, t: any): Promise<{ tipo: string; texto: string } | null> {
+  const min = minDesde(t.ultimo_sinal);
+  if (min >= 6) return { tipo: 'sem_sinal', texto: `sem sinal há ${min} min (último sinal ${hm(t.ultimo_sinal)})` };
+  // réplica do elevador: os dois últimos relatórios de 2 min sem trocar anúncio e sem quadro novo = travada
+  const { data: ev } = await admin.from('exa_telas_eventos').select('criado_em, dados').eq('tela_id', t.id).eq('tipo', 'replica_saude')
+    .gte('criado_em', new Date(Date.now() - 7 * 60000).toISOString()).order('criado_em', { ascending: false }).limit(2);
+  if ((ev || []).length >= 2 && ev.every((e: any) => Number(e.dados?.trocas || 0) === 0 && Number(e.dados?.quadros || 0) === 0)) {
+    const arq = Object.keys(ev[0].dados?.arquivos || {})[0] || t.tocando?.titulo || '—';
+    return { tipo: 'travada', texto: `anúncios parados há mais de 4 min (preso em ${String(arq).split('/').pop()})` };
+  }
+  return null;
+}
+
+async function vigiarTravadas(admin: any) {
+  const { data: telas } = await admin.from('exa_telas').select('id, nome, building_id, ambiente, ultimo_sinal, tocando, vigia, config, comando, info').eq('status', 'ativa').not('building_id', 'is', null);
+  const out: any[] = [];
+  const bIds = [...new Set((telas || []).map((t: any) => t.building_id))];
+  const { data: bs } = bIds.length ? await admin.from('buildings').select('id, nome, tipo_local').in('id', bIds) : { data: [] };
+  const bPor = new Map((bs || []).map((x: any) => [x.id, x]));
+  for (const t of telas || []) {
+    const b: any = bPor.get(t.building_id) || {};
+    // comércio: fora do horário de funcionamento a TV pode estar desligada de propósito
+    if (b.tipo_local === 'comercio' && !dentroDoHorario(t.config)) continue;
+    const v: any = t.vigia || {};
+    const p = await problemaDaTela(admin, t);
+    const nome = `${t.nome || 'Tela'} · ${String(b.nome || '').trim()}`;
+    const agora = new Date().toISOString();
+    if (!p) {
+      if (v.problema) {
+        const ficou = minDesde(v.desde);
+        await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'auto_cura', dados: { resolvido: true, problema: v.problema, ficou_min: ficou, passo: v.passo } });
+        if (v.avisado_em) {
+          try { await nandoAvisar(admin, `🟢 *Tela voltou* — ${nome}
+Ficou ${ficou} min com problema (${v.problema === 'travada' ? 'anúncios parados' : 'sem sinal'}).`); } catch (e) { console.error('[vigia] volta', e); }
+          await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'online', dados: { ficou_min: ficou, via: 'vigia' } });
+        }
+        await admin.from('exa_telas').update({ vigia: null }).eq('id', t.id);
+        out.push({ tela: nome, voltou: true, ficou_min: ficou });
+      }
+      continue;
+    }
+    // problema novo (ou mudou de tipo): começa a escada
+    if (!v.problema || v.problema !== p.tipo) {
+      const nv = { problema: p.tipo, desde: v.desde || agora, passo: 1, passo_em: agora, texto: p.texto };
+      const patch: any = { vigia: nv };
+      if (p.tipo === 'travada') { patch.comando = 'recarregar'; patch.comando_em = agora; }
+      await admin.from('exa_telas').update(patch).eq('id', t.id);
+      await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'auto_cura', dados: { passo: 1, acao: p.tipo === 'travada' ? 'recarregar' : 'aguardar', problema: p.tipo, texto: p.texto } });
+      out.push({ tela: nome, problema: p.tipo, passo: 1 });
+      continue;
+    }
+    const desdePasso = minDesde(v.passo_em);
+    if (v.passo === 1 && desdePasso >= 4) {
+      // 2º passo: reinicia o app inteiro (a TV recebe se ainda conversa com o servidor)
+      await admin.from('exa_telas').update({ vigia: { ...v, passo: 2, passo_em: agora, texto: p.texto }, comando: 'reiniciar_app', comando_em: agora }).eq('id', t.id);
+      await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'auto_cura', dados: { passo: 2, acao: 'reiniciar_app', problema: p.tipo, texto: p.texto } });
+      out.push({ tela: nome, problema: p.tipo, passo: 2 });
+      continue;
+    }
+    if (v.passo === 2 && desdePasso >= 5 && !v.avisado_em) {
+      // não voltou sozinha: ocorrência do Nando + WhatsApp do Jeferson + alerta no admin
+      const app = t.info?.app ? `app ${t.info.app}` : 'app';
+      const descricao = `${nome}: ${p.texto}. A EXA tentou recarregar a tela e reiniciar o ${app} e ela não voltou.
+O que fazer: tirar a TV da tomada por 10 s e ligar de novo; se continuar, ver a internet do local.`;
+      let avisou = false;
+      try {
+        const { data: oc } = await admin.from('nando_ocorrencias').insert({ tipo: p.tipo === 'travada' ? 'tela_travada' : 'tela_sem_sinal', building_id: t.building_id, descricao }).select('id').maybeSingle();
+        await nandoAvisar(admin, `🔴 *Tela ${p.tipo === 'travada' ? 'travada' : 'sem sinal'}* — ${nome}
+${p.texto}.
+
+Já tentei sozinho: recarreguei a tela e reiniciei o app, e ela não voltou.
+O que fazer: tirar a TV da tomada por 10 s e ligar de novo. Se continuar, ver a internet do local.
+
+Aviso quando voltar.`);
+        avisou = true;
+        if (oc?.id) await admin.from('nando_ocorrencias').update({ alertado_em: agora }).eq('id', oc.id);
+      } catch (e) { console.error('[vigia] alerta', e); }
+      await admin.from('exa_telas').update({ vigia: { ...v, passo: 3, passo_em: agora, avisado_em: avisou ? agora : null, texto: p.texto } }).eq('id', t.id);
+      await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'alerta', dados: { problema: p.tipo, texto: p.texto, nando: avisou } });
+      out.push({ tela: nome, problema: p.tipo, alerta: avisou });
+      continue;
+    }
+    // passo 3 sem aviso (WhatsApp falhou): tenta de novo a cada rodada
+    if (v.passo === 3 && !v.avisado_em) {
+      try { await nandoAvisar(admin, `🔴 *Tela com problema* — ${nome}
+${p.texto}. Já tentei recarregar e reiniciar o app sozinho.`); await admin.from('exa_telas').update({ vigia: { ...v, avisado_em: agora } }).eq('id', t.id); } catch { /* próxima rodada */ }
+    }
+  }
+  return out;
+}
+
 /** Comando pendente da tela. "gravar:30" vira um envio assinado para o bucket privado telas-gravacoes. */
 async function comandoDaTela(admin: any, tela: any) {
   const tipo = String(tela.comando || '');
@@ -764,7 +880,10 @@ Deno.serve(async (req) => {
     if (acao === 'vigia') {
       const { data: cfg } = await admin.from('exa2_config').select('valor').eq('chave', 'cron_token').maybeSingle();
       if (!cfg?.valor || req.headers.get('x-exa2-cron') !== cfg.valor) return json({ ok: false, erro: 'sem permissão' }, 403);
-      return json({ ok: true, ...(await vigiar(admin)) });
+      const base = await vigiar(admin);
+      let cura: any[] = [];
+      try { cura = await vigiarTravadas(admin); } catch (e) { console.error('[vigia] travadas', e); }
+      return json({ ok: true, ...base, auto_cura: cura });
     }
 
     // ---------- portal do restaurante (área do cliente) ----------

@@ -223,6 +223,12 @@ export default function TelasPage() {
               </button>
 
               {local && <SeloConfigTela tela={t} predio={local.telas_config} onMudou={recarregar} />}
+              {(t as any).vigia?.problema && (
+                <div className={`rounded-2xl px-3 py-2 text-[12.5px] font-semibold ${(t as any).vigia.avisado_em ? 'bg-[#FDE2E2] text-[#9C1E1E]' : 'bg-[#FFF1D6] text-[#6B4500]'}`}>
+                  {(t as any).vigia.avisado_em ? '🔴 ' : '🛠️ '}{(t as any).vigia.problema === 'travada' ? 'Travada' : 'Sem sinal'} desde {quando((t as any).vigia.desde)} · {(t as any).vigia.texto}
+                  <div className="font-normal">{(t as any).vigia.avisado_em ? 'Não voltou sozinha: o Nando abriu ocorrência e avisou o Jeferson.' : (t as any).vigia.passo >= 2 ? 'Auto-cura: reiniciando o app da TV…' : 'Auto-cura: recarregando a tela…'}</div>
+                </div>
+              )}
               <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">
                 <dt className="text-[#6A6B70]">Tocando</dt>
                 <dd className="truncate font-semibold">{t.tocando?.cliente || t.tocando?.titulo || '—'}</dd>
