@@ -87,3 +87,6 @@
 - [ ] Deploy exa2-relatorio-pedido (main 246a3b5) + publicar site (cupons novos + relatório + exibições v22). Sem alterar arquivos.
 - [ ] Redeploy exa2-relatorio-pedido com commit 50d4214 — BLOQUEADO: commit ainda não chegou (último da função é 4987eb5). Aguardando push.
 - [ ] Deploy exa-tela (809ed19, ação camera_local) + teste {"acao":"camera_local","chave":"tapocasa","token":"x"} deve dar 401.
+- [x] Cupons reaplicados por cima do main (11 arquivos restaurados de ce4d8c1d4, sem desfazer commits do GitHub) + exa-tela deployada do 198b473 (camera_local responde "ação desconhecida") + site publicado.
+- [ ] Commit 1c5e7a2: rodar migration 20261106130000_telas_24h.sql (horas_operacao_dia=24), deploy exa2-relatorio-pedido do main, publicar site de novo.
+- [ ] Redeploy exa2-relatorio-pedido com commit 50d4214 — BLOQUEADO: commit ainda não chegou.
