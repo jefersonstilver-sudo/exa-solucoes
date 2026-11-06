@@ -34,7 +34,7 @@ export const useCouponsData = () => {
         categoria: coupon.categoria as 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia'
       }));
       
-      setCoupons(normalizedData);
+      setCoupons(normalizedData as unknown as Coupon[]);
     } catch (error) {
       console.error('Erro ao buscar cupons:', error);
       toast({
