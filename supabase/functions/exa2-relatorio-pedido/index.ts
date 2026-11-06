@@ -23,11 +23,20 @@ const diaBR = (t: number) => new Date(t - 3 * 3600_000).toISOString().slice(0, 1
 const inicioDiaBR = (d: string) => Date.parse(d + "T03:00:00Z");
 
 const SUPA = Deno.env.get("SUPABASE_URL")!;
+// nome do arquivo da automação semanal do cinema: video-vertical-15s-qui11-qui18-jun.mp4 → dias 11 a 18/jun
+const PADRAO_CINEMA = /video-(?:vertical-)?(?:15s-)?(seg|ter|qua|qui|sex|sab|dom)(\d{2})-(seg|ter|qua|qui|sex|sab|dom)(\d{2})-([a-z]{3})/;
 const fotoPredio = (path?: string | null) => !path ? null : String(path).startsWith("http") ? path : `${SUPA}/storage/v1/object/public/building-images/${path}`;
 const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const dm = (iso: string) => { const d = new Date(Date.parse(iso) - 3 * 3600_000); return `${String(d.getUTCDate()).padStart(2, "0")}/${MES[d.getUTCMonth()]}`; };
 function tituloVideo(v: any): string {
   if (v.serie === "cinema") {
+    const m = decodeURIComponent(String(v.url || "").split("/").pop() || "").toLowerCase().match(PADRAO_CINEMA);
+    if (m) {
+      const i = MES.indexOf(m[5]);
+      return Number(m[4]) < Number(m[2]) && i >= 0
+        ? `Programação do cinema · ${m[2]}/${m[5]} a ${m[4]}/${MES[(i + 1) % 12]}`
+        : `Programação do cinema · ${m[2]} a ${m[4]}/${m[5]}`;
+    }
     if (!v.periodo) return "Programação do cinema";
     return v.situacao === "no_ar" ? `Programação do cinema · desde ${dm(v.periodo.de)}` : `Programação do cinema · ${dm(v.periodo.de)} a ${dm(v.periodo.ate)}`;
   }
@@ -220,7 +229,9 @@ Deno.serve(async (req) => {
         .gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString());
       internos = (ci || []).filter((v: any) => {
         const arq = decodeURIComponent(String(v.url || "").split("/").pop() || "").toLowerCase();
-        return /\bcine\b|cinema|catarat/i.test(String(v.nome)) || /(^|[_\-\s])cine([_\-\s.]|$)/.test(arq);
+        // automação semanal do cinema: Video-[VERTICAL-][15s-]qui11-qui18-jun.mp4 (só a orientação do pedido)
+        const semanal = PADRAO_CINEMA.test(arq) && (vertical ? /vertical/.test(arq) || v.orientacao === "vertical" : !/vertical/.test(arq));
+        return semanal || /\bcine\b|cinema|catarat/i.test(String(v.nome)) || /(^|[_\-\s])cine([_\-\s.]|$)/.test(arq);
       });
     }
     const todos = new Map<string, any>();
