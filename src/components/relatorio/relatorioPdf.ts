@@ -1,111 +1,197 @@
-// EXA (06/11/2026) — PDF do Relatório do pedido (jsPDF, A4 retrato, sem dependências extras).
-import type { Relatorio } from './useRelatorio';
-import { nf, dataBR, mesBR, SITUACAO, SERIE } from './useRelatorio';
+// EXA (06/11/2026) — PDF do Relatório (layout aprovado pelo Jeferson em 06/11): A4 retrato.
+// Página 1: capa vinho com logo da EXA e do cliente, total, tela do elevador com a miniatura do vídeo no ar, números,
+// a rodada desenhada, barras por mês e linha do tempo. Página 2+: vídeos com miniatura e exibições, mapa e prédios.
+import type { Relatorio, RelatorioVideo } from './useRelatorio';
+import { nf, dataBR, mesCurto, periodoTexto, SERIE } from './useRelatorio';
+import { imagemComoDataUrl, mapaComoImagem, miniaturaDoVideo } from './midia';
 
-const VINHO: [number, number, number] = [156, 30, 30];
-const TINTA: [number, number, number] = [27, 23, 25];
-const CINZA: [number, number, number] = [139, 130, 133];
+type RGB = [number, number, number];
+const VINHO: RGB = [109, 19, 23];
+const VERMELHO: RGB = [156, 30, 30];
+const TINTA: RGB = [27, 23, 25];
+const CINZA: RGB = [111, 102, 105];
+const CLARO: RGB = [247, 245, 246];
+const ROSA: RGB = [244, 207, 211];
+const COR: Record<string, RGB[]> = { cinema: [[158, 27, 52], [182, 59, 82]], hotel: [[37, 99, 235], [91, 141, 239]], geral: [[111, 102, 105], [154, 145, 148]] };
 
-export async function baixarRelatorioPdf(r: Relatorio) {
+const tipoImg = (d: string) => (d.startsWith('data:image/png') ? 'PNG' : 'JPEG');
+const tamanhoImg = (d: string): Promise<{ w: number; h: number }> =>
+  new Promise((res) => { const i = new Image(); i.onload = () => res({ w: i.width, h: i.height }); i.onerror = () => res({ w: 1, h: 1 }); i.src = d; });
+
+export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | null) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const W = 210, M = 14, L = W - 2 * M;
-  let y = 0;
+  const W = 210, M = 15, L = W - 2 * M;
 
-  const rodape = () => {
-    const n = doc.getNumberOfPages();
-    for (let i = 1; i <= n; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8); doc.setTextColor(...CINZA); doc.setFont('helvetica', 'normal');
-      doc.text(`EXA Mídia · examidia.com.br · Relatório gerado em ${dataBR(r.gerado_em)}`, M, 290);
-      doc.text(`${i}/${n}`, W - M, 290, { align: 'right' });
-    }
+  // imagens (tudo antes de desenhar)
+  const noAr = r.videos.find((v) => v.situacao === 'no_ar') || r.videos[0];
+  const lista = r.videos.slice(0, 12);
+  const [logoExa, logoExaVinho, logoCli, mapa, ...minis] = await Promise.all([
+    imagemComoDataUrl('/relatorio/exa-branco.png'),
+    imagemComoDataUrl('/relatorio/exa-vinho.png'),
+    imagemComoDataUrl(logoCliente || null),
+    mapaComoImagem(r.predios.map((p) => ({ lat: p.lat || 0, lng: p.lng || 0, nome: p.nome })), 900, 470),
+    ...[noAr, ...lista].map((v) => miniaturaDoVideo(v?.url)),
+  ]);
+  const miniNoAr = minis[0];
+  const miniDe = new Map<string, string | null>(lista.map((v, i) => [v.id, minis[i + 1]]));
+
+  const txt = (s: string, x: number, y: number, o: { size?: number; bold?: boolean; cor?: RGB; align?: 'left' | 'right' | 'center'; max?: number } = {}) => {
+    doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(o.size || 10); doc.setTextColor(...(o.cor || TINTA));
+    const t = o.max ? (doc.splitTextToSize(s, o.max) as string[]) : s;
+    doc.text(t, x, y, { align: o.align || 'left' });
+    return Array.isArray(t) ? t.length : 1;
   };
-  const quebra = (h: number) => { if (y + h > 280) { doc.addPage(); y = 18; } };
-  const titulo = (t: string) => {
-    quebra(14); y += 4;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...VINHO);
-    doc.text(t.toUpperCase(), M, y); y += 2;
-    doc.setDrawColor(235, 230, 231); doc.line(M, y, W - M, y); y += 5;
+  const caixa = (x: number, y: number, w: number, h: number, cor: RGB, raio = 3) => { doc.setFillColor(...cor); doc.roundedRect(x, y, w, h, raio, raio, 'F'); };
+  const logo = async (d: string | null, x: number, y: number, hMax: number, wMax: number, alinhar: 'left' | 'right' = 'left') => {
+    if (!d) return;
+    const s = await tamanhoImg(d); const k = Math.min(hMax / s.h, wMax / s.w); const w = s.w * k, h = s.h * k;
+    doc.addImage(d, tipoImg(d), alinhar === 'right' ? x - w : x, y + (hMax - h) / 2, w, h);
   };
-  const tabela = (cab: string[], larg: number[], linhas: string[][], alinhar: ('l' | 'r')[] = []) => {
-    const linha = (cols: string[], negrito: boolean) => {
-      quebra(6);
-      doc.setFont('helvetica', negrito ? 'bold' : 'normal'); doc.setFontSize(8.5); doc.setTextColor(...(negrito ? CINZA : TINTA));
-      let x = M;
-      cols.forEach((c, i) => {
-        const txt = doc.splitTextToSize(String(c ?? ''), larg[i] - 2)[0] || '';
-        if (alinhar[i] === 'r') doc.text(txt, x + larg[i] - 1, y, { align: 'right' }); else doc.text(txt, x, y);
-        x += larg[i];
-      });
-      y += 5.2;
-    };
-    linha(cab, true);
-    linhas.forEach((l) => linha(l, false));
+  const rotulo = (s: string, x: number, y: number) => txt(s.toUpperCase(), x, y, { size: 7.5, bold: true, cor: VERMELHO });
+  const rodape = (pg: number, tot: number) => {
+    doc.setDrawColor(238, 233, 234); doc.line(M, 284, W - M, 284);
+    txt(`EXA Mídia · examidia.com.br · gerado em ${dataBR(r.gerado_em)}`, M, 289, { size: 7.5, cor: CINZA });
+    txt(`${pg}/${tot}`, W - M, 289, { size: 7.5, cor: CINZA, align: 'right' });
   };
 
-  // capa
-  doc.setFillColor(...VINHO); doc.rect(0, 0, W, 44, 'F');
-  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-  doc.text('EXA MÍDIA · RELATÓRIO DE VEICULAÇÃO', M, 13);
-  doc.setFontSize(19); doc.text(doc.splitTextToSize(r.pedido.nome, L)[0], M, 25);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  doc.text(`${r.formato.produto} · ${dataBR(r.pedido.inicio)} a ${dataBR(r.pedido.fim)}${r.pedido.cliente ? ' · ' + r.pedido.cliente : ''}`, M, 34);
-  doc.text(`${r.pedido.dias_no_ar} dias no ar${r.pedido.dias_restantes != null ? ` · ${r.pedido.dias_restantes} dias restantes` : ''}`, M, 40);
-  y = 54;
+  // ===================== PÁGINA 1 =====================
+  doc.setFillColor(...VINHO); doc.rect(0, 0, W, 118, 'F');
+  await logo(logoExa, M, 11, 9, 40);
+  if (logoCli) { caixa(W - M - 30, 8, 30, 15, [255, 255, 255], 3); await logo(logoCli, W - M - 2, 9.5, 12, 26, 'right'); }
+  txt(`RELATÓRIO DE VEICULAÇÃO · ${new Date(r.gerado_em).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}`, M, 35, { size: 7.5, bold: true, cor: ROSA });
+  txt(r.pedido.cliente || r.pedido.nome, M, 45, { size: 21, bold: true, cor: [255, 255, 255], max: 130 });
+  txt(`${r.formato.tela_cheia ? 'Vertical Premium · tela cheia' : 'Horizontal'} · ${dataBR(r.pedido.inicio)} a ${dataBR(r.pedido.fim)}`, M, 53, { size: 9, cor: [249, 228, 230] });
+  txt('Sua marca apareceu', M, 68, { size: 9.5, cor: ROSA });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(36); doc.setTextColor(255, 255, 255);
+  const total = nf(r.totais.exibicoes); doc.text(total, M, 82);
+  const wTot = doc.getTextWidth(total);
+  txt('vezes', M + wTot + 2.5, 82, { size: 14, bold: true, cor: [255, 255, 255] });
+  txt(`em ${r.totais.predios} prédios residenciais de Foz do Iguaçu`, M, 90, { size: 9.5, cor: [249, 228, 230] });
+  // barra do contrato
+  txt(`${r.pedido.dias_no_ar} dias no ar`, M, 102, { size: 8, cor: ROSA });
+  if (r.pedido.dias_restantes != null) txt(`${r.pedido.dias_restantes} dias restantes`, M + 125, 102, { size: 8, cor: ROSA, align: 'right' });
+  caixa(M, 105, 125, 2.6, [140, 60, 64], 1.3); caixa(M, 105, 125 * (r.pedido.progresso / 100), 2.6, [255, 255, 255], 1.3);
+  // tela do elevador
+  const tw = r.formato.tela_cheia ? 40 : 52, th = r.formato.tela_cheia ? 71 : 44, tx = W - M - tw, ty = 30;
+  caixa(tx - 2, ty - 2, tw + 4, th + 4, [20, 16, 18], 4);
+  if (miniNoAr) doc.addImage(miniNoAr, 'JPEG', tx, ty, tw, th); else caixa(tx, ty, tw, th, [59, 31, 39], 3);
+  if (noAr) txt(`${noAr.situacao === 'no_ar' ? 'No ar agora' : 'Último vídeo'} · ${noAr.titulo}`, tx + tw / 2, ty + th + 7, { size: 7, bold: true, cor: [255, 255, 255], align: 'center', max: 60 });
 
   // números
-  const cards: [string, string][] = [
-    ['Exibições', nf(r.totais.exibicoes)],
-    ['Média por dia', nf(r.totais.media_dia)],
-    ['Horas de tela', nf(r.totais.horas_tela)],
-    ['Prédios', nf(r.totais.predios)],
-    ['Telas', nf(r.totais.telas)],
-    ['Minutos/dia por tela', String(r.formato.minutos_dia_tela)],
-    ['Vídeos publicados', nf(r.totais.videos_publicados)],
-    ['Público dos prédios', nf(r.totais.publico)],
+  let y = 128;
+  const kpis: [string, string][] = [
+    [nf(r.totais.media_dia), 'exibições por dia, somando as telas'],
+    [`${r.formato.minutos_dia_tela} min`, `por dia em cada tela${r.formato.tela_cheia ? ', em tela cheia' : ''}`],
+    [`${nf(r.totais.horas_tela)} h`, 'da sua marca na tela'],
+    [`${r.totais.predios} · ${r.totais.telas}`, 'prédios · telas'],
   ];
-  const cw = L / 4;
-  cards.forEach(([k, v], i) => {
-    const x = M + (i % 4) * cw, yy = y + Math.floor(i / 4) * 20;
-    doc.setFillColor(247, 245, 246); doc.roundedRect(x + 1, yy, cw - 2, 17, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(...TINTA); doc.text(v, x + 4, yy + 8);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...CINZA); doc.text(k, x + 4, yy + 13.5);
+  const kw = (L - 9) / 4;
+  kpis.forEach(([v, t], i) => {
+    const x = M + i * (kw + 3);
+    caixa(x, y, kw, 22, CLARO, 3);
+    txt(v, x + 4, y + 10, { size: 15, bold: true });
+    txt(t, x + 4, y + 16, { size: 7, cor: CINZA, max: kw - 8 });
   });
-  y += 44;
 
-  titulo('Como sua marca aparece');
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...TINTA);
-  const como = `Formato ${r.formato.produto}, vídeo de ${r.formato.duracao_s} s. Os painéis funcionam ${r.formato.horas_dia} h por dia. Sua marca ocupa ${r.formato.participacao.toLocaleString('pt-BR')}% do tempo de cada tela${r.formato.tela_cheia ? ', sozinha na tela inteira' : ''}: cerca de ${nf(r.formato.exibicoes_dia_tela)} exibições e ${r.formato.minutos_dia_tela} minutos por dia em cada tela.`;
-  doc.splitTextToSize(como, L).forEach((l: string) => { quebra(5); doc.text(l, M, y); y += 4.6; });
+  // rodada
+  y += 33; rotulo('Como sua marca aparece em cada tela', M, y); y += 4;
+  const t = r.rodada_tipica || { horizontais: 12, verticais: 3, verticais_por_rodada: 4, segundos: r.formato.ciclo_s };
+  const nH = Math.min(15, t.horizontais);
+  const blocos: string[] = []; let nV = 0;
+  const pushV = () => { blocos.push(r.formato.tela_cheia ? (nV % Math.max(1, t.verticais) === 0 ? 'v' : 'o') : 'o'); nV++; };
+  for (let h = 0; h < nH; h++) { blocos.push(!r.formato.tela_cheia && h === 0 ? 'v' : 'h'); if ((h + 1) % 3 === 0 && h + 1 < nH && t.verticais) pushV(); }
+  blocos.push('n'); if (t.verticais) pushV();
+  const bw = Math.min(8, (L - 12) / (blocos.length + 1.2)); let bx = M;
+  for (const b of blocos) {
+    const ww = b === 'n' ? bw * 2 : bw, hh = b === 'v' || b === 'o' ? 15 : 7;
+    caixa(bx, y + 15 - hh, ww - 1, hh, b === 'v' ? VERMELHO : b === 'o' ? [233, 211, 215] : b === 'n' ? [201, 214, 242] : [228, 222, 224], 1.4);
+    if (b === 'v') txt('VOCÊ', bx + (ww - 1) / 2, y + 9, { size: 5, bold: true, cor: [255, 255, 255], align: 'center' });
+    bx += ww;
+  }
+  y += 22;
+  txt(`${r.formato.tela_cheia ? 'A sua marca entra em tela cheia, sozinha na tela inteira' : 'A sua marca aparece uma vez em cada rodada'}: ${nf(r.formato.exibicoes_dia_tela)} vezes por dia em cada tela, ${r.formato.minutos_dia_tela} minutos por dia.`, M, y, { size: 8.5, cor: CINZA, max: L });
 
-  titulo('Exibições por mês');
+  // meses
+  y += 12; rotulo('Exibições por mês', M, y); y += 4;
   const max = Math.max(1, ...r.meses.map((m) => m.exibicoes));
-  r.meses.forEach((m) => {
-    quebra(6);
-    doc.setFontSize(8.5); doc.setTextColor(...TINTA); doc.setFont('helvetica', 'normal');
-    doc.text(mesBR(m.mes), M, y);
-    doc.setFillColor(...VINHO); doc.rect(M + 16, y - 3, Math.max(0.5, (m.exibicoes / max) * (L - 60)), 3.6, 'F');
-    doc.text(`${nf(m.exibicoes)} (${m.dias} d)`, W - M, y, { align: 'right' });
-    y += 5.6;
+  const mw = L / Math.max(1, r.meses.length);
+  r.meses.forEach((m, i) => {
+    const h = Math.max(1, (m.exibicoes / max) * 30), x = M + i * mw;
+    const parcial = i === 0 || i === r.meses.length - 1;
+    caixa(x + mw * 0.2, y + 6 + 30 - h, mw * 0.6, h, parcial ? [217, 163, 172] : VERMELHO, 1.2);
+    txt(`${nf(m.exibicoes / 1000)} mil`, x + mw / 2, y + 4 + 30 - h, { size: 6.5, bold: true, cor: CINZA, align: 'center' });
+    txt(mesCurto(m.mes), x + mw / 2, y + 41, { size: 7.5, bold: true, align: 'center' });
   });
 
-  titulo('Prédios');
-  tabela(['Prédio', 'Bairro', 'Telas', 'Por dia', 'Tempo', 'Exibições'], [58, 40, 14, 22, 22, 26],
-    r.predios.map((p) => [p.nome, p.bairro, String(p.telas), nf(p.por_dia_tela * p.telas), `${nf(p.horas_tela)} h`, nf(p.exibicoes)]), ['l', 'l', 'r', 'r', 'r', 'r']);
+  // linha do tempo
+  y += 51; rotulo('O que esteve nas telas', M, y); y += 4;
+  const ini = Date.parse(r.pedido.inicio + 'T00:00:00'), tot = Math.max(1, Date.now() - ini);
+  const pct = (x: number) => Math.max(0, Math.min(1, (x - ini) / tot));
+  const series = ['cinema', 'hotel', 'geral'].filter((s) => r.videos.some((v) => v.serie === s && v.periodo));
+  for (const s of series) {
+    txt(SERIE[s as keyof typeof SERIE], M, y + 5, { size: 8, bold: true, cor: COR[s][0] });
+    caixa(M + 20, y, L - 20, 7.5, CLARO, 2);
+    r.videos.filter((v) => v.serie === s && v.periodo).forEach((v, i) => {
+      const a = pct(Date.parse(v.periodo!.de)), b = pct(Date.parse(v.periodo!.ate));
+      caixa(M + 20 + a * (L - 20), y + 1.2, Math.max(0.8, (b - a) * (L - 20) - 0.5), 5.1, COR[s][i % 2], 1.2);
+    });
+    y += 10;
+  }
+  const qCin = r.videos.filter((v) => v.serie === 'cinema').length, qHot = r.videos.filter((v) => v.serie === 'hotel').length;
+  txt([qCin ? `${qCin} programações do cinema` : '', qHot ? `${qHot} vídeos do hotel` : '', `${r.videos.length} vídeos no total`].filter(Boolean).join(' · '), M, y + 2, { size: 7.5, cor: CINZA });
 
-  titulo('Vídeos publicados');
-  const s = r.publicacoes.series;
-  const resumo = Object.entries(s).map(([k, v]) => `${SERIE[k as keyof typeof SERIE] || k}: ${v.videos} vídeo(s) em ${v.semanas} semana(s)`).join(' · ');
-  if (resumo) { doc.setFontSize(9); doc.setTextColor(...TINTA); doc.text(doc.splitTextToSize(resumo, L), M, y); y += 7; }
-  tabela(['Vídeo', 'Tipo', 'Publicado', 'Situação', 'Exibições'], [78, 22, 24, 26, 32],
-    r.videos.map((v) => [v.nome, SERIE[v.serie], dataBR(v.publicado_em), SITUACAO[v.situacao], v.exibicoes != null ? nf(v.exibicoes) : '—']), ['l', 'l', 'l', 'l', 'r']);
+  // ===================== PÁGINA 2+ =====================
+  const novaPagina = async () => {
+    doc.addPage();
+    await logo(logoExaVinho, M, 10, 6.5, 26);
+    txt(`${r.pedido.cliente || r.pedido.nome} · ${r.formato.tela_cheia ? 'Vertical Premium' : 'Horizontal'}`, W - M, 15, { size: 8, cor: CINZA, align: 'right' });
+    doc.setDrawColor(238, 233, 234); doc.line(M, 20, W - M, 20);
+    return 30;
+  };
+  y = await novaPagina();
+  rotulo('Seus vídeos nas telas', M, y); y += 4;
+  const cw = (L - 4) / 2, ch = 31;
+  for (let i = 0; i < lista.length; i++) {
+    const v: RelatorioVideo = lista[i];
+    if (y + ch > 278) { y = await novaPagina(); }
+    const x = M + (i % 2) * (cw + 4);
+    caixa(x, y, cw, ch - 2, CLARO, 3);
+    const mi = miniDe.get(v.id);
+    if (mi) doc.addImage(mi, 'JPEG', x + 2.5, y + 2.5, 13.5, 24); else caixa(x + 2.5, y + 2.5, 13.5, 24, v.serie === 'hotel' ? [30, 44, 79] : [59, 31, 39], 1.5);
+    const corChip = v.serie === 'hotel' ? [37, 87, 199] as RGB : v.serie === 'cinema' ? [158, 27, 52] as RGB : CINZA;
+    txt(`${SERIE[v.serie].toUpperCase()}${v.situacao === 'no_ar' ? ' · NO AR' : v.situacao === 'pausado' ? ' · EM PAUSA' : ''}`, x + 19, y + 7, { size: 6.5, bold: true, cor: corChip });
+    const linhas = txt(v.titulo, x + 19, y + 11.5, { size: 8.5, bold: true, max: cw - 22 });
+    txt(periodoTexto(v), x + 19, y + 11.5 + linhas * 3.6, { size: 7, cor: CINZA, max: cw - 22 });
+    if (v.exibicoes != null) { txt(nf(v.exibicoes), x + 19, y + 25.5, { size: 11, bold: true }); txt('exibições', x + 19 + doc.getTextWidth(nf(v.exibicoes)) + 2, y + 25.5, { size: 7, cor: CINZA }); }
+    if (i % 2 === 1 || i === lista.length - 1) y += ch;
+  }
+  if (r.videos.length > lista.length) {
+    const resto = r.videos.slice(lista.length), soma = resto.reduce((a, v) => a + (v.exibicoes || 0), 0);
+    txt(`Mais ${resto.length} vídeo${resto.length === 1 ? '' : 's'} anteriores${soma ? `, somando ${nf(soma)} exibições` : ''}. Lista completa na sua área do cliente.`, M, y + 2, { size: 7.5, cor: CINZA }); y += 6;
+  }
 
-  titulo('Como contamos');
-  doc.setFontSize(8); doc.setTextColor(...CINZA);
-  doc.splitTextToSize(r.metodologia, L).forEach((l: string) => { quebra(4.5); doc.text(l, M, y); y += 4; });
+  // mapa e prédios
+  y += 6;
+  if (y + 70 > 278) y = await novaPagina();
+  rotulo(`Onde sua marca aparece · ${r.totais.predios} prédios, ${r.totais.telas} telas`, M, y); y += 4;
+  if (mapa) { doc.addImage(mapa, 'JPEG', M, y, L, L * (470 / 900)); y += L * (470 / 900) + 6; }
+  const colW = (L - 8) / 2;
+  r.predios.forEach((p, i) => {
+    if (i % 2 === 0 && y + 8 > 278) { y = 30; doc.addPage(); }
+    const x = M + (i % 2) * (colW + 8);
+    txt(p.nome, x, y, { size: 8, bold: true, max: colW - 28 });
+    txt(`${p.bairro} · ${p.telas} tela${p.telas === 1 ? '' : 's'}`, x, y + 3.5, { size: 6.8, cor: CINZA });
+    txt(nf(p.exibicoes), x + colW, y + 1.5, { size: 8.5, bold: true, align: 'right' });
+    doc.setDrawColor(241, 237, 238); doc.line(x, y + 5.5, x + colW, y + 5.5);
+    if (i % 2 === 1) y += 9;
+  });
+  y += 12;
+  if (y + 12 > 280) { doc.addPage(); y = 30; }
+  txt(`Como contamos. As telas ficam ligadas ${r.formato.horas_dia} horas por dia. Para cada prédio e cada dia somamos os anúncios que estavam no ar, a duração de cada vídeo e o número de telas.`, M, y, { size: 7.5, cor: CINZA, max: L });
 
-  rodape();
-  const nome = r.pedido.nome.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase();
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); rodape(i, n); }
+  const nome = (r.pedido.cliente || r.pedido.nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase();
   doc.save(`relatorio-exa-${nome}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

@@ -1,4 +1,4 @@
-import { calcularRodada } from '@/lib/exibicoesRodada';
+import { calcularRodada, EXIBICOES_PADRAO } from '@/lib/exibicoesRodada';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
@@ -279,12 +279,12 @@ export class ProposalPDFExporter {
           proporcao: isVertical ? '9:16' : '6:5',
           formato: isVertical ? 'Vertical Premium' : 'Horizontal',
           maxClientes: isVertical ? 3 : 15,
-          exibicoesMes: isVertical ? 15060 : 9030,
-          exibicoesDia: isVertical ? 502 : 301,
+          exibicoesMes: isVertical ? EXIBICOES_PADRAO.vertical.mes : EXIBICOES_PADRAO.horizontal.mes,
+          exibicoesDia: isVertical ? EXIBICOES_PADRAO.vertical.dia : EXIBICOES_PADRAO.horizontal.dia,
         };
       }
 
-      const horasOperacao = config?.horas_operacao_dia ?? 23;
+      const horasOperacao = config?.horas_operacao_dia ?? 24;
       const diasMes = config?.dias_mes ?? 30;
       const segundosDia = horasOperacao * 3600;
       const isVerticalProd = tipo === 'vertical_premium';
@@ -311,8 +311,8 @@ export class ProposalPDFExporter {
         proporcao: isVertical ? '9:16' : '6:5',
         formato: isVertical ? 'Vertical Premium' : 'Horizontal',
         maxClientes: isVertical ? 3 : 15,
-        exibicoesMes: isVertical ? 15060 : 9030,
-        exibicoesDia: isVertical ? 502 : 301,
+        exibicoesMes: isVertical ? EXIBICOES_PADRAO.vertical.mes : EXIBICOES_PADRAO.horizontal.mes,
+        exibicoesDia: isVertical ? EXIBICOES_PADRAO.vertical.dia : EXIBICOES_PADRAO.horizontal.dia,
       };
     }
   }

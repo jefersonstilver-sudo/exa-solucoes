@@ -170,7 +170,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
       const processedOrders: UserCompleteOrder[] = (orders || []).map(order => {
         // Calcular totais reais somando os dados dos buildings
         const ids = idsDoPedido(order);
-        // Exibições/mês pelo padrão oficial EXA (regra do player v22): por tela, horizontal 9.030 e vertical premium 15.060
+        // Exibições/mês pelo padrão oficial EXA (regra do player v22): por tela, horizontal 9.420 e vertical premium 15.720
         const porTela = exibicoesMesPorTela(order.tipo_produto);
         const totals = ids.reduce((acc: any, buildingId: string) => {
           const data = buildingsData[buildingId] || { 

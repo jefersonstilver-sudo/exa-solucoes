@@ -3,9 +3,9 @@
  * FONTE ÚNICA DE VERDADE para todo o sistema
  * 
  * Baseado no Manual Técnico Oficial 2026:
- * - Horizontal: 1080×890 (6:5), 10s, até 15 marcas — ~301 exib/dia · 9.030/mês · 50 min/dia
- * - Vertical Premium: 1080×1920 (9:16), 15s, apenas 3 marcas — ~502 exib/dia · 15.060/mês · 125 min em tela cheia/dia
- * - 23h operação/dia, 30 dias/mês
+ * - Horizontal: 1080×890 (6:5), 10s, até 15 marcas — ~314 exib/dia · 9.420/mês · 52 min/dia
+ * - Vertical Premium: 1080×1920 (9:16), 15s, apenas 3 marcas — ~524 exib/dia · 15.720/mês · 131 min em tela cheia/dia
+ * - 24h operação/dia, 30 dias/mês
  * - Rodada do player v22 (prédio lotado): 15×10s + 5 verticais×15s + 1 editorial 50s = 275s (src/lib/exibicoesRodada.ts)
  */
 
@@ -90,7 +90,7 @@ const DEFAULT_VERTICAL = {
 };
 
 const DEFAULT_CONFIG: ConfiguracaoGlobal = {
-  horas_operacao_dia: 23,
+  horas_operacao_dia: 24,
   dias_mes: 30
 };
 

@@ -4,8 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Especificações oficiais 2026:
- * - Horizontal: ~301 exib/dia · 9.030/mês · 50 min/dia · até 15 marcas (regra do player v22, prédio lotado)
- * - Vertical Premium: ~502 exib/dia · 15.060/mês · 125 min em tela cheia/dia · apenas 3 marcas
+ * - Horizontal: ~314 exib/dia · 9.420/mês · 52 min/dia · até 15 marcas (regra do player v22, prédio lotado)
+ * - Vertical Premium: ~524 exib/dia · 15.720/mês · 131 min em tela cheia/dia · apenas 3 marcas
  * - Operação: 23h/dia · Ciclo: 165s (15×10s + 1×15s)
  */
 
@@ -71,7 +71,7 @@ export function useVideoSpecifications() {
       const horizontal = produtos?.find(p => p.codigo === 'horizontal');
       const vertical = produtos?.find(p => p.codigo === 'vertical_premium');
       
-      const horasOperacao = config?.horas_operacao_dia ?? 23;
+      const horasOperacao = config?.horas_operacao_dia ?? 24;
       const diasMes = config?.dias_mes ?? 30;
       const segundosDia = horasOperacao * 3600;
       
@@ -82,12 +82,12 @@ export function useVideoSpecifications() {
       const maxVertical = vertical?.max_clientes_por_painel ?? 3;
       const rod = calcularRodada({ horasDia: horasOperacao, diasMes, horizontais: maxHorizontal, duracaoHorizontal, verticais: maxVertical, duracaoVertical });
       const tempoCiclo = rod.rodadaSegundos; // ~275 s
-      const exibicoesHorizontalDia = rod.horizontal.dia; // ~301
-      const exibicoesHorizontalMes = rod.horizontal.mes; // ~9.030
+      const exibicoesHorizontalDia = rod.horizontal.dia; // ~314
+      const exibicoesHorizontalMes = rod.horizontal.mes; // ~9.420
       const presencaHorizontalMin = rod.horizontal.minutosDia; // ~50 min
-      const exibicoesVerticalDia = rod.vertical.dia; // ~502
-      const exibicoesVerticalMes = rod.vertical.mes; // ~15.060
-      const presencaVerticalMin = rod.vertical.minutosDia; // ~125 min em tela cheia
+      const exibicoesVerticalDia = rod.vertical.dia; // ~524
+      const exibicoesVerticalMes = rod.vertical.mes; // ~15.720
+      const presencaVerticalMin = rod.vertical.minutosDia; // ~131 min em tela cheia
       
       return {
         horizontal: {

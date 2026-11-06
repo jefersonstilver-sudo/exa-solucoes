@@ -86,7 +86,7 @@ export function useProdutosExa() {
     produtosAtivos: ProdutoExa[] = [],
     config: ConfiguracaoExibicao | null = null
   ): CalculosExibicao => {
-    const horasOperacao = config?.horas_operacao_dia ?? 23;
+    const horasOperacao = config?.horas_operacao_dia ?? 24;
     const diasMes = config?.dias_mes ?? 30;
     
     // Calcular tempo total do ciclo

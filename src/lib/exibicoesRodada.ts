@@ -5,7 +5,7 @@
  *   1 editorial (Notícias Brasil → Notícias Foz → Curiosidades, ~50 s) e mais 1 vertical no fim.
  *   Os verticais revezam entre si.
  * Números de venda = prédio LOTADO (15 horizontais + 3 verticais): é o mínimo garantido.
- *   23 h/dia → rodada 275 s → horizontal ≈ 301/dia (50 min) · vertical ≈ 502/dia (125 min em tela cheia).
+ *   24 h/dia (telas não desligam desde nov/2026) → rodada 275 s → horizontal ≈ 314/dia (52 min) · vertical ≈ 524/dia (131 min em tela cheia).
  * Com menos anunciantes no prédio a rodada fica mais curta e todos aparecem mais.
  */
 export const EDITORIAL_SEGUNDOS = 50;
@@ -19,7 +19,7 @@ export function calcularRodada(p: {
   duracaoVertical?: number;
   editorialSegundos?: number;
 }) {
-  const horas = p.horasDia ?? 23;
+  const horas = p.horasDia ?? 24;
   const diasMes = p.diasMes ?? 30;
   const nH = Math.max(0, p.horizontais ?? 15);
   const dH = p.duracaoHorizontal ?? 10;
@@ -42,7 +42,7 @@ export function calcularRodada(p: {
   };
 }
 
-/** Números oficiais de venda (23 h/dia, 30 dias, prédio lotado). Horizontal ≈ 301/dia · 9.030/mês; Vertical ≈ 502/dia · 15.060/mês. */
+/** Números oficiais de venda (24 h/dia, 30 dias, prédio lotado). Horizontal ≈ 314/dia · 9.420/mês; Vertical ≈ 524/dia · 15.720/mês. */
 export const EXIBICOES_PADRAO = calcularRodada({});
 export const exibicoesMesPorTela = (tipoProduto?: string | null) =>
   String(tipoProduto || '').startsWith('vertical') ? EXIBICOES_PADRAO.vertical.mes : EXIBICOES_PADRAO.horizontal.mes;
