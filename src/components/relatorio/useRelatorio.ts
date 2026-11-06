@@ -4,13 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type RelatorioVideo = {
   id: string; nome: string; publicado_em: string; duracao: number; orientacao: string;
-  serie: 'cinema' | 'hotel' | 'geral'; situacao: 'no_ar' | 'pausado' | 'substituido'; principal: boolean;
+  serie: 'cinema' | 'hotel' | 'geral'; situacao: 'no_ar' | 'pausado' | 'substituido' | 'aguardando'; principal: boolean;
   programacao: string | null; periodo: { de: string; ate: string } | null; exibicoes?: number;
   titulo: string; url: string | null; miniatura?: string | null; dias_no_ar?: number; arquivo_antigo?: boolean;
 };
 export type Relatorio = {
   ok: boolean; pendente?: boolean; aviso?: string; gerado_em: string;
-  pedido: { id: string; nome: string; status: string; cliente: string | null; client_id: string; produto: string; inicio: string; fim: string | null; plano_meses: number; dias_no_ar: number; dias_restantes: number | null; progresso: number };
+  pedido: { id: string; nome: string; status: string; cliente: string | null; client_id: string; produto: string; inicio: string; inicio_pedido_atual?: string; fim: string | null; plano_meses: number; dias_no_ar: number; dias_restantes: number | null; progresso: number };
   formato: { produto: string; duracao_s: number; horas_dia: number; ciclo_s: number; exibicoes_dia_tela: number; tela_cheia: boolean; participacao: number; minutos_dia_tela: number };
   totais: { predios: number; telas: number; exibicoes: number; horas_tela: number; media_dia: number; publico: number; videos_publicados: number; videos_no_ar: number };
   meses: { mes: string; exibicoes: number; dias: number }[];
@@ -50,7 +50,7 @@ export const nf = (n: number) => Math.round(n || 0).toLocaleString('pt-BR');
 export const dataBR = (d?: string | null) => (d ? new Date(d.length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—');
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 export const mesBR = (m: string) => `${MESES[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
-export const SITUACAO = { no_ar: 'No ar', pausado: 'Em pausa', substituido: 'Já exibido' } as const;
+export const SITUACAO = { no_ar: 'No ar', pausado: 'Em pausa', substituido: 'Já exibido', aguardando: 'Aprovado' } as const;
 export const SERIE = { cinema: 'Cinema', hotel: 'Hotel', geral: 'Campanha' } as const;
 
 const MES_LONGO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -59,6 +59,7 @@ export const diasEntre = (a: string, b: string) => Math.max(1, Math.round((Date.
 /** "No ar desde 05/11" · "Nas telas de 06/08 a 16/10 · 71 dias" · "Em pausa · seg–qui 07:00–12:00" */
 export const periodoTexto = (v: RelatorioVideo) => {
   const prog = v.programacao && v.programacao !== 'todos os dias, o dia todo' ? v.programacao : '';
+  if (v.situacao === 'aguardando') return 'Aprovado · ainda não entrou nas telas';
   if (v.situacao === 'no_ar' && v.periodo) return `No ar desde ${diaMes(v.periodo.de)} · ${prog || 'todos os dias'}`;
   if (v.periodo) {
     const n = v.dias_no_ar || diasEntre(v.periodo.de, v.periodo.ate);

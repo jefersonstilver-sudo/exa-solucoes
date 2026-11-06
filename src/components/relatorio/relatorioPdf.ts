@@ -161,7 +161,7 @@ export async function baixarRelatorioPdf(r: Relatorio, logoCliente?: string | nu
     const mi = miniDe.get(v.id);
     if (mi) doc.addImage(mi, 'JPEG', x + 2.5, y + 2.5, 13.5, 24); else caixa(x + 2.5, y + 2.5, 13.5, 24, v.serie === 'hotel' ? [30, 44, 79] : [59, 31, 39], 1.5);
     const corChip = v.serie === 'hotel' ? [37, 87, 199] as RGB : v.serie === 'cinema' ? [158, 27, 52] as RGB : CINZA;
-    txt(`${SERIE[v.serie].toUpperCase()}${v.situacao === 'no_ar' ? ' · NO AR' : v.situacao === 'pausado' ? ' · EM PAUSA' : ''}`, x + 19, y + 7, { size: 6.5, bold: true, cor: corChip });
+    txt(`${SERIE[v.serie].toUpperCase()}${v.situacao === 'no_ar' ? ' · NO AR' : v.situacao === 'pausado' ? ' · EM PAUSA' : v.situacao === 'aguardando' ? ' · APROVADO' : ''}`, x + 19, y + 7, { size: 6.5, bold: true, cor: corChip });
     const linhas = txt(v.titulo, x + 19, y + 11.5, { size: 8.5, bold: true, max: cw - 22 });
     txt(periodoTexto(v), x + 19, y + 11.5 + linhas * 3.6, { size: 7, cor: CINZA, max: cw - 22 });
     if (v.exibicoes != null) { txt(nf(v.exibicoes), x + 19, y + 25.5, { size: 11, bold: true }); txt('exibições', x + 19 + doc.getTextWidth(nf(v.exibicoes)) + 2, y + 25.5, { size: 7, cor: CINZA }); }

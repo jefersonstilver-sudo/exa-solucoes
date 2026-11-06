@@ -44,7 +44,8 @@ function tituloVideo(v: any): string {
   }
   if (/okto/i.test(v.nome)) return "Oktoberfest";
   // nome genérico ("VIDEO 1", "kammer 2", "Video 4"): usa o nome do arquivo ("Kammer Soho · Tela 01")
-  if (/^\s*(v[ií]deo|[a-z]+)\s*\d+\s*$/i.test(String(v.nome || ""))) {
+  // também "VIDEO 1 KAMMER", "video kammer 2"
+  if (/^\s*((v[ií]deo|[a-z]+)\s*\d+|v[ií]deo\s*\d+\s*[a-z]+|v[ií]deo\s*[a-z]+\s*\d+)\s*$/i.test(String(v.nome || ""))) {
     const arq = decodeURIComponent(String(v.url || "").split("/").pop() || "").replace(/^\d+_/, "").replace(/\.[a-z0-9]+$/i, "")
       .replace(/_v\d+$/i, "").replace(/[_]+/g, " ").replace(/\s*-\s*/g, " · ").replace(/\bexa\b/gi, "").replace(/\s+/g, " ").trim();
     if (arq.length >= 6) return arq.charAt(0).toUpperCase() + arq.slice(1);
@@ -129,12 +130,14 @@ Deno.serve(async (req) => {
     // 23/03 → apagado em 31/03 quando o pedido definitivo foi criado). Ele fica em pedidos_deletion_history.
     const tokens = [empresa, ped.client_name, ped.nome_pedido].filter(Boolean).join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
       .split(/[^a-z0-9]+/).filter((w) => w.length >= 5 && !["grupo", "empreendimentos", "konstrutora", "construtora", "ltda", "comercio", "servicos"].includes(w));
-    const { data: apagados } = await sb.from("pedidos_deletion_history").select("pedido_id,pedido_data,created_at").order("created_at").limit(2000);
+    const { data: apagados } = await sb.from("pedidos_deletion_history").select("pedido_id,pedido_data,deleted_at").order("deleted_at").limit(5000);
     const antecessores = (apagados || []).map((x: any) => x.pedido_data || {}).filter((d: any) => {
       if (!d.data_inicio || !d.id || d.id === ped.id) return false;
       if (String(d.data_inicio).slice(0, 10) >= String(ped.data_inicio).slice(0, 10)) return false;
       if (!["ativo", "video_aprovado", "finalizado", "expirado", "concluido"].includes(d.status)) return false;
-      if (String(d.tipo_produto || "").includes("vertical") !== String(ped.tipo_produto || "").includes("vertical")) return false;
+      if (d.is_test_order === true || d.is_test_order === "true") return false;
+      // o pedido_data guardado não traz tipo_produto: só compara quando existe
+      if (d.tipo_produto && String(d.tipo_produto).includes("vertical") !== String(ped.tipo_produto || "").includes("vertical")) return false;
       const nomeAnt = String([d.nome_pedido, d.client_name].filter(Boolean).join(" ")).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
       const mesmoCliente = d.client_id === ped.client_id || (d.client_id === CONTA_INTERNA && tokens.some((w) => nomeAnt.includes(w)));
       // só o que estava no ar até perto do começo deste pedido
@@ -378,9 +381,10 @@ Deno.serve(async (req) => {
       videos.push({
         id: v.id, nome: String(v.nome || "Vídeo").trim(), url: v.url || null, emPedido: !!pv, publicado_em: v.created_at, duracao: Number(v.duracao) || duracao,
         orientacao: v.orientacao || (vertical ? "vertical" : "horizontal"), serie: v.serieForcada || serie(v.nome),
-        situacao: noAr ? "no_ar" : a ? (pv ? "pausado" : "substituido") : "pausado",
+        // aprovado e no pedido, mas ainda não entrou na rodada: "aguardando" (não é pausa)
+        situacao: noAr ? "no_ar" : a ? (pv ? "pausado" : "substituido") : "aguardando",
         principal: !!pv?.is_base_video,
-        programacao: rs.length ? descreverRegras(rs) : (minutosProgramados(v.id) >= 0.5 * minutosTotais(v.id) ? horarioDoLog(v.id) : null) || (noAr ? "todos os dias, o dia todo" : null),
+        programacao: !a && !noAr ? null : rs.length ? descreverRegras(rs) : (minutosProgramados(v.id) >= 0.5 * minutosTotais(v.id) ? horarioDoLog(v.id) : null) || (noAr ? "todos os dias, o dia todo" : null),
         periodo: a ? { de: new Date(inicioDiaBR(a.de)).toISOString(), ate: new Date(Math.min(fim, inicioDiaBR(a.ate) + DIA - 1)).toISOString() } : null,
         dias_no_ar: a?.dias || 0,
         exibicoes: a ? Math.round(a.exib) : undefined,
@@ -432,7 +436,7 @@ Deno.serve(async (req) => {
       gerado_em: new Date().toISOString(),
       pedido: {
         id: ped.id, nome: ped.nome_pedido || "Campanha EXA", status: ped.status, cliente: empresa || ped.nome_pedido || ped.client_name || null, empresa, client_id: ped.client_id,
-        produto: vertical ? "vertical_premium" : "horizontal", inicio: ped.data_inicio, fim: ped.data_fim, plano_meses: ped.plano_meses,
+        produto: vertical ? "vertical_premium" : "horizontal", inicio: inicioReal, inicio_pedido_atual: ped.data_inicio, fim: ped.data_fim, plano_meses: ped.plano_meses,
         dias_no_ar: diasNoAr, dias_restantes: ped.data_fim ? Math.max(0, Math.ceil((fimContrato - hoje) / DIA)) : null,
         progresso: Math.min(100, Math.round((diasNoAr / totalDias) * 100)),
       },
@@ -453,7 +457,7 @@ Deno.serve(async (req) => {
       meses: [...porMes.entries()].sort().map(([mes, v]) => ({ mes, ...v })),
       dias: [...porDia.entries()].sort().slice(-90).map(([dia, exibicoes]) => ({ dia, exibicoes })),
       predios: linhasPredios,
-      videos: [...videos].sort((a: any, b: any) => (b.situacao === "no_ar" ? 1 : 0) - (a.situacao === "no_ar" ? 1 : 0) || String(b.periodo?.ate || b.publicado_em).localeCompare(String(a.periodo?.ate || a.publicado_em)) || String(b.publicado_em).localeCompare(String(a.publicado_em))),
+      videos: [...videos].sort((a: any, b: any) => (b.situacao === "no_ar" ? 1 : 0) - (a.situacao === "no_ar" ? 1 : 0) || (a.situacao === "aguardando" ? 1 : 0) - (b.situacao === "aguardando" ? 1 : 0) || String(b.periodo?.ate || b.publicado_em).localeCompare(String(a.periodo?.ate || a.publicado_em)) || String(b.publicado_em).localeCompare(String(a.publicado_em))),
       publicacoes: { por_mes: [...pubMes.entries()].sort().map(([mes, qtd]) => ({ mes, qtd })), series },
       metodologia: `Calculado pela programação de cada tela, dia a dia: os painéis funcionam ${horas} h por dia e tocam em rodadas com todos os anúncios horizontais do prédio, ${vertical ? "o Vertical Premium em tela cheia a cada 3 anúncios horizontais e de novo no fim da rodada (revezando com os outros verticais do prédio)" : "um vertical em tela cheia a cada 3 horizontais"} e um conteúdo editorial. Para cada prédio contamos os anúncios que estavam no ar em cada dia, a duração de cada vídeo e o número de telas. Hoje uma rodada leva em média ${ciclo} s e sua marca aparece cerca de ${exibDiaTela} vezes por tela por dia, ${Math.round((exibDiaTela * duracao) / 60)} minutos por dia em cada tela.`,
     });

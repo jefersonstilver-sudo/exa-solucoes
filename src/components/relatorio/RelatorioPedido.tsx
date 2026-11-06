@@ -154,6 +154,7 @@ const CartaoVideo = ({ v, pedidoId }: { v: RelatorioVideo; pedidoId: string }) =
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${v.serie === 'hotel' ? 'bg-[#E8EEFD] text-[#2557C7]' : v.serie === 'cinema' ? 'bg-[#F8E9EC] text-[#9E1B34]' : 'bg-[#F0ECEA] text-[#6F6669]'}`}>{SERIE[v.serie]}</span>
         {v.situacao === 'no_ar' && <span className="rounded-full bg-[#E6F6EC] px-2.5 py-0.5 text-[11px] font-extrabold text-[#13A24A]">No ar</span>}
         {v.situacao === 'pausado' && <span className="rounded-full bg-[#F0ECEA] px-2.5 py-0.5 text-[11px] font-extrabold text-[#6F6669]">Em pausa</span>}
+        {v.situacao === 'aguardando' && <span className="rounded-full bg-[#EAF1FB] px-2.5 py-0.5 text-[11px] font-extrabold text-[#2F6FB5]">Aprovado</span>}
       </div>
       <div className="text-[14px] font-extrabold leading-snug text-[#1b1719]">{v.titulo}</div>
       <div className="text-[12.5px] leading-snug text-[#6F6669]">{periodoTexto(v)}</div>
