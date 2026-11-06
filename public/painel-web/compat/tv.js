@@ -211,7 +211,7 @@
         };
         // vigia: se o anúncio que aparece ficar 4 s sem andar (fora da tela cheia de carregamento), sai do revezamento
         // nesta troca e segue pela troca normal; duas vezes = desliga o revezamento até a próxima recarga
-        var ultT = -1, parouEm = 0, travadas = 0, tempos = [];
+        var ultT = -1, ultQ = -1, parouEm = 0, travadas = 0, tempos = [];
         setInterval(function () {
           try {
             var v = videoElement;
@@ -219,8 +219,13 @@
             // ele pulava anúncio a cada 4 s e a tela ficava preta piscando o QR (TV KTC, Rio Negro, 05/11)
             if (!window.__tvDuplo) { ultT = -1; parouEm = Date.now(); return; }
             if (!v || !v.currentSrc) return;
-            if (v.currentTime !== ultT) { ultT = v.currentTime; parouEm = Date.now(); return; }
-            if (v.ended) return;
+            // 06/11/2026 (Zeta parado 6 min no anúncio novo da Oriente, 1310x1080 ainda sem versão leve): conta também os
+            // quadros decodificados — tempo andando sem quadro novo = decodificador travado; e "acabou mas não trocou" > 3 s
+            var q = 0;
+            try { q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality().totalVideoFrames : (v.webkitDecodedFrameCount || 0); } catch (e) { q = 0; }
+            var andou = v.currentTime !== ultT && (!q || q !== ultQ);
+            if (andou) { ultT = v.currentTime; ultQ = q; parouEm = Date.now(); return; }
+            if (v.ended && Date.now() - parouEm < 3000) return;
             if (Date.now() - parouEm > 4000) {
               parouEm = Date.now(); travadas++; info.travadas = travadas;
               console.log('tv: anúncio parado, troca normal');
