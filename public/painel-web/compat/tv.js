@@ -76,6 +76,38 @@
     }, true);
     // roda antes do iniciar() do propagandas.js (este script está no <head>, o listener dele é registrado antes)
     document.addEventListener('DOMContentLoaded', preparar);
+    // 06/11/2026 (Zeta): vídeo vertical aparecendo no espaço horizontal e horizontal esticado em tela cheia.
+    // O modo (tela cheia premium ou espaço horizontal) vinha só do isPlus da programação; quando ele não bate com o
+    // arquivo, a imagem sai errada. Aqui a TV decide pelo formato REAL do vídeo (altura > largura = tela cheia) e
+    // registra a divergência em __tvInfo.orient (vai no replica_saude) para corrigir o dado na origem.
+    document.addEventListener('DOMContentLoaded', function () {
+      setTimeout(function () {
+        try {
+          var orig = window.applyVisualMode;
+          if (typeof orig !== 'function' || orig.__exa) return;
+          var corrigir = function (el, isPlus) {
+            var w = el.videoWidth, h = el.videoHeight;
+            if (!w || !h) return;
+            var vert = h > w * 1.1, plus = isPlus === true || isPlus === 'true';
+            if (vert === plus) return;
+            orig(el, vert);
+            var info = window.__tvInfo = window.__tvInfo || {};
+            var nome = String(el.currentSrc || '').split('/').pop().slice(-60);
+            info.orient = (info.orient || []).filter(function (x) { return x.indexOf(nome) < 0; }).concat([nome + (vert ? ' vertical sem isPlus' : ' horizontal com isPlus')]).slice(-6);
+          };
+          var novo = function (el, isPlus) {
+            orig(el, isPlus);
+            try {
+              // player já carregado (troca com dois players): decide na hora; senão, quando o arquivo novo abrir
+              if (el.readyState >= 1) corrigir(el, isPlus);
+              else el.addEventListener('loadedmetadata', function um() { el.removeEventListener('loadedmetadata', um); corrigir(el, isPlus); });
+            } catch (e) { /* segue */ }
+          };
+          novo.__exa = true;
+          window.applyVisualMode = novo;
+        } catch (e) { /* segue */ }
+      }, 0);
+    });
     document.addEventListener('DOMContentLoaded', function () { setTimeout(duploBuffer, 0); });
 
     /*
