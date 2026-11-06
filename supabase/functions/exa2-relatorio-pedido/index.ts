@@ -31,6 +31,7 @@ function tituloVideo(v: any): string {
     if (!v.periodo) return "Programação do cinema";
     return v.situacao === "no_ar" ? `Programação do cinema · desde ${dm(v.periodo.de)}` : `Programação do cinema · ${dm(v.periodo.de)} a ${dm(v.periodo.ate)}`;
   }
+  if (/okto/i.test(v.nome)) return "Oktoberfest";
   let t = String(v.nome || "").replace(/^v[ií]deo\s*\d*\s*/i, "").replace(/\bv\d+\b/gi, "").replace(/\s+/g, " ").trim();
   if (t.length < 6) t = v.serie === "hotel" ? "Hotel" : "Campanha";
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -39,7 +40,7 @@ function tituloVideo(v: any): string {
 function serie(nome: string): string {
   const n = String(nome || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   if (/\bcine|cinema/.test(n)) return "cinema";
-  if (/hotel/.test(n)) return "hotel";
+  if (/hotel|day ?use|resort|cafe da manha|park/.test(n)) return "hotel";
   return "geral";
 }
 
@@ -170,65 +171,128 @@ Deno.serve(async (req) => {
     const ciclo = Math.round(nRod ? rodadaHoje / nRod : 0);
     // a rodada "típica" de hoje (mediana dos prédios) para o desenho "como sua marca aparece"
     const tipica = [...rodadasHoje].sort((a, b) => a.rodada - b.rodada)[Math.floor(rodadasHoje.length / 2)] || { nH: 0, nP: 1, vPorRodada: 1, rodada: 0 };
-    // vídeos: atuais do pedido + histórico de publicações da conta dentro do período
+    // ===================== VÍDEOS =====================
+    // Fonte da verdade, quando existe: video_management_logs (o sincronizador grava 1 linha por MINUTO em que um vídeo
+    // programado substitui o principal: video_from = principal do momento, video_to = o que está tocando). Desde 03/08/2026.
+    // Dia sem linha = o principal tocou o dia todo. Antes do primeiro registro: sequência de publicações da conta.
     const { data: pvs } = await sb.from("pedido_videos").select("video_id,is_active,selected_for_display,is_base_video,approval_status,approved_at,created_at,videos(id,nome,duracao,orientacao,created_at,url)").eq("pedido_id", pid);
     const atuais = new Map<string, any>((pvs || []).map((x: any) => [x.video_id, x]));
     const { data: regras } = await sb.from("campaign_video_schedules").select("video_id,campaign_schedule_rules(days_of_week,start_time,end_time,is_all_day,is_active,rule_type,label),campaigns_advanced!inner(pedido_id)").eq("campaigns_advanced.pedido_id", pid);
     const regrasPorVideo = new Map<string, any[]>();
     for (const r of regras || []) regrasPorVideo.set(r.video_id, [...(regrasPorVideo.get(r.video_id) || []), ...((r as any).campaign_schedule_rules || []).filter((x: any) => x.is_active)]);
 
+    const logs: { f: string | null; t: string | null; at: string }[] = [];
+    for (let off = 0; off < 400000; off += 1000) {
+      const { data: lg } = await sb.from("video_management_logs").select("video_from_id,video_to_id,created_at")
+        .eq("pedido_id", pid).gte("created_at", new Date(ini).toISOString()).order("created_at").range(off, off + 999);
+      for (const x of lg || []) logs.push({ f: x.video_from_id, t: x.video_to_id, at: x.created_at });
+      if (!lg || lg.length < 1000) break;
+    }
+    // minutos por vídeo por dia + principal do dia + horários/dias da semana em que cada programado tocou
+    const minDia = new Map<string, Map<string, number>>();
+    const baseDia = new Map<string, Map<string, number>>();
+    const horasVid = new Map<string, Set<number>>(), semVid = new Map<string, Set<number>>();
+    for (const x of logs) {
+      const t = Date.parse(x.at); const d = diaBR(t);
+      if (x.t) { const m = minDia.get(d) || new Map(); m.set(x.t, (m.get(x.t) || 0) + 1); minDia.set(d, m);
+        const br = new Date(t - 3 * 3600_000); (horasVid.get(x.t) || horasVid.set(x.t, new Set()).get(x.t)!).add(br.getUTCHours()); (semVid.get(x.t) || semVid.set(x.t, new Set()).get(x.t)!).add(br.getUTCDay()); }
+      if (x.f) { const b = baseDia.get(d) || new Map(); b.set(x.f, (b.get(x.f) || 0) + 1); baseDia.set(d, b); }
+    }
+    const primeiroLog = logs.length ? diaBR(Date.parse(logs[0].at)) : null;
+
+    // vídeos envolvidos: da conta do cliente + os que aparecem nos registros (podem estar em outra conta, ex.: Conta Interna)
     const { data: hist } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url")
       .eq("client_id", ped.client_id).gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString()).order("created_at");
+    const idsLog = [...new Set(logs.flatMap((x) => [x.f, x.t]).filter(Boolean) as string[])];
+    const { data: deLog } = idsLog.length ? await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url").in("id", idsLog) : { data: [] as any[] };
     const todos = new Map<string, any>();
-    for (const v of hist || []) todos.set(v.id, v);
+    for (const v of [...(hist || []), ...(deLog || [])]) todos.set(v.id, v);
     for (const x of pvs || []) if (x.videos) todos.set(x.video_id, x.videos);
-    // o mesmo vídeo enviado mais de uma vez (mesmo nome em até 48 h) aparece uma vez só: fica o que está no pedido
     const ordenados = [...todos.values()].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
-    const nomeChave = (n: string) => String(n || "").trim().toLowerCase().replace(/\s+/g, " ");
-    const peso = (v: any) => { const pv = atuais.get(v.id); return pv ? (pv.is_active !== false ? 2 : 1) : 0; };
-    const lista: any[] = [];
-    for (const v of ordenados) {
-      const j = lista.findIndex((w) => nomeChave(w.nome) === nomeChave(v.nome) && Math.abs(Date.parse(v.created_at) - Date.parse(w.created_at)) < 2 * DIA);
-      if (j < 0) lista.push(v); else if (peso(v) >= peso(lista[j])) lista[j] = v;
+
+    // principal de cada dia SEM registro de troca, antes dos registros: o último vídeo publicado da série principal
+    const pvBase = (pvs || []).find((x: any) => x.is_base_video);
+    let ultimoBase: string | null = null;
+    const minutosPorVideoDia = new Map<string, Map<string, number>>(); // dia -> vídeo -> minutos
+    for (const d of dias) {
+      const m = new Map<string, number>();
+      const prog = minDia.get(d);
+      const bases = baseDia.get(d);
+      if (bases && bases.size) ultimoBase = [...bases.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      else if (!primeiroLog || d < primeiroLog) {
+        // antes dos registros: vídeo da conta publicado por último até este dia (série do cinema/campanha principal)
+        const t = inicioDiaBR(d) + DIA;
+        const cand = ordenados.filter((v) => Date.parse(v.created_at) <= t && !/\bteste?\b/i.test(v.nome) && (hist || []).some((h: any) => h.id === v.id));
+        const daSerie = cand.filter((v) => serie(v.nome) !== "hotel");
+        ultimoBase = (daSerie[daSerie.length - 1] || cand[cand.length - 1])?.id || null;
+      }
+      if (d === dias[dias.length - 1] && pvBase && !(bases && bases.size)) ultimoBase = pvBase.video_id;
+      let usados = 0;
+      if (prog) for (const [vid, mins] of prog) { const v = Math.min(1440, mins); m.set(vid, v); usados += v; }
+      if (ultimoBase) m.set(ultimoBase, (m.get(ultimoBase) || 0) + Math.max(0, 1440 - usados));
+      else m.set("__inicio", 1440);
+      minutosPorVideoDia.set(d, m);
     }
 
-    // período estimado no ar: atual → desde a publicação; substituído → até a publicação seguinte da mesma série
+    // exibições, período real e horários de cada vídeo
+    const acum = new Map<string, { exib: number; de: string; ate: string; dias: number }>();
+    for (const d of dias) {
+      const m = minutosPorVideoDia.get(d)!; const tot = [...m.values()].reduce((a, b) => a + b, 0) || 1;
+      for (const [vid, mins] of m) {
+        if (mins <= 0) continue;
+        const a = acum.get(vid) || { exib: 0, de: d, ate: d, dias: 0 };
+        a.exib += (porDia.get(d) || 0) * (mins / tot); a.ate = d; a.dias += 1; acum.set(vid, a);
+      }
+    }
     const SEM = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
     const descreverRegras = (rs: any[]) => rs.map((r) => {
       const d = Array.isArray(r.days_of_week) && r.days_of_week.length && r.days_of_week.length < 7 ? r.days_of_week.map((n: number) => SEM[n]).join(", ") : "todos os dias";
       const h = r.is_all_day || !r.start_time ? "o dia todo" : `${String(r.start_time).slice(0, 5)}–${String(r.end_time || "").slice(0, 5)}`;
       return `${d}, ${h}`;
     }).join(" · ");
-    const videos = lista.map((v, i) => {
-      const pv = atuais.get(v.id);
-      const noAr = !!(pv && pv.is_active !== false && pv.selected_for_display !== false && (pv.approval_status || "approved") === "approved");
-      const desde = Math.max(ini, Date.parse(pv?.approved_at || v.created_at));
-      const prox = lista.slice(i + 1).find((w) => serie(w.nome) === serie(v.nome) && Date.parse(w.created_at) > Date.parse(v.created_at) + 3600_000);
-      const ate = noAr ? fim : prox ? Math.min(fim, Date.parse(prox.created_at)) : null;
+    const horarioDoLog = (vid: string) => {
+      const hs = horasVid.get(vid), ss = semVid.get(vid); if (!hs || !hs.size) return null;
+      const h = [...hs].sort((a, b) => a - b);
+      const faixa = h.length >= 23 ? "o dia todo" : `${String(h[0]).padStart(2, "0")}h–${String((h[h.length - 1] + 1) % 24).padStart(2, "0")}h`;
+      const dd = ss && ss.size < 7 ? [...ss].sort().map((n) => SEM[n]).join(", ") : "todos os dias";
+      return `${dd}, ${faixa}`;
+    };
+    const videos: any[] = [];
+    for (const v of ordenados) {
+      if (/\bteste?\b/i.test(v.nome)) continue;
+      const pv = atuais.get(v.id); const a = acum.get(v.id);
+      const noAr = !!(pv && pv.is_active !== false && pv.selected_for_display !== false && (pv.approval_status || "approved") === "approved" && (pv.is_base_video || (minDia.get(dias[dias.length - 1])?.has(v.id))));
+      if (!a && !pv) continue; // nunca foi ao ar neste pedido
       const rs = regrasPorVideo.get(v.id) || [];
-      return {
+      videos.push({
         id: v.id, nome: String(v.nome || "Vídeo").trim(), url: v.url || null, emPedido: !!pv, publicado_em: v.created_at, duracao: Number(v.duracao) || duracao,
         orientacao: v.orientacao || (vertical ? "vertical" : "horizontal"), serie: serie(v.nome),
-        situacao: noAr ? "no_ar" : pv ? "pausado" : "substituido",
-        principal: !!pv?.is_base_video, programacao: rs.length ? descreverRegras(rs) : noAr ? "todos os dias, o dia todo" : null,
-        periodo: ate ? { de: new Date(desde).toISOString(), ate: new Date(ate).toISOString() } : null,
-      };
-    });
-    // tira o que nunca foi ao ar (enviado e trocado na mesma hora, ou teste) e dá um título limpo para o cliente
-    const limpos = videos.filter((v: any) => !/\bteste?\b/i.test(v.nome) && (v.periodo || v.emPedido));
-    videos.length = 0; videos.push(...limpos);
-    for (const v of videos as any[]) v.titulo = tituloVideo(v);
-    // exibições por vídeo: em cada dia, as exibições do pedido se dividem entre os vídeos que estavam no ar
-    // (atual: desde a publicação; substituído: até entrar o seguinte da mesma série — o sistema não guarda a hora exata da troca)
-    const noAr = videos.filter((v) => v.situacao === "no_ar");
-    const comPeriodo = videos.filter((v) => v.periodo);
-    for (const v of comPeriodo) (v as any).exibicoes = 0;
-    for (const d of dias) {
-      const t = inicioDiaBR(d) + 12 * 3600_000;
-      const ativos = comPeriodo.filter((v) => Date.parse(v.periodo!.de) <= t && Date.parse(v.periodo!.ate) >= t - 12 * 3600_000);
-      if (!ativos.length) continue;
-      for (const v of ativos) (v as any).exibicoes += Math.round((porDia.get(d) || 0) / ativos.length);
+        situacao: noAr ? "no_ar" : a ? (pv ? "pausado" : "substituido") : "pausado",
+        principal: !!pv?.is_base_video,
+        programacao: rs.length ? descreverRegras(rs) : horarioDoLog(v.id) || (noAr ? "todos os dias, o dia todo" : null),
+        periodo: a ? { de: new Date(inicioDiaBR(a.de)).toISOString(), ate: new Date(Math.min(fim, inicioDiaBR(a.ate) + DIA - 1)).toISOString() } : null,
+        dias_no_ar: a?.dias || 0,
+        exibicoes: a ? Math.round(a.exib) : undefined,
+      });
     }
+    // o mesmo vídeo enviado mais de uma vez (mesmo nome em até 48 h): soma num só
+    for (let i = videos.length - 1; i > 0; i--) {
+      const j = videos.findIndex((w, k) => k < i && w.nome.toLowerCase() === videos[i].nome.toLowerCase() && Math.abs(Date.parse(w.publicado_em) - Date.parse(videos[i].publicado_em)) < 2 * DIA);
+      if (j < 0) continue;
+      const [a, b] = [videos[j], videos[i]]; const fica = b.situacao === "no_ar" || b.principal ? b : a; const sai = fica === a ? b : a;
+      fica.exibicoes = (fica.exibicoes || 0) + (sai.exibicoes || 0); fica.dias_no_ar = Math.max(fica.dias_no_ar, sai.dias_no_ar);
+      if (sai.periodo) fica.periodo = fica.periodo ? { de: [fica.periodo.de, sai.periodo.de].sort()[0], ate: [fica.periodo.ate, sai.periodo.ate].sort()[1] } : sai.periodo;
+      videos.splice(videos.indexOf(sai), 1);
+    }
+    // dias antes do primeiro vídeo que ainda existe no sistema (o arquivo do início da campanha foi trocado/apagado)
+    const ini0 = acum.get("__inicio");
+    if (ini0 && ini0.exib > 0) videos.unshift({
+      id: "__inicio", nome: "Vídeo do início da campanha", url: null, emPedido: false, publicado_em: new Date(ini).toISOString(), duracao,
+      orientacao: vertical ? "vertical" : "horizontal", serie: "geral", situacao: "substituido", principal: false, programacao: null, arquivo_antigo: true,
+      periodo: { de: new Date(inicioDiaBR(ini0.de)).toISOString(), ate: new Date(inicioDiaBR(ini0.ate) + DIA - 1).toISOString() }, dias_no_ar: ini0.dias, exibicoes: Math.round(ini0.exib),
+    });
+    for (const v of videos) v.titulo = v.id === "__inicio" ? "Vídeo do início da campanha" : tituloVideo(v);
+    const noAr = videos.filter((v) => v.situacao === "no_ar");
 
     // publicações por mês e por série (ex.: programação semanal do cinema)
     const pubMes = new Map<string, number>();

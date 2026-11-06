@@ -6,7 +6,7 @@ export type RelatorioVideo = {
   id: string; nome: string; publicado_em: string; duracao: number; orientacao: string;
   serie: 'cinema' | 'hotel' | 'geral'; situacao: 'no_ar' | 'pausado' | 'substituido'; principal: boolean;
   programacao: string | null; periodo: { de: string; ate: string } | null; exibicoes?: number;
-  titulo: string; url: string | null;
+  titulo: string; url: string | null; dias_no_ar?: number; arquivo_antigo?: boolean;
 };
 export type Relatorio = {
   ok: boolean; pendente?: boolean; aviso?: string; gerado_em: string;
@@ -58,8 +58,13 @@ export const diaMes = (d: string) => { const x = new Date(d); return `${String(x
 export const diasEntre = (a: string, b: string) => Math.max(1, Math.round((Date.parse(b) - Date.parse(a)) / 86400000));
 /** "No ar desde 05/11" · "Nas telas de 06/08 a 16/10 · 71 dias" · "Em pausa · seg–qui 07:00–12:00" */
 export const periodoTexto = (v: RelatorioVideo) => {
-  if (v.situacao === 'no_ar' && v.periodo) return `No ar desde ${diaMes(v.periodo.de)}${v.programacao && v.programacao !== 'todos os dias, o dia todo' ? ' · ' + v.programacao : ' · todos os dias'}`;
-  if (v.periodo) return `Nas telas de ${diaMes(v.periodo.de)} a ${diaMes(v.periodo.ate)} · ${diasEntre(v.periodo.de, v.periodo.ate)} dia${diasEntre(v.periodo.de, v.periodo.ate) === 1 ? '' : 's'}`;
-  return v.programacao ? `Em pausa · ${v.programacao}` : 'Em pausa';
+  const prog = v.programacao && v.programacao !== 'todos os dias, o dia todo' ? v.programacao : '';
+  if (v.situacao === 'no_ar' && v.periodo) return `No ar desde ${diaMes(v.periodo.de)} · ${prog || 'todos os dias'}`;
+  if (v.periodo) {
+    const n = v.dias_no_ar || diasEntre(v.periodo.de, v.periodo.ate);
+    const faixa = diaMes(v.periodo.de) === diaMes(v.periodo.ate) ? `em ${diaMes(v.periodo.de)}` : `de ${diaMes(v.periodo.de)} a ${diaMes(v.periodo.ate)}`;
+    return `Nas telas ${faixa} · ${n} dia${n === 1 ? '' : 's'}${prog ? ' · ' + prog : ''}`;
+  }
+  return prog ? `Em pausa · ${prog}` : 'Em pausa';
 };
 export const mesCurto = (m: string) => MES_LONGO[Number(m.slice(5, 7)) - 1];
