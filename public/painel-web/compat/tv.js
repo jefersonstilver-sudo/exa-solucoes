@@ -134,7 +134,7 @@
           v[k] = { t: v.currentTime, q: q, n: foi ? a.n + 1 : 0 };
           return v[k].n >= 3;
         };
-        var okDesde = 0;
+        var okDesde = 0, hq = [];
         var tique = setInterval(function () {
           try {
             if (fim) return;
@@ -150,6 +150,20 @@
             var fps = 0, pior = 0;
             if (quadros.length > 10) { fps = quadros.length / ((quadros[quadros.length - 1][0] - quadros[0][0]) / 1000 || 1); quadros.forEach(function (q) { if (q[1] > pior) pior = q[1]; }); }
             var fluido = fps >= 22 && pior < 250;
+            // com a tela do app por cima, o navegador desenha a página "escondida" e o requestAnimationFrame não mede
+            // nada de verdade (dá 13/s no Zeta): aí a fluidez é a do próprio anúncio — quadros decodificados por
+            // segundo e quadros perdidos nos últimos 4 s.
+            if (nativo) {
+              var qa = null; try { qa = ad && ad.getVideoPlaybackQuality ? ad.getVideoPlaybackQuality() : null; } catch (e) { qa = null; }
+              var agoraQ = Date.now();
+              if (qa && adOk) { hq.push([agoraQ, qa.totalVideoFrames || 0, qa.droppedVideoFrames || 0]); } else hq = [];
+              while (hq.length && agoraQ - hq[0][0] > 4500) hq.shift();
+              fps = 0; fluido = false;
+              if (hq.length >= 4) {
+                var a0 = hq[0], a1 = hq[hq.length - 1], dt = (a1[0] - a0[0]) / 1000, dq = a1[1] - a0[1], dd = a1[2] - a0[2];
+                if (dt > 0 && dq >= 0) { fps = dq / dt; fluido = dt >= 3 && fps >= 15 && (dq ? dd / dq : 1) < 0.08; }
+              }
+            }
             var tudo = videosOk && adOk && camOk && fluido;
             okDesde = tudo ? (okDesde || Date.now()) : 0;
             var ck = function (b) { return b ? '✓' : '…'; };

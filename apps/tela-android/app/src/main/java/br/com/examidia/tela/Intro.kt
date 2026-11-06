@@ -41,10 +41,10 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
 
     private val fundo = ImageView(ctx)
     private val video = TextureView(ctx)
-    private val anel = Anel(ctx)
+    private val anel = Anel(ctx, this)
     val status = TextView(ctx)
-    private val etapa = TextView(ctx)
-    private val marca = TextView(ctx)
+    internal val etapa = TextView(ctx)
+    internal val marca = TextView(ctx)
     val diag = LinearLayout(ctx)
     val diagTitulo = TextView(ctx)
     val diagTexto = TextView(ctx)
@@ -97,7 +97,7 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
         marca.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
         marca.gravity = Gravity.CENTER
         marca.text = "EXA Mídia · mídia nos elevadores"
-        addView(status); addView(etapa); addView(marca)
+        // os textos são desenhados pelo Anel (posição exata sobre o quadro do vídeo); as TextViews guardam o texto
 
         diag.orientation = LinearLayout.VERTICAL
         diag.gravity = Gravity.CENTER_HORIZONTAL
@@ -116,7 +116,7 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
     }
 
     /** Textos e anel visíveis (1) ou não (0: durante a abertura, que já traz os dela). */
-    private fun camadas(a: Float) { anel.alpha = a; status.alpha = a; etapa.alpha = a; marca.alpha = a }
+    private fun camadas(a: Float) { anel.alpha = a }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
@@ -127,14 +127,6 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
         val vw = (1080 * s).toInt(); val vh = (1920 * s).toInt()
         val oy = (h - vh) / 2
         video.layoutParams = LayoutParams(vw, vh, Gravity.CENTER)
-        fun texto(t: TextView, y: Float, tam: Float) {
-            t.setTextSize(TypedValue.COMPLEX_UNIT_PX, tam * s)
-            t.layoutParams = LayoutParams(vw, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = oy + (y * s).toInt() }
-        }
-        texto(status, 1438f, 60f)
-        texto(etapa, 1540f, 34f)
-        texto(marca, 1606f, 28f)
-        if (android.os.Build.VERSION.SDK_INT >= 21) marca.letterSpacing = 0.04f
         anel.encaixar(w / 2f, oy + 850f * s, s)
 
         val u = unidade
@@ -267,7 +259,10 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
     }
 
     /** Anel de progresso em volta do logo (sobre o círculo interno do vídeo) + um cometa girando no círculo de fora. */
-    class Anel(ctx: Context) : View(ctx) {
+    class Anel(ctx: Context, private val dono: Intro) : View(ctx) {
+        private val pTitulo = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textAlign = Paint.Align.CENTER; typeface = Typeface.create("sans-serif", Typeface.BOLD) }
+        private val pEtapa = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(205, 255, 255, 255); textAlign = Paint.Align.CENTER; typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) }
+        private val pMarca = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(120, 255, 255, 255); textAlign = Paint.Align.CENTER; typeface = Typeface.create("sans-serif", Typeface.NORMAL) }
         private var cx = 0f; private var cy = 0f; private var s = 1f
         private val trilho = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = Color.argb(34, 255, 255, 255); strokeCap = Paint.Cap.ROUND }
         private val arco = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
@@ -281,6 +276,7 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
 
         fun encaixar(x: Float, y: Float, esc: Float) {
             cx = x; cy = y; s = esc
+            pTitulo.textSize = 58f * s; pEtapa.textSize = 34f * s; pMarca.textSize = 28f * s
             trilho.strokeWidth = 5f * s
             arco.strokeWidth = 7f * s
             arco.shader = SweepGradient(cx, cy, intArrayOf(Color.rgb(234, 37, 29), Color.rgb(255, 120, 100), Color.WHITE, Color.rgb(234, 37, 29)), floatArrayOf(0f, 0.45f, 0.8f, 1f))
@@ -302,6 +298,10 @@ class Intro(ctx: Context) : FrameLayout(ctx) {
                 c.drawArc(r1, 0f, 360f * mostrado, false, arco)
                 c.restore()
             }
+            // textos (mesma posição do "Iniciando o sistema" do vídeo): etapa, detalhe e a marca
+            if (dono.status.visibility == View.VISIBLE) c.drawText(dono.status.text.toString(), cx, cy + (1492f - 850f) * s, pTitulo)
+            c.drawText(dono.etapa.text.toString(), cx, cy + (1576f - 850f) * s, pEtapa)
+            c.drawText(dono.marca.text.toString(), cx, cy + (1640f - 850f) * s, pMarca)
             // cometa: uma volta a cada 3,2 s no círculo de fora
             val t = (System.nanoTime() - t0) / 1e9f
             val ang = Math.toRadians((t / 3.2f * 360f - 90f).toDouble())
