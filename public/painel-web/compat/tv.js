@@ -95,8 +95,15 @@
         var B = document.createElement('video');
         B.muted = true; B.setAttribute('muted', ''); B.setAttribute('playsinline', ''); B.preload = 'auto';
         B.className = A.className;
-        B.style.cssText = A.style.cssText; B.style.visibility = 'hidden';
+        B.style.cssText = A.style.cssText;
         A.parentNode.insertBefore(B, A);
+        // os dois players ficam em camadas próprias do compositor e a troca é por opacidade: com
+        // visibility/hidden a árvore de camadas muda e, na TV KTC (WebView 128, página girada 90°), a tela inteira
+        // era redesenhada por partes na troca (imagem "dobrada" por ~0,3 s a cada anúncio, 06/11)
+        var esconder = function (x) { x.style.opacity = '0'; x.style.pointerEvents = 'none'; };
+        var revelar = function (x) { x.style.opacity = ''; x.style.pointerEvents = ''; };
+        [A, B].forEach(function (x) { x.style.willChange = 'transform, opacity'; x.style.backfaceVisibility = 'hidden'; });
+        esconder(B);
         window.__tvDuplo = true;
         var info = window.__tvInfo = { duplo: true, prontas: 0, normais: 0, falhas: 0, espera_ms: 0 };
         var pre = { el: B, src: '' };
@@ -157,15 +164,15 @@
             currentIdx = i;
             var plus = plusDe(it);
             applyVisualMode(el, plus);
-            el.style.visibility = 'hidden';
+            esconder(el);
             el.onended = window.tocarProximo;
             if (velho) velho.onended = null;
             var feito = false;
             var mostrar = function () {
               if (feito) return; feito = true;
               info.prontas++; info.espera_ms = Date.now() - t0;
-              el.style.visibility = '';
-              if (velho) { velho.style.visibility = 'hidden'; velho.removeAttribute('id'); velho.removeAttribute('data-fullscreen'); }
+              revelar(el);
+              if (velho) { esconder(velho); velho.removeAttribute('id'); velho.removeAttribute('data-fullscreen'); }
               el.id = 'video-propaganda';
               videoElement = el;
               try { applyQRCode(it, plus); } catch (e) { /* segue */ }
@@ -177,7 +184,7 @@
             };
             el.addEventListener('playing', function um() { el.removeEventListener('playing', um); mostrar(); });
             setTimeout(mostrar, 1500);
-            try { await el.play(); } catch (e) { feito = true; errou(e); currentIdx = i - 1; el.style.visibility = 'hidden'; return normal(); }
+            try { await el.play(); } catch (e) { feito = true; errou(e); currentIdx = i - 1; esconder(el); return normal(); }
             if (el.currentTime > 0.05) mostrar();
           } catch (e) { console.error('tv: revezamento falhou, troca normal', e); return normal(); }
         };
@@ -197,10 +204,10 @@
               parouEm = Date.now(); travadas++; info.travadas = travadas;
               console.log('tv: anúncio parado, troca normal');
               if (travadas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; }
-              try { [A, B].forEach(function (x) { if (x !== v) { x.pause(); x.removeAttribute('src'); x.load(); x.style.visibility = 'hidden'; } }); } catch (e) { /* segue */ }
+              try { [A, B].forEach(function (x) { if (x !== v) { x.pause(); x.removeAttribute('src'); x.load(); esconder(x); } }); } catch (e) { /* segue */ }
               pre = { el: v === A ? B : A, src: '' };
               devolver();
-              v.style.visibility = '';
+              revelar(v);
               normal();
             }
           } catch (e) { /* segue */ }

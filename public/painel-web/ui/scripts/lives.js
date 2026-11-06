@@ -380,6 +380,7 @@
       const v = st.video;
       if (!TV || !v || st.hls || !st.clipeFim || st.liberada || !v.currentSrc) return false;
       guardarQuadro();
+      v.style.willChange = "transform, opacity"; // camada própria: soltar/voltar a câmera não redesenha a página inteira (TV KTC)
       st.liberada = { src: v.currentSrc, t: v.currentTime, em: Date.now() };
       st.carregando = true;
       v.classList.remove("on");
