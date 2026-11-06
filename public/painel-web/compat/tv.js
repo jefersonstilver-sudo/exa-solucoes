@@ -134,7 +134,7 @@
           v[k] = { t: v.currentTime, q: q, n: foi ? a.n + 1 : 0 };
           return v[k].n >= 3;
         };
-        var okDesde = 0, hq = [];
+        var okDesde = 0, hq = [], lat = { v: false, a: false, c: false, f: false, fDesde: 0 };
         var tique = setInterval(function () {
           try {
             if (fim) return;
@@ -164,7 +164,14 @@
                 if (dt > 0 && dq >= 0) { fps = dq / dt; fluido = dt >= 3 && fps >= 15 && (dq ? dd / dq : 1) < 0.08; }
               }
             }
-            var tudo = videosOk && adOk && camOk && fluido;
+            // cada etapa cumprida fica valendo (troca de anúncio pausa o vídeo por um instante e zerava tudo: a tela
+            // nunca saía). A fluidez precisa de 3 s seguidos uma vez, depois das outras.
+            if (videosOk) lat.v = true; if (adOk) lat.a = true; if (camOk) lat.c = true;
+            videosOk = lat.v; adOk = lat.a; camOk = lat.c;
+            if (videosOk && adOk && camOk && fluido) lat.fDesde = lat.fDesde || Date.now(); else if (!lat.f) lat.fDesde = 0;
+            if (lat.fDesde && Date.now() - lat.fDesde >= 3000) lat.f = true;
+            if (lat.f) fluido = true;
+            var tudo = videosOk && adOk && camOk && lat.f;
             okDesde = tudo ? (okDesde || Date.now()) : 0;
             var ck = function (b) { return b ? '✓' : '…'; };
             passosEl.innerHTML =
@@ -183,8 +190,8 @@
               else { tit = 'Tudo pronto'; det = ''; }
               try { ponte.progresso(Math.min(0.97, p), tit, det); } catch (e) { /* segue */ }
             }
-            var estourou = Date.now() - t0 > 360000;
-            if ((okDesde && Date.now() - okDesde >= 4000) || estourou) {
+            var estourou = Date.now() - t0 > 120000; // nunca mais de 2 min escondendo a tela
+            if (okDesde || estourou) {
               fim = true; clearInterval(tique);
               var info = window.__tvInfo = window.__tvInfo || {};
               info.boot_s = Math.round((Date.now() - t0) / 1000); info.boot_ok = !estourou; info.boot_nativo = nativo;

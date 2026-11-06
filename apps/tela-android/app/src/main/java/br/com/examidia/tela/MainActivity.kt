@@ -430,12 +430,12 @@ class MainActivity : Activity() {
         }
     }
 
-    /** Teto: segurando há 6,5 min ou sem notícia da página há 90 s, mostra a tela assim mesmo (o vigia de travadas cuida do resto). */
+    /** Teto: segurando há 2,5 min ou sem notícia da página há 45 s, mostra a tela assim mesmo (o vigia de travadas cuida do resto). */
     private val liberarForcado: Runnable = object : Runnable {
         override fun run() {
             if (!segurando || !intro.tocando) return
             val agora = System.currentTimeMillis()
-            if (agora - carregaComecou > 390_000 || agora - ultimoProgresso > 90_000) {
+            if (agora - carregaComecou > 150_000 || agora - ultimoProgresso > 45_000) {
                 segurando = false
                 intro.esconder { if (menu.visibility != View.VISIBLE) { focoSoNaFrente(false); web?.requestFocus() }; talvezMostrarDica() }
             } else h.postDelayed(this, 5_000)
