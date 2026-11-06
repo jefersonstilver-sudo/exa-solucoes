@@ -122,6 +122,10 @@
             doisDec = true; info.dois_dec = true; pre.src = ''; info.ultimo_erro = 'B:3 (2 decodificadores: modo câmera emprestada)';
             return;
           }
+          // no modo câmera emprestada um erro de decodificador (3) é só "não deu tempo de soltar a câmera":
+          // a troca cai no modo normal uma vez e o revezamento continua (na noite de 05/11 ele se desligava
+          // depois de 2 erros e a TV passava a noite com 20–60 s parada a cada 2 min)
+          if (doisDec && codigo === 3) { pre.src = ''; info.decode_cam = (info.decode_cam || 0) + 1; info.ultimo_erro = 'B:3 (câmera ainda ocupada: troca normal)'; return; }
           falhas++; pre.src = ''; info.falhas++;
           // registra o motivo (aparece no replica_saude.tv) para entender as TVs onde o revezamento falha
           try {
@@ -139,7 +143,12 @@
             var src = fonteDe(it);
             if (pre.src === src) return;
             pre.src = src;
-            if (doisDec && !emprestou) { try { emprestou = !!(window.LivePlayer && window.LivePlayer.liberar()); } catch (e) { emprestou = false; } }
+            if (doisDec && !emprestou) {
+              try { emprestou = !!(window.LivePlayer && window.LivePlayer.liberar()); } catch (e) { emprestou = false; }
+              // câmera não liberável (ao vivo em HLS, ou já carregando): não há decodificador livre, troca normal
+              var camLigada = false; try { var cv = document.querySelector('.camera-video-wrapper video'); camLigada = !!(cv && cv.currentSrc && !cv.paused); } catch (e3) { /* segue */ }
+              if (!emprestou && camLigada) { pre.src = ''; info.sem_vaga = (info.sem_vaga || 0) + 1; return; }
+            }
             pre.el.preload = 'auto';
             pre.el.src = src;
             pre.el.load();
@@ -203,7 +212,7 @@
             if (Date.now() - parouEm > 4000) {
               parouEm = Date.now(); travadas++; info.travadas = travadas;
               console.log('tv: anúncio parado, troca normal');
-              if (travadas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; }
+              if (travadas >= 2 && !doisDec) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; }
               try { [A, B].forEach(function (x) { if (x !== v) { x.pause(); x.removeAttribute('src'); x.load(); esconder(x); } }); } catch (e) { /* segue */ }
               pre = { el: v === A ? B : A, src: '' };
               devolver();
