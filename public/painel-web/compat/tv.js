@@ -33,7 +33,7 @@
               var c = document.getElementById('tv-ultimo-quadro');
               if (!c) {
                 c = document.createElement('canvas'); c.id = 'tv-ultimo-quadro';
-                c.style.cssText = 'position:absolute;pointer-events:none;z-index:3;object-fit:cover;will-change:transform,opacity;opacity:0';
+                c.style.cssText = 'position:absolute;pointer-events:none;z-index:3;object-fit:cover;opacity:0' + (+(String(navigator.userAgent).match(/Chrome\/(\d+)/) || [0, 0])[1] >= 100 ? ';will-change:transform,opacity' : '');
                 v.parentNode.insertBefore(c, v.nextSibling);
               }
               c.width = Math.min(960, v.videoWidth); c.height = Math.round(c.width * v.videoHeight / v.videoWidth);
@@ -100,9 +100,14 @@
         // os dois players ficam em camadas próprias do compositor e a troca é por opacidade: com
         // visibility/hidden a árvore de camadas muda e, na TV KTC (WebView 128, página girada 90°), a tela inteira
         // era redesenhada por partes na troca (imagem "dobrada" por ~0,3 s a cada anúncio, 06/11)
-        var esconder = function (x) { x.style.opacity = '0'; x.style.pointerEvents = 'none'; };
-        var revelar = function (x) { x.style.opacity = ''; x.style.pointerEvents = ''; };
-        [A, B].forEach(function (x) { x.style.willChange = 'transform, opacity'; x.style.backfaceVisibility = 'hidden'; });
+        // 06/11/2026: troca por opacidade em camada própria só no WebView novo (KTC, Chrome 128: sem ela a página girada
+        // se redesenhava "dobrada"). No WebView 74 (Zeta) as camadas extras pesaram (25% de quadros perdidos e trocas
+        // engasgando), então lá volta o visibility que era fluido.
+        var cromo = +(String(navigator.userAgent).match(/Chrome\/(\d+)/) || [0, 0])[1];
+        var camadas = cromo >= 100;
+        var esconder = camadas ? function (x) { x.style.opacity = '0'; x.style.pointerEvents = 'none'; } : function (x) { x.style.visibility = 'hidden'; };
+        var revelar = camadas ? function (x) { x.style.opacity = ''; x.style.pointerEvents = ''; } : function (x) { x.style.visibility = ''; };
+        if (camadas) [A, B].forEach(function (x) { x.style.willChange = 'transform, opacity'; x.style.backfaceVisibility = 'hidden'; });
         esconder(B);
         window.__tvDuplo = true;
         var info = window.__tvInfo = { duplo: true, prontas: 0, normais: 0, falhas: 0, espera_ms: 0 };
@@ -206,7 +211,7 @@
         };
         // vigia: se o anúncio que aparece ficar 4 s sem andar (fora da tela cheia de carregamento), sai do revezamento
         // nesta troca e segue pela troca normal; duas vezes = desliga o revezamento até a próxima recarga
-        var ultT = -1, parouEm = 0, travadas = 0;
+        var ultT = -1, parouEm = 0, travadas = 0, tempos = [];
         setInterval(function () {
           try {
             var v = videoElement;
@@ -219,7 +224,13 @@
             if (Date.now() - parouEm > 4000) {
               parouEm = Date.now(); travadas++; info.travadas = travadas;
               console.log('tv: anúncio parado, troca normal');
-              if (travadas >= 2 && !doisDec) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; }
+              // 06/11/2026: só desliga com 3 travadas em 10 min (no boot, baixando os vídeos, 2 travadas desligavam para
+              // sempre e o Zeta ficava a tarde no modo normal: 100 s parado a cada 2 min) e religa sozinho 10 min depois
+              tempos = tempos.filter(function (x) { return Date.now() - x < 600000; }); tempos.push(Date.now());
+              if (tempos.length >= 3 && !doisDec) {
+                window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; tempos = [];
+                setTimeout(function () { window.__tvSemDuplo = false; window.__tvDuplo = true; info.duplo = true; }, 600000);
+              }
               try { [A, B].forEach(function (x) { if (x !== v) { x.pause(); x.removeAttribute('src'); x.load(); esconder(x); } }); } catch (e) { /* segue */ }
               pre = { el: v === A ? B : A, src: '' };
               devolver();

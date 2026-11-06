@@ -39,7 +39,7 @@ const NOME_CAMERA = new Map(CAMERAS_PADRAO.map((c) => [c.chave, c.nome]));
 // na própria rede. Não entram na lista padrão nem no cameras_lista: só na tela que tiver o endereço em config.cameras.ids.
 // telas = únicas telas que podem receber a câmera (trava dupla além do config.cameras.ids)
 const CAMERAS_LOCAIS: { url: string; nome: string; credito: string; telas: string[] }[] = [
-  { url: 'https://lan.exa.local/192.168.1.28/8888/tapo/index.m3u8', nome: 'Câmera EXA · ao vivo', credito: 'EXA Mídia', telas: ['ac53d6d7-6398-4a97-9ced-f374dcbdd499'] },
+  { url: 'https://lan.exa.local/192.168.1.28/8888/tapo/index.m3u8', nome: 'Câmera EXA · ao vivo', credito: 'EXA Mídia', telas: ['ac53d6d7-6398-4a97-9ced-f374dcbdd499', 'a8f45459-adff-4814-aec0-3e98233e6365'] },
 ];
 const STATUS_TOCANDO = ['ativo', 'video_aprovado', 'video_enviado'];
 const RITMO_PADRAO = { casa_a_cada: 3, editorial_a_cada: 2, camera: true, noticias: true, noticias_foz: true, noticias_brasil: true };
