@@ -445,7 +445,7 @@ Deno.serve(async (req) => {
       const agoraBR = new Date(Date.now() - 3 * 3600e3); // getHours/getDay do servidor (UTC) passam a ser os de Brasília
       agoraVideoId = (winnerAt(slotsAg as any, rulesAg, agoraBR)?.slot as any)?.videoId || null;
     } catch (_) { agoraVideoId = null; }
-    for (const v of videos) v.agora = !!agoraVideoId && v.id === agoraVideoId;
+    for (const v of videos) { v.agora = !!agoraVideoId && v.id === agoraVideoId; if (v.agora) v.situacao = "no_ar"; } // tocando agora = no ar, mesmo que o log de hoje ainda não tenha registrado
 
     // publicações por mês e por série (ex.: programação semanal do cinema)
     const pubMes = new Map<string, number>();
@@ -483,7 +483,7 @@ Deno.serve(async (req) => {
         predios: linhasPredios.length, telas, exibicoes: totalExib, horas_tela: Math.round((totalExib * duracao) / 360) / 10,
         media_dia: diasNoAr ? Math.round(totalExib / diasNoAr) : 0,
         publico: linhasPredios.reduce((a: number, p: any) => a + (p.publico || 0), 0),
-        videos_publicados: videos.length, videos_no_ar: noAr.length,
+        videos_publicados: videos.length, videos_no_ar: videos.filter((v) => v.situacao === "no_ar").length,
       },
       meses: [...porMes.entries()].sort().map(([mes, v]) => ({ mes, ...v })),
       dias: [...porDia.entries()].sort().slice(-90).map(([dia, exibicoes]) => ({ dia, exibicoes })),

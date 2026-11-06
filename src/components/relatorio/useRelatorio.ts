@@ -100,7 +100,7 @@ export const exibicoesAte = (r?: Relatorio | null, agoraMs = Date.now()) => {
 export const comAgora = (r: Relatorio, noArVideoId?: string | null): Relatorio => {
   const id = noArVideoId || r.agora_video_id || null;
   if (!id || !r.videos?.some((v) => v.id === id)) return r;
-  const videos = r.videos.map((v) => ({ ...v, agora: v.id === id }));
+  const videos = r.videos.map((v) => (v.id === id ? { ...v, agora: true, situacao: 'no_ar' as const } : { ...v, agora: false }));
   return { ...r, agora_video_id: id, videos: [...videos.filter((v) => v.agora), ...videos.filter((v) => !v.agora)] };
 };
 export const videoNoAr = (r: Relatorio) => r.videos.find((v) => v.agora) || r.videos.find((v) => v.situacao === 'no_ar') || r.videos[0];
