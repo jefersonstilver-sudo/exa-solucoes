@@ -103,7 +103,17 @@
         var falhas = 0;
         var fonteDe = function (it) { return '/cache/' + encodeURI(it.video); };
         var plusDe = function (it) { return it && (it.isPlus === true || it.isPlus === 'true'); };
+        // TV com só 2 decodificadores (TV KTC/MediaTek: anúncio + câmera ocupam tudo, o 3º dá PIPELINE_ERROR_DECODE):
+        // na troca a câmera é emprestada por ~1,5 s (LivePlayer.liberar/retomar) e o próximo anúncio carrega no lugar dela
+        var doisDec = /[?&]doisdec=1(&|$)/.test(location.search), emprestou = false;
+        var devolver = function () { if (!emprestou) return; emprestou = false; try { window.LivePlayer && window.LivePlayer.retomar(); } catch (e) { /* segue */ } };
         var errou = function (ev) {
+          var alvoB = ev && ev.target === B, codigo = alvoB && B.error ? B.error.code : 0;
+          devolver();
+          if (alvoB && codigo === 3 && !doisDec) {
+            doisDec = true; info.dois_dec = true; pre.src = ''; info.ultimo_erro = 'B:3 (2 decodificadores: modo câmera emprestada)';
+            return;
+          }
           falhas++; pre.src = ''; info.falhas++;
           // registra o motivo (aparece no replica_saude.tv) para entender as TVs onde o revezamento falha
           try {
@@ -121,6 +131,7 @@
             var src = fonteDe(it);
             if (pre.src === src) return;
             pre.src = src;
+            if (doisDec && !emprestou) { try { emprestou = !!(window.LivePlayer && window.LivePlayer.liberar()); } catch (e) { emprestou = false; } }
             pre.el.preload = 'auto';
             pre.el.src = src;
             pre.el.load();
@@ -129,7 +140,7 @@
         setInterval(function () {
           try {
             var v = videoElement;
-            if (v && isFinite(v.duration) && v.duration > 0 && v.duration - v.currentTime < 3.2) carregar();
+            if (v && isFinite(v.duration) && v.duration > 0 && v.duration - v.currentTime < (doisDec ? 1.6 : 3.2)) carregar();
           } catch (e) { /* segue */ }
         }, 300);
 
@@ -138,9 +149,9 @@
           try {
             if (!window.__tvDuplo || !playlist.length) return normal();
             var i = currentIdx + 1;
-            if (i >= playlist.length) return normal(); // fim do ciclo: o propagandas.js recarrega a programação
+            if (i >= playlist.length) { devolver(); return normal(); } // fim do ciclo: o propagandas.js recarrega a programação
             var it = playlist[i], el = pre.el, velho = videoElement;
-            if (!it || el === velho || pre.src !== fonteDe(it) || el.readyState < 2 || el.error) { info.normais++; return normal(); }
+            if (!it || el === velho || pre.src !== fonteDe(it) || el.readyState < 2 || el.error) { info.normais++; devolver(); return normal(); }
             var t0 = Date.now();
             currentIdx = i;
             var plus = plusDe(it);
@@ -160,6 +171,7 @@
               setTimeout(function () {
                 try { if (velho) { velho.pause(); velho.removeAttribute('src'); velho.load(); } } catch (e) { /* segue */ }
                 pre = { el: velho || B, src: '' };
+                setTimeout(devolver, 80);
               }, 250);
             };
             el.addEventListener('playing', function um() { el.removeEventListener('playing', um); mostrar(); });
@@ -186,6 +198,7 @@
               if (travadas >= 2) { window.__tvDuplo = false; window.__tvSemDuplo = true; info.duplo = false; }
               try { [A, B].forEach(function (x) { if (x !== v) { x.pause(); x.removeAttribute('src'); x.load(); x.style.visibility = 'hidden'; } }); } catch (e) { /* segue */ }
               pre = { el: v === A ? B : A, src: '' };
+              devolver();
               v.style.visibility = '';
               normal();
             }

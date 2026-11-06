@@ -149,6 +149,7 @@
     try { if (st.hls) st.hls.destroy(); } catch (_) {}
     st.hls = null;
     st.clipeFim = null;
+    st.liberada = null;
     if (st.video) { st.video.onended = null; st.video.onerror = null; }
     if (st.video) {
       st.video.classList.remove("on");
@@ -373,6 +374,36 @@
       carregarLives(); setInterval(carregarLives, RECARREGAR_LISTA);
     },
     reload: () => carregarLives(),
+    // TV com só 2 decodificadores de vídeo (TV KTC/MediaTek): o tv.js pede a câmera emprestada ~1,5 s na troca de
+    // anúncio para pré-carregar o próximo. A última imagem fica congelada no canvas; depois a câmera volta do mesmo ponto.
+    liberar: () => {
+      const v = st.video;
+      if (!TV || !v || st.hls || !st.clipeFim || st.liberada || !v.currentSrc) return false;
+      guardarQuadro();
+      st.liberada = { src: v.currentSrc, t: v.currentTime, em: Date.now() };
+      st.carregando = true;
+      v.classList.remove("on");
+      try { v.pause(); v.removeAttribute("src"); v.load(); } catch (_) {}
+      return true;
+    },
+    retomar: () => {
+      const v = st.video, l = st.liberada;
+      if (!v || !l) return;
+      st.liberada = null;
+      const t = l.t + (Date.now() - l.em) / 1000;
+      v.addEventListener("loadedmetadata", function um() {
+        v.removeEventListener("loadedmetadata", um);
+        try { if (isFinite(v.duration) && t < v.duration - 0.3) v.currentTime = t; } catch (_) {}
+      });
+      v.addEventListener("playing", function dois() {
+        v.removeEventListener("playing", dois);
+        v.classList.add("on");
+        st.carregando = false; st.ultimoTempo = -1; st.ultimoAvanco = Date.now();
+      });
+      v.src = l.src;
+      v.play().catch(() => { st.carregando = false; });
+      setTimeout(() => { if (st.carregando && !st.liberada) { st.carregando = false; st.ultimoAvanco = Date.now(); } }, 5000);
+    },
     next: () => agendar(0),
     _state: st,
   };
