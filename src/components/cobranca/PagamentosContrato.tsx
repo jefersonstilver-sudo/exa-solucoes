@@ -76,6 +76,8 @@ const PagamentosContrato: React.FC<{ estado: ReturnType<typeof usePagamentosCont
   if (!dados || !dados.parcelas.length) return null;
   const r = dados.resumo || {};
   const ps = dados.parcelas;
+  // pagador só aparece quando é outra empresa (ex.: mensalidade paga pela empresa irmã)
+  const pagadorPrincipal = (() => { const c: Record<string, number> = {}; ps.forEach((p) => { if (p.pagador) c[p.pagador] = (c[p.pagador] || 0) + 1; }); return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0] || null; })();
   const atrasadas = ps.filter((p) => p.situacao === 'atrasado');
   const totalAtras = atrasadas.reduce((a, p) => a + Number(p.valor), 0);
   const desc = Number(dados.desconto_atrasadas || 0);
@@ -153,7 +155,7 @@ const PagamentosContrato: React.FC<{ estado: ReturnType<typeof usePagamentosCont
                         <div className={`text-[11.5px] font-semibold tabular-nums ${c.sub} opacity-90`}>Período {periodoDa(p, dados.plano?.inicio)}</div>
                         <div className={`text-[12.5px] ${c.sub}`}>
                           {p.situacao === 'cortesia' ? <><span className="line-through">{brl(p.valor)}</span> · {p.observacao ? p.observacao.replace(/^Cortesia\s*·\s*/i, 'cortesia · ') : 'cortesia EXA'}</> :
-                            p.situacao === 'pago' ? <>{brl(p.valor_pago || p.valor)} · paga em {p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : ''}{p.pagador ? ` · por ${p.pagador}` : ''}</> :
+                            p.situacao === 'pago' ? <>{brl(p.valor_pago || p.valor)} · paga em {p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : ''}{p.pagador && p.pagador !== pagadorPrincipal ? ` · paga por ${p.pagador}` : ''}</> :
                             p.situacao === 'atrasado' ? <>{brl(p.valor)} · vencida há <b>{p.dias_atraso} {p.dias_atraso === 1 ? 'dia' : 'dias'}</b></> :
                             <>{brl(p.valor)} · vence {dataBR(p.data_vencimento)}</>}
                         </div>
