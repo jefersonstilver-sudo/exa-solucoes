@@ -30,6 +30,9 @@ export const useCouponsData = () => {
       const normalizedData = (data || []).map(coupon => ({
         ...coupon,
         tipo_desconto: (coupon.tipo_desconto as any) || 'percentual',
+        tipo_produto: (coupon.tipo_produto as any) || 'ambos',
+        modo_predios: (coupon.modo_predios as any) || 'todos',
+        predios_fora_da_lista: (coupon.predios_fora_da_lista as any) || 'bloquear',
         desconto_percentual: Number(coupon.desconto_percentual) || 0,
         categoria: coupon.categoria as 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia'
       }));
