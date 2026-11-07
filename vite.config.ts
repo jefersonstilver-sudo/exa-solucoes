@@ -172,7 +172,9 @@ export default defineConfig(() => ({
           const h = (t: string) => crypto.createHash("sha256").update(t).digest("hex").slice(0, 10);
           const jsNome = `assets/tela-legado-${h(js)}.js`;
           fs.writeFileSync(path.join(dist, jsNome), js);
-          let tags = `<script defer src="/${jsNome}"></script>`;
+          // carregado por um script em linha (async): não espera os scripts "defer" que a hospedagem injeta
+          // (~flock.js, events.js do Lovable) — no Chrome 74 do Zeta o player ficava esperando e nunca rodava (07/11).
+          let tags = `<script>(function(){var s=document.createElement('script');s.src='/${jsNome}';s.async=true;document.body.appendChild(s);})();</script>`;
           if (css) {
             const cssNome = `assets/tela-legado-${h(css)}.css`;
             fs.writeFileSync(path.join(dist, cssNome), css);
