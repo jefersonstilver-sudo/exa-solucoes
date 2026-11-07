@@ -28,6 +28,7 @@ import { CreateGroupDialog } from '@/components/orders/CreateGroupDialog';
 import { AsaasCancelPreview } from './AsaasCancelPreview';
 import OrderStatusActions from './OrderStatusActions';
 import ClientQuickProfileSheet, { ClientQuickProfileTarget } from './ClientQuickProfileSheet';
+import { ehContaInterna } from '@/hooks/usePedidosAtraso';
 
 interface OrdersTabsRefactoredProps {
   onViewOrderDetails: (orderId: string) => void;
@@ -127,9 +128,14 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
     })
   );
 
-  // Função de ordenação dinâmica
+  // Função de ordenação dinâmica.
+  // Jeferson (07/11/2026): os bloqueados ficam sempre no fim da lista (em cinza) e os pedidos da Conta Interna
+  // (editoriais, vendas das telas, testes) logo antes deles; o resto segue a ordenação escolhida.
   const sortItems = (items: OrderOrAttempt[]) => {
+    const peso = (x: OrderOrAttempt) => (x.type === 'order' && x.status === 'bloqueado' ? 2 : x.type === 'order' && ehContaInterna(x) ? 1 : 0);
     return [...items].sort((a, b) => {
+      const pa = peso(a), pb = peso(b);
+      if (pa !== pb) return pa - pb;
       let comparison = 0;
       switch (sortField) {
         case 'created_at':

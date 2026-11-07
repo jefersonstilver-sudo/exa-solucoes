@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
-import OrdersCompactStats from '@/components/admin/orders/OrdersCompactStats';
+import ResumoPedidos from '@/components/admin/orders/ResumoPedidos';
 import OrdersTabsRefactored from '@/components/admin/orders/OrdersTabsRefactored';
 import OrdersCompactHeader from '@/components/admin/orders/OrdersCompactHeader';
 import OrdersPageAlerts from '@/components/admin/orders/OrdersPageAlerts';
@@ -440,9 +440,9 @@ const OrdersPage = () => {
         {/* Alerts */}
         {filteredItems.length > 0 && <OrdersPageAlerts ordersAndAttempts={filteredItems} />}
 
-        {/* Compact Stats Row */}
+        {/* Resumo (07/11/2026): sem bloqueados, Conta Interna e parcerias na receita; atraso da auditoria */}
         <div className="animate-fade-in">
-          <OrdersCompactStats stats={filteredStats} activeOrdersCount={activeOrdersCount} />
+          <ResumoPedidos items={periodFilteredItems} />
         </div>
 
         {/* Filters and Search */}

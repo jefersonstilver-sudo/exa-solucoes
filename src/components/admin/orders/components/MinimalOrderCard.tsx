@@ -25,6 +25,8 @@ import SofiaSoldBadge from '@/components/admin/orders/SofiaSoldBadge';
 import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
 import { crm360Path } from '@/services/crm360';
 import { formatarFone, soDigitos } from '@/services/pedidoWhatsappService';
+import { usePedidosAtraso, ehContaInterna, ehEditorial } from '@/hooks/usePedidosAtraso';
+import { AlertTriangle, Newspaper, Handshake } from 'lucide-react';
 
 interface MinimalOrderCardProps {
   item: OrderOrAttempt;
@@ -78,6 +80,20 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
           : (item.valor_total || 0))
     : (item.valor_total || 0);
   const showVideoPreview = isOrder && ['ativo', 'video_aprovado'].includes(item.status);
+  // Jeferson (07/11/2026): atraso no card; bloqueado em cinza; Conta Interna neutra; editoriais (Notícias/Curiosidades) com cor própria
+  const { data: atrasos } = usePedidosAtraso();
+  const atraso = isOrder ? atrasos?.get(item.id) : undefined;
+  const bloqueado = isOrder && item.status === 'bloqueado';
+  const interna = isOrder && ehContaInterna(item);
+  const editorial = isOrder && ehEditorial(item);
+  const parceria = isOrder && !interna && !editorial && valorMensal <= 1;
+  const cardTom = bloqueado
+    ? 'bg-[#f3f1f1] border-black/[0.06] opacity-70 grayscale-[0.6] hover:opacity-100'
+    : editorial
+      ? 'bg-[#f3f7fb] border-[#c9dcef] hover:border-[#9cbfe3]'
+      : interna
+        ? 'bg-[#f6f5f4] border-black/[0.06] hover:border-black/10'
+        : 'bg-card border-border/50 hover:border-border';
   const { videoData } = useOrderCurrentVideoData(showVideoPreview ? item.id : '');
   const isVertical = (item as any).tipo_produto === 'vertical_premium';
   const timeAgo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
@@ -122,7 +138,7 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   };
 
   return (
-    <div className="bg-card border border-border/50 rounded-xl hover:border-border hover:shadow-md transition-all">
+    <div className={`border rounded-xl hover:shadow-md transition-all ${cardTom}`}>
       <div className="flex items-start gap-3 p-3 sm:p-4">
         {showCheckbox && (
           <div className="pt-1">
@@ -165,11 +181,27 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
                   <Crown className="h-2.5 w-2.5 mr-0.5" /> MASTER
                 </Badge>
               )}
+              {editorial && (
+                <Badge className="bg-[#1f5fa8] text-white border-[#1f5fa8] text-[10px] px-1.5 py-0 font-bold"><Newspaper className="h-2.5 w-2.5 mr-0.5" /> Editorial EXA</Badge>
+              )}
+              {interna && !editorial && (
+                <Badge variant="outline" className="text-[10px] border-slate-400 text-slate-600 bg-slate-50 px-1.5 py-0">Conta Interna</Badge>
+              )}
+              {parceria && (
+                <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 bg-amber-50 px-1.5 py-0"><Handshake className="h-2.5 w-2.5 mr-0.5" /> Parceria</Badge>
+              )}
               {isOrder && <SofiaSoldBadge pedidoId={item.id} />}
             </div>
-            <span className="text-base font-bold text-foreground whitespace-nowrap" title="Valor por mês">
-              {formatCurrency(valorMensal)}{isOrder ? '/mês' : ''}
-            </span>
+            <div className="flex flex-col items-end gap-0.5">
+              <span className={`text-base font-bold whitespace-nowrap ${bloqueado ? 'text-muted-foreground line-through decoration-1' : 'text-foreground'}`} title={bloqueado ? 'Bloqueado: não entra na receita' : 'Valor por mês'}>
+                {parceria || interna ? (interna ? 'Sem cobrança' : 'R$ 0/mês') : <>{formatCurrency(valorMensal)}{isOrder ? '/mês' : ''}</>}
+              </span>
+              {!!atraso?.valor_atraso && !bloqueado && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#fdecec] px-2 py-0.5 text-[11px] font-bold text-[#b0261d]" title={`${atraso.parcelas_atraso} parcela(s) em atraso, a mais antiga há ${atraso.dias_atraso} dias`}>
+                  <AlertTriangle className="h-3 w-3" /> {formatCurrency(atraso.valor_atraso)} em atraso · {atraso.parcelas_atraso} {atraso.parcelas_atraso === 1 ? 'parcela' : 'parcelas'} · {atraso.dias_atraso} dias
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Linha 2: cliente + Conversar | plano e quando */}
