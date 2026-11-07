@@ -2,8 +2,7 @@
 // Regras: bloqueados, Conta Interna, editoriais e parcerias (R$ 0) NÃO entram na receita; o atraso vem da auditoria de cobrança.
 import React, { useMemo } from 'react';
 import { Tv2, TrendingUp, AlertTriangle, CalendarClock, Video, Lock, Wallet } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useRecebidoNoMes } from '@/hooks/useRecebidoNoMes';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { formatCurrency } from '@/utils/formatters';
 import { usePedidosAtraso, ehContaInterna, ehEditorial } from '@/hooks/usePedidosAtraso';
@@ -15,24 +14,6 @@ const valorMensalDe = (p: OrderOrAttempt) =>
 
 interface Props { items: OrderOrAttempt[] }
 
-/** O que já ENTROU no mês: só linhas PAYMENT_RECEIVED do extrato do Asaas (espelho), pela data do movimento. Nunca inferido de pedido. */
-const useRecebidoNoMes = () =>
-  useQuery({
-    queryKey: ['recebido-no-mes'],
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const hoje = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-      const ini = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`;
-      const fim = hoje.toISOString().slice(0, 10);
-      let total = 0, n = 0;
-      for (let offset = 0; ; offset += 500) {
-        const { data, error } = await supabase.from('asaas_extrato_movimentos').select('valor').eq('tipo', 'PAYMENT_RECEIVED').gte('data', ini).lte('data', fim).order('ordem_asaas', { ascending: true }).range(offset, offset + 499);
-        if (error || !data) return { total: null as number | null, n: 0 };
-        total += data.reduce((a, r: any) => a + Number(r.valor || 0), 0); n += data.length;
-        if (data.length < 500) return { total, n };
-      }
-    },
-  });
 
 const Cartao: React.FC<{ rotulo: string; valor: React.ReactNode; sub?: React.ReactNode; cor?: string; icone: React.ElementType }> = ({ rotulo, valor, sub, cor = '#17181A', icone: Icone }) => (
   <div className="relative overflow-hidden rounded-2xl border border-black/[0.06] bg-white/80 px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_-22px_rgba(70,20,20,0.3)] backdrop-blur-xl">
