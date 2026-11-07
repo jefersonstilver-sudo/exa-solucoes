@@ -7,9 +7,6 @@ import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import ResumoPedidos from '@/components/admin/orders/ResumoPedidos';
 import OrdersTabsRefactored from '@/components/admin/orders/OrdersTabsRefactored';
-import OrdersCompactHeader from '@/components/admin/orders/OrdersCompactHeader';
-import OrdersPageAlerts from '@/components/admin/orders/OrdersPageAlerts';
-import OrdersPageFilters from '@/components/admin/orders/OrdersPageFilters';
 import { OrderMobileList } from '@/components/admin/orders/OrderMobileList';
 import { MobileActionMenu } from '@/components/admin/shared/MobileActionMenu';
 import { MobileFilterSheet } from '@/components/admin/shared/MobileFilterSheet';
@@ -18,6 +15,7 @@ import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/ad
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 import { FixPedidoListaPaineisButton } from '@/components/admin/FixPedidoListaPaineisButton';
 import AdminCreateOrderDialog from '@/components/admin/orders/create/AdminCreateOrderDialog';
+import { Pagina, Cabecalho, Busca, Pilulas, BOTAO, BOTAO2, CAMPO, Carregando } from '@/components/admin/ui/exa';
 
 
 const OrdersPage = () => {
@@ -84,6 +82,8 @@ const OrdersPage = () => {
       const matchesSearch = 
         item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.type === 'order' ? item.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (item.type === 'order' ? (item as any).empresa_nome?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (item.type === 'order' ? (item as any).nome_pedido?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (item.type === 'order' ? item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (item.type === 'attempt' && item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()));
       
@@ -125,6 +125,7 @@ const OrdersPage = () => {
       return matchesSearch && matchesStatus && matchesType && matchesCoupon && matchesPaymentType;
     });
   }, [periodFilteredItems, searchTerm, statusFilter, typeFilter, couponFilter, paymentTypeFilter, activePedidoIds]);
+  const idsFiltrados = useMemo(() => new Set(filteredItems.map((i) => i.id)), [filteredItems]);
 
   // Recalcular stats baseado nos itens filtrados
   const filteredStats = useMemo(() => {
@@ -214,16 +215,7 @@ const OrdersPage = () => {
     navigate(`/super_admin/pedidos/${orderId}`);
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
-          <span className="ml-2 text-gray-900 font-medium">Carregando pedidos e tentativas...</span>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Carregando texto="Carregando pedidos…" />;
 
   // Mobile Actions Menu
   const mobileMenuItems = [
@@ -421,60 +413,51 @@ const OrdersPage = () => {
     );
   }
 
-  // Desktop Layout - Apple-like Minimalista
+  // Desktop (07/11/2026): kit de vidro — cabeçalho, resumo, busca com pílulas de status, lista
+  const nStatus = (v: string) => periodFilteredItems.filter((i) => {
+    if (v === 'em_exibicao') return i.type === 'order' && ['ativo', 'video_aprovado'].includes(i.status);
+    if (v === 'aguardando_video') return i.type === 'order' && ['pago', 'pago_pendente_video'].includes(i.status);
+    if (v === 'aguardando_aprovacao') return i.type === 'order' && i.status === 'video_enviado';
+    if (v === 'aguardando_pagamento') return i.type === 'order' && ['pendente', 'pending', 'aguardando_pagamento'].includes(i.status);
+    if (v === 'bloqueado') return i.type === 'order' && i.status === 'bloqueado';
+    if (v === 'tentativa') return i.type === 'attempt';
+    return true;
+  }).length;
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-20 backdrop-blur-xl bg-background/90 border-b border-border/30 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-6">
-          <OrdersCompactHeader 
-            onRefresh={refetch} 
-            loading={loading}
-            periodFilter={periodFilter}
-            onPeriodChange={setPeriodFilter}
-            onAddOrder={() => setShowCreateOrder(true)}
-          />
-        </div>
-      </div>
-
-      {/* Content Container */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
-        {/* Alerts */}
-        {filteredItems.length > 0 && <OrdersPageAlerts ordersAndAttempts={filteredItems} />}
-
-        {/* Resumo (07/11/2026): sem bloqueados, Conta Interna e parcerias na receita; atraso da auditoria */}
-        <div className="animate-fade-in">
-          <ResumoPedidos items={periodFilteredItems} />
-        </div>
-
-        {/* Filters and Search */}
-        <div className="bg-background/60 backdrop-blur-sm rounded-2xl border border-border/50 p-4 shadow-sm">
-          <OrdersPageFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            typeFilter={typeFilter}
-            setTypeFilter={setTypeFilter}
-            paymentTypeFilter={paymentTypeFilter}
-            setPaymentTypeFilter={setPaymentTypeFilter}
-          />
-        </div>
-
-        {/* Orders Tabs */}
-        <div className="animate-fade-in">
-          <OrdersTabsRefactored onViewOrderDetails={handleViewOrderDetails} searchTerm={searchTerm} />
-        </div>
-      </div>
-
-      {/* Create Order Dialog */}
-      <AdminCreateOrderDialog
-        open={showCreateOrder}
-        onOpenChange={setShowCreateOrder}
-        onSuccess={refetch}
+    <Pagina larga>
+      <Cabecalho
+        titulo="Pedidos"
+        sub="Quem está no ar, quem deve, quem termina em breve. Bloqueados ficam cinza no fim e fora da receita."
+        acoes={(
+          <>
+            <div className="w-[170px]"><OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} /></div>
+            <button type="button" className={BOTAO2} onClick={() => refetch()} title="Atualizar"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></button>
+            <button type="button" className={BOTAO} onClick={() => setShowCreateOrder(true)}><Plus className="h-4 w-4" /> Novo pedido</button>
+          </>
+        )}
       />
 
-    </div>
+      <ResumoPedidos items={periodFilteredItems} />
+
+      <Busca valor={searchTerm} onChange={setSearchTerm} placeholder="Cliente, empresa, pedido ou e-mail">
+        <Pilulas valor={statusFilter} onChange={setStatusFilter} opcoes={[
+          { valor: 'all', rotulo: 'Todos', n: periodFilteredItems.length },
+          { valor: 'em_exibicao', rotulo: 'No ar', n: nStatus('em_exibicao') },
+          { valor: 'aguardando_video', rotulo: 'Aguardando vídeo', n: nStatus('aguardando_video') },
+          { valor: 'aguardando_aprovacao', rotulo: 'Aprovar vídeo', n: nStatus('aguardando_aprovacao') },
+          { valor: 'aguardando_pagamento', rotulo: 'Aguardando pagamento', n: nStatus('aguardando_pagamento') },
+          { valor: 'bloqueado', rotulo: 'Bloqueados', n: nStatus('bloqueado') },
+          { valor: 'tentativa', rotulo: 'Tentativas', n: nStatus('tentativa') },
+        ]} />
+        <select value={paymentTypeFilter} onChange={(e) => setPaymentTypeFilter(e.target.value)} className={`${CAMPO} w-auto`} aria-label="Forma de pagamento">
+          <option value="all">Pagamento: todos</option><option value="fidelidade">Fidelidade</option><option value="avista">Pix à vista</option><option value="cartao">Cartão</option>
+        </select>
+      </Busca>
+
+      <OrdersTabsRefactored onViewOrderDetails={handleViewOrderDetails} searchTerm={searchTerm} idsPermitidos={idsFiltrados} />
+
+      <AdminCreateOrderDialog open={showCreateOrder} onOpenChange={setShowCreateOrder} onSuccess={refetch} />
+    </Pagina>
   );
 };
 

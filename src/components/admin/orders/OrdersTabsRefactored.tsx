@@ -31,6 +31,7 @@ import ClientQuickProfileSheet, { ClientQuickProfileTarget } from './ClientQuick
 import { ehContaInterna } from '@/hooks/usePedidosAtraso';
 
 interface OrdersTabsRefactoredProps {
+  idsPermitidos?: Set<string>;
   onViewOrderDetails: (orderId: string) => void;
   searchTerm?: string;
 }
@@ -55,7 +56,7 @@ const DEFAULT_TAB_ORDER = [
   'cancelado', 'bloqueado'
 ];
 
-const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrderDetails, searchTerm = '' }) => {
+const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrderDetails, searchTerm = '', idsPermitidos }) => {
   const { ordersAndAttempts: rawOrdersAndAttempts, loading, refetch } = useOrdersWithAttemptsRefactored();
   const [perfilAlvo, setPerfilAlvo] = useState<ClientQuickProfileTarget | null>(null);
   const abrirPerfil = (item: OrderOrAttempt) => setPerfilAlvo({
@@ -66,15 +67,19 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   // Aplica busca global (id, cliente, email) antes da segmentação por status
   const ordersAndAttempts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return rawOrdersAndAttempts;
-    return rawOrdersAndAttempts.filter((item: any) => {
+    // 07/11/2026: os filtros da página (status, período, pagamento) chegam como o conjunto de ids permitidos
+    const base = idsPermitidos ? rawOrdersAndAttempts.filter((item: any) => idsPermitidos.has(item.id)) : rawOrdersAndAttempts;
+    if (!term) return base;
+    return base.filter((item: any) => {
       return (
         item.id?.toLowerCase().includes(term) ||
         item.client_name?.toLowerCase().includes(term) ||
+        item.empresa_nome?.toLowerCase().includes(term) ||
+        item.nome_pedido?.toLowerCase().includes(term) ||
         item.client_email?.toLowerCase().includes(term)
       );
     });
-  }, [rawOrdersAndAttempts, searchTerm]);
+  }, [rawOrdersAndAttempts, searchTerm, idsPermitidos]);
   const { blockOrder, unblockOrder, isBlocking, isUnblocking } = useOrderBlocking();
   const { userProfile } = useAuth();
   

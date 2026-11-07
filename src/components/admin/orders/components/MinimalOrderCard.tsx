@@ -93,7 +93,7 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
       ? 'bg-[#f3f7fb] border-[#c9dcef] hover:border-[#9cbfe3]'
       : interna
         ? 'bg-[#f6f5f4] border-black/[0.06] hover:border-black/10'
-        : 'bg-card border-border/50 hover:border-border';
+        : 'bg-white/80 backdrop-blur-xl border-black/[0.06] hover:border-black/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_-24px_rgba(70,20,20,0.25)]';
   const { videoData } = useOrderCurrentVideoData(showVideoPreview ? item.id : '');
   const isVertical = (item as any).tipo_produto === 'vertical_premium';
   const timeAgo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
@@ -138,7 +138,7 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
   };
 
   return (
-    <div className={`border rounded-xl hover:shadow-md transition-all ${cardTom}`}>
+    <div className={`border rounded-2xl transition-all ${cardTom}`}>
       <div className="flex items-start gap-3 p-3 sm:p-4">
         {showCheckbox && (
           <div className="pt-1">
