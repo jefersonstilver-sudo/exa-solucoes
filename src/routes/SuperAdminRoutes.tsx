@@ -44,8 +44,6 @@ const ContratosPage = lazy(() => import('@/pages/admin/contracts/ContratosPage')
 const NovoContratoPage = lazy(() => import('@/pages/admin/contracts/NovoContratoPage'));
 const NovoContratoSindicoPage = lazy(() => import('@/pages/admin/contracts/NovoContratoSindicoPage'));
 const ContratoDetalhesPage = lazy(() => import('@/pages/admin/contracts/ContratoDetalhesPage'));
-const LegalFlowPage = lazy(() => import('@/pages/admin/contracts/LegalFlowPage'));
-const JuridicoWorkspacePage = lazy(() => import('@/pages/admin/contracts/JuridicoWorkspacePage'));
 const PosicoesDisponiveisPage = lazy(() => import('@/pages/admin/PosicoesDisponiveisPage'));
 const RelatorioPlaylistPage = lazy(() => import('@/pages/admin/RelatorioPlaylistPage'));
 
@@ -136,12 +134,6 @@ const SuperAdminRoutes = () => {
       <Route path="juridico" element={<ContratosPage />} />
       <Route path="juridico/novo" element={<NovoContratoPage />} />
       <Route path="juridico/novo-sindico" element={<NovoContratoSindicoPage />} />
-      <Route path="juridico/flow" element={<LegalFlowPage />} />
-      <Route path="juridico/workspace" element={
-        <Suspense fallback={<GlobalLoadingPage message="Carregando Workspace..." />}>
-          <JuridicoWorkspacePage />
-        </Suspense>
-      } />
       <Route path="juridico/:id" element={<ContratoDetalhesPage />} />
       <Route path="assinaturas" element={<AssinaturasPage />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />

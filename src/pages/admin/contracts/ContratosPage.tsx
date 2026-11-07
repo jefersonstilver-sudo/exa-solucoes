@@ -1,602 +1,215 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+// EXA (07/11/2026) — Contratos refeita no kit de vidro: Anunciantes (contratos_legais, ClickSign) e Prédios (comodato, predio_contratos
+// via exa2-contratos-predio). Sem "workspace jurídico com IA". Pedidos sem contrato aparecem como pendência.
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Plus, Scale, Building2, PenTool, FileText, Send, Eye, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Scale,
-  Plus,
-  Search,
-  Building2,
-  Users,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  Send,
-  Eye,
-  FileText,
-  RefreshCw,
-  Download,
-  AlertCircle,
-  UserCheck,
-  MoreVertical,
-  ArrowLeft,
-  PenTool,
-  Sparkles
-} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SignatariosExaManager } from '@/components/admin/contracts/SignatariosExaManager';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Pagina, Cabecalho, Segmentos, Busca, Pilulas, Kpi, Chip, TOM, Avatar, Carregando, Vazio, BOTAO, BOTAO2, vidro } from '@/components/admin/ui/exa';
+import { formatCurrency } from '@/utils/formatters';
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  rascunho: { label: 'Rascunho', color: 'bg-gray-500', icon: FileText },
-  enviado: { label: 'Enviado', color: 'bg-blue-500', icon: Send },
-  visualizado: { label: 'Visualizado', color: 'bg-amber-500', icon: Eye },
-  assinado: { label: 'Assinado', color: 'bg-emerald-500', icon: CheckCircle2 },
-  recusado: { label: 'Recusado', color: 'bg-red-500', icon: XCircle },
-  expirado: { label: 'Expirado', color: 'bg-orange-500', icon: Clock },
-  cancelado: { label: 'Cancelado', color: 'bg-gray-700', icon: XCircle },
+type Status = 'rascunho' | 'enviado' | 'visualizado' | 'assinado' | 'recusado' | 'expirado' | 'cancelado';
+const STATUS: Record<Status, { l: string; tom: keyof typeof TOM; I: React.ElementType }> = {
+  rascunho: { l: 'rascunho', tom: 'cinza', I: FileText }, enviado: { l: 'enviado', tom: 'azul', I: Send }, visualizado: { l: 'visto', tom: 'ambar', I: Eye },
+  assinado: { l: 'assinado', tom: 'verde', I: CheckCircle2 }, recusado: { l: 'recusado', tom: 'vermelho', I: AlertTriangle }, expirado: { l: 'expirado', tom: 'vermelho', I: AlertTriangle }, cancelado: { l: 'cancelado', tom: 'cinza', I: FileText },
 };
+interface Contrato {
+  id: string; numero_contrato: string; tipo_contrato: string; status: Status; cliente_nome: string; cliente_razao_social: string | null; cliente_telefone: string | null; cliente_cnpj: string | null;
+  valor_mensal: number | null; valor_total: number | null; plano_meses: number | null; total_paineis: number | null; data_inicio: string | null; data_fim: string | null;
+  proposta_id: string | null; pedido_id: string | null; clicksign_envelope_id: string | null; clicksign_download_url: string | null;
+  enviado_em: string | null; visualizado_em: string | null; assinado_em: string | null; created_at: string; updated_at: string | null; modalidade_proposta: string | null; tipo_produto: string | null;
+}
+const dia = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—');
 
-const ContratosPage = () => {
+const useContratos = () => useQuery({
+  queryKey: ['contratos-legais-lista'],
+  staleTime: 30_000,
+  queryFn: async (): Promise<Contrato[]> => {
+    const { data, error } = await supabase.from('contratos_legais').select('id, numero_contrato, tipo_contrato, status, cliente_nome, cliente_razao_social, cliente_telefone, cliente_cnpj, valor_mensal, valor_total, plano_meses, total_paineis, data_inicio, data_fim, proposta_id, pedido_id, clicksign_envelope_id, clicksign_download_url, enviado_em, visualizado_em, assinado_em, created_at, updated_at, modalidade_proposta, tipo_produto').neq('tipo_contrato', 'comodato').order('updated_at', { ascending: false, nullsFirst: false }).limit(1000);
+    if (error) throw error;
+    return (data || []) as Contrato[];
+  },
+});
+const usePedidosSemContrato = () => useQuery({
+  queryKey: ['pedidos-sem-contrato'],
+  staleTime: 60_000,
+  queryFn: async () => {
+    const [{ data: peds }, { data: com }] = await Promise.all([
+      supabase.from('pedidos').select('id, client_name, nome_pedido, status, valor_total, plano_meses, created_at').in('status', ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado', 'ativo']).order('created_at', { ascending: false }),
+      supabase.from('contratos_legais').select('pedido_id').not('pedido_id', 'is', null),
+    ]);
+    const tem = new Set((com || []).map((c: any) => c.pedido_id));
+    return ((peds || []) as any[]).filter((p) => !tem.has(p.id) && !/not[ií]cias|curiosidades|conta interna/i.test(`${p.nome_pedido} ${p.client_name}`));
+  },
+});
+const usePredios = () => useQuery({
+  queryKey: ['contratos-predios-resumo'],
+  staleTime: 60_000,
+  queryFn: async () => {
+    const [{ data: bs }, resumo] = await Promise.all([
+      supabase.from('buildings').select('id, nome, endereco, bairro, status, nome_sindico, contato_sindico_telefone').eq('status', 'ativo').order('nome'),
+      supabase.functions.invoke('exa2-contratos-predio', { body: { acao: 'resumo' } }).then((r) => (r.data as any)?.predios || {}, () => ({})),
+    ]);
+    return ((bs || []) as any[]).map((b) => ({ ...b, contrato: !!resumo[b.id]?.contrato, pedido: resumo[b.id]?.pedido || null }));
+  },
+});
+
+const ContratosPage: React.FC = () => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
-  const { isMobile } = useResponsiveLayout();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('todos');
-  const [tipoFilter, setTipoFilter] = useState<string>('todos');
-  const [origemFilter, setOrigemFilter] = useState<string>('todos'); // NEW: Filter by origin
-  const [activeTab, setActiveTab] = useState<string>('contratos');
-  const [mainTab, setMainTab] = useState<'anunciantes' | 'sindicos'>('anunciantes');
-  const [showSignatarios, setShowSignatarios] = useState(false);
+  const [seg, setSeg] = useState<'anunciantes' | 'predios'>(() => { try { return (localStorage.getItem('contratos_seg') as any) || 'anunciantes'; } catch { return 'anunciantes'; } });
+  const [filtro, setFiltro] = useState('abertos');
+  const [busca, setBusca] = useState('');
+  const [signatarios, setSignatarios] = useState(false);
+  const contratos = useContratos();
+  const semContrato = usePedidosSemContrato();
+  const predios = usePredios();
+  const mudarSeg = (v: string) => { setSeg(v as any); try { localStorage.setItem('contratos_seg', v); } catch { /* sem armazenamento */ } };
 
-  const { data: contratos, isLoading, refetch } = useQuery({
-    queryKey: ['contratos-legais', statusFilter, tipoFilter, mainTab],
-    queryFn: async () => {
-      let query = supabase
-        .from('contratos_legais')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const q = busca.trim().toLowerCase();
+  const lista = useMemo(() => {
+    const ordem: Record<string, number> = { visualizado: 0, enviado: 1, rascunho: 2, recusado: 3, expirado: 3, assinado: 4, cancelado: 5 };
+    return (contratos.data || [])
+      .filter((c) => filtro === 'todos' ? true : filtro === 'abertos' ? ['enviado', 'visualizado'].includes(c.status) : c.status === filtro)
+      .filter((c) => !q || [c.cliente_nome, c.cliente_razao_social, c.numero_contrato, c.cliente_cnpj, c.cliente_telefone].some((s) => String(s || '').toLowerCase().includes(q)))
+      .sort((a, b) => (ordem[a.status] ?? 9) - (ordem[b.status] ?? 9) || new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
+  }, [contratos.data, filtro, q]);
+  const n = (s: string) => s === 'todos' ? (contratos.data || []).length : s === 'abertos' ? (contratos.data || []).filter((c) => ['enviado', 'visualizado'].includes(c.status)).length : (contratos.data || []).filter((c) => c.status === s).length;
+  const assinadosMRR = (contratos.data || []).filter((c) => c.status === 'assinado').reduce((a, c) => a + (c.valor_mensal || 0), 0);
 
-      // Filtrar por tipo principal (anunciante vs comodato/sindico)
-      if (mainTab === 'anunciantes') {
-        query = query.neq('tipo_contrato', 'comodato');
-      } else {
-        query = query.eq('tipo_contrato', 'comodato');
-      }
-
-      if (statusFilter !== 'todos') {
-        query = query.eq('status', statusFilter);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Buscar nome do vendedor para cada contrato via criado_por
-      const contratosWithSellers = await Promise.all((data || []).map(async (contrato: any) => {
-        if (contrato.criado_por) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('nome')
-            .eq('id', contrato.criado_por)
-            .single();
-          return { ...contrato, seller_name: userData?.nome || null };
-        }
-        return { ...contrato, seller_name: null };
-      }));
-
-      return contratosWithSellers;
-    }
-  });
-
-  const { data: pedidosSemContrato, isLoading: loadingPedidos } = useQuery({
-    queryKey: ['pedidos-sem-contrato'],
-    queryFn: async () => {
-      const { data: pedidos, error: pedidosError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .in('status', ['aguardando_contrato', 'aguardando_video', 'video_enviado', 'video_aprovado', 'ativo'])
-        .order('created_at', { ascending: false });
-
-      if (pedidosError) throw pedidosError;
-
-      const { data: contratosExistentes, error: contratosError } = await supabase
-        .from('contratos_legais')
-        .select('pedido_id')
-        .not('pedido_id', 'is', null);
-
-      if (contratosError) throw contratosError;
-
-      const pedidosComContrato = new Set(contratosExistentes?.map(c => c.pedido_id));
-      return pedidos?.filter(p => !pedidosComContrato.has(p.id)) || [];
-    },
-    enabled: activeTab === 'pedidos-sem-contrato'
-  });
-
-  const filteredContratos = contratos?.filter(c => {
-    // Search filter
-    const matchesSearch = c.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.numero_contrato?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.cliente_cnpj?.includes(searchTerm);
-    
-    // Origin filter
-    const matchesOrigem = origemFilter === 'todos' ||
-      (origemFilter === 'proposta' && c.proposta_id) ||
-      (origemFilter === 'manual' && !c.proposta_id);
-    
-    return matchesSearch && matchesOrigem;
-  }) || [];
-
-  const filteredPedidos = pedidosSemContrato?.filter(p =>
-    p.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.id?.includes(searchTerm)
-  ) || [];
-
-  const stats = {
-    total: contratos?.length || 0,
-    assinados: contratos?.filter(c => c.status === 'assinado').length || 0,
-    pendentes: contratos?.filter(c => ['enviado', 'visualizado'].includes(c.status)).length || 0,
-    taxaAssinatura: contratos?.length 
-      ? Math.round((contratos.filter(c => c.status === 'assinado').length / contratos.length) * 100) 
-      : 0,
-    pedidosSemContrato: pedidosSemContrato?.length || 0
-  };
-
-  const formatCurrency = (value: number | null) => {
-    if (!value) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
-
-  const tabs = [
-    { id: 'contratos', label: 'Contratos', icon: Scale },
-    { id: 'pedidos-sem-contrato', label: 'Sem Contrato', icon: AlertCircle, badge: stats.pedidosSemContrato },
-    { id: 'signatarios', label: 'Signatários', icon: UserCheck },
-  ];
-
-  const statusFilters = ['todos', 'rascunho', 'enviado', 'visualizado', 'assinado', 'recusado', 'expirado'];
+  const prediosLista = useMemo(() => (predios.data || []).filter((b) => !q || [b.nome, b.endereco, b.bairro, b.nome_sindico].some((s) => String(s || '').toLowerCase().includes(q))).filter((b) => filtro === 'todos' ? true : filtro === 'com' ? b.contrato : filtro === 'pedido' ? !!b.pedido : !b.contrato && !b.pedido), [predios.data, q, filtro]);
+  const nP = (s: string) => (predios.data || []).filter((b) => s === 'todos' ? true : s === 'com' ? b.contrato : s === 'pedido' ? !!b.pedido : !b.contrato && !b.pedido).length;
+  const PEDIDO: Record<string, string> = { aguardando_dados: 'pedido ao Nando', agendado: 'envio agendado', enviando: 'enviando', enviado: 'em assinatura', erro: 'erro no envio' };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
-      {/* Mobile Header */}
-      {isMobile ? (
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-          <div className="flex items-center justify-between px-4 py-3 safe-area-top">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#9C1E1E]/10 rounded-xl">
-                <Scale className="h-5 w-5 text-[#9C1E1E]" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Jurídico</h1>
-                <p className="text-[11px] text-muted-foreground">Contratos e Documentos</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSignatarios(true)}
-                className="border-[#9C1E1E]/30 text-[#9C1E1E] h-9 px-2"
-                title="Signatários"
-              >
-                <PenTool className="h-4 w-4" />
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
-                className="bg-[#9C1E1E] hover:bg-[#7D1818] h-9 px-3"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white/80 backdrop-blur-sm border-b border-white/50 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#9C1E1E]/10 rounded-xl">
-                <Scale className="h-6 w-6 text-[#9C1E1E]" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Jurídico</h1>
-                <p className="text-sm text-muted-foreground">Gestão de Contratos e Documentos Legais</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => setShowSignatarios(true)}
-                className="border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
-                title="Signatários EXA"
-              >
-                <PenTool className="h-4 w-4 mr-2" />
-                Signatários
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => navigate(buildPath('juridico/workspace'))}
-                className="border-purple-300 text-purple-700 hover:bg-purple-50"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Juridical Workspace (IA)
-              </Button>
-              <Button 
-                onClick={() => navigate(buildPath(mainTab === 'anunciantes' ? 'juridico/novo' : 'juridico/novo-sindico'))}
-                className="bg-[#9C1E1E] hover:bg-[#7D1818]"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {mainTab === 'anunciantes' ? 'Novo Contrato' : 'Novo Comodato'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Tabs: Anunciantes / Síndicos */}
-      <div className="px-3 md:px-6 pt-4">
-        <div className="inline-flex bg-gray-100 rounded-lg p-1 gap-1">
-          <button
-            onClick={() => { setMainTab('anunciantes'); setActiveTab('contratos'); }}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              mainTab === 'anunciantes'
-                ? 'bg-white text-[#9C1E1E] shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Building2 className="h-4 w-4 inline mr-1.5" />
-            Anunciantes
-          </button>
-          <button
-            onClick={() => { setMainTab('sindicos'); setActiveTab('contratos'); }}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              mainTab === 'sindicos'
-                ? 'bg-white text-[#9C1E1E] shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Users className="h-4 w-4 inline mr-1.5" />
-            Síndicos (Comodato)
-          </button>
-        </div>
-      </div>
-
-      <div className="p-3 md:p-6 space-y-4">
-        {/* Stats - 2x2 Grid Mobile */}
-        <div className="grid grid-cols-2 gap-2 md:gap-3 md:grid-cols-5">
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-100 rounded-lg">
-                <FileText className="h-3.5 w-3.5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Total</p>
-                <p className="text-lg font-bold">{stats.total}</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-emerald-100 rounded-lg">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Assinados</p>
-                <p className="text-lg font-bold text-emerald-600">{stats.assinados}</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-amber-100 rounded-lg">
-                <Clock className="h-3.5 w-3.5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Pendentes</p>
-                <p className="text-lg font-bold text-amber-600">{stats.pendentes}</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-red-100 rounded-lg">
-                <AlertCircle className="h-3.5 w-3.5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Sem Contrato</p>
-                <p className="text-lg font-bold text-red-600">{stats.pedidosSemContrato}</p>
-              </div>
-            </div>
-          </Card>
-          {!isMobile && (
-            <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-purple-100 rounded-lg">
-                  <Scale className="h-3.5 w-3.5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Taxa Assinatura</p>
-                  <p className="text-lg font-bold text-purple-600">{stats.taxaAssinatura}%</p>
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
-
-        {/* Tabs Horizontais Scrolláveis */}
-        <div className="overflow-x-auto scrollbar-hide -mx-3 px-3">
-          <div className="inline-flex gap-2 min-w-max pb-2">
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 min-h-[36px] ${
-                    activeTab === tab.id
-                      ? 'bg-[#9C1E1E] text-white shadow-md'
-                      : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
-                  {tab.badge && tab.badge > 0 && (
-                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                      activeTab === tab.id ? 'bg-white/20' : 'bg-red-500 text-white'
-                    }`}>
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Content based on active tab */}
-        {activeTab === 'contratos' && (
+    <Pagina>
+      <Cabecalho
+        titulo="Contratos"
+        sub={seg === 'anunciantes' ? 'Contratos dos anunciantes assinados pela ClickSign. Pedidos no ar sem contrato aparecem como pendência.' : 'Comodato do painel em cada prédio: quem tem, quem está assinando e quem ainda falta (o Nando pede ao síndico).'}
+        acoes={(
           <>
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar contrato..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/80 h-10"
-              />
-            </div>
+            <button type="button" className={BOTAO2} onClick={() => setSignatarios(true)}><PenTool className="h-4 w-4" /> Signatários EXA</button>
+            {seg === 'anunciantes'
+              ? <button type="button" className={BOTAO} onClick={() => navigate(buildPath('juridico/novo'))}><Plus className="h-4 w-4" /> Novo contrato</button>
+              : <button type="button" className={BOTAO} onClick={() => navigate(buildPath('predios'))}><Building2 className="h-4 w-4" /> Pedir pelo prédio</button>}
+          </>
+        )}
+      />
 
-            {/* Status Pills */}
-            <div className="overflow-x-auto scrollbar-hide -mx-3 px-3">
-              <div className="inline-flex gap-1.5 min-w-max pb-2">
-                {statusFilters.map(status => (
-                  <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
-                      statusFilter === status
-                        ? 'bg-[#9C1E1E] text-white'
-                        : 'bg-white/80 text-gray-600 border border-gray-200'
-                    }`}
-                  >
-                    {status === 'todos' ? 'Todos' : statusConfig[status]?.label}
-                  </button>
-                ))}
+      <Segmentos valor={seg} onChange={(v) => { mudarSeg(v); setFiltro(v === 'anunciantes' ? 'abertos' : 'sem'); }} opcoes={[{ valor: 'anunciantes', rotulo: 'Anunciantes' }, { valor: 'predios', rotulo: 'Prédios (comodato)' }]} />
+
+      {seg === 'anunciantes' ? (
+        <>
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+            <Kpi rotulo="Aguardando assinatura" valor={n('abertos')} sub="enviados ou vistos" cor={n('abertos') ? '#9A5300' : '#17181A'} icone={Send} onClick={() => setFiltro('abertos')} />
+            <Kpi rotulo="Assinados" valor={n('assinado')} sub={`${formatCurrency(assinadosMRR)}/mês`} cor="#1E6B47" icone={CheckCircle2} onClick={() => setFiltro('assinado')} />
+            <Kpi rotulo="Rascunhos" valor={n('rascunho')} sub="nunca enviados" cor="#6A6B70" icone={FileText} onClick={() => setFiltro('rascunho')} />
+            <Kpi rotulo="Pedidos sem contrato" valor={semContrato.data?.length ?? '—'} sub="no ar ou em produção" cor={semContrato.data?.length ? '#B0261D' : '#1E6B47'} icone={AlertTriangle} onClick={() => setFiltro('sem_contrato')} />
+          </div>
+          <Busca valor={busca} onChange={setBusca} placeholder="Cliente, número do contrato, CNPJ ou telefone">
+            <Pilulas valor={filtro} onChange={setFiltro} opcoes={[
+              { valor: 'abertos', rotulo: 'Em assinatura', n: n('abertos') }, { valor: 'assinado', rotulo: 'Assinados', n: n('assinado') }, { valor: 'rascunho', rotulo: 'Rascunhos', n: n('rascunho') },
+              { valor: 'sem_contrato', rotulo: 'Pedidos sem contrato', n: semContrato.data?.length }, { valor: 'todos', rotulo: 'Todos', n: n('todos') },
+            ]} />
+          </Busca>
+
+          {filtro === 'sem_contrato' ? (
+            semContrato.isLoading ? <Carregando /> : !semContrato.data?.length ? <Vazio icone={<CheckCircle2 className="h-5 w-5" />} titulo="Todo pedido no ar tem contrato" /> : (
+              <div className={`${vidro} overflow-hidden rounded-[22px]`}>
+                <ul className="divide-y divide-black/[0.06]">
+                  {semContrato.data.filter((p: any) => !q || `${p.client_name} ${p.nome_pedido}`.toLowerCase().includes(q)).map((p: any) => (
+                    <li key={p.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/70 md:px-4">
+                      <Avatar nome={p.client_name} tamanho={38} cor="#9A5300" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-bold">{p.client_name}</span>
+                        <span className="block truncate text-[12.5px] text-[#6A6B70]">{p.nome_pedido} · {p.status.replace(/_/g, ' ')} · {formatCurrency(p.valor_total || 0)}{p.plano_meses > 1 ? ` em ${p.plano_meses} meses` : ''} · {dia(p.created_at)}</span>
+                      </span>
+                      <button type="button" className={`${BOTAO2} h-9`} onClick={() => navigate(buildPath(`juridico/novo?pedido=${p.id}`))}><Plus className="h-4 w-4" /> Gerar contrato</button>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-
-            {/* Origin Filter - NEW */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Origem:</span>
-              <div className="inline-flex gap-1.5">
-                {[
-                  { id: 'todos', label: 'Todos' },
-                  { id: 'proposta', label: '📋 Via Proposta' },
-                  { id: 'manual', label: '✍️ Manual' }
-                ].map(origem => (
-                  <button
-                    key={origem.id}
-                    onClick={() => setOrigemFilter(origem.id)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                      origemFilter === origem.id
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white/80 text-gray-600 border border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    {origem.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Contracts List */}
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredContratos.length === 0 ? (
-              <Card className="p-8 text-center bg-white/80 backdrop-blur-sm">
-                <Scale className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-                <h3 className="text-sm font-semibold mb-1">Nenhum contrato</h3>
-                <p className="text-xs text-muted-foreground mb-3">Crie um novo contrato para começar</p>
-                <Button size="sm" onClick={() => navigate(buildPath('juridico/novo'))}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Criar
-                </Button>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {filteredContratos.map((contrato) => {
-                  const status = statusConfig[contrato.status] || statusConfig.rascunho;
-                  const StatusIcon = status.icon;
-
+            )
+          ) : contratos.isLoading ? <Carregando /> : !lista.length ? <Vazio icone={<Scale className="h-5 w-5" />} titulo="Nenhum contrato aqui" /> : (
+            <div className={`${vidro} overflow-hidden rounded-[22px]`}>
+              <ul className="divide-y divide-black/[0.06]">
+                {lista.map((c) => {
+                  const st = STATUS[c.status] || STATUS.rascunho;
+                  const apagado = ['cancelado', 'expirado', 'recusado'].includes(c.status);
+                  const nome = c.cliente_razao_social || c.cliente_nome;
                   return (
-                    <Card 
-                      key={contrato.id} 
-                      className={`p-3 bg-white/80 backdrop-blur-sm border-white/50 hover:shadow-md transition-all duration-200 active:scale-[0.99] ${
-                        contrato.status === 'enviado' && !contrato.clicksign_envelope_id ? 'border-red-300 bg-red-50/50' : ''
-                      }`}
-                      onClick={() => navigate(buildPath(`juridico/${contrato.id}`))}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                            <span className="font-mono text-xs font-semibold text-[#9C1E1E]">
-                              {contrato.numero_contrato}
-                            </span>
-                            <Badge className={`${status.color} text-white text-[10px] px-1.5 py-0`}>
-                              {status.label}
-                            </Badge>
-                            {/* Indicador de origem - Via Proposta */}
-                            {contrato.proposta_id && (
-                              <Badge className="bg-purple-500 text-white text-[10px] px-1.5 py-0">
-                                📋 Via Proposta
-                              </Badge>
-                            )}
-                            {/* Indicador de estado inconsistente */}
-                            {contrato.status === 'enviado' && !contrato.clicksign_envelope_id && (
-                              <Badge className="bg-red-600 text-white text-[10px] px-1.5 py-0 animate-pulse">
-                                ⚠️ Erro Envio
-                              </Badge>
-                            )}
-                          </div>
-                          <h3 className="font-medium text-sm truncate">{contrato.cliente_nome}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(contrato.created_at), "dd/MM/yy", { locale: ptBR })}
-                            </span>
-                            <span className="text-sm font-semibold">
-                              {formatCurrency(contrato.valor_total)}
-                            </span>
-                          </div>
-                        </div>
-                        {/* Empresa e Vendedor - lado direito */}
-                        <div className="text-right flex-shrink-0 max-w-[100px]">
-                          {contrato.cliente_razao_social && (
-                            <p className="text-[10px] font-medium text-foreground truncate">
-                              {contrato.cliente_razao_social}
-                            </p>
-                          )}
-                          {contrato.seller_name && (
-                            <p className="text-[9px] text-muted-foreground truncate">
-                              👤 {contrato.seller_name}
-                            </p>
-                          )}
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(buildPath(`juridico/${contrato.id}`))}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalhes
-                            </DropdownMenuItem>
-                            {contrato.status === 'assinado' && contrato.clicksign_download_url && (
-                              <DropdownMenuItem onClick={() => window.open(contrato.clicksign_download_url, '_blank')}>
-                                <Download className="h-4 w-4 mr-2" />
-                                Baixar PDF
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </Card>
+                    <li key={c.id} className={`flex items-center gap-3 px-3 py-2.5 hover:bg-white/70 md:px-4 ${apagado ? 'opacity-60' : ''}`}>
+                      <button type="button" onClick={() => navigate(buildPath(`juridico/${c.id}`))} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                        <Avatar nome={nome} tamanho={40} cor={TOM[st.tom].cor} />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="truncate text-[14px] font-bold">{nome}</span>
+                            <Chip {...TOM[st.tom]}>{st.l}</Chip>
+                            {c.status === 'enviado' && !c.clicksign_envelope_id && <Chip {...TOM.vermelho} title="Marcado como enviado mas sem envelope na ClickSign">sem envelope</Chip>}
+                            {c.proposta_id && <Chip {...TOM.cinza}>da proposta</Chip>}
+                            {c.modalidade_proposta === 'permuta' && <Chip {...TOM.roxo}>permuta</Chip>}
+                          </span>
+                          <span className="block truncate text-[12.5px] text-[#6A6B70]">
+                            {c.numero_contrato} · {formatCurrency(c.valor_mensal || 0)}/mês{c.plano_meses ? ` · ${c.plano_meses} ${c.plano_meses === 1 ? 'mês' : 'meses'}` : ''}{c.total_paineis ? ` · ${c.total_paineis} painéis` : ''}
+                            {c.assinado_em ? ` · assinado ${dia(c.assinado_em)}` : c.visualizado_em ? ` · visto ${dia(c.visualizado_em)}` : c.enviado_em ? ` · enviado ${dia(c.enviado_em)}` : ` · criado ${dia(c.created_at)}`}
+                          </span>
+                        </span>
+                      </button>
+                      <span className="hidden w-[120px] text-right text-[12px] text-[#8A8B90] lg:block">{c.data_inicio ? `${dia(c.data_inicio)} → ${dia(c.data_fim)}` : ''}</span>
+                      {c.clicksign_download_url && c.status === 'assinado' && (
+                        <a href={c.clicksign_download_url} target="_blank" rel="noreferrer" title="Baixar PDF assinado" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[#1E6B47] hover:bg-[#EAF5EF]"><ExternalLink className="h-4 w-4" /></a>
+                      )}
+                    </li>
                   );
                 })}
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'pedidos-sem-contrato' && (
-          <>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar pedido..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/80 h-10"
-              />
+              </ul>
             </div>
-
-            {loadingPedidos ? (
-              <div className="flex items-center justify-center py-12">
-                <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredPedidos.length === 0 ? (
-              <Card className="p-8 text-center bg-white/80 backdrop-blur-sm">
-                <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
-                <h3 className="text-sm font-semibold">Todos os pedidos têm contrato!</h3>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {filteredPedidos.map((pedido) => (
-                  <Card 
-                    key={pedido.id}
-                    className="p-3 bg-white/80 backdrop-blur-sm border-white/50"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{pedido.client_name || 'Cliente'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(pedido.created_at), "dd/MM/yy", { locale: ptBR })} • {formatCurrency(pedido.valor_total)}
-                        </p>
-                      </div>
-                      <Button 
-                        size="sm"
-                        onClick={() => navigate(buildPath(`juridico/novo?pedido_id=${pedido.id}`))}
-                        className="h-8 px-3 text-xs bg-[#9C1E1E]"
-                      >
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                        Criar
-                      </Button>
-                    </div>
-                  </Card>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+            <Kpi rotulo="Com contrato" valor={nP('com')} sub="comodato assinado ou anexado" cor="#1E6B47" icone={CheckCircle2} onClick={() => setFiltro('com')} />
+            <Kpi rotulo="Em andamento" valor={nP('pedido')} sub="pedido ao Nando ou em assinatura" cor="#9A5300" icone={Send} onClick={() => setFiltro('pedido')} />
+            <Kpi rotulo="Sem contrato" valor={nP('sem')} sub="prédios ativos sem comodato" cor={nP('sem') ? '#B0261D' : '#17181A'} icone={AlertTriangle} onClick={() => setFiltro('sem')} />
+            <Kpi rotulo="Prédios" valor={nP('todos')} sub="ativos na rede" icone={Building2} onClick={() => setFiltro('todos')} />
+          </div>
+          <Busca valor={busca} onChange={setBusca} placeholder="Prédio, endereço, bairro ou síndico">
+            <Pilulas valor={filtro} onChange={setFiltro} opcoes={[{ valor: 'sem', rotulo: 'Sem contrato', n: nP('sem') }, { valor: 'pedido', rotulo: 'Em andamento', n: nP('pedido') }, { valor: 'com', rotulo: 'Com contrato', n: nP('com') }, { valor: 'todos', rotulo: 'Todos', n: nP('todos') }]} />
+          </Busca>
+          {predios.isLoading ? <Carregando /> : !prediosLista.length ? <Vazio icone={<Building2 className="h-5 w-5" />} titulo="Nenhum prédio aqui" /> : (
+            <div className={`${vidro} overflow-hidden rounded-[22px]`}>
+              <ul className="divide-y divide-black/[0.06]">
+                {prediosLista.map((b) => (
+                  <li key={b.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/70 md:px-4">
+                    <button type="button" onClick={() => navigate(buildPath(`predios?busca=${encodeURIComponent(b.nome)}&aba=contrato`))} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <Avatar nome={b.nome} tamanho={40} cor={b.contrato ? '#1E6B47' : b.pedido ? '#9A5300' : '#B0261D'} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          <span className="truncate text-[14px] font-bold">{b.nome}</span>
+                          {b.contrato ? <Chip {...TOM.verde}>com contrato</Chip> : b.pedido ? <Chip {...TOM.ambar}>{PEDIDO[b.pedido] || b.pedido}</Chip> : <Chip {...TOM.vermelho}>sem contrato</Chip>}
+                        </span>
+                        <span className="block truncate text-[12.5px] text-[#6A6B70]">{[b.endereco, b.bairro, b.nome_sindico ? `síndico ${b.nome_sindico}` : ''].filter(Boolean).join(' · ')}</span>
+                      </span>
+                    </button>
+                  </li>
                 ))}
-              </div>
-            )}
-          </>
-        )}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
 
-        {activeTab === 'signatarios' && (
-          <SignatariosExaManager />
-        )}
-      </div>
-
-      {/* Dialog de Signatários EXA */}
-      <Dialog open={showSignatarios} onOpenChange={setShowSignatarios}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PenTool className="h-5 w-5 text-[#9C1E1E]" />
-              Signatários EXA Mídia
-            </DialogTitle>
-          </DialogHeader>
+      <Dialog open={signatarios} onOpenChange={setSignatarios}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-2xl">
+          <DialogHeader><DialogTitle>Signatários da EXA</DialogTitle></DialogHeader>
           <SignatariosExaManager />
         </DialogContent>
       </Dialog>
-    </div>
+    </Pagina>
   );
 };
 
