@@ -136,21 +136,24 @@ Deno.serve(async (req) => {
     const antecessores = (apagados || []).map((x: any) => x.pedido_data || {}).filter((d: any) => {
       if (!d.data_inicio || !d.id || d.id === ped.id) return false;
       if (String(d.data_inicio).slice(0, 10) >= String(ped.data_inicio).slice(0, 10)) return false;
-      if (!["ativo", "video_aprovado", "finalizado", "expirado", "concluido"].includes(d.status)) return false;
+      // "cancelado" entra quando é da mesma conta do cliente (ex.: Del Fuego, 27/03 → 27/09/2026, refeito em 20/10): a campanha rodou
+      if (!["ativo", "video_aprovado", "finalizado", "expirado", "concluido"].includes(d.status) && !(d.status === "cancelado" && d.client_id === ped.client_id)) return false;
       if (d.is_test_order === true || d.is_test_order === "true") return false;
       // o pedido_data guardado não traz tipo_produto: só compara quando existe
       if (d.tipo_produto && String(d.tipo_produto).includes("vertical") !== String(ped.tipo_produto || "").includes("vertical")) return false;
       const nomeAnt = String([d.nome_pedido, d.client_name].filter(Boolean).join(" ")).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
       const mesmoCliente = d.client_id === ped.client_id || (d.client_id === CONTA_INTERNA && tokens.some((w) => nomeAnt.includes(w)));
-      // só o que estava no ar até perto do começo deste pedido
+      // só o que estava no ar até perto do começo deste pedido (mesma conta: até 60 dias de intervalo, ex.: Del Fuego 27/09 → 20/10)
       const fimAnt = d.data_fim ? String(d.data_fim).slice(0, 10) : "9999";
-      return mesmoCliente && fimAnt >= String(ped.data_inicio).slice(0, 10);
+      const limite = d.client_id === ped.client_id ? diaBR(inicioDiaBR(String(ped.data_inicio).slice(0, 10)) - 60 * DIA) : String(ped.data_inicio).slice(0, 10);
+      return mesmoCliente && fimAnt >= limite;
     });
     // o relatório bate sempre com o início do contrato (data_inicio_cobranca, quando a equipe definiu); senão, o 1º dia no ar
     const inicioContrato = ped.data_inicio_cobranca ? String(ped.data_inicio_cobranca).slice(0, 10) : null;
     const inicioReal = inicioContrato || [String(ped.data_inicio).slice(0, 10), ...antecessores.map((d: any) => String(d.data_inicio).slice(0, 10))].sort()[0];
     const segmentos = [
-      ...antecessores.map((d: any) => ({ de: String(d.data_inicio).slice(0, 10), ate: diaBR(inicioDiaBR(String(ped.data_inicio).slice(0, 10)) - 3600_000), lista: (d.lista_predios || []) as string[] })),
+      // o antecessor conta até o fim dele ou até a véspera deste pedido, o que vier antes (intervalo sem campanha não conta)
+      ...antecessores.map((d: any) => ({ de: String(d.data_inicio).slice(0, 10), ate: [diaBR(inicioDiaBR(String(ped.data_inicio).slice(0, 10)) - 3600_000), d.data_fim ? String(d.data_fim).slice(0, 10) : "9999"].sort()[0], lista: (d.lista_predios || []) as string[] })),
       { de: String(ped.data_inicio).slice(0, 10), ate: "9999-12-31", lista: (ped.lista_predios || []) as string[] },
     ];
     const nossoNoPredio = (bid: string, d: string) => segmentos.some((g) => d >= g.de && d <= g.ate && g.lista.includes(bid));
@@ -285,10 +288,10 @@ Deno.serve(async (req) => {
     const primeiroLog = primeiroLogDia;
 
     // vídeos envolvidos: da conta do cliente + os que aparecem nos registros (podem estar em outra conta, ex.: Conta Interna)
-    const { data: hist } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url")
+    const { data: hist } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url,client_id")
       .eq("client_id", ped.client_id).gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString()).order("created_at");
     const idsLog = [...idsLogSet];
-    const { data: deLog } = idsLog.length ? await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url").in("id", idsLog) : { data: [] as any[] };
+    const { data: deLog } = idsLog.length ? await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url,client_id").in("id", idsLog) : { data: [] as any[] };
     // vídeos do cinema que a equipe subiu pela Conta Interna da EXA (ex.: "3 setembro" = cine_3_de_setembro.mp4):
     // não ficam no pedido depois de trocados, mas foram o principal da semana
     let internos: any[] = [];
@@ -364,15 +367,32 @@ Deno.serve(async (req) => {
       minutosPorVideoDia.set(d, m);
     }
 
+    // VÍDEO DE OUTRO CLIENTE tocando no espaço deste pedido (ex.: Caliu, jul/2026: o vídeo da Duquintal foi subido e
+    // colocado no ar pelo pedido da Caliu). Não é anúncio deste cliente: sai da lista e as exibições dele saem dos totais.
+    // Conta Interna da EXA não conta como "outro" (é a equipe subindo vídeo do próprio cliente).
+    const deOutroCliente = (vid: string) => { const v = todos.get(vid); return !!v?.client_id && v.client_id !== ped.client_id && v.client_id !== CONTA_INTERNA; };
     // exibições, período real e horários de cada vídeo
     const acum = new Map<string, { exib: number; de: string; ate: string; dias: number }>();
+    const exibOutrosDia = new Map<string, number>();
     for (const d of dias) {
       const m = minutosPorVideoDia.get(d)!; const tot = [...m.values()].reduce((a, b) => a + b, 0) || 1;
       for (const [vid, mins] of m) {
         if (mins <= 0) continue;
         const a = acum.get(vid) || { exib: 0, de: d, ate: d, dias: 0 };
-        a.exib += (porDia.get(d) || 0) * (mins / tot); a.ate = d; a.dias += 1; acum.set(vid, a);
+        const e = (porDia.get(d) || 0) * (mins / tot);
+        a.exib += e; a.ate = d; a.dias += 1; acum.set(vid, a);
+        if (deOutroCliente(vid)) exibOutrosDia.set(d, (exibOutrosDia.get(d) || 0) + e);
       }
+    }
+    if (exibOutrosDia.size) {
+      let tirar = 0;
+      for (const [d, e] of exibOutrosDia) { const r = Math.round(e); tirar += r; porDia.set(d, Math.max(0, (porDia.get(d) || 0) - r)); }
+      for (const [m, v] of porMes) { let x = 0; for (const [d, e] of exibOutrosDia) if (d.slice(0, 7) === m) x += Math.round(e); v.exibicoes = Math.max(0, v.exibicoes - x); porMes.set(m, v); }
+      // os prédios perdem na mesma proporção (o espaço era de todos os prédios do pedido)
+      const fator = totalExib > 0 ? Math.max(0, totalExib - tirar) / totalExib : 1;
+      for (const p of linhasPredios) { p.exibicoes = Math.round(p.exibicoes * fator); p.horas_tela = Math.round((p.exibicoes * duracao) / 360) / 10; }
+      totalExib = Math.max(0, totalExib - tirar);
+      console.log("[RELATORIO] exibições de vídeo de outro cliente tiradas do pedido", pid, tirar);
     }
     const SEM = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
     const descreverRegras = (rs: any[]) => rs.map((r) => {
@@ -395,6 +415,7 @@ Deno.serve(async (req) => {
       const pv = atuais.get(v.id); const a = acum.get(v.id);
       const noAr = !!(pv && pv.is_active !== false && pv.selected_for_display !== false && (pv.approval_status || "approved") === "approved" && (pv.is_base_video || (minDia.get(dias[dias.length - 1])?.has(v.id))));
       if (!a && !pv) continue; // nunca foi ao ar neste pedido
+      if (deOutroCliente(v.id)) continue; // vídeo de outro cliente que passou por este pedido: não é anúncio deste cliente
       const rs = regrasPorVideo.get(v.id) || [];
       videos.push({
         id: v.id, nome: String(v.nome || "Vídeo").trim(), url: v.url || null, emPedido: !!pv, publicado_em: v.created_at, duracao: Number(v.duracao) || duracao,
