@@ -61,7 +61,7 @@ async function lerCripto() {
   const ativos = ['BTC', 'ETH', 'USDT'];
   try {
     const r = await fetch('https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL,USDT-BRL', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(12000) });
-    if (!r.ok) throw new Error('MB HTTP ' + r.status);
+    if (!r.ok) throw new Error('MB HTTP ' + r.status + ' ' + (await r.text()).slice(0, 80));
     const lista = await r.json() as any[];
     const v: Record<string, unknown> = {};
     for (const a of ativos) {
@@ -72,7 +72,8 @@ async function lerCripto() {
     }
     return { valores: v, atualizado_site: new Date(Number(lista[0]?.date) * 1000 || Date.now()).toISOString(), fonte: 'Mercado Bitcoin' };
   } catch (e) {
-    console.error('[cambio-parceiros] MB falhou, tentando Binance', String(e));
+    const mbErro = String((e as Error)?.message || e).slice(0, 160);
+    console.error('[cambio-parceiros] MB falhou, tentando Binance', mbErro);
     const q = encodeURIComponent(JSON.stringify(ativos.map((a) => a + 'BRL')));
     const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=' + q, { signal: AbortSignal.timeout(12000) });
     if (!r.ok) throw new Error('Binance HTTP ' + r.status);
@@ -84,7 +85,7 @@ async function lerCripto() {
       if (!(ult > 0)) throw new Error('Binance sem ' + a);
       v[a] = { preco: ult, compra: Number(x.bidPrice), venda: Number(x.askPrice), var24h: Math.round(Number(x.priceChangePercent) * 100) / 100 };
     }
-    return { valores: v, atualizado_site: new Date(Number(lista[0]?.closeTime) || Date.now()).toISOString(), fonte: 'Binance' };
+    return { valores: { ...v, aviso: 'Mercado Bitcoin: ' + mbErro }, atualizado_site: new Date(Number(lista[0]?.closeTime) || Date.now()).toISOString(), fonte: 'Binance' };
   }
 }
 
