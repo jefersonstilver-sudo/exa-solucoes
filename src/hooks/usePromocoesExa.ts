@@ -20,6 +20,9 @@ export interface PromocaoExa {
   ativo: boolean;
   ordem: number;
   updated_at: string;
+  onde: 'site' | 'renovacao';      // site: todo mundo vê; renovacao: só a Sofia e a equipe (quem já é cliente)
+  cliente_id: string | null;       // cupom: só esta conta
+  bonus_predios: number;           // prédios a mais, de cortesia
 }
 
 const hojeBR = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).toISOString().slice(0, 10);
@@ -41,8 +44,8 @@ export const usePromocoesExa = () =>
     },
   });
 
-/** Só as que estão valendo agora, na ordem do admin. */
+/** Só as que estão valendo agora E são do site (sem cupom), na ordem do admin. */
 export const usePromocoesValendo = () => {
   const q = usePromocoesExa();
-  return { ...q, data: (q.data || []).filter((p) => promocaoValendo(p)) };
+  return { ...q, data: (q.data || []).filter((p) => promocaoValendo(p) && (p.onde || 'site') === 'site' && !p.cliente_id) };
 };

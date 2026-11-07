@@ -65,7 +65,7 @@ const CartaoProduto: React.FC<{ titulo: string; sub: string; icone: React.ReactN
   </section>
 );
 
-const vazia = (ordem: number): Partial<PromocaoExa> => ({ codigo: '', titulo: '', descricao: '', produto: 'horizontal', unidade: 'predio', preco: 0, plano_meses: 6, inclui_videos: true, vagas_total: null, vagas_usadas: 0, inicio: null, fim: null, ativo: true, ordem });
+const vazia = (ordem: number): Partial<PromocaoExa> => ({ codigo: '', titulo: '', descricao: '', produto: 'horizontal', unidade: 'predio', preco: 0, plano_meses: 6, inclui_videos: true, vagas_total: null, vagas_usadas: 0, inicio: null, fim: null, ativo: true, ordem, onde: 'site', cliente_id: null, bonus_predios: 0 });
 
 const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; onExcluido: () => void }> = ({ p, onSalvo, onExcluido }) => {
   const [ed, setEd] = useState<Partial<PromocaoExa>>(p);
@@ -78,7 +78,7 @@ const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; o
     if (!ed.titulo?.trim() || !ed.codigo?.trim() || !(Number(ed.preco) > 0)) { toast.error('Código, título e preço são obrigatórios.'); return; }
     setSalvando(true);
     const { data: u } = await supabase.auth.getUser();
-    const dados = { ...ed, preco: Number(ed.preco), plano_meses: Number(ed.plano_meses) || 1, vagas_total: ed.vagas_total == null || ed.vagas_total === ('' as any) ? null : Number(ed.vagas_total), vagas_usadas: Number(ed.vagas_usadas) || 0, inicio: ed.inicio || null, fim: ed.fim || null, descricao: ed.descricao || null, updated_by: u.user?.id || null, updated_at: new Date().toISOString() };
+    const dados = { ...ed, preco: Number(ed.preco), plano_meses: Number(ed.plano_meses) || 1, vagas_total: ed.vagas_total == null || ed.vagas_total === ('' as any) ? null : Number(ed.vagas_total), vagas_usadas: Number(ed.vagas_usadas) || 0, bonus_predios: Number(ed.bonus_predios) || 0, onde: ed.onde || 'site', cliente_id: ed.cliente_id || null, inicio: ed.inicio || null, fim: ed.fim || null, descricao: ed.descricao || null, updated_by: u.user?.id || null, updated_at: new Date().toISOString() };
     const q = ed.id ? (supabase as any).from('promocoes_exa').update(dados).eq('id', ed.id) : (supabase as any).from('promocoes_exa').insert(dados);
     const { error } = await q;
     setSalvando(false);
@@ -94,10 +94,10 @@ const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; o
   };
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className={`flex flex-wrap items-center justify-between gap-2 px-5 py-3 ${vale ? 'bg-[#ecf9f0]' : 'bg-[#f7f5f6]'}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-2 px-5 py-3 ${vale ? (ed.onde === 'renovacao' ? 'bg-[#fff4e5]' : 'bg-[#ecf9f0]') : 'bg-[#f7f5f6]'}`}>
         <div className="flex items-center gap-2 text-[12px] font-bold">
           <span className={`h-2 w-2 rounded-full ${vale ? 'bg-[#13a24a]' : 'bg-[#b3aaad]'}`} />
-          <span className={vale ? 'text-[#0f5f2d]' : 'text-[#8b8285]'}>{!ed.id ? 'Nova' : vale ? 'No ar no site' : ed.ativo ? 'Fora do período ou sem vagas' : 'Desligada'}</span>
+          <span className={vale ? 'text-[#0f5f2d]' : 'text-[#8b8285]'}>{!ed.id ? 'Nova' : vale ? (ed.onde === 'renovacao' ? (ed.cliente_id ? 'Cupom de 1 cliente (só a Sofia)' : 'Renovação (só a Sofia)') : 'No ar no site') : ed.ativo ? 'Fora do período ou sem vagas' : 'Desligada'}</span>
           {rest != null && <span className="rounded-full bg-white px-2 py-0.5 text-[#1b1719]">{rest} {rest === 1 ? 'vaga' : 'vagas'}</span>}
         </div>
         <Toggle on={!!ed.ativo} onChange={(v) => set('ativo', v)} label={ed.ativo ? 'Ligada' : 'Desligada'} />
@@ -115,6 +115,10 @@ const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; o
         <label><span className={LABEL}>Vagas (vazio = sem limite)</span><input type="number" className={INPUT} value={ed.vagas_total ?? ''} onChange={(e) => set('vagas_total', e.target.value === '' ? null : Number(e.target.value))} /></label>
         <label><span className={LABEL}>Vagas já usadas</span><input type="number" className={INPUT} value={ed.vagas_usadas ?? 0} onChange={(e) => set('vagas_usadas', e.target.value)} /></label>
         <div className="flex items-end pb-2"><Toggle on={!!ed.inclui_videos} onChange={(v) => set('inclui_videos', v)} label="Criação dos vídeos inclusa" /></div>
+        <label><span className={LABEL}>Onde aparece</span>
+          <select className={INPUT} value={ed.onde || 'site'} onChange={(e) => set('onde', e.target.value)}><option value="site">site e loja (todo mundo vê)</option><option value="renovacao">só renovação (a Sofia oferece a quem já é cliente)</option></select></label>
+        <label><span className={LABEL}>Prédios de bônus (cortesia)</span><input type="number" className={INPUT} value={ed.bonus_predios ?? 0} onChange={(e) => set('bonus_predios', e.target.value)} /></label>
+        <label className="sm:col-span-2"><span className={LABEL}>Cupom só para um cliente (id da conta; vazio = qualquer cliente)</span><input className={INPUT} value={ed.cliente_id || ''} onChange={(e) => set('cliente_id', e.target.value.trim() || null)} placeholder="uuid da conta do cliente" /></label>
         <label><span className={LABEL}>Começa em</span><input type="date" className={INPUT} value={ed.inicio || ''} onChange={(e) => set('inicio', e.target.value || null)} /></label>
         <label><span className={LABEL}>Termina em</span><input type="date" className={INPUT} value={ed.fim || ''} onChange={(e) => set('fim', e.target.value || null)} /></label>
       </div>
@@ -167,8 +171,8 @@ const ProdutosPage = () => {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className={EYEBROW}>Promoções</div>
-            <h2 className={H2}>{valendo.length ? `${valendo.length} no ar no site` : 'Nenhuma no ar'}</h2>
-            <p className="mt-1 text-[13.5px] text-[#6F6669]">O site e a loja (/loja) mostram o que está ligado, dentro do período e com vaga. Quando fechar uma venda, suba as vagas usadas.</p>
+            <h2 className={H2}>{valendo.length ? `${valendo.filter((p) => (p.onde || 'site') === 'site' && !p.cliente_id).length} no ar no site · ${valendo.filter((p) => p.onde === 'renovacao' || p.cliente_id).length} de renovação` : 'Nenhuma no ar'}</h2>
+            <p className="mt-1 text-[13.5px] text-[#6F6669]">O site e a loja (/loja) mostram o que é do site, ligado, dentro do período e com vaga. As de renovação só a Sofia oferece a quem já é cliente (cliente novo paga o preço do site). Quando fechar uma venda, suba as vagas usadas.</p>
           </div>
           <button type="button" className={BTN2} onClick={() => setNovas((n) => [...n, vazia(lista.length + n.length + 1)])}><Plus className="h-4 w-4" /> Nova promoção</button>
         </div>
