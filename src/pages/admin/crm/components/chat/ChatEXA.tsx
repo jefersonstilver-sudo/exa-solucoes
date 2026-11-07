@@ -519,6 +519,9 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
                 <div className="cx-head-nome">{atual.titulo}</div>
                 <div className="cx-head-sub"><span style={{ color: '#5A5852' }}>{atual.sub}</span> <span className="cx-estado"><span style={{ color: '#C9C6C0' }}>·</span> <span style={{ color: atual.humano ? 'var(--cx-cor)' : '#77756F' }}>{estado}</span></span></div>
               </div>
+              <button className="cx-ib" onClick={p.onAtualizar} aria-label="Atualizar a conversa" title="Puxar de novo o histórico desta conversa">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" /></svg>
+              </button>
               <button className="cx-btn cx-fb" onClick={p.onFicha}>{I.ficha}<span>{p.fichaRotulo}</span></button>
               {atual.humano
                 ? <button className="cx-btn cx-red" onClick={p.onDevolver}>Devolver<span className="cx-cel-some"> {feminino ? 'à' : 'ao'} {p.nomeAgente}</span></button>

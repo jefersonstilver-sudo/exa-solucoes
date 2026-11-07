@@ -47,8 +47,8 @@ const periodoRotulo: Record<PeriodType, string> = {
 const hhmm = (d?: Date | null) => d ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
 const ehGrupoPredios = (nome?: string | null) => /^pr[eé]dios$/i.test((nome || '').trim());
 
-type Visao = 'paineis' | 'conexoes' | 'telas' | 'elevadores';
-const VISAO_ROTULO: Record<Visao, string> = { paineis: 'Visão geral', conexoes: 'Internet (operadoras)', telas: 'Telas novas', elevadores: 'Empresas de elevador' };
+type Visao = 'paineis' | 'conexoes' | 'telas' | 'elevadores' | 'provedores';
+const VISAO_ROTULO: Record<Visao, string> = { paineis: 'Visão geral', conexoes: 'Conexões', telas: 'Telas novas', elevadores: 'Empresas de elevador', provedores: 'Provedores de internet' };
 type FiltroEstado = 'todos' | 'problema' | EstadoPainel;
 type Ordem = 'quedas' | 'nome' | 'estado';
 
@@ -75,7 +75,7 @@ export default function PaineisEXA() {
   const pendentes = usePendingIncidents(offlineIds);
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
 
-  const [visao, setVisaoRaw] = useState<Visao>(() => { try { const v = localStorage.getItem('paineis_visao') as Visao; return ['paineis', 'conexoes', 'telas', 'elevadores'].includes(v) ? v : 'paineis'; } catch { return 'paineis'; } });
+  const [visao, setVisaoRaw] = useState<Visao>(() => { try { const v = localStorage.getItem('paineis_visao') as Visao; return ['paineis', 'conexoes', 'telas', 'elevadores', 'provedores'].includes(v) ? v : 'paineis'; } catch { return 'paineis'; } });
   const setVisao = (v: Visao) => { setVisaoRaw(v); try { localStorage.setItem('paineis_visao', v); } catch { /* sem armazenamento */ } };
   const [busca, setBusca] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
@@ -243,7 +243,7 @@ export default function PaineisEXA() {
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-xl bg-black/[0.05] p-1" role="tablist" aria-label="Visão">
-            {(['paineis', 'conexoes', 'telas', 'elevadores'] as Visao[]).map((v) => (
+            {(['paineis', 'conexoes', 'telas', 'elevadores', 'provedores'] as Visao[]).map((v) => (
               <button key={v} role="tab" aria-selected={visao === v} type="button" onClick={() => setVisao(v)}
                 className={`h-8 rounded-lg px-3 text-sm font-bold transition-colors ${visao === v ? 'bg-white shadow-sm' : 'text-[#5E5F63] hover:text-[#17181A]'}`}>
                 {VISAO_ROTULO[v]}
@@ -479,8 +479,10 @@ export default function PaineisEXA() {
         <Suspense fallback={<div className={`${glass} rounded-2xl p-6 text-sm text-[#6A6B70]`}>Carregando telas…</div>}>
           <TelasPage base={buildPath('telas')} embutida />
         </Suspense>
+      ) : visao === 'elevadores' ? (
+        <Elevadores predios={predios} tipo="elevador" />
       ) : (
-        <Elevadores predios={predios} />
+        <Elevadores predios={predios} tipo="internet" />
       )}
 
       {selecionado && (
