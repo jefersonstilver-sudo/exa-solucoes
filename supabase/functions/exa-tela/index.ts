@@ -609,6 +609,9 @@ async function vigiarQualidade(admin: any) {
     const { data: rs } = await admin.from('exa_telas_eventos').select('criado_em, dados').eq('tela_id', t.id).eq('tipo', 'replica_saude')
       .gte('criado_em', desde).order('criado_em', { ascending: false }).limit(5);
     if (!rs || rs.length < 3) continue; // pouco dado (TV acabou de abrir)
+    // câmera: janela maior (16 min) — falhas curtas do gerador de clipes não contam
+    const { data: rsCam } = await admin.from('exa_telas_eventos').select('criado_em, dados').eq('tela_id', t.id).eq('tipo', 'replica_saude')
+      .gte('criado_em', new Date(Date.now() - 16 * 60000).toISOString()).order('criado_em', { ascending: false }).limit(8);
     const cfg: any = { ...(t.config || {}) };
     const auto: any = { ...(cfg.auto || {}) };
     const nome = `${t.nome || 'Tela'} · ${String(b.nome || '').trim()}`;
@@ -616,7 +619,8 @@ async function vigiarQualidade(admin: any) {
     const mudancas: string[] = [];
     let recarregar = false;
     const soma = (k: string) => rs.reduce((s: number, r: any) => s + (Number(r.dados?.[k]) || 0), 0);
-    const segs = soma('seg'), cam = soma('camera');
+    const segs = (rsCam || []).reduce((s: number, r: any) => s + (Number(r.dados?.seg) || 0), 0);
+    const cam = (rsCam || []).reduce((s: number, r: any) => s + (Number(r.dados?.camera) || 0), 0);
     const pcts = rs.map((r: any) => Number(r.dados?.pct_perdidos)).filter((n: number) => Number.isFinite(n));
     const perd = pcts.length ? pcts.reduce((a: number, n: number) => a + n, 0) / pcts.length : 0;
     const parado = soma('parado') / rs.length;
@@ -624,9 +628,15 @@ async function vigiarQualidade(admin: any) {
     const deviaCamera = cfg.camera !== false && ritmo.camera !== false;
 
     // 1) câmera sumiu
-    if (deviaCamera && segs >= 300 && cam === 0) {
+    // 07/11: o vigia recarregava a tela a cada ~20 min por uma câmera que voltava sozinha em 5 min (13 recargas numa noite
+    // no Zeta) — e cada recarga também trava. Agora: 0 s de câmera em ~15 min seguidos, e no máximo 1 recarga por hora.
+    const ultimaRecarga = auto.cam_recarga_em ? minDesde(auto.cam_recarga_em) : 999;
+    if (deviaCamera && segs >= 780 && cam === 0) {
       const c = auto.camera || {};
-      if (!c.desde) {
+      if (!c.desde && ultimaRecarga < 60) {
+        auto.camera = { desde: agoraIso, passo: 1, passo_em: agoraIso }; mudancas.push('câmera sumiu (já recarreguei há menos de 1 h: só observo)');
+      } else if (!c.desde) {
+        auto.cam_recarga_em = agoraIso;
         auto.camera = { desde: agoraIso, passo: 1, passo_em: agoraIso }; recarregar = true; mudancas.push('câmera sumiu: recarreguei a tela');
       } else if (c.passo === 1 && minDesde(c.passo_em) >= 10) {
         auto.camera = { ...c, passo: 2, passo_em: agoraIso, avisado_em: agoraIso };
