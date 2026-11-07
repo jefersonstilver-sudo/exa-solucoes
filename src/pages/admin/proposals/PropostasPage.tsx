@@ -1,1495 +1,200 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// EXA (07/11/2026) — Propostas refeita a pedido do Jeferson: sem painel de vendedores, sem Eduardo/Bruno;
+// as propostas abertas são leads com funil próprio (Rascunho → Enviada → Vista → Aceita → Convertida);
+// as convertidas ficam cinza no fim; marcar várias e excluir com motivo (log). Toda proposta nova vira contato (NovaPropostaPage).
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2, DollarSign, TrendingUp, Phone, Bell, BellOff, RefreshCcw, Calendar, FileDown, Pencil, Settings, Files, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { CustomCheckbox } from '@/components/ui/custom-checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { useAdminBasePath } from '@/hooks/useAdminBasePath';
-import { useAuth } from '@/hooks/useAuth';
-import { useBulkSelection } from '@/hooks/useBulkSelection';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { Plus, FileText, Copy, ExternalLink, MessageCircle, Eye, Trash2, X, CheckSquare, Square, RefreshCw, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow, isWithinInterval } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
-import { ContractPDFExporter } from '@/components/admin/contracts/ContractPDFExporter';
-import { ProposalMobileList } from '@/components/admin/proposals/ProposalMobileList';
+import { supabase } from '@/integrations/supabase/client';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { Pagina, Cabecalho, Busca, Pilulas, Kpi, Chip, TOM, Avatar, Carregando, Vazio, BOTAO, BOTAO2, vidro } from '@/components/admin/ui/exa';
+import { ExcluirComMotivo } from '@/components/admin/ui/ExcluirComMotivo';
 import { ProposalPreviewModal } from '@/components/admin/proposals/ProposalPreviewModal';
-import { ProposalsPeriodSelector, getDefaultPeriod, type PeriodRange } from '@/components/admin/proposals/ProposalsPeriodSelector';
-import { SellerStatsPanel } from '@/components/admin/proposals/SellerStatsPanel';
-import { ProposalReminderIndicator } from '@/components/admin/proposals/ProposalReminderIndicator';
-import { ProposalTimeIndicator } from '@/components/admin/proposals/ProposalTimeIndicator';
-import SegmentManagerModal from '@/components/admin/proposals/SegmentManagerModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { formatCurrency } from '@/utils/formatters';
 
-interface Proposal {
-  id: string;
-  number: string;
-  client_name: string;
-  client_cnpj?: string | null;
-  client_phone: string | null;
-  client_email: string | null;
-  client_company_name?: string | null;
-  total_panels: number;
-  total_impressions_month: number;
-  fidel_monthly_value: number;
-  cash_total_value: number;
-  cash_value_manual?: boolean | null;
-  discount_percent: number;
-  duration_months: number;
-  status: string;
-  created_at: string;
-  sent_at: string | null;
-  expires_at: string | null;
-  selected_buildings: any[];
-  view_count: number | null;
-  total_time_spent_seconds: number | null;
-  first_viewed_at: string | null;
-  last_viewed_at: string | null;
-  is_viewing?: boolean;
-  last_heartbeat_at?: string | null;
-  converted_order_id?: string | null;
-  created_by?: string | null;
-  seller_name?: string | null;
-  seller_phone?: string | null;
-  seller_email?: string | null;
-  payment_type?: string | null;
-  custom_installments?: Array<{
-    installment: number;
-    due_date: string;
-    amount: number;
-  }> | null;
-  metadata?: { type?: string };
-  tipo_produto?: 'horizontal' | 'vertical_premium' | null;
-  is_custom_days?: boolean | null;
-  custom_days?: number | null;
-  // Campos de Permuta
-  modalidade_proposta?: 'monetaria' | 'permuta' | null;
-  valor_total_permuta?: number | null;
-  // Título customizado
-  titulo?: string | null;
-  // Logo do cliente
-  client_logo_url?: string | null;
+type Etapa = 'rascunho' | 'enviada' | 'vista' | 'aceita' | 'convertida' | 'perdida';
+const ETAPA_DE = (s: string): Etapa =>
+  ['convertida', 'paga'].includes(s) ? 'convertida'
+    : s === 'aceita' ? 'aceita'
+    : ['visualizada', 'visualizando'].includes(s) ? 'vista'
+    : ['enviada', 'atualizada'].includes(s) ? 'enviada'
+    : ['expirada', 'recusada', 'cancelada'].includes(s) ? 'perdida'
+    : 'rascunho';
+const ETAPAS: { v: Etapa | 'abertas' | 'todas'; l: string; tom: keyof typeof TOM }[] = [
+  { v: 'abertas', l: 'Abertas', tom: 'cinza' },
+  { v: 'rascunho', l: 'Rascunho', tom: 'cinza' },
+  { v: 'enviada', l: 'Enviada', tom: 'azul' },
+  { v: 'vista', l: 'Vista pelo cliente', tom: 'ambar' },
+  { v: 'aceita', l: 'Aceita', tom: 'verde' },
+  { v: 'convertida', l: 'Convertida', tom: 'verde' },
+  { v: 'perdida', l: 'Perdida', tom: 'vermelho' },
+  { v: 'todas', l: 'Todas', tom: 'cinza' },
+];
+const TOM_ETAPA: Record<Etapa, keyof typeof TOM> = { rascunho: 'cinza', enviada: 'azul', vista: 'ambar', aceita: 'verde', convertida: 'verde', perdida: 'vermelho' };
+const ROTULO_ETAPA: Record<Etapa, string> = { rascunho: 'rascunho', enviada: 'enviada', vista: 'vista', aceita: 'aceita', convertida: 'convertida', perdida: 'perdida' };
+
+interface Proposta {
+  id: string; number: string; titulo: string | null; client_name: string; client_company_name: string | null; client_phone: string | null; client_email: string | null;
+  client_logo_url: string | null; total_panels: number; fidel_monthly_value: number; cash_total_value: number; duration_months: number; status: string;
+  created_at: string; updated_at: string | null; sent_at: string | null; expires_at: string | null; view_count: number | null; last_viewed_at: string | null;
+  total_time_spent_seconds: number | null; converted_order_id: string | null; seller_name: string | null; seller_phone: string | null; seller_email: string | null;
+  modalidade_proposta: string | null; valor_total_permuta: number | null; tipo_produto: string | null; selected_buildings: any[]; discount_percent: number;
+  total_impressions_month: number; payment_type: string | null; custom_installments: any; is_custom_days: boolean | null; custom_days: number | null; metadata: any;
 }
 
-interface LiveViewNotification {
-  id: string;
-  proposalId: string;
-  clientName: string;
-  timestamp: Date;
-}
-
-const formatCurrency = (value: number) => {
-  return value?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00';
+const fone = (t?: string | null) => {
+  const d = String(t || '').replace(/\D/g, '');
+  if (d.length === 13) return `(${d.slice(2, 4)}) ${d.slice(4, 9)}-${d.slice(9)}`;
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  return t || '';
 };
-
-const formatCurrencyCompact = (value: number) => {
-  if (value >= 1000) {
-    return `R$ ${(value / 1000).toFixed(1)}k`;
-  }
-  return formatCurrency(value);
+const ha = (iso?: string | null) => {
+  if (!iso) return '';
+  const d = Math.round((Date.now() - new Date(iso).getTime()) / 86400e3);
+  return d <= 0 ? 'hoje' : d === 1 ? 'ontem' : d < 30 ? `há ${d} dias` : new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 };
+const valorDe = (p: Proposta) => (p.modalidade_proposta === 'permuta' ? p.valor_total_permuta || 0 : p.fidel_monthly_value || 0);
+const LINK = (id: string) => `https://www.examidia.com.br/propostacomercial/${id}`;
 
-/** Avatar compacto com logo da empresa ou iniciais */
-const ProposalLogoAvatar: React.FC<{ logoUrl?: string | null; name?: string | null }> = ({ logoUrl, name }) => {
-  const [signedUrl, setSignedUrl] = React.useState<string | null>(null);
-  const [imgError, setImgError] = React.useState(false);
+const usePropostas = () => useQuery({
+  queryKey: ['propostas-lista'],
+  staleTime: 30_000,
+  refetchInterval: 60_000,
+  queryFn: async (): Promise<Proposta[]> => {
+    const { data, error } = await supabase.from('proposals').select('*').neq('status', 'modelo').order('updated_at', { ascending: false, nullsFirst: false }).limit(1000);
+    if (error) throw error;
+    return (data || []) as Proposta[];
+  },
+});
 
-  React.useEffect(() => {
-    if (!logoUrl) return;
-    const resolve = async () => {
-      const pattern = /\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/;
-      const match = logoUrl.match(pattern);
-      if (match) {
-        const { data } = await supabase.storage
-          .from(match[1])
-          .createSignedUrl(match[2].split('?')[0], 60 * 60 * 2);
-        if (data?.signedUrl) { setSignedUrl(data.signedUrl); return; }
-      }
-      setSignedUrl(logoUrl);
-    };
-    resolve();
-  }, [logoUrl]);
-
-  const initials = (name || '?')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(w => w[0])
-    .join('')
-    .toUpperCase();
-
-  return (
-    <div className="w-14 h-14 flex-shrink-0 rounded-lg bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] flex items-center justify-center overflow-hidden">
-      {logoUrl && signedUrl && !imgError ? (
-        <img
-          src={signedUrl}
-          alt=""
-          className="w-full h-full object-contain p-1 filter brightness-0 invert opacity-80"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <span className="text-[10px] font-bold text-white/80">{initials}</span>
-      )}
-    </div>
-  );
-};
-
-const PropostasPage = () => {
+const PropostasPage: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { isMobile } = useResponsiveLayout();
   const { buildPath } = useAdminBasePath();
-  const { isSuperAdmin, user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState('todas');
-  const [showExpiredCanceled, setShowExpiredCanceled] = useState(false);
-  const [liveViewNotifications, setLiveViewNotifications] = useState<LiveViewNotification[]>([]);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange>(getDefaultPeriod());
-  const [showSellerStats, setShowSellerStats] = useState(false);
-  const [previewProposal, setPreviewProposal] = useState<Proposal | null>(null);
-  const [showPhoneDialog, setShowPhoneDialog] = useState(false);
-  const [customPhone, setCustomPhone] = useState('');
-  const [proposalForResend, setProposalForResend] = useState<Proposal | null>(null);
-  const [showRevalidateDialog, setShowRevalidateDialog] = useState(false);
-  const [proposalToRevalidate, setProposalToRevalidate] = useState<Proposal | null>(null);
-  const [newExpirationDays, setNewExpirationDays] = useState<number>(7);
-  const [isRevalidating, setIsRevalidating] = useState(false);
-  const [segmentModalOpen, setSegmentModalOpen] = useState(false);
+  const { data, isLoading, refetch, isFetching } = usePropostas();
+  const [etapa, setEtapa] = useState<string>(() => { try { return localStorage.getItem('propostas_etapa') || 'abertas'; } catch { return 'abertas'; } });
+  const [busca, setBusca] = useState('');
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [preview, setPreview] = useState<Proposta | null>(null);
+  useEffect(() => { try { localStorage.setItem('propostas_etapa', etapa); } catch { /* sem armazenamento */ } setSel(new Set()); }, [etapa]);
 
-  const { data: proposals = [], isLoading, refetch } = useQuery({
-    queryKey: ['proposals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('proposals')
-        .select('*')
-        .order('updated_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      const proposalsWithSellers = await Promise.all((data || []).map(async (proposal: any) => {
-        if (proposal.created_by) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('nome, telefone, email')
-            .eq('id', proposal.created_by)
-            .single();
-          return { 
-            ...proposal, 
-            seller_name: userData?.nome || null,
-            seller_phone: userData?.telefone || null,
-            seller_email: userData?.email || null
-          };
-        }
-        return proposal;
-      }));
-      
-      return proposalsWithSellers as Proposal[];
-    }
-  });
+  const todas = useMemo(() => (data || []).map((p) => ({ p, e: ETAPA_DE(p.status) })), [data]);
+  const n = (v: string) => v === 'todas' ? todas.length : v === 'abertas' ? todas.filter((x) => ['enviada', 'vista', 'aceita'].includes(x.e)).length : todas.filter((x) => x.e === v).length;
+  const q = busca.trim().toLowerCase();
+  const visiveis = useMemo(() => {
+    const ordem: Record<Etapa, number> = { aceita: 0, vista: 1, enviada: 2, rascunho: 3, perdida: 4, convertida: 5 };
+    return todas
+      .filter((x) => etapa === 'todas' ? true : etapa === 'abertas' ? ['enviada', 'vista', 'aceita'].includes(x.e) : x.e === etapa)
+      .filter((x) => !q || [x.p.client_name, x.p.client_company_name, x.p.number, x.p.titulo, x.p.client_phone, x.p.client_email].some((s) => String(s || '').toLowerCase().includes(q)))
+      .sort((a, b) => (ordem[a.e] - ordem[b.e]) || (new Date(b.p.updated_at || b.p.created_at).getTime() - new Date(a.p.updated_at || a.p.created_at).getTime()));
+  }, [todas, etapa, q]);
 
-  // Query para buscar valores recebidos e a receber DIRETAMENTE das parcelas (sem filtrar por proposal_id)
-  const { data: financialData } = useQuery({
-    queryKey: ['proposals-financial-global'],
-    queryFn: async () => {
-      // Buscar TODAS as parcelas diretamente
-      const { data: parcelas, error } = await supabase
-        .from('parcelas')
-        .select('pedido_id, valor_final, status, data_pagamento');
-      
-      if (error) throw error;
+  const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
+  const abertas = todas.filter((x) => ['enviada', 'vista', 'aceita'].includes(x.e));
+  const abertasValor = abertas.reduce((a, x) => a + valorDe(x.p), 0);
+  const convMes = todas.filter((x) => x.e === 'convertida' && new Date(x.p.updated_at || x.p.created_at) >= inicioMes).length;
+  const enviadasMes = todas.filter((x) => x.e !== 'rascunho' && new Date(x.p.created_at) >= inicioMes).length;
+  const vistasSemResposta = todas.filter((x) => x.e === 'vista' && x.p.last_viewed_at && Date.now() - new Date(x.p.last_viewed_at).getTime() > 3 * 86400e3).length;
 
-      let valorRecebido = 0;
-      let valorAReceber = 0;
-
-      parcelas?.forEach(p => {
-        const isPaid = p.status === 'pago' || p.status === 'paga';
-        const isPending = p.status === 'pendente' || p.status === 'aguardando_pagamento';
-        
-        if (isPaid) {
-          valorRecebido += p.valor_final || 0;
-        } else if (isPending) {
-          valorAReceber += p.valor_final || 0;
-        }
-      });
-
-      return { valorRecebido, valorAReceber };
-    }
-  });
-
-  // IDs fixos dos 3 vendedores
-  const SELLER_IDS = {
-    brunoDantas: '6390fcd3-3eaa-4f57-9a7b-b3466a306ee8',
-    jefersonStilver: '7cca6d1b-ca4f-4190-a7fe-5148e7dc2308',
-    eduardoComercial: 'c9ff75c5-a051-4b6d-a278-cdd5a2306820'
-  };
-
-  // Query para stats dos 3 vendedores fixos
-  const { data: sellersData } = useQuery({
-    // 02/11/2026: os cartões dos vendedores seguem o mesmo período do topo (antes somavam todas as propostas
-    // de sempre e mostravam 47/86 enviadas num mês com zero propostas)
-    queryKey: ['sellers-stats-fixed', selectedPeriod.startDate.toISOString(), selectedPeriod.endDate.toISOString()],
-    queryFn: async () => {
-      const sellerIds = Object.values(SELLER_IDS);
-
-      // Buscar nome dos usuários
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, nome, email')
-        .in('id', sellerIds);
-
-      // Buscar propostas por vendedor
-      const { data: proposalsData } = await supabase
-        .from('proposals')
-        .select('id, created_by, status, cash_total_value, created_at')
-        .in('created_by', sellerIds)
-        .gte('created_at', selectedPeriod.startDate.toISOString())
-        .lte('created_at', selectedPeriod.endDate.toISOString());
-
-      // Calcular stats por vendedor
-      const calculateStats = (userId: string) => {
-        const user = users?.find(u => u.id === userId);
-        const sellerProposals = proposalsData?.filter(p => p.created_by === userId) || [];
-        
-        const enviadas = sellerProposals.filter(p => 
-          ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status)
-        ).length;
-        const pendentes = sellerProposals.filter(p => 
-          ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status)
-        ).length;
-        const aceitas = sellerProposals.filter(p => 
-          ['aceita', 'paga', 'convertida'].includes(p.status)
-        ).length;
-        const valorTotal = sellerProposals
-          .filter(p => ['aceita', 'paga', 'convertida'].includes(p.status))
-          .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
-
-        return {
-          id: userId,
-          nome: user?.nome || user?.email?.split('@')[0] || 'Vendedor',
-          enviadas,
-          pendentes,
-          aceitas,
-          valorTotal
-        };
-      };
-
-      return {
-        brunoDantas: calculateStats(SELLER_IDS.brunoDantas),
-        jefersonStilver: calculateStats(SELLER_IDS.jefersonStilver),
-        eduardoComercial: calculateStats(SELLER_IDS.eduardoComercial)
-      };
-    }
-  });
-
-  useEffect(() => {
-    const viewsChannel = supabase
-      .channel('proposal-views-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'proposal_views' },
-        async (payload) => {
-          const proposalId = payload.new.proposal_id;
-          const proposal = proposals.find(p => p.id === proposalId);
-          const clientName = proposal?.client_name || 'Cliente';
-          
-          const notification: LiveViewNotification = {
-            id: crypto.randomUUID(),
-            proposalId,
-            clientName,
-            timestamp: new Date()
-          };
-          
-          setLiveViewNotifications(prev => [notification, ...prev.slice(0, 4)]);
-          setTimeout(() => {
-            setLiveViewNotifications(prev => prev.filter(n => n.id !== notification.id));
-          }, 5000);
-          
-          queryClient.invalidateQueries({ queryKey: ['proposals'] });
-        }
-      )
-      .subscribe();
-
-    const statusChannel = supabase
-      .channel('proposal-status-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'proposals' },
-        async (payload) => {
-          const oldStatus = (payload.old as any)?.status;
-          const newStatus = (payload.new as any)?.status;
-          
-          if (oldStatus !== newStatus) {
-            queryClient.invalidateQueries({ queryKey: ['proposals'] });
-            
-            if (newStatus === 'aceita') {
-              toast.success('🎉 Proposta aceita!', {
-                description: `${(payload.new as any)?.client_name} aceitou a proposta`
-              });
-            } else if (newStatus === 'paga' || newStatus === 'convertida') {
-              toast.success('💰 Pagamento confirmado!', {
-                description: `Proposta de ${(payload.new as any)?.client_name} foi paga`
-              });
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(viewsChannel);
-      supabase.removeChannel(statusChannel);
-    };
-  }, [proposals, queryClient]);
-
-  const filteredProposals = proposals.filter(p => {
-    const matchesSearch = !searchTerm || 
-      p.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.number?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Filtrar expiradas/canceladas por padrão (a menos que toggle ativo)
-    const isExpiredOrCanceled = ['expirada', 'cancelada'].includes(p.status);
-    if (isExpiredOrCanceled && !showExpiredCanceled && activeFilter !== 'expiradas') {
-      return false;
-    }
-
-    let matchesFilter = true;
-    if (activeFilter === 'pendentes') {
-      matchesFilter = ['pendente', 'enviada', 'visualizada'].includes(p.status);
-    } else if (activeFilter === 'aceitas') {
-      matchesFilter = ['aceita', 'paga', 'convertida'].includes(p.status);
-    } else if (activeFilter === 'recusadas') {
-      matchesFilter = p.status === 'recusada';
-    } else if (activeFilter === 'pagas') {
-      matchesFilter = ['paga', 'convertida'].includes(p.status);
-    } else if (activeFilter === 'expiradas') {
-      matchesFilter = isExpiredOrCanceled;
-    }
-
-    return matchesSearch && matchesFilter;
-  });
-
-  const proposalIds = filteredProposals.map(p => p.id);
-  const { 
-    selectedIds, 
-    isAllSelected, 
-    selectedCount, 
-    toggleSelectAll, 
-    toggleSelectItem, 
-    clearSelection, 
-    isSelected 
-  } = useBulkSelection(proposalIds);
-
-  const handleBulkDelete = async () => {
-    if (selectedCount === 0) return;
-    
-    setIsDeleting(true);
-    try {
-      const idsToDelete = Array.from(selectedIds);
-      
-      await supabase.from('pedidos').update({ proposal_id: null }).in('proposal_id', idsToDelete);
-      await supabase.from('proposal_views').delete().in('proposal_id', idsToDelete);
-      await supabase.from('proposal_logs').delete().in('proposal_id', idsToDelete);
-      
-      const { error } = await supabase.from('proposals').delete().in('id', idsToDelete);
-      if (error) throw error;
-      
-      toast.success(`${selectedCount} proposta${selectedCount > 1 ? 's' : ''} excluída${selectedCount > 1 ? 's' : ''}!`);
-      clearSelection();
-      refetch();
-    } catch (error) {
-      console.error('Erro ao excluir propostas:', error);
-      toast.error('Erro ao excluir propostas');
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
-    }
-  };
-
-  const pagasCount = proposals.filter(p => ['paga', 'convertida'].includes(p.status)).length;
-  
-  // Filter proposals by selected period
-  const proposalsInPeriod = useMemo(() => {
-    return proposals.filter(p => {
-      const createdAt = new Date(p.created_at);
-      return isWithinInterval(createdAt, { start: selectedPeriod.startDate, end: selectedPeriod.endDate });
-    });
-  }, [proposals, selectedPeriod]);
-
-  // Calculate seller stats with financial data
-  const sellerStats = useMemo(() => {
-    const sellersMap = new Map<string, {
-      id: string;
-      name: string;
-      proposalsSent: number;
-      proposalsAccepted: number;
-      valueReceived: number;
-      valueToReceive: number;
-    }>();
-
-    proposalsInPeriod.forEach(p => {
-      if (!p.created_by || !p.seller_name) return;
-      
-      const existing = sellersMap.get(p.created_by) || {
-        id: p.created_by,
-        name: p.seller_name,
-        proposalsSent: 0,
-        proposalsAccepted: 0,
-        valueReceived: 0,
-        valueToReceive: 0
-      };
-
-      existing.proposalsSent++;
-      if (['aceita', 'paga', 'convertida'].includes(p.status)) {
-        existing.proposalsAccepted++;
-        existing.valueReceived += p.cash_total_value || 0;
-      } else if (['pendente', 'enviada', 'visualizada', 'atualizada'].includes(p.status)) {
-        existing.valueToReceive += p.cash_total_value || 0;
-      }
-
-      sellersMap.set(p.created_by, existing);
-    });
-
-    return Array.from(sellersMap.values()).sort((a, b) => b.proposalsSent - a.proposalsSent);
-  }, [proposalsInPeriod]);
-
-  // Calcular valores das propostas diretamente
-  const stats = useMemo(() => {
-    // Helper para verificar se proposta está expirada (mesmo que status não reflita)
-    const isExpiredProposal = (p: Proposal): boolean => {
-      if (!p.expires_at) return false;
-      return new Date(p.expires_at) < new Date();
-    };
-
-    // Propostas aceitas/pagas/convertidas = valor recebido
-    const valorRecebido = proposals
-      .filter(p => ['paga', 'convertida'].includes(p.status))
-      .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
-    
-    // A Receber = SOMENTE propostas ACEITAS pelo cliente (não pagas ainda)
-    const valorAReceber = proposals
-      .filter(p => p.status === 'aceita')
-      .reduce((sum, p) => sum + (p.cash_total_value || 0), 0);
-
-    // Propostas pendentes (não expiradas)
-    const pendentes = proposals.filter(p => 
-      ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status) &&
-      !isExpiredProposal(p)
-    ).length;
-
-    // Propostas enviadas (não expiradas)
-    const enviadas = proposals.filter(p => 
-      ['enviada', 'atualizada', 'visualizada', 'visualizando'].includes(p.status) &&
-      !isExpiredProposal(p)
-    ).length;
-
-    // Valor potencial (não expiradas)
-    const valorPotencial = proposals
-      .filter(p => 
-        ['pendente', 'enviada', 'visualizada', 'atualizada', 'visualizando'].includes(p.status) &&
-        !isExpiredProposal(p)
-      )
-      .reduce((sum, p) => sum + (p.fidel_monthly_value * p.duration_months), 0);
-
-    // Vencidas = status expirada/cancelada OU data expirada
-    const vencidas = proposals.filter(p => 
-      ['expirada', 'cancelada'].includes(p.status) || isExpiredProposal(p)
-    ).length;
-
-    return {
-      proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
-      pendentes,
-      enviadas,
-      valorRecebido,
-      valorAReceber,
-      valorPotencial,
-      aceitas: proposals.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length,
-      vencidas
-    };
-  }, [proposals]);
-
-  const expiredCount = stats.vencidas;
-  
-  const filters = [
-    { id: 'todas', label: 'Todas', count: proposals.filter(p => !['expirada', 'cancelada'].includes(p.status)).length },
-    { id: 'pendentes', label: '⏳ Pendentes', count: stats.pendentes },
-    { id: 'aceitas', label: '✅ Aceitas', count: proposalsInPeriod.filter(p => ['aceita', 'paga', 'convertida'].includes(p.status)).length },
-    { id: 'pagas', label: '💰 Pagas', count: pagasCount },
-    { id: 'recusadas', label: '❌ Recusadas', count: proposals.filter(p => p.status === 'recusada').length },
-    { id: 'expiradas', label: '⌛ Expiradas', count: expiredCount },
-  ];
-
-  // Verificar se cliente está visualizando AGORA (heartbeat < 45 segundos)
-  const isActivelyViewing = (proposal: Proposal): boolean => {
-    if (!proposal.is_viewing || !proposal.last_heartbeat_at) return false;
-    const lastHeartbeat = new Date(proposal.last_heartbeat_at);
-    const now = new Date();
-    const secondsSinceHeartbeat = (now.getTime() - lastHeartbeat.getTime()) / 1000;
-    return secondsSinceHeartbeat < 45;
-  };
-
-  const getStatusBadge = (status: string, proposal?: Proposal) => {
-    // Status finais NUNCA mostram "Visualizando agora!!"
-    const finalStatuses = ['recusada', 'paga', 'convertida', 'expirada', 'aceita'];
-    
-    // Verificar heartbeat real antes de mostrar "Visualizando agora!!"
-    if (proposal && isActivelyViewing(proposal) && !finalStatuses.includes(status)) {
-      return <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-[10px]">👁️ Visualizando agora!!</Badge>;
-    }
-    
-    const statusConfig: Record<string, { label: string; className: string }> = {
-      pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700' },
-      enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
-      visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
-      atualizada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
-      aceita: { label: '✅ Aceita', className: 'bg-emerald-100 text-emerald-700' },
-      paga: { label: '💰 Paga', className: 'bg-green-100 text-green-700' },
-      convertida: { label: '🎉 Pedido', className: 'bg-green-600 text-white' },
-      recusada: { label: '❌ Recusada', className: 'bg-red-100 text-red-700' },
-      expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500' },
-    };
-    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
-    return <Badge className={`${config.className} text-[10px] px-1.5 py-0`}>{config.label}</Badge>;
-  };
-
-  // Formatar tempo de visualização
-  const formatTimeSpent = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}min${secs > 0 ? ` ${secs}s` : ''}`;
-  };
-
-  const handleCopyLink = (proposal: Proposal) => {
-    const link = `https://www.examidia.com.br/propostacomercial/${proposal.id}`;
-    navigator.clipboard.writeText(link);
-    toast.success('Link copiado!');
-  };
-
-  const handleResend = async (proposal: Proposal, via: 'whatsapp' | 'email') => {
-    try {
-      if (via === 'whatsapp' && proposal.client_phone) {
-        await supabase.functions.invoke('send-proposal-whatsapp', {
-          body: { proposalId: proposal.id }
-        });
-        toast.success('WhatsApp enviado!');
-      } else if (via === 'email' && proposal.client_email) {
-        await supabase.functions.invoke('send-proposal-email', {
-          body: { proposalId: proposal.id }
-        });
-        toast.success('E-mail enviado!');
-      } else {
-        toast.error(`${via === 'whatsapp' ? 'Telefone' : 'E-mail'} não cadastrado`);
-      }
-      refetch();
-    } catch (error) {
-      toast.error('Erro ao reenviar proposta');
-    }
-  };
-
-  const handleResendToOtherNumber = (proposal: Proposal) => {
-    setProposalForResend(proposal);
-    setCustomPhone('');
-    setShowPhoneDialog(true);
-  };
-
-  const handleConfirmResendToOtherNumber = async () => {
-    if (!proposalForResend || !customPhone.trim()) {
-      toast.error('Informe um número de telefone');
-      return;
-    }
-    
-    try {
-      await supabase.functions.invoke('send-proposal-whatsapp', {
-        body: { 
-          proposalId: proposalForResend.id,
-          customPhone: customPhone.trim()
-        }
-      });
-      toast.success('WhatsApp enviado para o número informado!');
-      setShowPhoneDialog(false);
-      setProposalForResend(null);
-      refetch();
-    } catch (error) {
-      toast.error('Erro ao enviar WhatsApp');
-    }
-  };
-
-  // Função para verificar se proposta está expirada
-  const isExpiredProposal = (proposal: Proposal): boolean => {
-    if (proposal.status === 'expirada') return true;
-    if (!proposal.expires_at) return false;
-    return new Date(proposal.expires_at) < new Date();
-  };
-
-  // Abrir modal de revalidação
-  const handleOpenRevalidate = (proposal: Proposal) => {
-    setProposalToRevalidate(proposal);
-    setNewExpirationDays(7);
-    setShowRevalidateDialog(true);
-  };
-
-  // Confirmar revalidação da proposta
-  const handleConfirmRevalidate = async () => {
-    if (!proposalToRevalidate) return;
-    
-    setIsRevalidating(true);
-    try {
-      const newExpiresAt = new Date();
-      newExpiresAt.setDate(newExpiresAt.getDate() + newExpirationDays);
-      
-      const { error } = await supabase
-        .from('proposals')
-        .update({ 
-          expires_at: newExpiresAt.toISOString(),
-          status: 'enviada', // Volta para enviada
-          sent_at: new Date().toISOString() // Atualiza data de envio
-        })
-        .eq('id', proposalToRevalidate.id);
-      
-      if (error) throw error;
-      
-      toast.success(`Proposta revalidada com sucesso! Novo prazo: ${newExpirationDays} dias`);
-      setShowRevalidateDialog(false);
-      setProposalToRevalidate(null);
-      refetch();
-    } catch (error) {
-      console.error('Erro ao revalidar proposta:', error);
-      toast.error('Erro ao revalidar proposta');
-    } finally {
-      setIsRevalidating(false);
-    }
-  };
-
-  // Gerar PDF do contrato (preview limpo sem salvar no banco)
-  const handleGenerateContractPDF = async (proposal: Proposal) => {
-    try {
-      toast.loading('Gerando contrato PDF...', { id: 'contract-pdf' });
-      
-      // 1. Chamar Edge Function para gerar HTML do contrato (preview only)
-      const { data, error } = await supabase.functions.invoke('create-contract-from-proposal', {
-        body: {
-          proposalId: proposal.id,
-          preview_only: true
-        }
-      });
-      
-      if (error) {
-        console.error('Erro na Edge Function:', error);
-        throw new Error('Falha ao gerar contrato');
-      }
-
-      if (!data?.success || !data?.contractHtml) {
-        console.error('Resposta inválida:', data);
-        throw new Error(data?.error || 'Falha ao gerar HTML do contrato');
-      }
-      
-      // 2. Criar elemento temporário para renderização
-      const tempContainer = document.createElement('div');
-      tempContainer.id = 'temp-contract-preview';
-      tempContainer.innerHTML = data.contractHtml;
-      tempContainer.style.cssText = 'position: absolute; left: -9999px; width: 794px; background: white;';
-      document.body.appendChild(tempContainer);
-      
-      // 3. Aguardar renderização
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // 4. Gerar PDF
-      await ContractPDFExporter.exportFromElement(
-        tempContainer, 
-        `Contrato_Proposta_${proposal.number}.pdf`
-      );
-      
-      // 5. Limpar
-      document.body.removeChild(tempContainer);
-      
-      toast.success('Contrato PDF gerado com sucesso!', { id: 'contract-pdf' });
-    } catch (error: any) {
-      console.error('Erro ao gerar PDF:', error);
-      toast.error(error.message || 'Erro ao gerar contrato PDF', { id: 'contract-pdf' });
-    }
-  };
-
-  // Duplicar proposta
-  const handleDuplicateProposal = async (proposal: Proposal) => {
-    try {
-      toast.loading('Duplicando proposta...', { id: 'duplicate' });
-      
-      // Gerar novo número
-      const year = new Date().getFullYear();
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const newNumber = `EXA-${year}-${randomNum}`;
-      
-      // Preparar dados para cópia (excluir campos que não devem ser copiados)
-      // Cast para any porque a interface Proposal não declara todos os campos do banco
-      const { 
-        id, 
-        number, 
-        status, 
-        created_at, 
-        sent_at, 
-        view_count, 
-        total_time_spent_seconds, 
-        first_viewed_at, 
-        last_viewed_at, 
-        is_viewing, 
-        last_heartbeat_at, 
-        converted_order_id, 
-        metadata,
-        expires_at,
-        seller_name,
-        seller_phone,
-        seller_email,
-        // CAMPOS CRÍTICOS - devem ser excluídos para evitar erro de duplicação
-        access_token,           // UNIQUE constraint - causa erro de duplicação
-        updated_at,             // Será gerado automaticamente
-        viewed_at,              // Dados de visualização da proposta original
-        responded_at,           // Resposta da proposta original
-        // CAMPOS DE ACEITE - devem ser limpos para nova proposta
-        contract_accepted_at,   // Aceite do contrato original
-        contract_accepted_ip,   // IP do aceite original
-        contract_accepted_user_agent, // User-agent do aceite original
-        contract_terms_version, // Versão do contrato original
-        needs_reacceptance,     // Flag de re-aceite original
-        last_modified_at,       // Data de modificação original
-        modified_by,            // Usuário que modificou original
-        ...dataToCopy 
-      } = proposal as any;
-      
-      // Criar nova proposta com campos de aceite explicitamente limpos
-      const { data: newProposal, error } = await supabase
-        .from('proposals')
-        .insert({
-          ...dataToCopy,
-          number: newNumber,
-          status: 'pendente',
-          metadata: {}, // Limpar metadata (contract_id, etc)
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // +7 dias
-          // Garantir que campos de aceite estão limpos (nova proposta precisa de novo aceite)
-          contract_accepted_at: null,
-          contract_accepted_ip: null,
-          contract_accepted_user_agent: null,
-          contract_terms_version: null,
-          needs_reacceptance: false,
-          // access_token será gerado automaticamente pelo banco (DEFAULT gen_random_uuid())
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // Log da duplicação
-      await supabase.from('proposal_logs').insert({
-        proposal_id: newProposal.id,
-        action: 'duplicada',
-        details: {
-          original_proposal_id: proposal.id,
-          original_number: proposal.number
-        }
-      });
-      
-      toast.success(`Proposta ${newNumber} criada!`, { id: 'duplicate' });
-      clearSelection();
-      refetch();
-      
-    } catch (error) {
-      console.error('Erro ao duplicar proposta:', error);
-      toast.error('Erro ao duplicar proposta', { id: 'duplicate' });
-    }
-  };
+  const alternar = (id: string) => setSel((s) => { const c = new Set(s); if (c.has(id)) c.delete(id); else c.add(id); return c; });
+  const todosSel = visiveis.length > 0 && visiveis.every((x) => sel.has(x.p.id));
+  const copiar = (p: Proposta) => { navigator.clipboard.writeText(LINK(p.id)); toast.success('Link da proposta copiado.'); };
+  const sofia = (p: Proposta) => navigate(buildPath(`crm-evolution/conversas/sofia?telefone=${String(p.client_phone || '').replace(/\D/g, '')}&nome=${encodeURIComponent(p.client_name || '')}`));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 relative">
-      {/* Live View Notifications */}
-      <AnimatePresence>
-        {liveViewNotifications.map((notification, index) => (
-          <motion.div
-            key={notification.id}
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            style={{ top: `${70 + index * 60}px` }}
-            className="fixed right-3 z-50 max-w-[280px]"
-          >
-            <div className="bg-white/95 backdrop-blur-xl border border-white/50 rounded-xl shadow-lg p-2.5 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
-                <Eye className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate">{notification.clientName}</p>
-                <p className="text-[10px] text-purple-600">Visualizando agora 👀</p>
-              </div>
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            </div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-
-      {/* Header */}
-      {isMobile ? (
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-          <div className="flex items-center justify-between px-4 py-3 safe-area-top">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#9C1E1E]/10 rounded-xl">
-                <FileText className="h-5 w-5 text-[#9C1E1E]" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Propostas</h1>
-                <p className="text-[11px] text-muted-foreground">Comerciais</p>
-              </div>
-            </div>
-            <Button 
-              size="sm"
-              onClick={() => navigate(buildPath('propostas/nova'))}
-              className="bg-[#9C1E1E] hover:bg-[#7D1818] h-9 px-3"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white/80 backdrop-blur-sm border-b border-white/50 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Propostas Comerciais</h1>
-              <p className="text-sm text-muted-foreground">Crie e gerencie propostas</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => setSegmentModalOpen(true)}
-                className="border-border"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Segmentos
-              </Button>
-              <Button 
-                onClick={() => navigate(buildPath('propostas/nova'))}
-                className="bg-[#9C1E1E] hover:bg-[#7D1818]"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Proposta
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="p-3 md:p-6 space-y-3">
-        {/* Period Selector + Stats Header */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground">Dashboard</span>
-          <ProposalsPeriodSelector value={selectedPeriod} onChange={setSelectedPeriod} />
-        </div>
-
-        {/* Stats Grid - Linha 1: Recebido + A Receber + Pendentes/Aceitas */}
-        <div className="grid grid-cols-3 gap-2">
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="text-[10px] text-muted-foreground">Recebido</span>
-            </div>
-            <div className="text-sm font-bold text-green-600">{formatCurrencyCompact(stats.valorRecebido)}</div>
-          </Card>
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-amber-600" />
-              <span className="text-[10px] text-muted-foreground">A Receber</span>
-            </div>
-            <div className="text-sm font-bold text-amber-600">{formatCurrencyCompact(stats.valorAReceber)}</div>
-          </Card>
-          {/* Card combinado Pendentes + Aceitas + Vencidas */}
-          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-            <div className="flex items-center justify-between">
-              <div className="text-center flex-1">
-                <div className="flex items-center justify-center gap-1">
-                  <Clock className="h-3 w-3 text-purple-600" />
-                  <span className="text-[9px] text-muted-foreground">Pend</span>
-                </div>
-                <div className="text-sm font-bold text-purple-600">{stats.pendentes}</div>
-              </div>
-              <div className="w-px h-8 bg-gray-200" />
-              <div className="text-center flex-1">
-                <div className="flex items-center justify-center gap-1">
-                  <Check className="h-3 w-3 text-green-600" />
-                  <span className="text-[9px] text-muted-foreground">Aceitas</span>
-                </div>
-                <div className="text-sm font-bold text-green-600">{stats.aceitas}</div>
-              </div>
-              <div className="w-px h-8 bg-gray-200" />
-              <div className="text-center flex-1">
-                <div className="flex items-center justify-center gap-1">
-                  <X className="h-3 w-3 text-red-500" />
-                  <span className="text-[9px] text-muted-foreground">Venc</span>
-                </div>
-                <div className="text-sm font-bold text-red-500">{stats.vencidas}</div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Stats Grid - Linha 2: Cards de Vendedores */}
-        <div className="grid grid-cols-3 gap-2">
-          {/* Bruno Dantas */}
-          <Card className="p-2 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">B</span>
-              </div>
-              <span className="text-[10px] font-medium text-purple-800 truncate">Bruno</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
-              <div>
-                <div className="text-muted-foreground">Env</div>
-                <div className="font-bold text-blue-600">{sellersData?.brunoDantas?.enviadas || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Pend</div>
-                <div className="font-bold text-purple-600">{sellersData?.brunoDantas?.pendentes || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Ace</div>
-                <div className="font-bold text-green-600">{sellersData?.brunoDantas?.aceitas || 0}</div>
-              </div>
-            </div>
-            <div className="text-[10px] font-semibold text-center mt-1 text-purple-700">
-              {formatCurrencyCompact(sellersData?.brunoDantas?.valorTotal || 0)}
-            </div>
-          </Card>
-
-          {/* Jeferson Stilver */}
-          <Card className="p-2 bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">J</span>
-              </div>
-              <span className="text-[10px] font-medium text-blue-800 truncate">Jeferson</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
-              <div>
-                <div className="text-muted-foreground">Env</div>
-                <div className="font-bold text-blue-600">{sellersData?.jefersonStilver?.enviadas || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Pend</div>
-                <div className="font-bold text-purple-600">{sellersData?.jefersonStilver?.pendentes || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Ace</div>
-                <div className="font-bold text-green-600">{sellersData?.jefersonStilver?.aceitas || 0}</div>
-              </div>
-            </div>
-            <div className="text-[10px] font-semibold text-center mt-1 text-blue-700">
-              {formatCurrencyCompact(sellersData?.jefersonStilver?.valorTotal || 0)}
-            </div>
-          </Card>
-
-          {/* Eduardo Comercial */}
-          <Card className="p-2 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                <span className="text-[10px] text-white font-bold">E</span>
-              </div>
-              <span className="text-[10px] font-medium text-emerald-800 truncate">Eduardo</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 text-center text-[9px]">
-              <div>
-                <div className="text-muted-foreground">Env</div>
-                <div className="font-bold text-blue-600">{sellersData?.eduardoComercial?.enviadas || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Pend</div>
-                <div className="font-bold text-purple-600">{sellersData?.eduardoComercial?.pendentes || 0}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Ace</div>
-                <div className="font-bold text-green-600">{sellersData?.eduardoComercial?.aceitas || 0}</div>
-              </div>
-            </div>
-            <div className="text-[10px] font-semibold text-center mt-1 text-emerald-700">
-              {formatCurrencyCompact(sellersData?.eduardoComercial?.valorTotal || 0)}
-            </div>
-          </Card>
-        </div>
-
-        {/* Seller Stats Toggle */}
-        <SellerStatsPanel
-          sellers={sellerStats}
-          isLoading={isLoading}
-          isOpen={showSellerStats}
-          onToggle={() => setShowSellerStats(!showSellerStats)}
-          period={selectedPeriod}
-        />
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar proposta..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white/80 h-10"
-          />
-        </div>
-
-        {/* Filter Pills */}
-        <div className="overflow-x-auto scrollbar-hide -mx-3 px-3">
-          <div className="inline-flex gap-1.5 min-w-max pb-2">
-            {filters.map(filter => (
-              <button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
-                  activeFilter === filter.id
-                    ? 'bg-[#9C1E1E] text-white'
-                    : 'bg-white/80 text-gray-600 border border-gray-200'
-                }`}
-              >
-                {filter.label}
-                <span className={`text-[10px] ${activeFilter === filter.id ? 'opacity-80' : 'text-gray-400'}`}>
-                  {filter.count}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Mobile: Use new component with long-press selection */}
-        {isMobile ? (
-          <ProposalMobileList
-            proposals={filteredProposals}
-            loading={isLoading}
-            onViewDetails={(id) => navigate(buildPath(`propostas/${id}`))}
-            onBulkDelete={isSuperAdmin ? async (ids) => {
-              setIsDeleting(true);
-              try {
-                await supabase.from('pedidos').update({ proposal_id: null }).in('proposal_id', ids);
-                await supabase.from('proposal_views').delete().in('proposal_id', ids);
-                await supabase.from('proposal_logs').delete().in('proposal_id', ids);
-                const { error } = await supabase.from('proposals').delete().in('id', ids);
-                if (error) throw error;
-                toast.success(`${ids.length} proposta${ids.length > 1 ? 's' : ''} excluída${ids.length > 1 ? 's' : ''}!`);
-                refetch();
-              } catch (error) {
-                console.error('Erro ao excluir propostas:', error);
-                toast.error('Erro ao excluir propostas');
-              } finally {
-                setIsDeleting(false);
-              }
-            } : undefined}
-            isSuperAdmin={isSuperAdmin}
-          />
-        ) : (
-          /* Desktop: Keep existing list */
+    <Pagina>
+      <Cabecalho
+        titulo="Propostas"
+        sub="Cada proposta aberta é um lead no funil. As convertidas ficam cinza no fim. Toda proposta nova já entra em Contatos."
+        acoes={(
           <>
-            {/* Bulk Actions - Somente Super Admin */}
-            {selectedCount > 0 && isSuperAdmin && (
-              <Card className="p-2 bg-[#9C1E1E]/10 border-[#9C1E1E]/20 flex items-center justify-between">
-                <span className="text-xs font-medium text-[#9C1E1E]">{selectedCount} selecionada(s)</span>
-                <div className="flex gap-2">
-                  {selectedCount === 1 && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        const proposalId = Array.from(selectedIds)[0];
-                        const proposal = filteredProposals.find(p => p.id === proposalId);
-                        if (proposal) handleDuplicateProposal(proposal);
-                      }}
-                      className="h-7 text-xs"
-                    >
-                      <Files className="h-3 w-3 mr-1" />
-                      Duplicar
-                    </Button>
-                  )}
-                  <Button size="sm" variant="ghost" onClick={clearSelection} className="h-7 text-xs">
-                    Limpar
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="h-7 text-xs"
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Excluir
-                  </Button>
-                </div>
-              </Card>
-            )}
-
-            {/* Proposals List */}
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-5 h-5 border-2 border-[#9C1E1E] border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : filteredProposals.length === 0 ? (
-              <Card className="p-8 text-center bg-white/80">
-                <FileText className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-                <h3 className="text-sm font-semibold mb-1">Nenhuma proposta</h3>
-                <p className="text-xs text-muted-foreground mb-3">Crie sua primeira proposta</p>
-                <Button size="sm" onClick={() => navigate(buildPath('propostas/nova'))}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Criar
-                </Button>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {filteredProposals.map((proposal) => (
-                  <Card 
-                    key={proposal.id}
-                    className="p-3 bg-white/80 backdrop-blur-sm border-white/50 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
-                    onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Checkbox - Somente Super Admin */}
-                      {isSuperAdmin && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <CustomCheckbox
-                            checked={isSelected(proposal.id)}
-                            onCheckedChange={() => toggleSelectItem(proposal.id)}
-                          />
-                        </div>
-                      )}
-
-                      {/* Logo Avatar */}
-                      <ProposalLogoAvatar 
-                        logoUrl={proposal.client_logo_url} 
-                        name={proposal.client_company_name || proposal.client_name} 
-                      />
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                          <span className="font-mono text-xs font-semibold text-[#9C1E1E]">
-                            {proposal.number}
-                          </span>
-                          {proposal.titulo && (
-                            <span className="text-xs font-medium text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded truncate max-w-[180px]" title={proposal.titulo}>
-                              {proposal.titulo}
-                            </span>
-                          )}
-                          {getStatusBadge(proposal.status, proposal)}
-                          <ProposalTimeIndicator 
-                            createdAt={proposal.created_at}
-                            expiresAt={proposal.expires_at}
-                            status={proposal.status}
-                            compact
-                          />
-                          {proposal.status === 'expirada' && (
-                            <ProposalReminderIndicator 
-                              proposalId={proposal.id} 
-                              proposalStatus={proposal.status} 
-                              compact 
-                            />
-                          )}
-                          {/* Badge de Contrato Gerado */}
-                          {(proposal.metadata as any)?.contract_id && (
-                            <Badge className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0 border-0">
-                              📋 Contrato
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
-                          {proposal.client_company_name && (
-                            <>
-                              <span className="text-xs text-muted-foreground">•</span>
-                              <span className="text-xs font-medium text-foreground truncate max-w-[150px]" title={proposal.client_company_name}>
-                                {proposal.client_company_name}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-muted-foreground">
-                          <span>{proposal.is_custom_days && proposal.custom_days ? `${proposal.custom_days}d` : `${proposal.duration_months}M`}</span>
-                          <span>•</span>
-                          <span>{proposal.selected_buildings?.length || 0} prédio{(proposal.selected_buildings?.length || 0) !== 1 ? 's' : ''}</span>
-                          <span>•</span>
-                          {proposal.modalidade_proposta === 'permuta' ? (
-                            <span className="flex items-center gap-1 text-amber-600 font-semibold">
-                              <RefreshCw className="h-3 w-3" />
-                              Permuta
-                              {proposal.valor_total_permuta && proposal.valor_total_permuta > 0 && (
-                                <span className="text-[10px] text-muted-foreground font-normal">
-                                  ({formatCurrencyCompact(proposal.valor_total_permuta)})
-                                </span>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="font-semibold text-foreground">
-                              {proposal.is_custom_days 
-                                ? formatCurrency(proposal.custom_installments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || proposal.cash_total_value || 0)
-                                : proposal.cash_value_manual || proposal.payment_type === 'pix_avista' || proposal.payment_type === 'cartao'
-                                  ? formatCurrency(proposal.cash_total_value)
-                                  : formatCurrency(proposal.fidel_monthly_value)
-                              }
-                              {!proposal.is_custom_days && !proposal.cash_value_manual && proposal.payment_type !== 'pix_avista' && proposal.payment_type !== 'cartao' && (
-                                <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(proposal.created_at), "dd/MM", { locale: ptBR })}
-                          </span>
-                          {proposal.payment_type === 'custom' && proposal.custom_installments?.length ? (
-                            <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1 py-0 border-0">
-                              {proposal.custom_installments.length}x parcelas
-                            </Badge>
-                          ) : proposal.cash_value_manual ? (
-                            <Badge className="bg-red-50 text-[#9C1E1E] text-[10px] px-1 py-0 border-0">
-                              À vista
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              {formatCurrency(proposal.fidel_monthly_value)}/mês
-                            </span>
-                          )}
-                          {proposal.view_count && proposal.view_count > 0 && (
-                            <span className="text-[10px] text-purple-600 flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {proposal.view_count}x
-                              {proposal.total_time_spent_seconds && proposal.total_time_spent_seconds > 0 && (
-                                <span className="text-muted-foreground">
-                                  ⏱️ {formatTimeSpent(proposal.total_time_spent_seconds)}
-                                </span>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Vendedor + Produto - Lado Direito (Empresa agora está junto do nome) */}
-                      <div className="text-right min-w-[100px] flex-shrink-0 space-y-0.5">
-                        {proposal.tipo_produto && (
-                          <Badge className={proposal.tipo_produto === 'vertical_premium' 
-                            ? "bg-purple-100 text-purple-700 text-[9px] px-1.5 py-0 border-0" 
-                            : "bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0 border-0"
-                          }>
-                            {proposal.tipo_produto === 'vertical_premium' ? '📺 Vertical' : '🖼️ Horizontal'}
-                          </Badge>
-                        )}
-                        {proposal.seller_name && (
-                          <p className="text-[10px] text-muted-foreground truncate max-w-[120px]" title={proposal.seller_name}>
-                            👤 {proposal.seller_name}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenuItem onClick={() => setPreviewProposal(proposal)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Preview
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Ver Detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}/editar`))}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar Proposta
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDuplicateProposal(proposal)}>
-                            <Files className="h-4 w-4 mr-2" />
-                            Duplicar Proposta
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copiar Link
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {isExpiredProposal(proposal) && (
-                            <DropdownMenuItem 
-                              onClick={() => handleOpenRevalidate(proposal)}
-                              className="text-emerald-600 focus:text-emerald-600"
-                            >
-                              <RefreshCcw className="h-4 w-4 mr-2" />
-                              Revalidar Proposta
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => handleResend(proposal, 'whatsapp')}>
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Reenviar WhatsApp
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleResendToOtherNumber(proposal)}>
-                            <Phone className="h-4 w-4 mr-2" />
-                            Reenviar para outro número
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleResend(proposal, 'email')}>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Reenviar Email
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleGenerateContractPDF(proposal)}>
-                            <FileDown className="h-4 w-4 mr-2" />
-                            Gerar Contrato PDF
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <button type="button" className={BOTAO2} onClick={() => refetch()} title="Atualizar"><RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} /></button>
+            <button type="button" className={BOTAO} onClick={() => navigate(buildPath('propostas/nova'))}><Plus className="h-4 w-4" /> Nova proposta</button>
           </>
         )}
+      />
+
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+        <Kpi rotulo="Abertas" valor={abertas.length} sub={`${formatCurrency(abertasValor)}/mês em jogo`} icone={FileText} cor="#2B4C8C" onClick={() => setEtapa('abertas')} />
+        <Kpi rotulo="Vistas sem resposta" valor={vistasSemResposta} sub="vistas há mais de 3 dias" cor={vistasSemResposta ? '#9A5300' : '#17181A'} onClick={() => setEtapa('vista')} />
+        <Kpi rotulo="Convertidas no mês" valor={convMes} sub={`${enviadasMes} enviadas no mês`} cor="#1E6B47" onClick={() => setEtapa('convertida')} />
+        <Kpi rotulo="Rascunhos" valor={n('rascunho')} sub="ainda não enviadas" cor="#6A6B70" onClick={() => setEtapa('rascunho')} />
       </div>
 
-      {/* Delete Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir propostas?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. {selectedCount} proposta(s) serão excluídas.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeleting ? 'Excluindo...' : 'Excluir'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Busca valor={busca} onChange={setBusca} placeholder="Cliente, empresa, número ou telefone">
+        <Pilulas valor={etapa} onChange={setEtapa} opcoes={ETAPAS.map((e) => ({ valor: e.v, rotulo: e.l, n: n(e.v) }))} />
+      </Busca>
 
-      {/* Preview Modal */}
-      {previewProposal && (
-        <ProposalPreviewModal
-          open={!!previewProposal}
-          onClose={() => setPreviewProposal(null)}
-          proposal={previewProposal}
-          sellerName={previewProposal.seller_name || undefined}
-          sellerPhone={previewProposal.seller_phone || undefined}
-          sellerEmail={previewProposal.seller_email || undefined}
-        />
+      {isLoading ? <Carregando /> : !visiveis.length ? <Vazio icone={<FileText className="h-5 w-5" />} titulo="Nenhuma proposta aqui" texto={q ? 'Tente outra busca.' : 'Nada nesta etapa.'} /> : (
+        <div className={`${vidro} overflow-hidden rounded-[22px]`}>
+          <div className="flex items-center gap-2 border-b border-black/[0.06] bg-white/50 px-3 py-2 md:px-4">
+            <button type="button" onClick={() => setSel(todosSel ? new Set() : new Set(visiveis.map((x) => x.p.id)))} className="inline-flex h-8 items-center gap-2 rounded-lg px-2 text-[12.5px] font-bold text-[#45464A] hover:bg-black/[0.04]">
+              {todosSel ? <CheckSquare className="h-[18px] w-[18px] text-[#9C1E1E]" /> : <Square className="h-[18px] w-[18px]" />} {todosSel ? 'Desmarcar todas' : 'Marcar todas'}
+            </button>
+            <span className="text-[12px] text-[#8A8B90]">{visiveis.length} proposta{visiveis.length === 1 ? '' : 's'}</span>
+            {sel.size > 0 && (
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-[12.5px] font-bold text-[#9C1E1E]">{sel.size} marcada{sel.size === 1 ? '' : 's'}</span>
+                <ExcluirComMotivo tabela="proposals" ids={[...sel]} nome={`proposta ${visiveis.find((x) => sel.has(x.p.id))?.p.number || ''}`} onFeito={() => { setSel(new Set()); refetch(); }}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#B0261D] px-3 text-[13px] font-bold text-white hover:bg-[#8f1e17]">
+                  <Trash2 className="h-4 w-4" /> Excluir {sel.size}
+                </ExcluirComMotivo>
+                <button type="button" onClick={() => setSel(new Set())} className={`${BOTAO2} h-9`} aria-label="Limpar seleção"><X className="h-4 w-4" /></button>
+              </div>
+            )}
+          </div>
+          <ul className="divide-y divide-black/[0.06]">
+            {visiveis.map(({ p, e }) => {
+              const marcado = sel.has(p.id);
+              const apagada = e === 'convertida' || e === 'perdida';
+              const nome = p.client_company_name || p.client_name;
+              return (
+                <li key={p.id} className={`flex items-center gap-3 px-3 py-2.5 transition-colors md:px-4 ${marcado ? 'bg-[#FDECEC]/60' : 'hover:bg-white/70'} ${apagada ? 'opacity-60 grayscale-[0.6]' : ''}`}>
+                  <button type="button" onClick={() => alternar(p.id)} aria-pressed={marcado} aria-label={marcado ? 'Desmarcar' : 'Marcar'} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[#6A6B70] hover:bg-black/[0.04]">
+                    {marcado ? <CheckSquare className="h-[18px] w-[18px] text-[#9C1E1E]" /> : <Square className="h-[18px] w-[18px]" />}
+                  </button>
+                  <button type="button" onClick={() => navigate(buildPath(`propostas/${p.id}`))} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    <Avatar nome={nome} foto={p.client_logo_url} tamanho={40} cor={TOM[TOM_ETAPA[e]].cor} />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className="truncate text-[14px] font-bold">{nome}</span>
+                        <Chip {...TOM[TOM_ETAPA[e]]}>{ROTULO_ETAPA[e]}</Chip>
+                        {p.modalidade_proposta === 'permuta' && <Chip {...TOM.roxo}>permuta</Chip>}
+                        {p.tipo_produto === 'vertical_premium' && <Chip {...TOM.cinza}>vertical</Chip>}
+                      </span>
+                      <span className="block truncate text-[12.5px] text-[#6A6B70]">
+                        {p.number}{p.titulo ? ` · ${p.titulo}` : ''}{p.client_company_name && p.client_name !== p.client_company_name ? ` · ${p.client_name}` : ''}{p.client_phone ? ` · ${fone(p.client_phone)}` : ''}
+                      </span>
+                    </span>
+                  </button>
+                  <div className="hidden items-center gap-4 text-right md:flex">
+                    <span className="w-[110px]">
+                      <span className="block text-[13px] font-bold tabular-nums" style={{ color: e === 'convertida' ? '#1E6B47' : '#17181A' }}>{p.modalidade_proposta === 'permuta' ? formatCurrency(p.valor_total_permuta || 0) : `${formatCurrency(p.fidel_monthly_value || 0)}/mês`}</span>
+                      <span className="block text-[11.5px] text-[#8A8B90]">{p.total_panels || p.selected_buildings?.length || 0} prédio{(p.total_panels || 0) === 1 ? '' : 's'} · {p.duration_months || 1} {p.duration_months === 1 ? 'mês' : 'meses'}</span>
+                    </span>
+                    <span className="w-[96px]">
+                      <span className="block text-[12.5px] font-semibold text-[#45464A]"><Eye className="mr-1 inline h-3.5 w-3.5 text-[#8A8B90]" />{p.view_count || 0} {p.view_count === 1 ? 'vez' : 'vezes'}</span>
+                      <span className="block text-[11.5px] text-[#8A8B90]">{p.last_viewed_at ? `vista ${ha(p.last_viewed_at)}` : p.sent_at ? `enviada ${ha(p.sent_at)}` : `criada ${ha(p.created_at)}`}</span>
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-center">
+                    <button type="button" onClick={() => setPreview(p)} title="Ver proposta" className="grid h-9 w-9 place-items-center rounded-xl text-[#45464A] hover:bg-black/[0.05]"><Eye className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => navigate(buildPath(`propostas/${p.id}/editar`))} title="Editar" className="hidden h-9 w-9 place-items-center rounded-xl text-[#45464A] hover:bg-black/[0.05] md:grid"><Pencil className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => copiar(p)} title="Copiar link" className="hidden h-9 w-9 place-items-center rounded-xl text-[#45464A] hover:bg-black/[0.05] md:grid"><Copy className="h-4 w-4" /></button>
+                    <a href={LINK(p.id)} target="_blank" rel="noreferrer" title="Abrir como o cliente vê" className="hidden h-9 w-9 place-items-center rounded-xl text-[#45464A] hover:bg-black/[0.05] md:grid"><ExternalLink className="h-4 w-4" /></a>
+                    <button type="button" onClick={() => sofia(p)} disabled={!p.client_phone} title="Abrir no WhatsApp da Sofia" className="grid h-9 w-9 place-items-center rounded-xl text-[#1E6B47] hover:bg-[#EAF5EF] disabled:opacity-30"><MessageCircle className="h-4 w-4" /></button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
 
-      {/* Dialog para Reenviar para Outro Número */}
-      <AlertDialog open={showPhoneDialog} onOpenChange={setShowPhoneDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reenviar WhatsApp para outro número</AlertDialogTitle>
-            <AlertDialogDescription>
-              Digite o número de telefone para enviar a proposta{' '}
-              <strong>{proposalForResend?.number}</strong>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Input
-              type="tel"
-              placeholder="(11) 99999-9999"
-              value={customPhone}
-              onChange={(e) => setCustomPhone(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProposalForResend(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmResendToOtherNumber}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Enviar WhatsApp
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog para Revalidar Proposta Expirada */}
-      <AlertDialog open={showRevalidateDialog} onOpenChange={setShowRevalidateDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <RefreshCcw className="h-5 w-5 text-emerald-600" />
-              Revalidar Proposta
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Defina um novo prazo de validade para a proposta{' '}
-              <strong>{proposalToRevalidate?.number}</strong> de{' '}
-              <strong>{proposalToRevalidate?.client_name}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Novo prazo (dias)</label>
-              <div className="flex gap-2">
-                {[3, 5, 7, 15, 30].map((days) => (
-                  <Button
-                    key={days}
-                    variant={newExpirationDays === days ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setNewExpirationDays(days)}
-                    className={newExpirationDays === days ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-                  >
-                    {days}d
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-              <Calendar className="h-4 w-4" />
-              <span>
-                Nova validade: {format(
-                  new Date(Date.now() + newExpirationDays * 24 * 60 * 60 * 1000), 
-                  "dd 'de' MMMM 'de' yyyy", 
-                  { locale: ptBR }
-                )}
-              </span>
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProposalToRevalidate(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmRevalidate}
-              disabled={isRevalidating}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              {isRevalidating ? (
-                <>
-                  <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                  Revalidando...
-                </>
-              ) : (
-                <>
-                  <RefreshCcw className="h-4 w-4 mr-2" />
-                  Revalidar
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Segment Manager Modal */}
-      <SegmentManagerModal 
-        isOpen={segmentModalOpen} 
-        onClose={() => setSegmentModalOpen(false)} 
-      />
-    </div>
+      {preview && (
+        <ProposalPreviewModal open={!!preview} onClose={() => setPreview(null)} proposal={preview as any} sellerName={preview.seller_name || undefined} sellerPhone={preview.seller_phone || undefined} sellerEmail={preview.seller_email || undefined} />
+      )}
+    </Pagina>
   );
 };
 
