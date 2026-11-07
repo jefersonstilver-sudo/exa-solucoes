@@ -64,16 +64,16 @@ export const WhatsAppFlutuante: React.FC = () => {
 
   return (
     <>
-      <button
+      {!aberto && <button
         type="button"
-        onClick={() => setAberto((v) => !v)}
+        onClick={() => setAberto(true)}
         aria-label={aberto ? 'Fechar WhatsApp da equipe' : 'Abrir WhatsApp da equipe'}
         className="fixed bottom-5 right-5 z-[90] flex h-14 w-14 items-center justify-center rounded-full bg-[#17181A]/90 text-white shadow-[0_18px_40px_-14px_rgba(0,0,0,0.6)] backdrop-blur-xl ring-1 ring-white/15 transition hover:scale-105 md:bottom-6 md:right-6"
         style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        {aberto ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-        {!aberto && total > 0 && <span className="absolute -right-1 -top-1 grid h-6 min-w-[24px] place-items-center rounded-full bg-[#E8352B] px-1.5 text-[11px] font-extrabold ring-2 ring-[#F4F1EC]">{total > 99 ? '99+' : total}</span>}
-      </button>
+        <MessageCircle className="h-6 w-6" />
+        {total > 0 && <span className="absolute -right-1 -top-1 grid h-6 min-w-[24px] place-items-center rounded-full bg-[#E8352B] px-1.5 text-[11px] font-extrabold ring-2 ring-[#F4F1EC]">{total > 99 ? '99+' : total}</span>}
+      </button>}
 
       {aberto && (
         <div className="fixed inset-0 z-[85]" role="dialog" aria-modal="true" aria-label="WhatsApp da equipe">
