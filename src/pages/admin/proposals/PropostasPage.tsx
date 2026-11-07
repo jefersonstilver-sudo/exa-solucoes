@@ -167,7 +167,7 @@ const PropostasPage: React.FC = () => {
                       </span>
                     </span>
                   </button>
-                  <div className="hidden items-center gap-4 text-right md:flex">
+                  <div className="hidden items-center gap-4 text-right lg:flex">
                     <span className="w-[110px]">
                       <span className="block text-[13px] font-bold tabular-nums" style={{ color: e === 'convertida' ? '#1E6B47' : '#17181A' }}>{p.modalidade_proposta === 'permuta' ? formatCurrency(p.valor_total_permuta || 0) : `${formatCurrency(p.fidel_monthly_value || 0)}/mês`}</span>
                       <span className="block text-[11.5px] text-[#8A8B90]">{p.total_panels || p.selected_buildings?.length || 0} prédio{(p.total_panels || 0) === 1 ? '' : 's'} · {p.duration_months || 1} {p.duration_months === 1 ? 'mês' : 'meses'}</span>

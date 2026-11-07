@@ -139,7 +139,7 @@ const ContatosPage: React.FC = () => {
             <span className="block truncate text-[12.5px] text-[#6A6B70]">{[c.empresa, fone(c.telefone), c.cidade].filter(Boolean).join(' · ')}</span>
           </span>
         </button>
-        <div className="hidden items-center gap-1.5 md:flex">
+        <div className="hidden items-center gap-1.5 lg:flex">
           <Chip {...TOM[cat.tom]}>{cat.rotulo}</Chip>
           {c.temperatura && <Chip {...TOM[TEMPERATURA[c.temperatura] || 'cinza']}>{c.temperatura}</Chip>}
           {c.origem && <Chip {...TOM.cinza} title="Origem">{ORIGEM[c.origem] || c.origem}</Chip>}
@@ -185,10 +185,10 @@ const ContatosPage: React.FC = () => {
                           {vivo ? <Chip {...TOM.verde}>{c.noAr} no ar</Chip> : c.bloqueados ? <Chip {...TOM.cinza}>bloqueado</Chip> : <Chip {...TOM.cinza}>sem pedido ativo</Chip>}
                           {atrasoDe(c) > 0 && <Chip {...TOM.vermelho} title="Em atraso">{formatCurrency(atrasoDe(c))} atrasado</Chip>}
                         </span>
-                        <span className="block truncate text-[12.5px] text-[#6A6B70]">{[c.nome !== c.empresa ? c.nome : '', fone(c.telefone), c.email].filter(Boolean).join(' · ')}</span>
+                        <span className="block truncate text-[12.5px] text-[#6A6B70]">{[c.receita ? `${formatCurrency(c.receita)}/mês` : '', c.nome !== c.empresa ? c.nome : '', fone(c.telefone), c.email].filter(Boolean).join(' · ')}</span>
                       </span>
                     </button>
-                    <div className="hidden items-center gap-4 text-right md:flex">
+                    <div className="hidden items-center gap-4 text-right lg:flex">
                       <span className="w-[92px] text-[13px] font-bold tabular-nums" style={{ color: c.receita ? '#1E6B47' : '#8A8B90' }}>{c.receita ? `${formatCurrency(c.receita)}/mês` : '—'}</span>
                       <span className="w-[70px] text-[12px] tabular-nums text-[#8A8B90]" title="Pedidos">{c.pedidos} pedido{c.pedidos === 1 ? '' : 's'}</span>
                       <span className="w-[76px] text-[12px] tabular-nums text-[#8A8B90]" title={vivo ? 'Termina em' : 'Último pedido'}>{vivo ? quando(c.fim) : quando(c.ultimo)}</span>
