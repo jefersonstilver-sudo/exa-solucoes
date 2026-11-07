@@ -79,9 +79,11 @@ function useQr(valor: string) {
 }
 
 // ============================================================== página
-export default function TelasPage() {
+export default function TelasPage({ base: baseProp, embutida = false }: { base?: string; embutida?: boolean } = {}) {
   const qc = useQueryClient();
-  const base = useLocation().pathname.replace(/\/+$/, '');
+  const caminhoAtual = useLocation().pathname.replace(/\/+$/, '');
+  // dentro de Painéis EXA (aba Telas) os links continuam apontando para /telas/:id
+  const base = baseProp || caminhoAtual;
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [adicionar, setAdicionar] = useState(params.get('adicionar') === '1');
@@ -150,8 +152,12 @@ export default function TelasPage() {
     <div className="mx-auto max-w-[1400px] space-y-5 text-[#17181A]" style={{ fontFeatureSettings: '"tnum"' }}>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-[#6A6B70]">Comércios parceiros e halls</div>
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-[-0.03em] md:text-[30px]">Telas</h1>
+          {embutida ? (
+            <div className="text-[13px] font-semibold text-[#6A6B70]">Telas novas: comércios parceiros e halls (TV Android, mini PC ou navegador)</div>
+          ) : (<>
+            <div className="text-[13px] font-semibold text-[#6A6B70]">Comércios parceiros e halls</div>
+            <h1 className="text-[26px] font-extrabold leading-tight tracking-[-0.03em] md:text-[30px]">Telas</h1>
+          </>)}
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={recarregar} className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold ${vidro}`} title="Atualizar">

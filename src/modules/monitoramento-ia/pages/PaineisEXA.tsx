@@ -5,7 +5,7 @@
  * "Abrir painel" abre o detalhe com TODAS as opções de antes (grupo, prédio, elevador, alertas, incidentes, abas).
  * "Conexões" mostra todas as conexões por operadora com ranking de quedas.
  */
-import { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -15,6 +15,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
+import { Elevadores } from '../components/paineis/Elevadores';
+const TelasPage = React.lazy(() => import('@/modules/telas/TelasPage'));
 import { generatePublicUrl } from '@/config/domain';
 import { useDevices } from '../hooks/useDevices';
 import { useFrotaSaude, type FrotaPainel, type EstadoPainel } from '../hooks/useFrotaSaude';
@@ -45,7 +47,8 @@ const periodoRotulo: Record<PeriodType, string> = {
 const hhmm = (d?: Date | null) => d ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
 const ehGrupoPredios = (nome?: string | null) => /^pr[eé]dios$/i.test((nome || '').trim());
 
-type Visao = 'paineis' | 'conexoes';
+type Visao = 'paineis' | 'conexoes' | 'telas' | 'elevadores';
+const VISAO_ROTULO: Record<Visao, string> = { paineis: 'Visão geral', conexoes: 'Conexões', telas: 'Telas', elevadores: 'Elevadores' };
 type FiltroEstado = 'todos' | 'problema' | EstadoPainel;
 type Ordem = 'quedas' | 'nome' | 'estado';
 
@@ -72,7 +75,8 @@ export default function PaineisEXA() {
   const pendentes = usePendingIncidents(offlineIds);
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
 
-  const [visao, setVisao] = useState<Visao>('paineis');
+  const [visao, setVisaoRaw] = useState<Visao>(() => { try { const v = localStorage.getItem('paineis_visao') as Visao; return ['paineis', 'conexoes', 'telas', 'elevadores'].includes(v) ? v : 'paineis'; } catch { return 'paineis'; } });
+  const setVisao = (v: Visao) => { setVisaoRaw(v); try { localStorage.setItem('paineis_visao', v); } catch { /* sem armazenamento */ } };
   const [busca, setBusca] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
   const [filtroOp, setFiltroOp] = useState<string>('todas');
@@ -239,10 +243,10 @@ export default function PaineisEXA() {
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-xl bg-black/[0.05] p-1" role="tablist" aria-label="Visão">
-            {(['paineis', 'conexoes'] as Visao[]).map((v) => (
+            {(['paineis', 'conexoes', 'telas', 'elevadores'] as Visao[]).map((v) => (
               <button key={v} role="tab" aria-selected={visao === v} type="button" onClick={() => setVisao(v)}
                 className={`h-8 rounded-lg px-3 text-sm font-bold transition-colors ${visao === v ? 'bg-white shadow-sm' : 'text-[#5E5F63] hover:text-[#17181A]'}`}>
-                {v === 'paineis' ? 'Visão geral' : 'Conexões'}
+                {VISAO_ROTULO[v]}
               </button>
             ))}
           </div>
@@ -461,7 +465,7 @@ export default function PaineisEXA() {
             </details>
           )}
         </>
-      ) : (
+      ) : visao === 'conexoes' ? (
         <Conexoes
           paineis={daRede}
           porOperadora={porOperadora}
@@ -471,6 +475,12 @@ export default function PaineisEXA() {
           predios={predios}
           semGrupoPredios={!idsPredios}
         />
+      ) : visao === 'telas' ? (
+        <Suspense fallback={<div className={`${glass} rounded-2xl p-6 text-sm text-[#6A6B70]`}>Carregando telas…</div>}>
+          <TelasPage base={buildPath('telas')} embutida />
+        </Suspense>
+      ) : (
+        <Elevadores predios={predios} />
       )}
 
       {selecionado && (
