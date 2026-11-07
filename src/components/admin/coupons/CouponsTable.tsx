@@ -397,7 +397,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
               </TableRow>
             ) : (
               coupons.map((coupon) => (
-                <TableRow key={coupon.id} className={selectedIds.includes(coupon.id) ? 'bg-blue-50/50' : ''}>
+                <TableRow key={coupon.id} className={selectedIds.includes(coupon.id) ? 'bg-blue-50/50' : coupon.ativo ? 'bg-[#EAF5EF]/70 hover:bg-[#EAF5EF]' : 'opacity-70'}>
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(coupon.id)}

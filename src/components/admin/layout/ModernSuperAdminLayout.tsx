@@ -37,7 +37,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
       <SidebarProvider
         defaultOpen={sidebarDefaultOpen}
         style={{
-          "--sidebar-width": isTablet ? "220px" : "248px",
+          "--sidebar-width": isTablet ? "212px" : "236px",
           "--sidebar-width-icon": "64px",
         } as React.CSSProperties}
       >

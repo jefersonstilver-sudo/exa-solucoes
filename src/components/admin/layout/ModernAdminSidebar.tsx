@@ -87,7 +87,6 @@ import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
 import { usePedidosSemVideo } from '@/hooks/usePedidosSemVideo';
 import { usePropostasAguardando } from '@/hooks/usePropostasAguardando';
 import { useContratosPendentes } from '@/hooks/useContratosPendentes';
-import { useBeneficiosAcaoNecessaria } from '@/hooks/useBeneficiosAcaoNecessaria';
 import { usePendingVideosCount } from '@/hooks/usePendingVideosCount';
 import { useSindicosNovosCount } from '@/hooks/useSindicosNovosCount';
 
@@ -107,7 +106,6 @@ export function ModernAdminSidebar() {
   const { count: pedidosSemVideo } = usePedidosSemVideo();
   const { count: propostasAguardando } = usePropostasAguardando();
   const { count: contratosPendentes } = useContratosPendentes();
-  const { count: beneficiosAcao } = useBeneficiosAcaoNecessaria();
   const { pendingCount: videosParaAprovar } = usePendingVideosCount();
   const { count: sindicosNovos } = useSindicosNovosCount();
 
@@ -131,7 +129,7 @@ export function ModernAdminSidebar() {
     propostas: propostasAguardando,
     pedidosSemVideo,
     contratos: contratosPendentes,
-    beneficios: beneficiosAcao,
+    beneficios: 0,
     aprovacoes: videosParaAprovar,
     sindicosNovos,
   };
@@ -145,7 +143,7 @@ export function ModernAdminSidebar() {
       moduleKey: item.moduleKey,
       badge: value > 0 ? value : undefined,
       badgeTooltip: item.badgeTooltip,
-      badgePulse: item.badge === 'beneficios' && value > 0,
+      badgePulse: false,
       superAdminOnly: item.superAdminOnly,
     };
   };
@@ -211,46 +209,24 @@ export function ModernAdminSidebar() {
                     const linkContent = (
                       <NavLink
                         to={item.href}
-                        className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2 gap-3'} rounded-xl transition-all duration-300 font-medium group relative h-10 ${
-                          isActive 
-                            ? "bg-white/20 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20" 
-                            : "text-white/70 hover:bg-white/10 hover:text-white hover:backdrop-blur-sm active:scale-[0.98]"
+                        className={`group relative flex h-10 items-center rounded-xl transition-colors ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} ${
+                          isActive ? 'bg-white/[0.08] text-white' : 'text-white/60 hover:bg-white/[0.05] hover:text-white'
                         } touch-manipulation`}
-                        style={{
-                          WebkitTapHighlightColor: 'transparent',
-                        }}
-                        onClick={() => {
-                          if (isMobile || isSidebarMobile) {
-                            setOpenMobile(false);
-                          }
-                        }}
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                        onClick={() => { if (isMobile || isSidebarMobile) setOpenMobile(false); }}
                       >
-                        <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
+                        {isActive && <span aria-hidden="true" className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#E8352B]" />}
+                        <Icon className={`${collapsed ? 'h-[18px] w-[18px]' : 'h-4 w-4'} flex-shrink-0 ${isActive ? 'text-[#FF6B61]' : ''}`} />
                         {!collapsed && (
                           <>
-                            <span className="text-sm font-medium truncate flex-1">
-                              {item.title}
-                            </span>
+                            <span className="flex-1 truncate text-[13.5px] font-semibold">{item.title}</span>
                             {badge !== undefined && (
-                              <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className={`bg-white/25 text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center cursor-help shadow-lg backdrop-blur-sm ${badgePulse ? 'animate-pulse ring-2 ring-white/30' : ''}`}>
-                                      {badge}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="bg-[#2D0A0A] text-white border-white/10 text-xs max-w-[200px] backdrop-blur-lg">
-                                    {badgeTooltip || item.title}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              <span title={badgeTooltip || item.title} className="min-w-[20px] rounded-full bg-[#E8352B] px-1.5 py-0.5 text-center text-[10.5px] font-extrabold text-white">{badge > 99 ? '99+' : badge}</span>
                             )}
                           </>
                         )}
                         {collapsed && badge !== undefined && (
-                          <span className={`absolute -top-1 -right-1 bg-white/30 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm ${badgePulse ? 'animate-pulse ring-2 ring-white/30' : ''}`}>
-                            {typeof badge === 'number' && badge > 9 ? '9+' : badge}
-                          </span>
+                          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E8352B] px-1 text-[9px] font-extrabold text-white">{badge > 9 ? '9+' : badge}</span>
                         )}
                       </NavLink>
                     );
@@ -264,7 +240,7 @@ export function ModernAdminSidebar() {
                                 <TooltipTrigger asChild>
                                   {linkContent}
                                 </TooltipTrigger>
-                              <TooltipContent side="right" className="bg-[#2D0A0A] text-white border-white/10 font-medium backdrop-blur-lg">
+                              <TooltipContent side="right" className="border-white/10 bg-[#17181A] font-medium text-white">
                                   <div className="flex flex-col gap-1">
                                     <p className="font-semibold">{item.title}</p>
                                     {badge !== undefined && badgeTooltip && (
@@ -289,43 +265,30 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#7D1818] via-[#9C1E1E] to-[#5C1515] border-r border-white/10 shadow-2xl overscroll-contain backdrop-blur-xl"
+      className="h-screen border-r border-white/[0.06] bg-[#17181A] bg-[radial-gradient(60%_30%_at_0%_0%,rgba(232,53,43,0.18),rgba(232,53,43,0)_70%)] overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
-        boxShadow: '4px 0 30px rgba(156, 30, 30, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
+        boxShadow: '4px 0 30px rgba(0,0,0,0.25)'
       }}
     >
-      {/* Header - Red Glass Elevado */}
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-white/5 backdrop-blur-sm`}>
-        <div className="flex items-center justify-center mb-3">
-          <UnifiedLogo 
-            size="custom" 
-            linkTo="/" 
-            variant="light"
-            className={collapsed ? "w-10 h-10" : "w-14 h-14 md:w-20 md:h-20"}
-          />
+      {/* Cabeçalho: só a marca e quem está logado (07/11/2026: barra escura neutra, vermelho só nos destaques) */}
+      <SidebarHeader className={`${collapsed ? 'px-2 py-4' : 'px-4 py-5'}`}>
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+          <UnifiedLogo size="custom" linkTo="/" variant="light" className={collapsed ? 'h-8 w-8' : 'h-9 w-9'} />
+          {!collapsed && (
+            <div className="min-w-0">
+              <div className="text-[15px] font-extrabold leading-none tracking-[-0.02em] text-white">EXA Mídia</div>
+              <div className="mt-1 truncate text-[11px] font-semibold text-white/45">{getAdminTitle()}</div>
+            </div>
+          )}
         </div>
-        
-        {!collapsed && (
-          <div className="text-center">
-            <div className="text-white/90 font-semibold text-sm tracking-wide">
-              {userProfile?.departamento?.name ? `Painel ${userProfile.departamento.name}` : 'Painel Administrativo'}
-            </div>
-            <div className="flex items-center justify-center space-x-1 mt-1">
-              <Crown className="h-3 w-3 text-amber-300" />
-              <span className="text-[10px] font-medium text-amber-300/90">
-                {getAdminTitle()}
-              </span>
-            </div>
-          </div>
-        )}
       </SidebarHeader>
 
       <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-2 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
+        className={`${collapsed ? 'px-2' : 'px-3'} space-y-3 overflow-y-auto py-2 admin-sidebar-scroll touch-pan-y overscroll-contain`}
         style={{ 
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
@@ -337,8 +300,7 @@ export function ModernAdminSidebar() {
           return (
             <SidebarGroup key={group.label}>
               {!collapsed && (
-                <SidebarGroupLabel className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 px-2 flex items-center gap-2">
-                  <GroupIcon className="h-3 w-3" />
+                <SidebarGroupLabel className="mb-1 px-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-white/30">
                   {group.label}
                 </SidebarGroupLabel>
               )}
@@ -373,74 +335,25 @@ export function ModernAdminSidebar() {
         )}
       </SidebarContent>
       
-      {/* Footer - Red Glass */}
-      <SidebarFooter className="mt-auto p-3 border-t border-white/10 bg-black/10 backdrop-blur-sm">
+      <SidebarFooter className="mt-auto border-t border-white/[0.06] p-3">
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <button
-            onClick={() => navigate(buildPath('meu-perfil'))}
-            className="flex-shrink-0"
-          >
-            <Avatar className="h-9 w-9 ring-2 ring-white/30 shadow-lg cursor-pointer hover:ring-amber-300/50 transition-all">
-              <AvatarFallback className="bg-white/20 text-white font-semibold text-sm backdrop-blur-sm">
-                {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
-              </AvatarFallback>
+          <button onClick={() => navigate(buildPath('meu-perfil'))} className="flex-shrink-0" aria-label="Meu perfil">
+            <Avatar className="h-9 w-9 ring-1 ring-white/15">
+              <AvatarFallback className="bg-white/10 text-sm font-bold text-white">{userProfile?.email?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
             </Avatar>
           </button>
-          
           {!collapsed && (
-            <button
-              onClick={() => navigate(buildPath('meu-perfil'))}
-              className="flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
-            >
-              <p className="text-sm font-medium text-white truncate">
-                {userProfile?.email?.split('@')[0] || 'Admin'}
-              </p>
-              <p className="text-[10px] text-white/50">
-                {getAdminTitle()} · Meu Perfil
-              </p>
-            </button>
-          )}
-          
-          {!collapsed && (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={handleSignOut}
-                    className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-[#2D0A0A] text-white border-white/10 backdrop-blur-lg">
-                  Sair
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <>
+              <button onClick={() => navigate(buildPath('meu-perfil'))} className="min-w-0 flex-1 text-left">
+                <p className="truncate text-[13px] font-bold text-white">{userProfile?.email?.split('@')[0] || 'Admin'}</p>
+                <p className="truncate text-[11px] text-white/40">Meu perfil</p>
+              </button>
+              <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-8 w-8 text-white/50 hover:bg-white/10 hover:text-white" aria-label="Sair">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
           )}
         </div>
-        
-        {collapsed && (
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleSignOut}
-                  className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10 mt-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-[#2D0A0A] text-white border-white/10 backdrop-blur-lg">
-                Sair
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
       </SidebarFooter>
     </Sidebar>
   );

@@ -37,6 +37,8 @@ export interface AdminMenuGroup {
 export const ALWAYS = '__always_visible__';
 
 export const ADMIN_MENU: AdminMenuGroup[] = [
+  // Menu enxuto (Jeferson, 07/11/2026): só o que a EXA usa. Benefícios saiu; Telas fica dentro de Painéis EXA;
+  // Aprovações fica dentro de Pedidos; CRM Evolution virou "Equipe"; Financeiro volta junto com a nota fiscal.
   {
     label: 'Minha manhã',
     icon: Sunrise,
@@ -49,7 +51,7 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
     label: 'Relacionamento',
     icon: Users,
     items: [
-      { title: 'CRM Evolution', path: 'crm-evolution', icon: MessageCircle, moduleKey: MODULE_KEYS.crm_evolution },
+      { title: 'Equipe', path: 'crm-evolution', icon: MessageCircle, moduleKey: MODULE_KEYS.crm_evolution },
       { title: 'Contatos', path: 'contatos', icon: Contact, moduleKey: MODULE_KEYS.contatos },
     ],
   },
@@ -57,7 +59,7 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
     label: 'Comercial',
     icon: TrendingUp,
     items: [
-      { title: 'Pedidos e vendas', path: 'pedidos', icon: ShoppingBag, moduleKey: MODULE_KEYS.pedidos, badge: 'pedidosSemVideo', badgeTooltip: 'Pedidos aguardando vídeo' },
+      { title: 'Pedidos', path: 'pedidos', icon: ShoppingBag, moduleKey: MODULE_KEYS.pedidos, badge: 'aprovacoes', badgeTooltip: 'Vídeos aguardando aprovação' },
       { title: 'Propostas', path: 'propostas', icon: FileText, moduleKey: MODULE_KEYS.propostas, badge: 'propostas', badgeTooltip: 'Propostas aguardando resposta' },
       { title: 'Contratos', path: 'juridico', icon: Scale, moduleKey: MODULE_KEYS.juridico, badge: 'contratos', badgeTooltip: 'Contratos aguardando assinatura' },
       { title: 'Produtos', path: 'produtos', icon: MonitorPlay, moduleKey: MODULE_KEYS.produtos },
@@ -70,18 +72,8 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
     icon: Cog,
     items: [
       { title: 'Prédios', path: 'predios', icon: Building2, moduleKey: MODULE_KEYS.predios },
-      { title: 'Síndicos', path: 'sindicos-interessados', icon: ClipboardList, moduleKey: MODULE_KEYS.sindicos, badge: 'sindicosNovos', badgeTooltip: 'Novos cadastros de síndicos' },
+      { title: 'Síndicos', path: 'sindicos-interessados', icon: ClipboardList, moduleKey: MODULE_KEYS.sindicos, badge: 'sindicosNovos', badgeTooltip: 'Novos leads de síndicos' },
       { title: 'Painéis EXA', path: 'paineis-exa', icon: Tv, moduleKey: MODULE_KEYS.paineis, badge: 'offline', badgeTooltip: 'Painéis sem sinal' },
-      { title: 'Telas (comércio)', path: 'telas', icon: MonitorPlay, moduleKey: MODULE_KEYS.paineis },
-      { title: 'Aprovações', path: 'aprovacoes', icon: CheckSquare, moduleKey: MODULE_KEYS.aprovacoes, badge: 'aprovacoes', badgeTooltip: 'Vídeos aguardando aprovação' },
-      { title: 'Benefícios', path: 'beneficio-prestadores', icon: Gift, moduleKey: MODULE_KEYS.beneficios, badge: 'beneficios', badgeTooltip: 'Benefícios com ação necessária' },
-    ],
-  },
-  {
-    label: 'Comunicação',
-    icon: Mail,
-    items: [
-      { title: 'E-mails', path: 'comunicacoes', icon: Mail, moduleKey: MODULE_KEYS.emails },
     ],
   },
   {
@@ -89,7 +81,8 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
     icon: Shield,
     items: [
       { title: 'Financeiro', path: 'financeiro', icon: Landmark, moduleKey: MODULE_KEYS.financeiro },
-      { title: 'Usuários e permissões', path: 'usuarios', icon: Users, moduleKey: MODULE_KEYS.usuarios },
+      { title: 'E-mails', path: 'comunicacoes', icon: Mail, moduleKey: MODULE_KEYS.emails },
+      { title: 'Usuários', path: 'usuarios', icon: Users, moduleKey: MODULE_KEYS.usuarios },
       { title: 'Segurança', path: 'seguranca', icon: Lock, moduleKey: MODULE_KEYS.seguranca },
       { title: 'Configurações', path: 'configuracoes', icon: Settings, moduleKey: MODULE_KEYS.configuracoes },
     ],
@@ -103,36 +96,7 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
   },
 ];
 
-/**
- * Páginas que saíram do menu em 28/10/2026. As rotas continuam funcionando até a data abaixo
- * (só o CEO vê esta lista, recolhida no fim do menu). Depois disso o código pode ser removido.
- */
-export const PAGINAS_OCULTAS_ATE = '2026-11-27';
-
-export const PAGINAS_OCULTAS: AdminMenuItem[] = [
-  { title: 'Vendas (antiga)', path: 'vendas', icon: TrendingUp, moduleKey: MODULE_KEYS.pedidos },
-  { title: 'Formulários síndicos', path: 'formularios-sindicos', icon: Building2, moduleKey: MODULE_KEYS.formularios_sindicos },
-  { title: 'Escalações', path: 'escalacoes', icon: AlertTriangle, moduleKey: MODULE_KEYS.escalacoes },
-  { title: 'CRM Hub', path: 'crm-hub', icon: UsersRound, moduleKey: MODULE_KEYS.crm_hub },
-  { title: 'Kanban', path: 'contatos-kanban', icon: LayoutGrid, moduleKey: MODULE_KEYS.contatos_kanban },
-  { title: 'Scans QR Code', path: 'qr-scans', icon: QrCode, moduleKey: MODULE_KEYS.pedidos },
-  { title: 'Assinaturas', path: 'assinaturas', icon: CreditCard, moduleKey: MODULE_KEYS.assinaturas },
-  { title: 'Posições', path: 'posicoes', icon: BarChart3, moduleKey: MODULE_KEYS.posicoes },
-  { title: 'Entrega nas telas', path: 'entrega-telas', icon: Tv, moduleKey: MODULE_KEYS.paineis },
-  { title: 'Agenda técnica', path: 'sync-notion', icon: Calendar, moduleKey: MODULE_KEYS.sync_notion },
-  { title: 'Vídeos anunciantes', path: 'videos', icon: Video, moduleKey: MODULE_KEYS.videos_anunciantes },
-  { title: 'Processos', path: 'processos', icon: Network, moduleKey: MODULE_KEYS.processos },
-  { title: 'Gestão de tempo', path: 'gestao-tempo', icon: Timer, moduleKey: MODULE_KEYS.gestao_tempo },
-  { title: 'Vídeos site EXA', path: 'videos-site', icon: Film, moduleKey: MODULE_KEYS.videos_site },
-  { title: 'Editor de vídeos', path: 'editor-video-controle', icon: Clapperboard, moduleKey: MODULE_KEYS.editor_videos },
-  { title: 'Agentes Sofia', path: 'agentes-sofia', icon: Bot, moduleKey: MODULE_KEYS.agentes_sofia },
-  { title: 'Relatórios', path: 'relatorios-financeiros', icon: FileBarChart, moduleKey: MODULE_KEYS.relatorios },
-  { title: 'Consolidação', path: 'consolidacao', icon: UsersRound, moduleKey: MODULE_KEYS.usuarios },
-  { title: 'Notificações', path: 'notificacoes', icon: Bell, moduleKey: MODULE_KEYS.notificacoes },
-  { title: 'Admin Master Vídeo', path: '/super_admin/admin-master-video', icon: ShieldCheck, moduleKey: ALWAYS, absolute: true, superAdminOnly: true },
-  { title: 'Auditoria impersonação', path: '/super_admin/auditoria-impersonacao', icon: Archive, moduleKey: ALWAYS, absolute: true, superAdminOnly: true },
-];
-
-export function paginasOcultasAtivas(agora = new Date()): boolean {
-  return agora < new Date(PAGINAS_OCULTAS_ATE + 'T23:59:59-03:00');
-}
+/** Páginas antigas: saíram do menu de vez (Jeferson, 07/11/2026). As rotas ainda respondem até a limpeza do código. */
+export const PAGINAS_OCULTAS_ATE = '2026-11-07';
+export const PAGINAS_OCULTAS: AdminMenuItem[] = [];
+export function paginasOcultasAtivas(): boolean { return false; }

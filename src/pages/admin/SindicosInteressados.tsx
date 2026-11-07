@@ -51,6 +51,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { glass } from '@/modules/monitoramento-ia/components/paineis/estados';
+import ExcluirComMotivo from '@/components/admin/ui/ExcluirComMotivo';
 import { differenceInCalendarDays } from 'date-fns';
 import { PaginaCelular, TopoCelular, BotaoRedondo, Kpis, BuscaCelular, Pilulas, CartaoCelular, Selo, SELO, Vazio, Carregando } from '@/components/admin/celular/kit';
 
@@ -337,6 +338,7 @@ const SindicosInteressados: React.FC = () => {
                         {downloadingId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                       </button>
                     )}
+                    <ExcluirComMotivo tabela="sindicos_interessados" ids={[r.id]} nome={r.nome_predio || 'lead'} onFeito={refetch} />
                   </div>
                 </div>
                 <select value={r.status} onChange={(e) => mudarStatus(r, e.target.value)} aria-label="Etapa do lead"
