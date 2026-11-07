@@ -142,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userResult = await supabase
         .from('users')
         .select(`
-          id, email, nome, cpf, avatar_url, email_verified_at, departamento_id,
+          id, email, nome, cpf, avatar_url, email_verified_at, departamento_id, is_blocked,
           departamento:process_departments(id, name, color, icon, display_order)
         `)
         .eq('id', userId)
@@ -150,6 +150,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       userData = userResult.data;
       userError = userResult.error;
+
+      // 07/11/2026: conta bloqueada pelo admin derruba a sessão na hora (antes só o login conferia)
+      if ((userData as any)?.is_blocked) {
+        console.warn('🚫 [useAuth] conta bloqueada: encerrando a sessão');
+        setUserProfile(null);
+        await supabase.auth.signOut();
+        return;
+      }
       
       // FALLBACK: Se usuário não existe em public.users, sincronizar de auth.users
       if (!userData && !userError) {

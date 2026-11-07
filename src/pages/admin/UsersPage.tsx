@@ -13,6 +13,7 @@ import { UserConsoleDialog } from '@/components/admin/users/console/UserConsoleD
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Pagina, Cabecalho, Busca, Pilulas, Kpi, Chip, TOM, Avatar, Carregando as CarregandoKit, Vazio as VazioKit, BOTAO, BOTAO2, vidro } from '@/components/admin/ui/exa';
 import { PaginaCelular, TopoCelular, BotaoRedondo, BotaoPrincipal, Kpis, BuscaCelular, CartaoCelular, Selo, SELO, Vazio, Carregando } from '@/components/admin/celular/kit';
 
 interface User {
@@ -32,6 +33,7 @@ interface User {
   last_sign_in_at?: string;
   email_confirmed_at?: string;
   raw_user_meta_data?: any;
+  is_blocked?: boolean;
 }
 
 const UsersPage = () => {
@@ -69,7 +71,10 @@ const UsersPage = () => {
       }
 
       console.log('[UsersPage] usuários carregados:', data?.length ?? 0);
-      setUsers((data as any) || []);
+      // 07/11/2026: a RPC não devolve is_blocked; busca à parte quem está bloqueado
+      const { data: bloq } = await supabase.from('users').select('id').eq('is_blocked', true);
+      const setBloq = new Set((bloq || []).map((b: any) => b.id));
+      setUsers(((data as any) || []).map((u: any) => ({ ...u, is_blocked: setBloq.has(u.id) })));
     } catch (error: any) {
       console.error('[UsersPage] Erro crítico em fetchUsers:', error);
       setLoadError(error?.message || 'Erro crítico ao carregar usuários');
@@ -255,195 +260,82 @@ const UsersPage = () => {
     );
   }
 
-  // Desktop View - Apple-style Glassmorphism
+  // Desktop (07/11/2026): kit de vidro — equipe x clientes, busca, linha por usuário com papel, bloqueio e último acesso
+  const PAPEL_D: Record<string, { r: string; tom: keyof typeof TOM }> = {
+    super_admin: { r: 'Super admin', tom: 'ambar' }, admin: { r: 'Coordenação', tom: 'azul' }, admin_marketing: { r: 'Marketing', tom: 'roxo' },
+    admin_financeiro: { r: 'Financeiro', tom: 'verde' }, comercial: { r: 'Comercial', tom: 'azul' }, client: { r: 'Cliente', tom: 'cinza' },
+  };
+  const quandoD = (iso?: string) => {
+    if (!iso) return 'nunca acessou';
+    const d = new Date(iso); const dias = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (dias <= 0) return `acessou hoje ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    if (dias === 1) return 'acessou ontem';
+    if (dias < 30) return `acessou há ${dias} dias`;
+    return `último acesso ${d.toLocaleDateString('pt-BR')}`;
+  };
+  const listaD = activeTab === 'team' ? filteredTeam : filteredClients;
+  const bloqueados = users.filter((u: any) => u.is_blocked).length;
+  const semAcesso30 = clients.filter((u) => !u.last_sign_in_at || Date.now() - new Date(u.last_sign_in_at).getTime() > 30 * 86400000).length;
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-6">
-      {/* Header Compacto */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-[hsl(var(--exa-red))]/10 rounded-2xl">
-            <Users className="h-6 w-6 text-[hsl(var(--exa-red))]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Gestão de Usuários</h1>
-            <p className="text-sm text-muted-foreground">{users.length} usuários no sistema</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button 
-            onClick={() => navigate('/super_admin/tipos-conta')}
-            variant="outline"
-            size="sm"
-            className="h-9 border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Tipos de Conta
-          </Button>
-          <Button 
-            onClick={handleSyncOrphanUsers}
-            variant="outline"
-            size="sm"
-            disabled={syncingOrphans}
-            className="h-9 border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
-          >
-            <UserCog className={`h-4 w-4 mr-2 ${syncingOrphans ? 'animate-spin' : ''}`} />
-            Sincronizar
-          </Button>
-          <Button 
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            disabled={loading}
-            className="h-9"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-          <Button 
-            onClick={() => setIsCreateDialogOpen(true)}
-            size="sm"
-            className="h-9 bg-[#9C1E1E] hover:bg-[#7C1818] text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Usuário
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="mb-6">
-        <UserStatsCards stats={stats} loading={loadingStats} />
-      </div>
-
-      {/* Tabs e Busca */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-md overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('team')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                activeTab === 'team'
-                  ? 'bg-[#9C1E1E] text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Crown className="h-4 w-4" />
-              Equipe EXA
-              <Badge variant="secondary" className={`text-[10px] ${activeTab === 'team' ? 'bg-white/20 text-white' : ''}`}>
-                {filteredTeam.length}
-              </Badge>
-            </button>
-            <button
-              onClick={() => setActiveTab('clients')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                activeTab === 'clients'
-                  ? 'bg-[#9C1E1E] text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <UserCheck className="h-4 w-4" />
-              Clientes
-              <Badge variant="secondary" className={`text-[10px] ${activeTab === 'clients' ? 'bg-white/20 text-white' : ''}`}>
-                {filteredClients.length}
-              </Badge>
-            </button>
-          </div>
-          
-          <div className="relative w-64">
-            <Input
-              type="text"
-              placeholder="Buscar usuário..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-9 text-sm bg-white"
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          </div>
-        </div>
-
-        {/* Lista de Usuários Desktop */}
-        <div className="p-4">
-          {activeTab === 'team' && (
-            <>
-              {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="bg-gray-100 rounded-xl p-4 animate-pulse">
-                      <div className="h-16 bg-gray-200 rounded" />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredTeam.length === 0 ? (
-                <div className="text-center py-12">
-                  <Shield className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                  <p className="text-muted-foreground">
-                    {searchTerm ? 'Nenhum membro encontrado' : 'Nenhum membro cadastrado'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredTeam.map((user) => (
-                    <EnhancedUserMobileCard
-                      key={user.id}
-                      user={user}
-                      onViewDetails={handleViewDetails}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {activeTab === 'clients' && (
-            <>
-              {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="bg-gray-100 rounded-xl p-4 animate-pulse">
-                      <div className="h-16 bg-gray-200 rounded" />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredClients.length === 0 ? (
-                <div className="text-center py-12">
-                  <UserCheck className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                  <p className="text-muted-foreground">
-                    {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredClients.map((user) => (
-                    <EnhancedUserMobileCard
-                      key={user.id}
-                      user={user}
-                      onViewDetails={handleViewDetails}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Dialogs */}
-      <CreateUserDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSuccess={handleRefresh}
+    <Pagina>
+      <Cabecalho
+        titulo="Usuários"
+        sub={`${indexaTeam.length} na equipe · ${clients.length} clientes com conta`}
+        acoes={(
+          <>
+            <button type="button" className={BOTAO2} onClick={() => navigate('/super_admin/tipos-conta')}><Settings className="h-4 w-4" /> Tipos de conta</button>
+            <button type="button" className={BOTAO2} onClick={handleSyncOrphanUsers} disabled={syncingOrphans} title="Trazer contas do Auth que não estão na tabela de usuários"><UserCog className={`h-4 w-4 ${syncingOrphans ? 'animate-spin' : ''}`} /> Sincronizar</button>
+            <button type="button" className={BOTAO2} onClick={handleRefresh} disabled={loading} title="Atualizar"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></button>
+            <button type="button" className={BOTAO} onClick={() => setIsCreateDialogOpen(true)}><Plus className="h-4 w-4" /> Novo usuário</button>
+          </>
+        )}
       />
 
-      {selectedUser && (
-        <UserConsoleDialog 
-          open={true}
-          onOpenChange={(open) => !open && setSelectedUser(null)}
-          user={selectedUser as any} 
-          onUserUpdated={handleRefresh}
-        />
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+        <Kpi rotulo="Equipe EXA" valor={indexaTeam.length} sub="admins, financeiro, marketing, comercial" icone={Crown} onClick={() => setActiveTab('team')} />
+        <Kpi rotulo="Clientes" valor={clients.length} sub="contas de anunciante" icone={UserCheck} cor="#1E6B47" onClick={() => setActiveTab('clients')} />
+        <Kpi rotulo="Bloqueados" valor={bloqueados} sub="sem acesso ao sistema" icone={Shield} cor={bloqueados ? '#B0261D' : '#17181A'} />
+        <Kpi rotulo="Clientes sem acessar" valor={semAcesso30} sub="há mais de 30 dias" cor="#9A5300" />
+      </div>
+
+      <Busca valor={searchTerm} onChange={setSearchTerm} placeholder="Nome ou e-mail">
+        <Pilulas valor={activeTab} onChange={setActiveTab} opcoes={[{ valor: 'team', rotulo: 'Equipe EXA', n: filteredTeam.length }, { valor: 'clients', rotulo: 'Clientes', n: filteredClients.length }]} />
+      </Busca>
+
+      {loading && !users.length ? <CarregandoKit texto="Carregando usuários…" /> : !listaD.length ? (
+        <VazioKit icone={<Users className="h-5 w-5" />} titulo={searchTerm ? 'Ninguém encontrado' : 'Ninguém aqui'} />
+      ) : (
+        <div className={`${vidro} overflow-hidden rounded-[22px]`}>
+          <ul className="divide-y divide-black/[0.06]">
+            {listaD.map((u: any) => {
+              const papel = PAPEL_D[u.role] || { r: u.role, tom: 'cinza' as const };
+              return (
+                <li key={u.id} className={`flex items-center gap-3 px-3 py-2.5 hover:bg-white/70 md:px-4 ${u.is_blocked ? 'opacity-70' : ''}`}>
+                  <button type="button" onClick={() => handleViewDetails(u)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    <Avatar nome={u.nome || u.email} foto={fotoQuebrada.has(u.id) ? null : u.avatar_url} tamanho={40} cor={TOM[papel.tom].cor} />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className="truncate text-[14px] font-bold">{u.nome || u.email}</span>
+                        <Chip {...TOM[papel.tom]}>{papel.r}</Chip>
+                        {u.is_blocked && <Chip {...TOM.vermelho}>bloqueado</Chip>}
+                        {!u.email_confirmed_at && !u.email_verified_at && <Chip {...TOM.ambar}>e-mail não confirmado</Chip>}
+                      </span>
+                      <span className="block truncate text-[12.5px] text-[#6A6B70]">{[u.email, u.telefone, quandoD(u.last_sign_in_at)].filter(Boolean).join(' · ')}</span>
+                    </span>
+                  </button>
+                  <span className="hidden w-[90px] shrink-0 text-right text-[12px] tabular-nums text-[#8A8B90] lg:block" title="Conta criada em">{u.data_criacao ? new Date(u.data_criacao).toLocaleDateString('pt-BR') : ''}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
-    </div>
+
+      <CreateUserDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleRefresh} />
+      {selectedUser && (
+        <UserConsoleDialog open={true} onOpenChange={(open) => !open && setSelectedUser(null)} user={selectedUser as any} onUserUpdated={handleRefresh} />
+      )}
+    </Pagina>
   );
 };
 

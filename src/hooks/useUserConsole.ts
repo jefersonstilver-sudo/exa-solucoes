@@ -528,22 +528,13 @@ export const useUserConsole = ({ user, open, onUserUpdated }: UseUserConsoleProp
     try {
       setIsSaving(true);
       
-      const updateData = isBlocked
-        ? { is_blocked: false, blocked_at: null, blocked_by: null, blocked_reason: null }
-        : { 
-            is_blocked: true, 
-            blocked_at: new Date().toISOString(), 
-            blocked_by: userProfile?.id,
-            blocked_reason: 'Bloqueado manualmente pelo administrador'
-          };
-      
-      const { error } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('id', user.id);
-      
-      if (error) throw error;
-      
+      // 07/11/2026: bloqueio real — a função admin-user-management bane no Auth e marca users.is_blocked
+      const { data: resp, error } = await supabase.functions.invoke('admin-user-management', {
+        body: { action: isBlocked ? 'unblock_user' : 'block_user', userId: user.id, data: { motivo: 'Bloqueado manualmente pelo administrador' } },
+      });
+      if (error) throw new Error(error.message);
+      if ((resp as any)?.error) throw new Error((resp as any).error);
+
       await supabase.from('log_eventos_sistema').insert({
         tipo_evento: isBlocked ? 'USER_UNBLOCKED' : 'USER_BLOCKED',
         descricao: `Usuário ${user.email} foi ${isBlocked ? 'desbloqueado' : 'bloqueado'} por ${userProfile?.email}`,

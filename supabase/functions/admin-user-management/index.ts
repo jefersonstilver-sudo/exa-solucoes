@@ -80,15 +80,19 @@ serve(async (req) => {
 
     switch (action) {
       case 'block_user': {
+        // 07/11/2026: o bloqueio não funcionava — ban_duration vinha 'none' (sem efeito) e só a metadata mudava.
+        // Agora: banimento real no Auth (10 anos: o refresh token é recusado) + users.is_blocked (o login e o useAuth derrubam a sessão).
         const banUntil = new Date();
-        banUntil.setFullYear(banUntil.getFullYear() + 1); // Ban for 1 year
-        
+        banUntil.setFullYear(banUntil.getFullYear() + 10);
+        const motivo = String(data?.motivo || 'Bloqueado pelo administrador').slice(0, 300);
+
         const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-          ban_duration: 'none',
+          ban_duration: '87600h',
           user_metadata: { banned_until: banUntil.toISOString() }
         });
-
         if (error) throw error;
+        const { error: e2 } = await supabaseAdmin.from('users').update({ is_blocked: true, blocked_at: new Date().toISOString(), blocked_by: user.id, blocked_reason: motivo }).eq('id', userId);
+        if (e2) throw e2;
 
         // Log the action
         await supabaseClient
@@ -104,10 +108,12 @@ serve(async (req) => {
 
       case 'unblock_user': {
         const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+          ban_duration: 'none',
           user_metadata: { banned_until: null }
         });
-
         if (error) throw error;
+        const { error: e2 } = await supabaseAdmin.from('users').update({ is_blocked: false, blocked_at: null, blocked_by: null, blocked_reason: null }).eq('id', userId);
+        if (e2) throw e2;
 
         // Log the action
         await supabaseClient
