@@ -169,7 +169,9 @@
             if (videosOk) lat.v = true; if (adOk) lat.a = true; if (camOk) lat.c = true;
             videosOk = lat.v; adOk = lat.a; camOk = lat.c;
             if (videosOk && adOk && camOk && fluido) lat.fDesde = lat.fDesde || Date.now(); else if (!lat.f) lat.fDesde = 0;
-            if (lat.fDesde && Date.now() - lat.fDesde >= 3000) lat.f = true;
+            if (lat.fDesde && Date.now() - lat.fDesde >= 3000) { lat.f = true; (window.__tvInfo = window.__tvInfo || {}).boot_fluido = true; }
+            // aparelho fraco (Zeta): com anúncio e câmera prontos, a fluidez espera no máximo 20 s — a tela não fica presa
+            if (videosOk && adOk && camOk && !lat.f) { lat.prontoDesde = lat.prontoDesde || Date.now(); if (Date.now() - lat.prontoDesde > 20000) { lat.f = true; (window.__tvInfo = window.__tvInfo || {}).boot_fluido = false; } }
             if (lat.f) fluido = true;
             var tudo = videosOk && adOk && camOk && lat.f;
             okDesde = tudo ? (okDesde || Date.now()) : 0;
@@ -190,7 +192,7 @@
               else { tit = 'Tudo pronto'; det = ''; }
               try { ponte.progresso(Math.min(0.97, p), tit, det); } catch (e) { /* segue */ }
             }
-            var estourou = Date.now() - t0 > 120000; // nunca mais de 2 min escondendo a tela
+            var estourou = Date.now() - t0 > 60000; // nunca mais de 1 min escondendo a tela
             if (okDesde || estourou) {
               fim = true; clearInterval(tique);
               var info = window.__tvInfo = window.__tvInfo || {};

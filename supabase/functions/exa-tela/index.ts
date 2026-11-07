@@ -587,6 +587,58 @@ async function ehEquipe(admin: any, req: Request): Promise<boolean> {
   return (papeis || []).some((p: any) => ['super_admin', 'admin', 'diretora_operacoes', 'gestor_comercial'].includes(String(p.role)));
 }
 
+// vídeos que as TVs Android dos prédios tocam (para as versões leves)
+async function listaVideosTv(admin: any): Promise<{ pasta: string; video: string }[]> {
+  const { data: ts } = await admin.from('exa_telas').select('building_id').eq('status', 'ativa').not('building_id', 'is', null);
+  const predios = [...new Set((ts || []).map((t: any) => t.building_id))];
+  const itens: { pasta: string; video: string }[] = [];
+  const visto = new Set<string>();
+  for (const id of predios) {
+    try {
+      const j = await updatesDoPredio(id as string);
+      if (!j) continue;
+      const pasta = String(j.pasta_s3 || '').replace(/^\/+|\/+$/g, '');
+      for (const it of [...(j.Propagandas || []), ...(j.PlaylistPronta || [])]) {
+        const v = String(it?.video || '');
+        if (!v || !/\.(mp4|mov|m4v|webm)$/i.test(v) || v.includes('..')) continue;
+        const k = `${pasta}/${v}`;
+        if (visto.has(k)) continue;
+        visto.add(k); itens.push({ pasta, video: v });
+      }
+    } catch { /* prédio sem programação */ }
+  }
+  return itens;
+}
+
+// 06/11/2026: TODO vídeo novo das TVs Android ganha a versão leve sozinho. O agendamento do GitHub falha (ficou 5 h sem
+// rodar e o Zeta tocou o original pesado). O vigia (a cada 5 min) confere a lista.json de cada pasta e, se faltar
+// algum vídeo, dispara o workflow tv-versoes na hora (no máximo 1 disparo a cada 15 min).
+async function garantirVersoesLeves(admin: any) {
+  const itens = await listaVideosTv(admin);
+  const porPasta = new Map<string, string[]>();
+  for (const it of itens) porPasta.set(it.pasta, [...(porPasta.get(it.pasta) || []), it.video]);
+  const faltam: string[] = [];
+  for (const [pasta, vids] of porPasta) {
+    let set = new Set<string>();
+    try {
+      const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/tv-versoes/${pasta}/lista.json?t=${Date.now()}`, { signal: AbortSignal.timeout(8000) });
+      if (r.ok) { const d = await r.json(); set = new Set(Array.isArray(d) ? d : (Array.isArray(d?.itens) ? d.itens : [])); }
+    } catch { /* sem lista ainda */ }
+    for (const v of vids) if (!set.has(v)) faltam.push(`${pasta}/${v}`);
+  }
+  if (!faltam.length) return { faltam: 0 };
+  const { data: ult } = await admin.from('exa2_config').select('valor').eq('chave', 'tvv_disparo_em').maybeSingle();
+  if (ult?.valor && Date.now() - Number(ult.valor) < 15 * 60000) return { faltam: faltam.length, disparo: 'aguardando' };
+  const tok = Deno.env.get('GH_DISPATCH_TOKEN'), repo = Deno.env.get('GH_REPO');
+  if (!tok || !repo) return { faltam: faltam.length, disparo: 'sem token' };
+  const r = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/tv-versoes.yml/dispatches`, {
+    method: 'POST', headers: { Authorization: `Bearer ${tok}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json', 'User-Agent': 'exa-tela' },
+    body: JSON.stringify({ ref: 'main' }),
+  });
+  await admin.from('exa2_config').upsert({ chave: 'tvv_disparo_em', valor: String(Date.now()) }, { onConflict: 'chave' });
+  return { faltam: faltam.length, exemplos: faltam.slice(0, 3), disparo: r.ok ? 'ok' : `erro ${r.status}` };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   if (req.method !== 'POST') return json({ ok: false, erro: 'use POST' }, 405);
@@ -855,6 +907,9 @@ Deno.serve(async (req) => {
     if (acao === 'tv_lista') {
       const chave = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
       if (!chave || (req.headers.get('authorization') || '') !== `Bearer ${chave}`) return json({ ok: false, erro: 'sem permissão' }, 403);
+      return json({ ok: true, itens: await listaVideosTv(admin) });
+    }
+    if (acao === '__tv_lista_antiga') {
       const { data: ts } = await admin.from('exa_telas').select('building_id').eq('status', 'ativa').not('building_id', 'is', null);
       const predios = [...new Set((ts || []).map((t: any) => t.building_id))];
       const itens: { pasta: string; video: string }[] = [];
@@ -881,9 +936,11 @@ Deno.serve(async (req) => {
       const { data: cfg } = await admin.from('exa2_config').select('valor').eq('chave', 'cron_token').maybeSingle();
       if (!cfg?.valor || req.headers.get('x-exa2-cron') !== cfg.valor) return json({ ok: false, erro: 'sem permissão' }, 403);
       const base = await vigiar(admin);
+      let leves: any = null;
+      try { leves = await garantirVersoesLeves(admin); } catch (e) { console.error('[vigia] versões leves', e); }
       let cura: any[] = [];
       try { cura = await vigiarTravadas(admin); } catch (e) { console.error('[vigia] travadas', e); }
-      return json({ ok: true, ...base, auto_cura: cura });
+      return json({ ok: true, ...base, auto_cura: cura, versoes_leves: leves });
     }
 
     // ---------- portal do restaurante (área do cliente) ----------
