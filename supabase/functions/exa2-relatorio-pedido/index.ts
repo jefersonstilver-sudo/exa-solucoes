@@ -288,10 +288,10 @@ Deno.serve(async (req) => {
     const primeiroLog = primeiroLogDia;
 
     // vídeos envolvidos: da conta do cliente + os que aparecem nos registros (podem estar em outra conta, ex.: Conta Interna)
-    const { data: hist } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url,client_id")
+    const { data: hist } = await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url,client_id,status")
       .eq("client_id", ped.client_id).gte("created_at", new Date(ini - 7 * DIA).toISOString()).lte("created_at", new Date(fim).toISOString()).order("created_at");
     const idsLog = [...idsLogSet];
-    const { data: deLog } = idsLog.length ? await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url,client_id").in("id", idsLog) : { data: [] as any[] };
+    const { data: deLog } = idsLog.length ? await sb.from("videos").select("id,nome,duracao,orientacao,created_at,origem,url,client_id,status").in("id", idsLog) : { data: [] as any[] };
     // vídeos do cinema que a equipe subiu pela Conta Interna da EXA (ex.: "3 setembro" = cine_3_de_setembro.mp4):
     // não ficam no pedido depois de trocados, mas foram o principal da semana
     let internos: any[] = [];
@@ -370,7 +370,8 @@ Deno.serve(async (req) => {
     // VÍDEO DE OUTRO CLIENTE tocando no espaço deste pedido (ex.: Caliu, jul/2026: o vídeo da Duquintal foi subido e
     // colocado no ar pelo pedido da Caliu). Não é anúncio deste cliente: sai da lista e as exibições dele saem dos totais.
     // Conta Interna da EXA não conta como "outro" (é a equipe subindo vídeo do próprio cliente).
-    const deOutroCliente = (vid: string) => { const v = todos.get(vid); return !!v?.client_id && v.client_id !== ped.client_id && v.client_id !== CONTA_INTERNA; };
+    // Vídeo marcado como "excluido" pela equipe (ex.: "24-6 copa" na conta da Caliu, que não era dela) sai do mesmo jeito.
+    const deOutroCliente = (vid: string) => { const v = todos.get(vid); if (!v) return false; if (v.status === "excluido") return true; return !!v.client_id && v.client_id !== ped.client_id && v.client_id !== CONTA_INTERNA; };
     // exibições, período real e horários de cada vídeo
     const acum = new Map<string, { exib: number; de: string; ate: string; dias: number }>();
     const exibOutrosDia = new Map<string, number>();
