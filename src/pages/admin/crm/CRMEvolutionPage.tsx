@@ -6,6 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { AddCollaboratorDialog } from './components/AddCollaboratorDialog';
 import { CollaboratorCard, type CollaboratorRow } from './components/CollaboratorCard';
 import { MonitorAoVivo } from './components/MonitorAoVivo';
+import { PerfilWhatsApp, lerPerfil } from './components/PerfilWhatsApp';
+import type { CxAgente } from './components/chat/ChatEXA';
+import { UserRoundPen } from 'lucide-react';
 import { toast } from 'sonner';
 import { Pagina, Cabecalho, BOTAO, BOTAO2, Secao, Vazio } from '@/components/admin/ui/exa';
 
@@ -30,6 +33,7 @@ const CRMEvolutionPage: React.FC = () => {
 
   const [addOpen, setAddOpen] = useState(false);
   const [aoVivo, setAoVivo] = useState(false);
+  const [perfilDe, setPerfilDe] = useState<CxAgente | null>(null);
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -125,8 +129,21 @@ const CRMEvolutionPage: React.FC = () => {
       // Auto-sync silently on first mount to refresh profile pics
       syncFromEvolution(true);
     })();
+    // 07/11/2026: foto/nome/recado iguais ao WhatsApp — relê o perfil dos três ao abrir e a cada 2 min (espelha em evolution_instances)
+    const relerPerfis = async () => {
+      await Promise.all((['sofia', 'nando', 'livia'] as CxAgente[]).map((a) => lerPerfil(a).catch(() => null)));
+      load();
+    };
+    relerPerfis();
+    const t = setInterval(relerPerfis, 120000);
+    return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const agenteDe = (c: CollaboratorRow): CxAgente | null => {
+    const r = `${c.collaborator_name} ${(c as any).instance_name || ''}`;
+    return /sofia/i.test(r) ? 'sofia' : /nando/i.test(r) ? 'nando' : ((c as any).is_notifications || /l[ií]via/i.test(r)) ? 'livia' : null;
+  };
 
   return (
     <>
@@ -172,11 +189,19 @@ const CRMEvolutionPage: React.FC = () => {
                 ))}
               </div>
               <div className="-mx-1 hidden gap-3 overflow-x-auto px-1 pb-2 md:flex [scrollbar-width:thin]">
-                {collaborators.map((c) => (
-                  <div key={c.id} className="snap-start">
-                    <CollaboratorCard collaborator={c} onUpdated={load} onSelect={() => navigate(`${basePath}/crm-evolution/conversas/${c.id}`)} />
-                  </div>
-                ))}
+                {collaborators.map((c) => {
+                  const ag = agenteDe(c);
+                  return (
+                    <div key={c.id} className="snap-start">
+                      <CollaboratorCard collaborator={c} onUpdated={load} onSelect={() => navigate(`${basePath}/crm-evolution/conversas/${c.id}`)} />
+                      {ag && (
+                        <button type="button" onClick={() => setPerfilDe(ag)} className="mt-1.5 inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-bold text-[#9C1E1E] hover:bg-[#FDECEC]" title="Foto, nome, recado e privacidade no WhatsApp">
+                          <UserRoundPen className="h-3.5 w-3.5" /> Perfil do WhatsApp
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
@@ -184,6 +209,7 @@ const CRMEvolutionPage: React.FC = () => {
       </Pagina>
 
       <MonitorAoVivo aberto={aoVivo} onFechar={() => setAoVivo(false)} colaboradores={collaborators} />
+      {perfilDe && <PerfilWhatsApp agente={perfilDe} aberto={!!perfilDe} onFechar={() => setPerfilDe(null)} onAtualizado={() => load()} />}
 
       <AddCollaboratorDialog
         open={addOpen}

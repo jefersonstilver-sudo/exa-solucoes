@@ -243,6 +243,73 @@ async function liviaMensagens(sb: SupabaseClient, tel: string) {
   return [...doBanco, ...extras.filter((e) => !dup(e))].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 }
 
+// ---------------------------------------------------------------- perfil do WhatsApp de cada agente (07/11/2026, Jeferson:
+// "réplica perfeita do WhatsApp e configurações": foto, nome, recado e privacidade lidos da Evolution e editáveis aqui)
+async function evoReq(metodo: string, caminho: string, corpo?: Record<string, unknown>) {
+  const { url, key } = EVO();
+  const r = await fetch(`${url}${caminho}`, { method: metodo, headers: { "Content-Type": "application/json", apikey: key }, body: corpo ? JSON.stringify(corpo) : undefined, signal: AbortSignal.timeout(60000) });
+  const t = await r.text();
+  if (!r.ok) throw new Error(`Evolution ${r.status}: ${t.slice(0, 240)}`);
+  try { return JSON.parse(t); } catch { return {}; }
+}
+async function instanciaDoAgente(sb: SupabaseClient, agente: string): Promise<{ instancia: string; id: string | null; numero: string }> {
+  if (agente === "nando") {
+    const inst = await instanciaNando(sb);
+    const { data } = await sb.from("evolution_instances").select("id, collaborator_phone, owner_jid").eq("instance_name", inst).maybeSingle();
+    return { instancia: inst, id: data?.id || null, numero: String(data?.owner_jid || data?.collaborator_phone || "").replace(/@.*/, "").replace(/\D/g, "") };
+  }
+  if (agente === "livia") {
+    const { data } = await sb.from("evolution_instances").select("id, instance_name, collaborator_phone, owner_jid").eq("is_notifications", true).maybeSingle();
+    if (!data) throw new Error("instância da Lívia não encontrada");
+    return { instancia: data.instance_name, id: data.id, numero: String(data.owner_jid || data.collaborator_phone || "").replace(/@.*/, "").replace(/\D/g, "") };
+  }
+  const { data } = await sb.from("evolution_instances").select("id, instance_name, collaborator_phone, owner_jid").or("collaborator_name.ilike.%sofia%,instance_name.ilike.%sofia%").limit(1).maybeSingle();
+  if (!data) throw new Error("instância da Sofia não encontrada");
+  return { instancia: data.instance_name, id: data.id, numero: String(data.owner_jid || data.collaborator_phone || "").replace(/@.*/, "").replace(/\D/g, "") };
+}
+async function perfilAgente(sb: SupabaseClient, agente: string) {
+  const a = await instanciaDoAgente(sb, agente);
+  const inst = encodeURIComponent(a.instancia);
+  let perfil: any = null, privacidade: any = null, conexao: any = null;
+  try { perfil = await evoReq("POST", `/chat/fetchProfile/${inst}`, { number: a.numero }); } catch (e) { perfil = { erro: (e as Error).message }; }
+  try { privacidade = await evoReq("GET", `/chat/fetchPrivacySettings/${inst}`); } catch { privacidade = null; }
+  try { conexao = await evoReq("GET", `/instance/connectionState/${inst}`); } catch { conexao = null; }
+  const foto = perfil?.picture || perfil?.profilePictureUrl || null;
+  const nome = perfil?.name || perfil?.wuid?.name || null;
+  const recado = perfil?.status?.status ?? perfil?.status ?? null;
+  // espelha no cadastro da instância (o card da Equipe e o chat usam isso)
+  if (a.id && (foto || nome)) {
+    await sb.from("evolution_instances").update({ ...(foto ? { profile_picture_url: foto } : {}), ...(nome ? { profile_name: nome } : {}), updated_at: new Date().toISOString() }).eq("id", a.id).then(() => {}, () => {});
+  }
+  return { instancia: a.instancia, numero: a.numero, foto, nome, recado: typeof recado === "string" ? recado : null, privacidade: privacidade?.privacy || privacidade || null, conexao: conexao?.instance?.state || conexao?.state || null, bruto: perfil };
+}
+async function perfilAtualizar(sb: SupabaseClient, agente: string, b: any) {
+  const a = await instanciaDoAgente(sb, agente);
+  const inst = encodeURIComponent(a.instancia);
+  const feito: string[] = [];
+  if (typeof b.nome === "string" && b.nome.trim()) { await evoReq("POST", `/chat/updateProfileName/${inst}`, { name: b.nome.trim().slice(0, 25) }); feito.push("nome"); }
+  if (typeof b.recado === "string") { await evoReq("POST", `/chat/updateProfileStatus/${inst}`, { status: b.recado.trim().slice(0, 139) }); feito.push("recado"); }
+  if (b.foto_caminho) {
+    if (!/^envios\/[a-z0-9-]+\.[a-z0-9]{1,6}$/i.test(String(b.foto_caminho))) throw new Error("foto inválida");
+    const link = await linkAssinado(sb, String(b.foto_caminho), 1800);
+    await evoReq("POST", `/chat/updateProfilePicture/${inst}`, { picture: link });
+    feito.push("foto");
+  }
+  if (b.remover_foto) { await evoReq("DELETE", `/chat/removeProfilePicture/${inst}`); feito.push("foto removida"); }
+  if (b.privacidade && typeof b.privacidade === "object") {
+    const p = b.privacidade;
+    const ok = (v: unknown, lista: string[]) => (typeof v === "string" && lista.includes(v) ? v : undefined);
+    const corpo = {
+      readreceipts: ok(p.readreceipts, ["all", "none"]), profile: ok(p.profile, ["all", "contacts", "contact_blacklist", "none"]),
+      status: ok(p.status, ["all", "contacts", "contact_blacklist", "none"]), online: ok(p.online, ["all", "match_last_seen"]),
+      last: ok(p.last, ["all", "contacts", "contact_blacklist", "none"]), groupadd: ok(p.groupadd, ["all", "contacts", "contact_blacklist"]),
+    };
+    await evoReq("POST", `/chat/updatePrivacySettings/${inst}`, Object.fromEntries(Object.entries(corpo).filter(([, v]) => v !== undefined)));
+    feito.push("privacidade");
+  }
+  return { feito, perfil: await perfilAgente(sb, agente) };
+}
+
 // ---------------------------------------------------------------- envio pela Evolution
 async function evoPost(caminho: string, corpo: Record<string, unknown>) {
   const { url, key } = EVO();
@@ -505,6 +572,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "midia") return json(200, await abrirMidia(sb, agente, String(body.id || "")));
+    if (action === "perfil") return json(200, await perfilAgente(sb, agente));
+    if (action === "perfil_atualizar") return json(200, await perfilAtualizar(sb, agente, body));
 
     // fotos de perfil do WhatsApp das conversas (lista): { alvos: string[] } → { fotos: { [alvo]: url | null } }
     if (action === "fotos") {

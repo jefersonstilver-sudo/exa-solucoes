@@ -34,7 +34,7 @@ const fone = (t: string) => {
 };
 const PAPEL: Record<string, string> = { financeiro: 'financeiro do cliente', dono: 'dono do pedido', autorizado: 'autorizado no pedido', ceo: 'CEO' };
 
-export const LiviaChatPanel: React.FC<{ onVoltar?: () => void; telefoneAgente?: string | null; fotoAgente?: string | null }> = ({ onVoltar, telefoneAgente, fotoAgente }) => {
+export const LiviaChatPanel: React.FC<{ onVoltar?: () => void; telefoneAgente?: string | null; fotoAgente?: string | null; onPerfilAgente?: () => void }> = ({ onVoltar, telefoneAgente, fotoAgente, onPerfilAgente }) => {
   const navigate = useNavigate();
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,6 +231,7 @@ export const LiviaChatPanel: React.FC<{ onVoltar?: () => void; telefoneAgente?: 
       onEnviarTexto={enviarTexto}
       onAtualizar={atualizar}
       onNovaConversa={novaConversa}
+      onPerfilAgente={onPerfilAgente}
       aviso={atual?.modo === 'humano' && atual.humano_ate
         ? <>Atendimento humano até {new Date(atual.humano_ate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. A Lívia volta sozinha depois disso.</>
         : atual?.tipo === 'ceo' ? <>Este é o seu número: aqui a Lívia te manda alertas e pergunta decisões (códigos L…).</> : undefined}

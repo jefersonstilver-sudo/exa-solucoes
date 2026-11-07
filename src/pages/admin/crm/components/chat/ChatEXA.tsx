@@ -212,6 +212,8 @@ export type ChatEXAProps = {
   gaveta?: React.ReactNode;
   /** abre uma conversa com um número que ainda não falou com o agente (DDD + número) */
   onNovaConversa?: (telefone: string) => Promise<void> | void;
+  /** clique na foto/nome do agente: abre o perfil do WhatsApp (foto, nome, recado, privacidade) */
+  onPerfilAgente?: () => void;
 };
 
 export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
@@ -440,11 +442,13 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
       <section className="cx-list" aria-label="Conversas" style={{ width: larguraLista }}>
         <div className="cx-topo">
           {p.onVoltar && <button className="cx-voltar" onClick={p.onVoltar} aria-label="Voltar ao CRM Evolution" title="CRM Evolution">{I.voltar}</button>}
-          <CxFoto url={p.fotoAgente} tamanho={44} alt={p.nomeAgente} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em' }}>{p.nomeAgente}</div>
-            <div style={{ fontSize: 12, color: '#8A8882', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.subAgente}</div>
-          </div>
+          <button type="button" onClick={p.onPerfilAgente} disabled={!p.onPerfilAgente} title={p.onPerfilAgente ? 'Perfil do WhatsApp: foto, nome, recado e privacidade' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, textAlign: 'left', cursor: p.onPerfilAgente ? 'pointer' : 'default' }}>
+            <CxFoto url={p.fotoAgente} tamanho={44} alt={p.nomeAgente} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em' }}>{p.nomeAgente}</div>
+              <div style={{ fontSize: 12, color: '#8A8882', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.subAgente}</div>
+            </div>
+          </button>
           {p.onNovaConversa && (
             <button className="cx-ib cx-nova" onClick={() => setNovaAberta((v) => !v)} aria-label="Nova conversa" title="Nova conversa com um número">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>

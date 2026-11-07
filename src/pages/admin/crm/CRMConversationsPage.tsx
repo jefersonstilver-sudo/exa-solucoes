@@ -8,6 +8,8 @@ import { ChatPanel } from './components/ChatPanel';
 import { SofiaChatPanel } from './components/SofiaChatPanel';
 import { NandoChatPanel } from './components/NandoChatPanel';
 import { LiviaChatPanel } from './components/LiviaChatPanel';
+import { PerfilWhatsApp, lerPerfil } from './components/PerfilWhatsApp';
+import type { CxAgente } from './components/chat/ChatEXA';
 import type { CollaboratorRow } from './components/CollaboratorCard';
 
 const foneCurto = (t?: string | null) => {
@@ -24,6 +26,7 @@ const CRMConversationsPage: React.FC = () => {
   const navigate = useNavigate();
   const [collaborator, setCollaborator] = useState<CollaboratorRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [perfilAberto, setPerfilAberto] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -55,6 +58,16 @@ const CRMConversationsPage: React.FC = () => {
   const ehNando = !ehSofia && /nando/i.test(rotulo);
   const ehLivia = !ehSofia && !ehNando && (/l[ií]via/i.test(rotulo) || !!(collaborator as any)?.is_notifications);
   const tel = foneCurto(collaborator?.collaborator_phone);
+  const agente: CxAgente | null = ehSofia ? 'sofia' : ehNando ? 'nando' : ehLivia ? 'livia' : null;
+  // foto/nome do agente sempre iguais ao WhatsApp: relê o perfil ao abrir e a cada 2 min (a função espelha em evolution_instances)
+  useEffect(() => {
+    if (!agente) return;
+    let vivo = true;
+    const ler = () => lerPerfil(agente).then((p) => { if (vivo && (p.foto || p.nome)) setCollaborator((c) => c ? { ...c, profile_picture_url: p.foto || c.profile_picture_url, profile_name: p.nome || c.profile_name } : c); }).catch(() => {});
+    ler();
+    const t = setInterval(ler, 120000);
+    return () => { vivo = false; clearInterval(t); };
+  }, [agente]);
 
   return (
     <>
@@ -91,16 +104,17 @@ const CRMConversationsPage: React.FC = () => {
               </Button>
             </div>
           ) : ehSofia ? (
-            <SofiaChatPanel onVoltar={goBack} fotoAgente={collaborator.profile_picture_url} telefoneAgente={tel} />
+            <SofiaChatPanel onVoltar={goBack} fotoAgente={collaborator.profile_picture_url} telefoneAgente={tel} onPerfilAgente={() => setPerfilAberto(true)} />
           ) : ehNando ? (
-            <NandoChatPanel abrir={telefoneQs ? { telefone: telefoneQs } : null} onVoltar={goBack} telefoneAgente={tel} />
+            <NandoChatPanel abrir={telefoneQs ? { telefone: telefoneQs } : null} onVoltar={goBack} telefoneAgente={tel} fotoAgente={collaborator.profile_picture_url} onPerfilAgente={() => setPerfilAberto(true)} />
           ) : ehLivia ? (
-            <LiviaChatPanel onVoltar={goBack} fotoAgente={collaborator.profile_picture_url} telefoneAgente={tel} />
+            <LiviaChatPanel onVoltar={goBack} fotoAgente={collaborator.profile_picture_url} telefoneAgente={tel} onPerfilAgente={() => setPerfilAberto(true)} />
           ) : (
             <ChatPanel collaborator={collaborator} />
           )}
         </div>
       </div>
+      {agente && <PerfilWhatsApp agente={agente} aberto={perfilAberto} onFechar={() => setPerfilAberto(false)} onAtualizado={(p) => setCollaborator((c) => c ? { ...c, profile_picture_url: p.foto || c.profile_picture_url, profile_name: p.nome || c.profile_name } : c)} />}
     </>
   );
 };

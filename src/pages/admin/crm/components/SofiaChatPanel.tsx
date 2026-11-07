@@ -74,7 +74,7 @@ const FILTROS = [
   { v: 'retornos', l: 'Retornos' },
 ] as const;
 
-export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: string | null; telefoneAgente?: string | null }> = ({ onVoltar, fotoAgente, telefoneAgente }) => {
+export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: string | null; telefoneAgente?: string | null ; onPerfilAgente?: () => void }> = ({ onVoltar, fotoAgente, telefoneAgente , onPerfilAgente }) => {
   const [convs, setConvs] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
   const [selId, setSelId] = useState<string | null>(null);
@@ -411,6 +411,7 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
         aviso={aviso}
         onVoltar={onVoltar}
         gaveta={gaveta}
+        onPerfilAgente={onPerfilAgente}
       />
     </>
   );

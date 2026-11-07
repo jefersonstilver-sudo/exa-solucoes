@@ -70,7 +70,7 @@ const AVATAR_NANDO = '/site/nando-avatar.png';
 
 export interface NandoAbrirConversa { telefone: string; nome?: string; predio?: string; papel?: string }
 
-export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null; onVoltar?: () => void; telefoneAgente?: string | null }> = ({ abrir = null, onVoltar, telefoneAgente }) => {
+export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null; onVoltar?: () => void; telefoneAgente?: string | null; fotoAgente?: string | null; onPerfilAgente?: () => void }> = ({ abrir = null, onVoltar, telefoneAgente, fotoAgente, onPerfilAgente }) => {
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState<string | null>(null);
@@ -288,7 +288,8 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null; onVol
         agente="nando"
         nomeAgente="Nando"
         subAgente={`Síndicos${telefoneAgente ? ` · ${telefoneAgente}` : ''}`}
-        fotoAgente={AVATAR_NANDO}
+        fotoAgente={fotoAgente || AVATAR_NANDO}
+        onPerfilAgente={onPerfilAgente}
         abas={FILTROS.map((f) => ({ v: f.v, l: f.l, n: contagem(f.v) }))}
         aba={filtro}
         onAba={(v) => setFiltro(v as any)}
