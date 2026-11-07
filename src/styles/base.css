@@ -108,11 +108,12 @@
     --exa-mint: 160 72% 59%;           /* Mantém mint */
 
     /* Sidebar Variables */
-    --sidebar-background: 355 68% 37%;
+    /* 07/11/2026: barra lateral escura neutra (#17181A); o vermelho fica só nos destaques */
+    --sidebar-background: 225 6% 10%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 355 68% 37%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 355 50% 25%;
+    --sidebar-accent: 0 0% 100% / 0.08;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 100% / 0.1;
     --sidebar-ring: 355 68% 37%;

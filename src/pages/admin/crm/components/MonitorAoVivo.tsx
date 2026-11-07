@@ -220,7 +220,7 @@ const Coluna: React.FC<{ ag: Agente; foto?: string | null }> = ({ ag, foto }) =>
   );
 };
 
-const CHAVE = 'exa-monitor-agentes';
+const CHAVE = 'exa-monitor-agentes-v2';
 
 export const MonitorAoVivo: React.FC<{ aberto: boolean; onFechar: () => void; colaboradores: CollaboratorRow[] }> = ({ aberto, onFechar, colaboradores }) => {
   const [agentes, setAgentes] = useState<Agente[]>(() => {

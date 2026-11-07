@@ -113,6 +113,7 @@ async function liviaLista(sb: SupabaseClient) {
     clientesLivia(sb),
   ]);
   const estado = new Map((estados || []).map((e: any) => [e.telefone, e.humano_ate]));
+  const ceo8 = ultimos8(Deno.env.get("LIVIA_CEO") || "5545998090000");
   const porTel = new Map<string, any>();
   for (const m of rows || []) {
     const k: any = m.conteudo || {};
@@ -130,7 +131,7 @@ async function liviaLista(sb: SupabaseClient) {
   }
   const conversas = [...porTel.values()].map((c) => {
     const cli = clientes.get(ultimos8(c.telefone));
-    const ceo = c.ultima_papel === "ceo" || (rows || []).some((r: any) => r.telefone === c.telefone && r.papel === "ceo");
+    const ceo = ultimos8(c.telefone) === ceo8 || c.ultima_papel === "ceo" || (rows || []).some((r: any) => r.telefone === c.telefone && r.papel === "ceo");
     const humanoAte = estado.get(c.telefone) || null;
     const humano = !!humanoAte && new Date(humanoAte).getTime() > Date.now();
     return {
