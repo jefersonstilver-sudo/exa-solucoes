@@ -690,3 +690,6 @@ verify_jwt = false
 
 [functions.livia-cron]
 verify_jwt = false
+
+[functions.cambio-parceiros]
+verify_jwt = false
