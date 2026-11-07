@@ -48,7 +48,7 @@ const hhmm = (d?: Date | null) => d ? d.toLocaleTimeString('pt-BR', { hour: '2-d
 const ehGrupoPredios = (nome?: string | null) => /^pr[eé]dios$/i.test((nome || '').trim());
 
 type Visao = 'paineis' | 'conexoes' | 'telas' | 'elevadores';
-const VISAO_ROTULO: Record<Visao, string> = { paineis: 'Visão geral', conexoes: 'Conexões', telas: 'Telas', elevadores: 'Elevadores' };
+const VISAO_ROTULO: Record<Visao, string> = { paineis: 'Visão geral', conexoes: 'Internet (operadoras)', telas: 'Telas novas', elevadores: 'Empresas de elevador' };
 type FiltroEstado = 'todos' | 'problema' | EstadoPainel;
 type Ordem = 'quedas' | 'nome' | 'estado';
 

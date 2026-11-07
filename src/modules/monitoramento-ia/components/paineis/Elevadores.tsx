@@ -32,7 +32,7 @@ export const Elevadores: React.FC<{ predios: Map<string, string> }> = ({ predios
   const empresas = useQuery({
     queryKey: ['elevadores-empresas'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('fornecedores').select('id, nome_fantasia, razao_social, cnpj, telefone, email, endereco, observacao, ativo, tipo').order('nome_fantasia');
+      const { data, error } = await (supabase as any).from('fornecedores').select('id, nome_fantasia, razao_social, cnpj, telefone, email, endereco, observacao, ativo, tipo').eq('tipo', 'elevador').order('nome_fantasia'); // só empresas de elevador: operadoras de internet são outra coisa (aba Conexões)
       if (error) throw error;
       return (data || []) as Empresa[];
     },
