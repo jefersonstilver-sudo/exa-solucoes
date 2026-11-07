@@ -2,21 +2,24 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Maximize2, Minimize2, Pin, PinOff, X, Radio } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { CollaboratorRow } from './CollaboratorCard';
-import { CxFoto, MidiaMsg, lerMidia, rotuloDia, hhmm, useFotosWhatsApp, type CxConversa, type CxMsg } from './chat/ChatEXA';
+import { CX_TEMA, CxFoto, MidiaMsg, chamarChat, lerMidia, rotuloDia, hhmm, useFotosWhatsApp, type CxConversa, type CxMsg } from './chat/ChatEXA';
 
 /**
- * Monitor ao vivo (04/11/2026): acompanha as conversas da Sofia e do Nando lado a lado, em tela cheia.
+ * Monitor ao vivo (04/11/2026): acompanha as conversas da Sofia, do Nando e da Lívia lado a lado, em tela cheia.
+ * 07/11/2026 (Jeferson): os três sempre lado a lado, nunca um embaixo do outro; cada agente na sua cor
+ * (Sofia verde, Nando vermelho, Lívia azul); dentro da coluna a lista vira uma faixa de contatos em cima da conversa.
  * Só leitura: usa as mesmas ações de lista e mensagens dos painéis (sofia-panel e nando-crm), sem enviar nada.
  * Cada coluna segue sozinha a conversa que acabou de ter movimento; clicar numa conversa fixa ela (alfinete).
  * 05/11/2026: visual de vidro sobre fundo escuro da marca, bolhas iguais às do WhatsApp do CRM (mesmo CSS do ChatEXA),
  * fotos, vídeos, áudios com player + transcrição e PDFs abrindo pela exa2-crm-chat, foto de perfil e data + hora na lista.
  */
-type Agente = 'sofia' | 'nando';
+type Agente = 'sofia' | 'nando' | 'livia';
 type Item = { id: string; nome: string; empresa: string | null; papel: string | null; preview: string; quando: string | null; humano: boolean; aguardando?: number };
 type Linha = { id: string; lado: 'in' | 'bot' | 'humano' | 'sistema'; texto: string; quando: string; autor?: string | null; midia?: string | null };
 
-const FN: Record<Agente, string> = { sofia: 'sofia-panel', nando: 'nando-crm' };
-const NOME: Record<Agente, string> = { sofia: 'Sofia', nando: 'Nando' };
+const FN: Record<Agente, string> = { sofia: 'sofia-panel', nando: 'nando-crm', livia: 'exa2-crm-chat' };
+const NOME: Record<Agente, string> = { sofia: 'Sofia', nando: 'Nando', livia: 'Lívia' };
+const TODOS: Agente[] = ['sofia', 'nando', 'livia'];
 const PAPEL: Record<string, string> = { cliente: 'Cliente', lead: 'Lead', sindico: 'Síndico', equipe: 'Equipe', ceo: 'CEO' };
 
 async function chamar(ag: Agente, action: string, body: Record<string, unknown> = {}) {
@@ -27,6 +30,13 @@ async function chamar(ag: Agente, action: string, body: Record<string, unknown> 
 }
 
 async function listar(ag: Agente): Promise<Item[]> {
+  if (ag === 'livia') {
+    const d = await chamarChat('livia_list', { agente: 'livia' });
+    return (d.conversas || []).map((c: any) => ({
+      id: c.telefone, nome: c.nome, empresa: c.empresa || null, papel: c.tipo === 'ceo' ? 'CEO' : c.papel === 'financeiro' ? 'Financeiro' : c.papel === 'dono' ? 'Dono' : c.papel === 'autorizado' ? 'Autorizado' : 'Sem pedido',
+      preview: `${c.ultima_papel === 'livia' ? 'Lívia: ' : c.ultima_papel === 'humano' ? 'Equipe: ' : ''}${c.preview || ''}`, quando: c.ultima_em, humano: c.modo === 'humano', aguardando: c.aguardando || 0,
+    }));
+  }
   const d = await chamar(ag, 'list');
   if (ag === 'sofia') {
     return (d.conversations || []).map((c: any) => ({
@@ -41,6 +51,10 @@ async function listar(ag: Agente): Promise<Item[]> {
 }
 
 async function mensagens(ag: Agente, id: string): Promise<Linha[]> {
+  if (ag === 'livia') {
+    const d = await chamarChat('livia_messages', { agente: 'livia', alvo: id });
+    return (d.mensagens || []).map((m: any) => ({ id: String(m.id), lado: m.papel === 'cliente' || m.papel === 'ceo' ? 'in' : m.papel === 'livia' ? 'bot' : m.papel === 'humano' ? 'humano' : 'sistema', texto: m.texto || '', quando: m.created_at, autor: m.autor || null, midia: m.midia || null }));
+  }
   if (ag === 'sofia') {
     const d = await chamar(ag, 'messages', { conversation_id: id });
     return (d.messages || []).map((m: any) => ({ id: String(m.id), lado: m.direction === 'in' ? 'in' : m.direction === 'out_bot' ? 'bot' : 'humano', texto: m.body || '', quando: m.created_at, autor: m.author_name || m.autor || null, midia: m.midia || null }));
@@ -135,74 +149,70 @@ const Coluna: React.FC<{ ag: Agente; foto?: string | null }> = ({ ag, foto }) =>
     return out;
   }, [linhas, ag]);
 
+  const tema = CX_TEMA[ag];
+  const vars = { '--cx-cor': tema.cor, '--cx-escura': tema.escura, '--cx-clara': tema.clara } as React.CSSProperties;
+
   return (
-    <section className={`flex flex-col min-h-[560px] xl:min-h-0 min-w-0 rounded-3xl overflow-hidden ${vidro}`} aria-label={`Conversas da ${NOME[ag]}`}>
-      <header className="flex items-center gap-3 px-5 py-3.5 border-b border-black/5 bg-white/40">
-        {foto ? <img src={foto} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-white" /> : <div className="w-10 h-10 rounded-full bg-[#9C1E1E] text-white grid place-items-center font-bold">{NOME[ag][0]}</div>}
+    <section className={`flex flex-col min-h-0 min-w-0 rounded-3xl overflow-hidden ${vidro}`} aria-label={`Conversas da ${NOME[ag]}`} style={vars}>
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-black/5" style={{ background: tema.clara }}>
+        {foto ? <img src={foto} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-white" /> : <div className="w-10 h-10 rounded-full text-white grid place-items-center font-bold" style={{ background: tema.cor }}>{NOME[ag][0]}</div>}
         <div className="min-w-0">
-          <div className="font-extrabold text-gray-950 tracking-tight">{NOME[ag]}</div>
-          <div className="text-xs text-gray-600">{ativas} conversa{ativas === 1 ? '' : 's'} com movimento na última hora · {lista.length} no total</div>
+          <div className="font-extrabold tracking-tight" style={{ color: tema.escura }}>{NOME[ag]}</div>
+          <div className="text-xs text-gray-600 truncate">{ativas} com movimento na última hora · {lista.length} no total</div>
         </div>
-        {erro && <span className="ml-auto text-xs font-semibold text-red-700" role="alert">{erro}</span>}
+        {erro && <span className="ml-auto text-xs font-semibold text-red-700 truncate" role="alert">{erro}</span>}
       </header>
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[minmax(240px,36%)_1fr]">
-        <ul className="min-h-0 max-h-56 md:max-h-none overflow-y-auto border-b md:border-b-0 md:border-r border-black/5 bg-white/55">
-          {lista.slice(0, 40).map((c) => {
-            const ativa = c.id === seguida;
-            const ft = fotos[c.id];
-            return (
-              <li key={c.id}>
-                <button
-                  onClick={() => setFixada(fixada === c.id ? null : c.id)}
-                  className={`w-full text-left flex gap-3 px-3 py-2.5 border-b border-black/[0.04] transition-colors ${ativa ? 'bg-[#9C1E1E]/10' : 'hover:bg-white/80'}`}
-                  aria-pressed={fixada === c.id}
-                >
-                  <span className="relative flex-shrink-0">
-                    {ft ? <CxFoto url={ft} tamanho={42} alt="" /> : <span className="w-[42px] h-[42px] rounded-full bg-gray-200 text-gray-600 grid place-items-center text-xs font-bold">{iniciais(c.nome)}</span>}
-                    {recente(c.quando) && <span className="absolute -right-0.5 -bottom-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" aria-label="movimento agora" />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-gray-950 truncate">{c.nome}</span>
-                      {fixada === c.id && <Pin className="w-3.5 h-3.5 text-[#9C1E1E] flex-shrink-0" aria-label="fixada" />}
-                      <span className={`ml-auto text-[11px] flex-shrink-0 tabular-nums ${recente(c.quando, 60) ? 'text-emerald-700 font-bold' : 'text-gray-500'}`}>{quandoLista(c.quando)}</span>
-                    </span>
-                    <span className="block text-xs font-semibold text-[#9C1E1E] truncate">{[c.empresa, c.papel].filter(Boolean).join(' · ')}{c.humano ? ' · com a equipe' : ''}</span>
-                    <span className="block text-xs text-gray-600 truncate">{c.preview}</span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-          {!lista.length && !erro && <li className="p-4 text-sm text-gray-500">Carregando conversas…</li>}
-        </ul>
-
-        <div className="flex flex-col min-h-0 min-w-0">
-          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-black/5 bg-white/70">
-            {atual && (fotos[atual.id] ? <CxFoto url={fotos[atual.id]} tamanho={34} alt="" /> : <span className="w-[34px] h-[34px] rounded-full bg-gray-200 text-gray-600 grid place-items-center text-[11px] font-bold flex-shrink-0">{iniciais(atual.nome)}</span>)}
-            <div className="min-w-0">
-              <div className="text-sm font-bold text-gray-950 truncate">{atual ? atual.nome : '—'}{atual?.empresa ? <span className="font-medium text-gray-600"> · {atual.empresa}</span> : null}</div>
-              <div className="text-[11px] text-gray-600">{fixada ? 'Conversa fixada' : 'Seguindo a conversa mais recente'}{atual?.quando ? ` · última mensagem ${quandoLista(atual.quando)}` : ''}</div>
-            </div>
-            {fixada && (
-              <button onClick={() => setFixada(null)} className="ml-auto inline-flex items-center gap-1.5 text-xs font-bold text-[#9C1E1E] hover:underline">
-                <PinOff className="w-3.5 h-3.5" />Voltar a seguir a mais recente
+      {/* faixa de contatos (em cima, para as três colunas caberem lado a lado) */}
+      <ul className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-black/5 bg-white/55 [scrollbar-width:thin]" aria-label="Conversas recentes">
+        {lista.slice(0, 30).map((c) => {
+          const ativa = c.id === seguida;
+          const ft = fotos[c.id];
+          return (
+            <li key={c.id} className="flex-shrink-0">
+              <button
+                onClick={() => setFixada(fixada === c.id ? null : c.id)}
+                className={`flex items-center gap-2 h-10 pl-1 pr-3 rounded-full border transition-colors ${ativa ? 'text-white' : 'bg-white/80 border-black/5 hover:bg-white text-gray-900'}`}
+                style={ativa ? { background: tema.cor, borderColor: tema.cor } : undefined}
+                aria-pressed={fixada === c.id} title={`${c.nome}${c.empresa ? ' · ' + c.empresa : ''} · ${quandoLista(c.quando)}`}
+              >
+                <span className="relative flex-shrink-0">
+                  {ft ? <CxFoto url={ft} tamanho={32} alt="" /> : <span className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 grid place-items-center text-[11px] font-bold">{iniciais(c.nome)}</span>}
+                  {recente(c.quando) && <span className="absolute -right-0.5 -bottom-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" aria-label="movimento agora" />}
+                </span>
+                <span className="text-xs font-bold max-w-[120px] truncate">{c.nome.split(' ').slice(0, 2).join(' ')}</span>
+                {fixada === c.id && <Pin className="w-3 h-3 flex-shrink-0" aria-label="fixada" />}
+                {!!c.aguardando && !ativa && <span className="min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-extrabold grid place-items-center" style={{ background: tema.cor }}>{c.aguardando}</span>}
               </button>
-            )}
-          </div>
-          <div
-            ref={caixaRef}
-            onScroll={(e) => { const el = e.currentTarget; colado.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}
-            className="cx cx-monitor flex-1 min-h-[300px] overflow-y-auto"
-            aria-live="polite"
-          >
-            <div className="cx-chat" style={{ minHeight: '100%', overflow: 'visible' }}>
-              <div className="flex flex-col gap-1.5 px-3 md:px-5 py-4">
-                {bolhas}
-                {seguida && !linhas.length && <p className="text-sm text-gray-500">Carregando mensagens…</p>}
-              </div>
-            </div>
+            </li>
+          );
+        })}
+        {!lista.length && !erro && <li className="py-2 text-sm text-gray-500">Carregando conversas…</li>}
+      </ul>
+
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-black/5 bg-white/70">
+        {atual && (fotos[atual.id] ? <CxFoto url={fotos[atual.id]} tamanho={32} alt="" /> : <span className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 grid place-items-center text-[11px] font-bold flex-shrink-0">{iniciais(atual.nome)}</span>)}
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold text-gray-950 truncate">{atual ? atual.nome : '—'}{atual?.empresa ? <span className="font-medium text-gray-600"> · {atual.empresa}</span> : null}{atual?.papel ? <span className="font-semibold" style={{ color: tema.escura }}> · {atual.papel}</span> : null}</div>
+          <div className="text-[11px] text-gray-600 truncate">{fixada ? 'Conversa fixada' : 'Seguindo a mais recente'}{atual?.quando ? ` · ${quandoLista(atual.quando)}` : ''}{atual?.humano ? ' · com a equipe' : ''}</div>
+        </div>
+        {fixada && (
+          <button onClick={() => setFixada(null)} className="inline-flex items-center gap-1 text-xs font-bold hover:underline flex-shrink-0" style={{ color: tema.escura }} title="Voltar a seguir a mais recente">
+            <PinOff className="w-3.5 h-3.5" /><span className="hidden 2xl:inline">Seguir a mais recente</span>
+          </button>
+        )}
+      </div>
+      <div
+        ref={caixaRef}
+        onScroll={(e) => { const el = e.currentTarget; colado.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}
+        className="cx cx-monitor flex-1 min-h-0 overflow-y-auto"
+        aria-live="polite"
+        style={vars}
+      >
+        <div className="cx-chat" style={{ minHeight: '100%', overflow: 'visible' }}>
+          <div className="flex flex-col gap-1.5 px-3 py-4">
+            {bolhas}
+            {seguida && !linhas.length && <p className="text-sm text-gray-500">Carregando mensagens…</p>}
           </div>
         </div>
       </div>
@@ -214,8 +224,8 @@ const CHAVE = 'exa-monitor-agentes';
 
 export const MonitorAoVivo: React.FC<{ aberto: boolean; onFechar: () => void; colaboradores: CollaboratorRow[] }> = ({ aberto, onFechar, colaboradores }) => {
   const [agentes, setAgentes] = useState<Agente[]>(() => {
-    try { const v = JSON.parse(localStorage.getItem(CHAVE) || '[]'); if (Array.isArray(v) && v.length) return v.filter((x) => x === 'sofia' || x === 'nando'); } catch { /* sem preferência salva */ }
-    return ['sofia', 'nando'];
+    try { const v = JSON.parse(localStorage.getItem(CHAVE) || '[]'); if (Array.isArray(v) && v.length) { const f = v.filter((x) => TODOS.includes(x)); if (f.length) return f; } } catch { /* sem preferência salva */ }
+    return [...TODOS];
   });
   const [cheia, setCheia] = useState(false);
   const raiz = useRef<HTMLDivElement>(null);
@@ -230,7 +240,7 @@ export const MonitorAoVivo: React.FC<{ aberto: boolean; onFechar: () => void; co
   }, [aberto, onFechar]);
 
   if (!aberto) return null;
-  const foto = (ag: Agente) => colaboradores.find((c) => new RegExp(ag, 'i').test(`${c.collaborator_name} ${c.instance_name || ''}`))?.profile_picture_url || null;
+  const foto = (ag: Agente) => colaboradores.find((c) => ag === 'livia' ? (c as any).is_notifications || /l[ií]via/i.test(`${c.collaborator_name} ${c.instance_name || ''}`) : new RegExp(ag, 'i').test(`${c.collaborator_name} ${c.instance_name || ''}`))?.profile_picture_url || null;
   const alternar = (ag: Agente) => setAgentes((cur) => (cur.includes(ag) ? (cur.length > 1 ? cur.filter((x) => x !== ag) : cur) : [...cur, ag]));
   const telaCheia = async () => {
     try { if (document.fullscreenElement) await document.exitFullscreen(); else await raiz.current?.requestFullscreen(); } catch { /* navegador sem suporte: segue no modo janela */ }
@@ -245,9 +255,10 @@ export const MonitorAoVivo: React.FC<{ aberto: boolean; onFechar: () => void; co
           <h2 className="text-lg font-extrabold tracking-tight text-white">Ao vivo</h2>
         </div>
         <div className="flex items-center gap-2" role="group" aria-label="Agentes acompanhados">
-          {(['sofia', 'nando'] as Agente[]).map((ag) => (
+          {TODOS.map((ag) => (
             <button key={ag} onClick={() => alternar(ag)} aria-pressed={agentes.includes(ag)}
-              className={`px-3 h-8 rounded-full text-sm font-semibold border ${agentes.includes(ag) ? 'bg-[#EA251D] text-white border-[#EA251D] shadow-[0_6px_18px_-6px_rgba(234,37,29,.8)]' : 'bg-white/10 text-white/80 border-white/25 hover:bg-white/20'}`}>
+              className={`px-3 h-8 rounded-full text-sm font-semibold border ${agentes.includes(ag) ? 'text-white' : 'bg-white/10 text-white/80 border-white/25 hover:bg-white/20'}`}
+              style={agentes.includes(ag) ? { background: CX_TEMA[ag].cor, borderColor: CX_TEMA[ag].cor } : undefined}>
               {NOME[ag]}
             </button>
           ))}
@@ -262,8 +273,11 @@ export const MonitorAoVivo: React.FC<{ aberto: boolean; onFechar: () => void; co
           </button>
         </div>
       </div>
-      <div className={`flex-1 min-h-0 p-3 md:p-4 grid gap-3 md:gap-4 overflow-y-auto ${agentes.length > 1 ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
-        {agentes.map((ag) => <Coluna key={ag} ag={ag} foto={foto(ag)} />)}
+      {/* sempre lado a lado: em tela estreita a faixa rola na horizontal, nunca empilha */}
+      <div className="flex-1 min-h-0 p-3 md:p-4 overflow-x-auto overflow-y-hidden [scrollbar-width:thin]">
+        <div className="h-full grid gap-3 md:gap-4" style={{ gridTemplateColumns: `repeat(${TODOS.filter((a) => agentes.includes(a)).length}, minmax(380px, 1fr))`, minWidth: 'max-content', width: '100%' }}>
+          {TODOS.filter((a) => agentes.includes(a)).map((ag) => <Coluna key={ag} ag={ag} foto={foto(ag)} />)}
+        </div>
       </div>
     </div>
   );

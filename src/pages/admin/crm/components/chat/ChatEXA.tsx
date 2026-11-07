@@ -9,7 +9,14 @@ import './chat-exa.css';
  * Envio de texto continua pelas funções de cada agente; arquivo, áudio, programadas e notas vão pela exa2-crm-chat.
  */
 
-export type CxAgente = 'nando' | 'sofia';
+export type CxAgente = 'nando' | 'sofia' | 'livia';
+/** Cor de cada agente da equipe (Jeferson, 07/11/2026): Nando vermelho, Sofia verde, Lívia azul. */
+export const CX_TEMA: Record<CxAgente, { cor: string; escura: string; clara: string }> = {
+  nando: { cor: '#EA251D', escura: '#C41E18', clara: '#FDECEB' },
+  sofia: { cor: '#1E9E5A', escura: '#167A45', clara: '#E6F6EC' },
+  livia: { cor: '#2563EB', escura: '#1D4ED8', clara: '#E8EFFD' },
+};
+const LARGURA_LISTA = 'cx_lista_largura';
 export type CxConversa = {
   id: string; titulo: string; sub: string; subMarca?: boolean; hora: string; preview: string;
   naoLidas: number; humano: boolean; foto?: string | null;
@@ -203,6 +210,8 @@ export type ChatEXAProps = {
   aviso?: React.ReactNode;
   onVoltar?: () => void;
   gaveta?: React.ReactNode;
+  /** abre uma conversa com um número que ainda não falou com o agente (DDD + número) */
+  onNovaConversa?: (telefone: string) => Promise<void> | void;
 };
 
 export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
@@ -229,6 +238,29 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
   const fotoDe = (c: CxConversa) => c.foto || fotosWa[c.id] || null;
   const atual = p.conversas.find((c) => c.id === p.sel) || null;
   const [agendarPara, setAgendarPara] = useState<Date | null>(null);
+  const tema = CX_TEMA[agente];
+  // largura da lista arrastável (fica salva no navegador)
+  const [larguraLista, setLarguraLista] = useState<number>(() => { try { return Math.min(640, Math.max(260, Number(localStorage.getItem(LARGURA_LISTA)) || 380)); } catch { return 380; } });
+  const arrastando = useRef(false);
+  const iniciarArraste = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault(); arrastando.current = true;
+    const x0 = e.clientX, l0 = larguraLista;
+    const mover = (ev: PointerEvent) => { if (!arrastando.current) return; setLarguraLista(Math.min(640, Math.max(260, l0 + ev.clientX - x0))); };
+    const soltar = () => { arrastando.current = false; window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', soltar); setLarguraLista((l) => { try { localStorage.setItem(LARGURA_LISTA, String(l)); } catch { /* sem armazenamento */ } return l; }); };
+    window.addEventListener('pointermove', mover); window.addEventListener('pointerup', soltar);
+  };
+  const [novaAberta, setNovaAberta] = useState(false);
+  const [novoNumero, setNovoNumero] = useState('');
+  const [abrindoNova, setAbrindoNova] = useState(false);
+  const abrirNova = async () => {
+    const d = novoNumero.replace(/\D/g, '');
+    if (d.length < 10 || d.length > 13) { toast.error('Digite DDD e número (ex.: 45 99999-9999).'); return; }
+    const tel = d.length <= 11 ? '55' + d : d;
+    setAbrindoNova(true);
+    try { await p.onNovaConversa?.(tel); setNovaAberta(false); setNovoNumero(''); setCelChat(true); }
+    catch (e: any) { toast.error(e?.message || 'Não foi possível abrir a conversa.'); }
+    finally { setAbrindoNova(false); }
+  };
 
   // Conversa aberta no celular ocupa a tela toda: o layout esconde a barra inferior (body.cx-chat-aberto)
   useEffect(() => {
@@ -398,13 +430,14 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
   }, [p.msgs, agente, p.nomeAgente, p.fotoAgente]);
 
   const temTexto = !!texto.trim() || !!anexo;
-  const estado = atual?.humano ? `Você está atendendo · ${p.nomeAgente} pausad${p.nomeAgente === 'Sofia' ? 'a' : 'o'}` : `${p.nomeAgente} atendendo`;
+  const feminino = agente !== 'nando';
+  const estado = atual?.humano ? `Você está atendendo · ${p.nomeAgente} pausad${feminino ? 'a' : 'o'}` : `${p.nomeAgente} atendendo`;
   const min = String(Math.floor(segGrav / 60)), seg = String(segGrav % 60).padStart(2, '0');
 
   return (
-    <div className="cx" data-chat={celChat}>
+    <div className={`cx cx-${agente}`} data-chat={celChat} style={{ '--cx-cor': tema.cor, '--cx-escura': tema.escura, '--cx-clara': tema.clara } as React.CSSProperties}>
       {/* ---------- lista ---------- */}
-      <section className="cx-list" aria-label="Conversas">
+      <section className="cx-list" aria-label="Conversas" style={{ width: larguraLista }}>
         <div className="cx-topo">
           {p.onVoltar && <button className="cx-voltar" onClick={p.onVoltar} aria-label="Voltar ao CRM Evolution" title="CRM Evolution">{I.voltar}</button>}
           <CxFoto url={p.fotoAgente} tamanho={44} alt={p.nomeAgente} />
@@ -412,7 +445,19 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em' }}>{p.nomeAgente}</div>
             <div style={{ fontSize: 12, color: '#8A8882', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.subAgente}</div>
           </div>
+          {p.onNovaConversa && (
+            <button className="cx-ib cx-nova" onClick={() => setNovaAberta((v) => !v)} aria-label="Nova conversa" title="Nova conversa com um número">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+          )}
         </div>
+        {novaAberta && (
+          <form className="cx-novaform" onSubmit={(e) => { e.preventDefault(); abrirNova(); }}>
+            <input autoFocus inputMode="tel" value={novoNumero} onChange={(e) => setNovoNumero(e.target.value)} placeholder="DDD + número (45 99999-9999)" aria-label="Número do WhatsApp" />
+            <button type="submit" className="cx-btn cx-red" disabled={abrindoNova}>{abrindoNova ? '…' : 'Abrir'}</button>
+            <button type="button" className="cx-ib" onClick={() => setNovaAberta(false)} aria-label="Fechar">{I.x}</button>
+          </form>
+        )}
         <div style={{ padding: '0 16px 12px' }}>
           <label className="cx-busca">{I.busca}<input value={p.busca} onChange={(e) => p.onBusca(e.target.value)} placeholder={p.placeholderBusca} aria-label={p.placeholderBusca} /></label>
           <div className="cx-abas" role="tablist">
@@ -436,12 +481,12 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
                     <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
                       <b style={{ fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {c.titulo}
-                        {c.agenda && <span style={{ color: c.agenda.falha ? '#EA251D' : '#EA580C', fontWeight: 900, marginLeft: 3 }} title={c.agenda.texto} aria-label={c.agenda.texto}>*</span>}
+                        {c.agenda && <span style={{ color: c.agenda.falha ? 'var(--cx-cor)' : '#EA580C', fontWeight: 900, marginLeft: 3 }} title={c.agenda.texto} aria-label={c.agenda.texto}>*</span>}
                       </b>
-                      <span style={{ fontSize: 12, color: c.naoLidas && !on ? '#EA251D' : '#9C9A96', fontWeight: 700, flex: 'none' }}>{c.hora}</span>
+                      <span style={{ fontSize: 12, color: c.naoLidas && !on ? 'var(--cx-cor)' : '#9C9A96', fontWeight: 700, flex: 'none' }}>{c.hora}</span>
                     </span>
-                    <span style={{ display: 'block', marginTop: 1, fontSize: 12, fontWeight: 700, color: c.subMarca ? '#9E1014' : '#9C9A96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.sub}</span>
-                    {c.agenda && <span style={{ display: 'block', marginTop: 1, fontSize: 12, fontWeight: 800, color: c.agenda.falha ? '#EA251D' : '#C2410C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.agenda.texto}</span>}
+                    <span style={{ display: 'block', marginTop: 1, fontSize: 12, fontWeight: 700, color: c.subMarca ? 'var(--cx-escura)' : '#9C9A96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.sub}</span>
+                    {c.agenda && <span style={{ display: 'block', marginTop: 1, fontSize: 12, fontWeight: 800, color: c.agenda.falha ? 'var(--cx-cor)' : '#C2410C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.agenda.texto}</span>}
                     <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginTop: 2 }}>
                       <span style={{ color: '#77756F', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.preview}</span>
                       {c.naoLidas > 0 && !on ? <span className="cx-badge">{c.naoLidas}</span> : c.humano ? <span className="cx-dot" style={{ background: '#0B0B0D' }} title="Você está atendendo" /> : null}
@@ -455,6 +500,8 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
         </div>
       </section>
 
+      <div className="cx-divisor" onPointerDown={iniciarArraste} role="separator" aria-orientation="vertical" aria-label="Arraste para mudar a largura da lista" title="Arraste para mudar a largura da lista" />
+
       {/* ---------- conversa ---------- */}
       <main className="cx-chat">
         {!atual ? (
@@ -466,11 +513,11 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
               <CxFoto url={fotoDe(atual)} tamanho={42} />
               <div className="cx-head-txt">
                 <div className="cx-head-nome">{atual.titulo}</div>
-                <div className="cx-head-sub"><span style={{ color: '#5A5852' }}>{atual.sub}</span> <span className="cx-estado"><span style={{ color: '#C9C6C0' }}>·</span> <span style={{ color: atual.humano ? '#EA251D' : '#77756F' }}>{estado}</span></span></div>
+                <div className="cx-head-sub"><span style={{ color: '#5A5852' }}>{atual.sub}</span> <span className="cx-estado"><span style={{ color: '#C9C6C0' }}>·</span> <span style={{ color: atual.humano ? 'var(--cx-cor)' : '#77756F' }}>{estado}</span></span></div>
               </div>
               <button className="cx-btn cx-fb" onClick={p.onFicha}>{I.ficha}<span>{p.fichaRotulo}</span></button>
               {atual.humano
-                ? <button className="cx-btn cx-red" onClick={p.onDevolver}>Devolver<span className="cx-cel-some"> {p.nomeAgente === 'Sofia' ? 'à' : 'ao'} {p.nomeAgente}</span></button>
+                ? <button className="cx-btn cx-red" onClick={p.onDevolver}>Devolver<span className="cx-cel-some"> {feminino ? 'à' : 'ao'} {p.nomeAgente}</span></button>
                 : <button className="cx-btn cx-black" onClick={p.onAssumir}>Assumir<span className="cx-cel-some"> conversa</span></button>}
               {p.extraCabecalho}
             </header>
@@ -484,7 +531,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
                     <span className="cx-who">Programada</span>
                     {a.arquivo && <span className="cx-doc">{a.arquivo.tipo === 'audio' ? I.mic : a.arquivo.tipo === 'imagem' ? I.foto : I.doc}{a.arquivo.nome || 'arquivo'}</span>}
                     {a.texto}
-                    <span className="cx-t" style={{ opacity: 1, color: a.status === 'erro' ? '#9E1014' : '#77756F' }}>
+                    <span className="cx-t" style={{ opacity: 1, color: a.status === 'erro' ? 'var(--cx-escura)' : '#77756F' }}>
                       {a.status === 'erro' ? `Falhou: ${a.erro || 'erro'}` : `🕒 ${quandoCurto(a.enviar_em)}`}
                       {(a.status === 'pendente' || a.status === 'erro') && <button className="cx-cancel" onClick={() => cancelarAgendada(a.id)}>Cancelar</button>}
                     </span>
@@ -497,7 +544,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
             <div className="cx-compwrap">
               {menu === 'anexo' && (
                 <div className="cx-pop" style={{ left: 20 }} role="menu">
-                  <button className="cx-opt" role="menuitem" onClick={() => inputFoto.current?.click()}><span className="cx-oi" style={{ background: '#EA251D' }}>{I.foto}</span>Foto ou vídeo</button>
+                  <button className="cx-opt" role="menuitem" onClick={() => inputFoto.current?.click()}><span className="cx-oi" style={{ background: 'var(--cx-cor)' }}>{I.foto}</span>Foto ou vídeo</button>
                   <button className="cx-opt" role="menuitem" onClick={() => inputDoc.current?.click()}><span className="cx-oi" style={{ background: '#0B0B0D' }}>{I.doc}</span>Documento</button>
                 </div>
               )}
@@ -511,7 +558,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
                           {I.relogio}<span style={{ flex: 1 }}>{o.rotulo}</span><span style={{ color: '#9C9A96', fontSize: 12 }}>{o.sub}</span>
                         </button>
                       ))}
-                      <button className="cx-opt" style={{ color: '#9E1014', fontWeight: 800 }} onClick={() => { setEscolhendoHora(true); setHoraLivre(paraInputLocal(new Date(Date.now() + 3600e3))); }}>Escolher data e hora…</button>
+                      <button className="cx-opt" style={{ color: 'var(--cx-escura)', fontWeight: 800 }} onClick={() => { setEscolhendoHora(true); setHoraLivre(paraInputLocal(new Date(Date.now() + 3600e3))); }}>Escolher data e hora…</button>
                       <p style={{ margin: '6px 10px 2px', fontSize: 12, color: '#9C9A96' }}>{temTexto ? 'A mensagem escrita sai no horário escolhido.' : 'Escolha o horário e depois escreva a mensagem.'}</p>
                     </>
                   ) : (
@@ -527,7 +574,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
               )}
               {agendarPara && (
                 <div className="cx-anexo cx-agendar">
-                  <span className="cx-oi" style={{ background: '#EA251D' }}>{I.relogio}</span>
+                  <span className="cx-oi" style={{ background: 'var(--cx-cor)' }}>{I.relogio}</span>
                   <span style={{ flex: 1, minWidth: 0 }}><b>Envio programado</b><br /><span style={{ color: '#77756F', fontSize: 12 }}>{quandoCurto(agendarPara.toISOString())} · escreva e toque em enviar</span></span>
                   <button className="cx-ib" style={{ width: 32, height: 32 }} onClick={() => setAgendarPara(null)} aria-label="Tirar programação">{I.x}</button>
                 </div>
@@ -547,7 +594,7 @@ export const ChatEXA: React.FC<ChatEXAProps> = (p) => {
                 <div className="cx-comp" style={{ alignItems: 'center' }}>
                   <button className="cx-ib" onClick={() => pararGravacao(false)} aria-label="Descartar áudio">{I.lixo}</button>
                   <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 10, height: 44, padding: '0 14px', borderRadius: 999, background: '#FDECEB' }}>
-                    <span className="cx-dot cx-rec" style={{ background: '#EA251D' }} /><b style={{ fontVariantNumeric: 'tabular-nums', color: '#9E1014' }}>{min}:{seg}</b>
+                    <span className="cx-dot cx-rec" style={{ background: 'var(--cx-cor)' }} /><b style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--cx-escura)' }}>{min}:{seg}</b>
                     <span className="cx-wave" aria-hidden="true">{Array.from({ length: 40 }, (_, i) => <i key={i} style={{ height: 6 + ((i * 7) % 19), animationDelay: `${(i % 8) * 0.09}s` }} />)}</span>
                   </div>
                   <button className="cx-redondo" onClick={() => pararGravacao(true)} aria-label="Enviar áudio">{I.enviar}</button>
@@ -634,7 +681,7 @@ export const CxNotas: React.FC<{ agente: CxAgente; alvo: string }> = ({ agente, 
     <div>
       <textarea className="cx-campo" value={txt} onChange={(e) => setTxt(e.target.value)} placeholder="Nota interna sobre esta conversa (só a equipe vê)" style={{ minHeight: 110, resize: 'vertical' }} />
       <button className="cx-btn cx-red" style={{ margin: '10px 0 18px' }} disabled={!txt.trim() || salvando} onClick={salvar}>{salvando ? 'Salvando…' : 'Salvar nota'}</button>
-      {erro && <p style={{ color: '#9E1014', fontSize: 13 }}>{erro}</p>}
+      {erro && <p style={{ color: 'var(--cx-escura)', fontSize: 13 }}>{erro}</p>}
       {notas.map((n) => (
         <div key={n.id} className="cx-pc"><div style={{ whiteSpace: 'pre-wrap' }}>{n.texto}</div><div style={{ fontSize: 12, color: '#8A8882', marginTop: 4 }}>{n.autor || 'Equipe'} · {new Date(n.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div></div>
       ))}

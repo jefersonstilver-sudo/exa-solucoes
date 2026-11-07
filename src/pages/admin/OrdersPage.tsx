@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { RefreshCw, ShoppingCart, Download, Search, Filter, Loader2, Plus } from 'lucide-react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
@@ -26,7 +26,9 @@ const OrdersPage = () => {
   const { canViewOrders, isLoadingCustom } = useUserPermissions();
   const { ordersAndAttempts, stats, loading, refetch } = useOrdersWithAttemptsRefactored();
   
-  const [searchTerm, setSearchTerm] = useState('');
+  const [qs] = useSearchParams();
+  // ?busca= vem das fichas do CRM (ex.: Lívia → pedidos do cliente)
+  const [searchTerm, setSearchTerm] = useState(qs.get('busca') || '');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [couponFilter, setCouponFilter] = useState('all');

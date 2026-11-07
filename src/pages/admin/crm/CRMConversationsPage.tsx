@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ChatPanel } from './components/ChatPanel';
 import { SofiaChatPanel } from './components/SofiaChatPanel';
 import { NandoChatPanel } from './components/NandoChatPanel';
+import { LiviaChatPanel } from './components/LiviaChatPanel';
 import type { CollaboratorRow } from './components/CollaboratorCard';
 
 const foneCurto = (t?: string | null) => {
@@ -33,11 +34,14 @@ const CRMConversationsPage: React.FC = () => {
       const base = (supabase as any)
         .from('evolution_instances')
         .select(
-          'id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status, instance_name',
+          'id, collaborator_name, collaborator_phone, profile_picture_url, profile_name, status, instance_name, is_notifications',
         );
       // "sofia" = atalho usado pelo botao Conversar da lista de pedidos
       // "sofia" / "nando": atalhos usados pelo botão Conversar e pelas notificações do celular
-      const { data } = id === 'sofia' || id === 'nando'
+      // "livia": a instância de notificações (Lívia · Financeiro)
+      const { data } = id === 'livia'
+        ? await base.eq('is_notifications', true).limit(1).maybeSingle()
+        : id === 'sofia' || id === 'nando'
         ? await base.or(`collaborator_name.ilike.%${id}%,instance_name.ilike.%${id}%`).limit(1).maybeSingle()
         : await base.eq('id', id).maybeSingle();
       setCollaborator((data as CollaboratorRow) ?? null);
@@ -49,6 +53,7 @@ const CRMConversationsPage: React.FC = () => {
   const rotulo = collaborator ? `${collaborator.collaborator_name} ${(collaborator as any).instance_name ?? ''}` : '';
   const ehSofia = /sofia/i.test(rotulo);
   const ehNando = !ehSofia && /nando/i.test(rotulo);
+  const ehLivia = !ehSofia && !ehNando && (/l[ií]via/i.test(rotulo) || !!(collaborator as any)?.is_notifications);
   const tel = foneCurto(collaborator?.collaborator_phone);
 
   return (
@@ -64,7 +69,7 @@ const CRMConversationsPage: React.FC = () => {
 
       <div className="crm-conversations flex flex-col">
         {/* Nando e Sofia trazem a seta de volta no topo da própria lista */}
-        {!loading && collaborator && !ehSofia && !ehNando && (
+        {!loading && collaborator && !ehSofia && !ehNando && !ehLivia && (
           <div className="flex items-center px-3 border-b border-border">
             <Button variant="ghost" size="sm" onClick={goBack} className="text-muted-foreground gap-2">
               <ArrowLeft className="h-4 w-4" />CRM Evolution
@@ -89,6 +94,8 @@ const CRMConversationsPage: React.FC = () => {
             <SofiaChatPanel onVoltar={goBack} fotoAgente={collaborator.profile_picture_url} telefoneAgente={tel} />
           ) : ehNando ? (
             <NandoChatPanel abrir={telefoneQs ? { telefone: telefoneQs } : null} onVoltar={goBack} telefoneAgente={tel} />
+          ) : ehLivia ? (
+            <LiviaChatPanel onVoltar={goBack} fotoAgente={collaborator.profile_picture_url} telefoneAgente={tel} />
           ) : (
             <ChatPanel collaborator={collaborator} />
           )}

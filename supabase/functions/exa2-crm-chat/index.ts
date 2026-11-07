@@ -1,6 +1,7 @@
 // =====================================================================
-// EXA 2.0 · Chat do CRM (Nando e Sofia) — complementa nando-crm e sofia-panel (que continuam
-// cuidando de lista, mensagens de texto, assumir/devolver). Aqui ficam:
+// EXA 2.0 · Chat do CRM (Nando, Sofia e Lívia) — complementa nando-crm e sofia-panel (que continuam
+// cuidando de lista, mensagens de texto, assumir/devolver do Nando e da Sofia). Aqui ficam:
+//   - livia_list / livia_messages / livia_set_mode → lista, mensagens e modo humano da Lívia (financeiro), 07/11/2026
 //   - midia            → abre a foto/vídeo/áudio/documento de uma mensagem (baixa do WhatsApp na 1ª vez e guarda)
 //   - upload_url       → link para o painel subir um arquivo/áudio no bucket privado crm-midia
 //   - enviar           → envia texto e/ou arquivo/áudio agora, como a equipe EXA
@@ -58,9 +59,99 @@ async function destino(sb: SupabaseClient, agente: string, alvo: string): Promis
   if (agente === "nando") {
     return { instancia: await instanciaNando(sb), numero: telefoneCanonico(alvo) };
   }
+  if (agente === "livia") {
+    if (alvo.startsWith("lid:")) return { instancia: await instanciaLivia(sb), numero: alvo.slice(4), jid: alvo.slice(4) + "@lid" };
+    return { instancia: await instanciaLivia(sb), numero: telefoneCanonico(alvo) };
+  }
   const { data: conv } = await sb.from("sofia_conversations").select("id, instance, jid").eq("id", alvo).maybeSingle();
   if (!conv) throw new Error("conversa da Sofia não encontrada");
   return { instancia: conv.instance, numero: String(conv.jid).replace(/@.*/, ""), jid: conv.jid };
+}
+
+// Lívia (financeiro) fala pela instância de notificações da Evolution (evolution_instances.is_notifications)
+async function instanciaLivia(sb: SupabaseClient): Promise<string> {
+  const env = Deno.env.get("LIVIA_INSTANCIA");
+  if (env) return env;
+  const { data } = await sb.from("evolution_instances").select("instance_name").eq("is_notifications", true).maybeSingle();
+  if (!data?.instance_name) throw new Error("instância da Lívia não encontrada (evolution_instances.is_notifications)");
+  return data.instance_name;
+}
+const LIVIA_HUMANO_H = 12;
+const ultimos8 = (t: string) => String(t || "").replace(/\D/g, "").slice(-8);
+
+/** Quem é cada telefone para a Lívia: financeiro, dono ou autorizado de pedidos vivos (uma passada só). */
+async function clientesLivia(sb: SupabaseClient) {
+  const INATIVOS = ["cancelado", "cancelado_automaticamente", "finalizado", "bloqueado"];
+  const { data: peds } = await sb.from("pedidos").select("id,client_id,nome_pedido,client_name,status,whatsapp").limit(1500);
+  const vivos = (peds || []).filter((p: any) => !INATIVOS.includes(String(p.status)));
+  const ids = [...new Set(vivos.map((p: any) => p.client_id).filter(Boolean))];
+  const { data: us } = ids.length ? await sb.from("users").select("id,nome,empresa_nome,telefone,financeiro_whatsapp,financeiro_nome").in("id", ids) : { data: [] as any[] };
+  const uMap = new Map((us || []).map((u: any) => [u.id, u]));
+  const { data: aut } = await sb.from("pedido_whatsapp_autorizados").select("pedido_id,telefone,nome");
+  const mapa = new Map<string, { nome: string; empresa: string; papel: string; pedidos: number; client_id: string | null }>();
+  const marcar = (tel: unknown, nome: string, empresa: string, papel: string, client_id: string | null) => {
+    const k = ultimos8(String(tel || "")); if (!k) return;
+    const cur = mapa.get(k);
+    if (cur) { cur.pedidos += 1; if (!cur.nome && nome) cur.nome = nome; return; }
+    mapa.set(k, { nome, empresa, papel, pedidos: 1, client_id });
+  };
+  for (const p of vivos) {
+    const u: any = uMap.get(p.client_id) || {};
+    const empresa = u.empresa_nome || p.client_name || "";
+    if (u.financeiro_whatsapp) marcar(u.financeiro_whatsapp, u.financeiro_nome || "", empresa, "financeiro", p.client_id);
+    if (p.whatsapp) marcar(p.whatsapp, u.nome || "", empresa, "dono", p.client_id);
+    if (u.telefone) marcar(u.telefone, u.nome || "", empresa, "dono", p.client_id);
+    for (const a of (aut || []).filter((x: any) => x.pedido_id === p.id)) marcar(a.telefone, a.nome || "", empresa, "autorizado", p.client_id);
+  }
+  return mapa;
+}
+
+async function liviaLista(sb: SupabaseClient) {
+  const [{ data: rows }, { data: estados }, clientes] = await Promise.all([
+    sb.from("livia_mensagens").select("id, telefone, papel, conteudo, created_at").order("id", { ascending: false }).limit(4000),
+    sb.from("livia_estado").select("telefone, humano_ate"),
+    clientesLivia(sb),
+  ]);
+  const estado = new Map((estados || []).map((e: any) => [e.telefone, e.humano_ate]));
+  const porTel = new Map<string, any>();
+  for (const m of rows || []) {
+    const k: any = m.conteudo || {};
+    let c = porTel.get(m.telefone);
+    if (!c) {
+      c = { telefone: m.telefone, nome_whatsapp: null as string | null, ultima_em: m.created_at, ultima_papel: m.papel, preview: "", aguardando: 0, total: 0, respondida: false };
+      porTel.set(m.telefone, c);
+    }
+    c.total += 1;
+    if (!c.preview) c.preview = String(k.texto || (k.midia ? `[${k.midia}]` : "")).slice(0, 120);
+    if (!c.nome_whatsapp && k.nome_whatsapp) c.nome_whatsapp = k.nome_whatsapp;
+    // "aguardando": mensagens do cliente depois da última resposta (Lívia ou equipe)
+    if (m.papel === "livia" || m.papel === "humano") c.respondida = true;
+    else if ((m.papel === "cliente" || m.papel === "ceo") && !c.respondida) c.aguardando += 1;
+  }
+  const conversas = [...porTel.values()].map((c) => {
+    const cli = clientes.get(ultimos8(c.telefone));
+    const ceo = c.ultima_papel === "ceo" || (rows || []).some((r: any) => r.telefone === c.telefone && r.papel === "ceo");
+    const humanoAte = estado.get(c.telefone) || null;
+    const humano = !!humanoAte && new Date(humanoAte).getTime() > Date.now();
+    return {
+      telefone: c.telefone,
+      nome: ceo ? "Jeferson (CEO)" : (cli?.nome || c.nome_whatsapp || c.telefone),
+      nome_whatsapp: c.nome_whatsapp,
+      empresa: cli?.empresa || null, papel: ceo ? "ceo" : (cli?.papel || null), client_id: cli?.client_id || null, pedidos: cli?.pedidos || 0,
+      tipo: ceo ? "ceo" : cli ? "cliente" : "sem_cadastro",
+      modo: humano ? "humano" : "auto", humano_ate: humano ? humanoAte : null,
+      ultima_em: c.ultima_em, ultima_papel: c.ultima_papel, preview: c.preview, aguardando: c.aguardando, total: c.total,
+    };
+  });
+  return conversas;
+}
+
+async function liviaMensagens(sb: SupabaseClient, tel: string) {
+  const { data } = await sb.from("livia_mensagens").select("id, papel, conteudo, created_at").eq("telefone", tel).order("id", { ascending: false }).limit(400);
+  return (data || []).reverse().map((m: any) => {
+    const k = m.conteudo || {};
+    return { id: m.id, papel: m.papel, texto: String(k.texto || ""), autor: k.autor || null, created_at: m.created_at, midia: k.midia || k.crm_arquivo?.tipo || null };
+  });
 }
 
 // ---------------------------------------------------------------- envio pela Evolution
@@ -124,6 +215,23 @@ async function registrar(sb: SupabaseClient, agente: string, alvo: string, texto
     }
     return;
   }
+  if (agente === "livia") {
+    const { data: ult } = await sb.from("livia_mensagens").select("id").eq("telefone", alvo).in("papel", ["cliente", "ceo"]).order("id", { ascending: false }).limit(1);
+    await sb.from("livia_mensagens").insert({
+      telefone: alvo, papel: "humano",
+      conteudo: {
+        texto: arq?.tipo === "audio" && !texto ? "[áudio enviado pela equipe]" : texto,
+        autor: autor + (opts.programada ? " · programada" : ""), ate: ult?.[0]?.id || null, msg_id: waId,
+        ...(arq ? { midia: arq.tipo, crm_arquivo: arq } : {}),
+      },
+    });
+    if (opts.pausar) {
+      const { data: est } = await sb.from("livia_estado").select("humano_ate").eq("telefone", alvo).maybeSingle();
+      const ativo = est?.humano_ate && new Date(est.humano_ate).getTime() > Date.now();
+      if (!ativo) await sb.from("livia_estado").upsert({ telefone: alvo, humano_ate: new Date(Date.now() + LIVIA_HUMANO_H * 3600e3).toISOString(), updated_at: agora }, { onConflict: "telefone" });
+    }
+    return;
+  }
   // Sofia: o corpo carrega uma marca curta (a Sofia lê o histórico) e o arquivo fica achável pelo wa_id
   const marca = arq ? `[${ROTULO[arq.tipo]} enviado pela equipe${arq.nome && arq.tipo === "documento" ? `: ${arq.nome}` : ""}]` : "";
   const body = [marca, texto].filter(Boolean).join(" ") || "[mensagem da equipe]";
@@ -178,6 +286,29 @@ async function abrirMidia(sb: SupabaseClient, agente: string, id: string) {
     const arq = await baixarDoWhatsApp(await instanciaNando(sb), key);
     if (!arq) throw new Error("o WhatsApp não devolveu o arquivo (pode ter expirado)");
     const caminho = `nando/n${m.id}.${extDe(arq.mime)}`;
+    await sb.storage.from(BUCKET).upload(caminho, arq.bytes, { contentType: arq.mime, upsert: true });
+    return { url: await linkAssinado(sb, caminho), mime: arq.mime, nome: arq.nome, tipo: tipoDoMime(arq.mime) };
+  }
+  if (agente === "livia") {
+    const { data: m } = await sb.from("livia_mensagens").select("id, telefone, papel, conteudo").eq("id", Number(id)).maybeSingle();
+    if (!m) throw new Error("mensagem não encontrada");
+    const c: any = m.conteudo || {};
+    if (c.crm_arquivo?.caminho) return { url: await linkAssinado(sb, c.crm_arquivo.caminho), mime: c.crm_arquivo.mime, nome: c.crm_arquivo.nome || null, tipo: c.crm_arquivo.tipo };
+    if (c.caminho) {
+      const { data, error } = await sb.storage.from("livia-midia").createSignedUrl(c.caminho, 3600);
+      if (!error && data?.signedUrl) {
+        const ext = String(c.caminho).split(".").pop() || "";
+        const mime = ext === "pdf" ? "application/pdf" : ext === "png" ? "image/png" : ext === "jpg" ? "image/jpeg" : ext === "ogg" ? "audio/ogg" : "application/octet-stream";
+        return { url: data.signedUrl, mime, nome: null, tipo: c.midia === "audio" ? "audio" : tipoDoMime(mime) };
+      }
+    }
+    const cache = await achaCache(sb, "livia", `l${m.id}`);
+    if (cache) return { url: await linkAssinado(sb, cache.caminho), mime: cache.mime, nome: null, tipo: tipoDoMime(cache.mime) };
+    const key = c.key || (c.msg_id ? { id: c.msg_id, remoteJid: `${telefoneCanonico(m.telefone)}@s.whatsapp.net`, fromMe: m.papel !== "cliente" && m.papel !== "ceo" } : null);
+    if (!key) throw new Error("esta mensagem não tem arquivo");
+    const arq = await baixarDoWhatsApp(await instanciaLivia(sb), key);
+    if (!arq) throw new Error("o WhatsApp não devolveu o arquivo (pode ter expirado)");
+    const caminho = `livia/l${m.id}.${extDe(arq.mime)}`;
     await sb.storage.from(BUCKET).upload(caminho, arq.bytes, { contentType: arq.mime, upsert: true });
     return { url: await linkAssinado(sb, caminho), mime: arq.mime, nome: arq.nome, tipo: tipoDoMime(arq.mime) };
   }
@@ -254,8 +385,24 @@ Deno.serve(async (req) => {
     const autor = (perfil as any)?.nome || (perfil as any)?.email || u.user.email || "Equipe EXA";
 
     const agente = String(body.agente || "");
-    if (!["nando", "sofia"].includes(agente)) return json(400, { error: "agente inválido" });
+    if (!["nando", "sofia", "livia"].includes(agente)) return json(400, { error: "agente inválido" });
     const alvo = String(body.alvo || "");
+
+    // ---- Lívia: lista, mensagens e modo (o envio de texto usa "enviar" como os outros)
+    if (agente === "livia" && action === "livia_list") return json(200, { conversas: await liviaLista(sb) });
+    if (agente === "livia" && action === "livia_messages") {
+      if (!alvo) return json(400, { error: "conversa obrigatória" });
+      return json(200, { mensagens: await liviaMensagens(sb, alvo) });
+    }
+    if (agente === "livia" && action === "livia_set_mode") {
+      if (!alvo) return json(400, { error: "conversa obrigatória" });
+      const modo = body.modo === "humano" ? "humano" : "auto";
+      const humano_ate = modo === "humano" ? new Date(Date.now() + LIVIA_HUMANO_H * 3600e3).toISOString() : null;
+      const { error } = await sb.from("livia_estado").upsert({ telefone: alvo, humano_ate, updated_at: new Date().toISOString() }, { onConflict: "telefone" });
+      if (error) throw error;
+      await sb.from("livia_mensagens").insert({ telefone: alvo, papel: "sistema", conteudo: { texto: modo === "humano" ? `${autor} assumiu a conversa (Lívia pausada por ${LIVIA_HUMANO_H}h)` : `${autor} devolveu a conversa para a Lívia` } });
+      return json(200, { ok: true, modo, humano_ate });
+    }
 
     if (action === "midia") return json(200, await abrirMidia(sb, agente, String(body.id || "")));
 

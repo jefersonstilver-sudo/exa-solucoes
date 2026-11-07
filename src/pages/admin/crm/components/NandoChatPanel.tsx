@@ -106,7 +106,7 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null; onVol
         setSel((cur) => cur ?? (achada ? achada.telefone : alvo));
         return;
       }
-      setConversas(lista);
+      setConversas((prev) => [...prev.filter((c) => c.total === 0 && c.preview === 'Nova conversa' && !lista.some((x) => x.telefone === c.telefone)), ...lista]);
       setSel((cur) => cur ?? lista[0]?.telefone ?? null);
     } catch (e: any) {
       console.error('[NANDO-CRM] lista', e);
@@ -227,6 +227,17 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null; onVol
 
   const atualizar = () => { carregar(); if (sel) carregarMsgs(sel); };
 
+  // "+" na lista: abre uma conversa em branco com um número novo; o Nando passa a conhecer o número quando a primeira mensagem sai
+  const novaConversa = (tel: string) => {
+    const achada = conversas.find((c) => c.telefone.replace(/\D/g, '').slice(-8) === tel.slice(-8));
+    if (achada) { setSel(achada.telefone); return; }
+    setConversas((l) => [{
+      telefone: tel, nome: fone(tel), nome_whatsapp: null, predios: [], predio_atual: null, tipo: 'sem_cadastro', modo: 'auto', humano_ate: null, assumido_por: null,
+      ultima_em: new Date().toISOString(), preview: 'Nova conversa', ultima_papel: 'sistema', aguardando: 0, total: 0,
+    }, ...l]);
+    setSel(tel);
+  };
+
   const btnApagar = (onClick: () => void) => (
     <button className="cx-ib" style={{ width: 32, height: 32, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} onClick={onClick} aria-label="Apagar conversa" title="Apagar conversa">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9E1014" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
@@ -295,6 +306,7 @@ export const NandoChatPanel: React.FC<{ abrir?: NandoAbrirConversa | null; onVol
         onDevolver={() => setModo('auto')}
         onEnviarTexto={enviarTexto}
         onAtualizar={atualizar}
+        onNovaConversa={novaConversa}
         acaoLinha={podeApagar ? (c) => btnApagar(() => { const x = conversas.find((k) => k.telefone === c.id); if (x) setApagar(x); }) : undefined}
         aviso={atual?.modo === 'humano' && atual.humano_ate
           ? <>Atendimento humano{atual.assumido_por ? ` (${atual.assumido_por})` : ''} até {new Date(atual.humano_ate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. O Nando volta sozinho depois disso.</>

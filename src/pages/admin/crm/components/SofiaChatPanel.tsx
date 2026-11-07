@@ -384,6 +384,18 @@ export const SofiaChatPanel: React.FC<{ onVoltar?: () => void; fotoAgente?: stri
         onDevolver={() => setMode('auto')}
         onEnviarTexto={enviarTexto}
         onAtualizar={atualizar}
+        onNovaConversa={async (tel) => {
+          const l8 = tel.slice(-8);
+          let alvo: Conv | null = convs.find((c) => (c.phone || '').replace(/\D/g, '').slice(-8) === l8) || null;
+          if (!alvo) { try { alvo = (await call('find_phone', { phone: tel }))?.conversation || null; } catch { alvo = null; } }
+          if (!alvo) {
+            const r = await call('start', { phone: tel, nome: '' });
+            alvo = r?.conversation || null;
+            if (alvo && r?.criada) toast.success('Conversa nova aberta. A Sofia não enviou nada: escreva sua mensagem.');
+          }
+          if (!alvo) throw new Error('não foi possível abrir a conversa');
+          setExtraConv(alvo); setSelId(alvo.id); setSemConversa(null);
+        }}
         acaoLinha={canDelete ? (c) => (
           <button className="cx-ib" style={{ width: 32, height: 32, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} aria-label="Apagar contato" title="Apagar contato"
             onClick={() => { const x = listaTodas.find((k) => k.id === c.id); if (x) openDelete(x); }}>
