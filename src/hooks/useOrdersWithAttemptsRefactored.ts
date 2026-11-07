@@ -46,6 +46,10 @@ export const useOrdersWithAttemptsRefactored = () => {
         ? await supabase.from('pedidos').select('id, tipo_produto, is_master, email, whatsapp, valor_mensal').in('id', pedidoIds)
         : { data: [] };
       const tipoProdutoMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.tipo_produto]));
+      // nome da empresa do cliente (users.empresa_nome): o card mostra a empresa, não a pessoa (Jeferson, 07/11/2026)
+      const clientIds = [...new Set((pedidosComClientes || []).map((p: any) => p.client_id).filter(Boolean))];
+      const { data: usersEmp } = clientIds.length ? await supabase.from('users').select('id, empresa_nome').in('id', clientIds) : { data: [] as any[] };
+      const empresaMap = new Map((usersEmp || []).map((u: any) => [u.id, u.empresa_nome]));
       const isMasterMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.is_master]));
       const contactMap = new Map((pedidosExtra || []).map(p => [p.id, p]));
       const autorizadosMap = await contarAutorizados(pedidoIds);
@@ -89,6 +93,7 @@ export const useOrdersWithAttemptsRefactored = () => {
         whatsapp_autorizados: autorizadosMap.get(pedido.id) || 0,
         client_email: pedido.client_email,
         client_name: pedido.client_name,
+        empresa_nome: empresaMap.get(pedido.client_id) || null,
         video_status: pedido.video_status,
         cupom_id: pedido.cupom_id,
         tipo_pagamento: pedido.tipo_pagamento,

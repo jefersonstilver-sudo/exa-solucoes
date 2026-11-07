@@ -86,7 +86,8 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
-  const [viewMode, setViewMode] = useState<'minimal' | 'detailed'>('minimal');
+  const [viewMode, setViewModeRaw] = useState<'minimal' | 'detailed'>(() => { try { return (localStorage.getItem('pedidos_view_mode') as any) || 'minimal'; } catch { return 'minimal'; } });
+  const setViewMode = (v: 'minimal' | 'detailed') => { setViewModeRaw(v); try { localStorage.setItem('pedidos_view_mode', v); } catch { /* sem storage */ } };
   // "expandir todos" do modo compacto, lembrado neste navegador
   const [expandirTodos, setExpandirTodos] = useState<boolean>(() => {
     try { return localStorage.getItem('pedidos_expandir_todos') === '1'; } catch { return false; }
@@ -104,8 +105,9 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   
   const { groups, createGroup, updateGroup, deleteGroup, moveOrderToGroup } = useOrderGroups(userProfile?.id);
   // Estado de ordenação
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  // ordenação lembrada entre sessões neste navegador (Jeferson, 07/11/2026)
+  const [sortField, setSortField] = useState<SortField>(() => { try { return (localStorage.getItem('pedidos_sort_field') as SortField) || 'created_at'; } catch { return 'created_at'; } });
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => { try { return (localStorage.getItem('pedidos_sort_dir') as SortDirection) || 'desc'; } catch { return 'desc'; } });
   
   // Estado de ordem das abas (salvo no localStorage)
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
@@ -144,9 +146,11 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
         case 'client_name':
           comparison = (a.client_name || '').localeCompare(b.client_name || '', 'pt-BR');
           break;
-        case 'valor_total':
-          comparison = (a.valor_total || 0) - (b.valor_total || 0);
+        case 'valor_total': {
+          const vm = (x: OrderOrAttempt) => (x.valor_mensal && x.valor_mensal > 0 ? x.valor_mensal : x.plano_meses && x.plano_meses > 1 ? (x.valor_total || 0) / x.plano_meses : x.valor_total || 0);
+          comparison = vm(a) - vm(b);
           break;
+        }
         default:
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       }
@@ -237,6 +241,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
   const handleSortChange = (field: SortField, direction: SortDirection) => {
     setSortField(field);
     setSortDirection(direction);
+    try { localStorage.setItem('pedidos_sort_field', field); localStorage.setItem('pedidos_sort_dir', direction); } catch { /* sem storage */ }
   };
 
   // Handler para drag & drop das abas
@@ -549,46 +554,7 @@ const OrdersTabsRefactored: React.FC<OrdersTabsRefactoredProps> = ({ onViewOrder
           onSortChange={handleSortChange}
         />
         
-        {/* Toggle de agrupamento */}
-        <Button
-          variant={groupByClient ? 'secondary' : 'outline'}
-          size="sm"
-          onClick={() => setGroupByClient(!groupByClient)}
-          className="h-8 px-3"
-        >
-          <Users className="h-4 w-4 mr-1.5" />
-          Agrupar por cliente
-        </Button>
-
-        {/* Toggle de agrupamento por grupo */}
-        <Button
-          variant={groupByGroup ? 'secondary' : 'outline'}
-          size="sm"
-          onClick={() => { setGroupByGroup(!groupByGroup); if (!groupByGroup) setGroupByClient(false); }}
-          className="h-8 px-3"
-        >
-          <FolderOpen className="h-4 w-4 mr-1.5" />
-          Agrupar por grupo
-        </Button>
-
-        {groupByGroup && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCreateGroupDialogOpen(true)}
-            className="h-8 px-3"
-          >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Novo grupo
-          </Button>
-        )}
-
-        {viewMode === 'minimal' && (
-          <Button variant="ghost" size="sm" onClick={alternarExpandirTodos} className="h-8 px-3" title="Mostrar ou esconder os detalhes de todos os pedidos">
-            <ChevronsUpDown className="h-4 w-4 mr-1.5" />
-            {expandirTodos ? 'Recolher todos' : 'Expandir todos'}
-          </Button>
-        )}
+        {/* 07/11/2026 (Jeferson): sem "agrupar por cliente", "agrupar por grupo" e "expandir todos" */}
 
         {/* Toggle de visualização */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">

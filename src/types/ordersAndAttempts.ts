@@ -18,6 +18,7 @@ export interface OrderOrAttempt {
   whatsapp_autorizados?: number;
   client_email?: string;
   client_name?: string;
+  empresa_nome?: string | null;
   client_phone?: string;
   client_cpf?: string;
   video_status?: string;

@@ -160,10 +160,10 @@ export const MinimalOrderCard: React.FC<MinimalOrderCardProps> = ({
           {/* Linha 1: pedido + selos | valor */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-              <span className="text-base font-bold text-foreground truncate max-w-[260px]">
-                {item.nome_pedido || `Pedido #${item.id.substring(0, 8)}`}
+              <span className="text-base font-bold text-foreground truncate max-w-[260px]" title={item.nome_pedido || undefined}>
+                {item.nome_pedido || item.empresa_nome || item.client_name || `Pedido #${item.id.substring(0, 8)}`}
               </span>
-              {item.nome_pedido && <span className="font-mono text-[11px] text-muted-foreground">#{item.id.substring(0, 8)}</span>}
+              <span className="font-mono text-[11px] text-muted-foreground">#{item.id.substring(0, 8)}</span>
               <Badge className={`${statusConfig.className} text-[11px] font-medium px-1.5 py-0`}>
                 {statusConfig.icon} {statusConfig.label}
               </Badge>

@@ -17,7 +17,7 @@ type Parcela = {
   periodo_inicio?: string | null; periodo_fim?: string | null; observacao?: string | null; pagador?: string | null;
 };
 type Cobranca = { id: string; forma: 'pix' | 'boleto'; valor: number; vencimento: string; parcelas: number[]; desconto_pct: number; pix_copia_cola?: string | null; pix_qr_base64?: string | null; boleto_url?: string | null; linha_digitavel?: string | null; invoice_url?: string | null };
-type Dados = { parcelas: Parcela[]; resumo: any; plano?: any; cobrancas_abertas?: Cobranca[]; sofia_videos?: number; desconto_atrasadas?: number };
+type Dados = { parcelas: Parcela[]; resumo: any; plano?: any; cobrancas_abertas?: Cobranca[]; sofia_videos?: number; desconto_atrasadas?: number; desconto_mesmo_com_uma?: boolean };
 
 const CARD = 'rounded-[20px] bg-white shadow-[0_1px_2px_rgba(30,15,18,.05),0_8px_24px_-14px_rgba(30,15,18,.16)]';
 const brl = (v: number) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -52,7 +52,7 @@ export const usePagamentosContrato = (pedidoId?: string | null) => {
     if (!pedidoId) return;
     try {
       const { data } = await supabase.functions.invoke('exa2-auditoria-cobranca', { body: { action: 'cliente', pedido_id: pedidoId } });
-      if (data?.ok) setDados({ parcelas: data.parcelas || [], resumo: data.resumo, plano: data.plano, cobrancas_abertas: data.cobrancas_abertas || [], sofia_videos: data.sofia_videos || 0, desconto_atrasadas: data.desconto_atrasadas || 0 });
+      if (data?.ok) setDados({ parcelas: data.parcelas || [], resumo: data.resumo, plano: data.plano, cobrancas_abertas: data.cobrancas_abertas || [], sofia_videos: data.sofia_videos || 0, desconto_atrasadas: data.desconto_atrasadas || 0, desconto_mesmo_com_uma: !!data.desconto_mesmo_com_uma });
     } catch { /* sem dados: a seção não aparece */ }
   }, [pedidoId]);
   useEffect(() => { ler(); const t = setInterval(ler, 60000); return () => clearInterval(t); }, [ler]);
@@ -128,10 +128,10 @@ const PagamentosContrato: React.FC<{ estado: ReturnType<typeof usePagamentosCont
               <div className="h-1.5 overflow-hidden rounded-full bg-[#1b1719]/[0.06]">
                 <div className="h-full rounded-full bg-gradient-to-r from-[#13a24a] to-[#3ccf72] transition-[width] duration-700" style={{ width: `${Math.max(2, pct)}%` }} />
               </div>
-              {atrasadas.length > 1 && desc > 0 && (
+              {(atrasadas.length > 1 || (atrasadas.length === 1 && dados.desconto_mesmo_com_uma)) && desc > 0 && (
                 <div className="mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1b1719] to-[#3a2a2e] p-4 text-white">
                   <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#f4cfd3]"><Sparkles className="h-3.5 w-3.5" /> Condição especial</div>
-                  <div className="mt-1 text-[15px] font-extrabold">Quite as {atrasadas.length} mensalidades em aberto com {desc}% de desconto</div>
+                  <div className="mt-1 text-[15px] font-extrabold">{atrasadas.length === 1 ? 'Quite a mensalidade em aberto' : `Quite as ${atrasadas.length} mensalidades em aberto`} com {desc}% de desconto</div>
                   <div className="mt-1 text-[13px] text-white/75"><span className="line-through">{brl(totalAtras)}</span> <span className="ml-1 text-[18px] font-extrabold text-white">{brl(comDesc)}</span> num Pix único</div>
                   <button type="button" disabled={!!gerando} onClick={() => pagar('todas', { pedido_id: estado.pedidoId, atrasadas: true, forma: 'pix' })} className="mt-3 inline-flex min-h-[42px] items-center gap-2 rounded-full bg-white px-4 text-[13px] font-extrabold text-[#1b1719] active:scale-[.98] disabled:opacity-60">
                     {gerando === 'todas' ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />} Pagar com Pix · {brl(comDesc)}

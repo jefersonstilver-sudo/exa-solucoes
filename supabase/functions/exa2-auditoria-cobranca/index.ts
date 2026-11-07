@@ -93,7 +93,7 @@ const publico = (l: any) => ({ id: l.id, forma: l.forma || "pix", valor: l.valor
 
 // ---------- leitura com a situação de cada parcela ----------
 async function montar(pid: string) {
-  const { data: ped } = await sb.from("pedidos").select("id,nome_pedido,client_name,status,data_inicio,data_inicio_cobranca,data_fim,plano_meses").eq("id", pid).maybeSingle();
+  const { data: ped } = await sb.from("pedidos").select("id,nome_pedido,client_name,status,data_inicio,data_inicio_cobranca,data_fim,plano_meses,cobranca_desconto_atrasadas").eq("id", pid).maybeSingle();
   const { data: lotes } = await sb.from("cobranca_auditoria_pix").select("*").eq("pedido_id", pid).order("created_at", { ascending: false });
   for (const l of (lotes || []).filter((x: any) => x.status === "aberto")) await conciliarLote(l);
   const [{ data: rows }, { data: lotes2 }] = await Promise.all([
@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
       const { count: sofiaVideos } = await sb.from("sofia_video_jobs").select("id", { count: "exact", head: true }).eq("pedido_id", pid).in("status", ["sent", "ready"]);
       const vals = parcelas.filter((p: any) => p.situacao !== "cortesia").map((p: any) => Number(p.valor));
       const mensal = vals.length ? vals.sort((a: number, b: number) => vals.filter((v: number) => v === a).length - vals.filter((v: number) => v === b).length).pop() : null;
-      return json({ ok: true, parcelas, cobrancas_abertas: abertas, sofia_videos: sofiaVideos || 0, desconto_atrasadas: 35, total_lib: lib.length, resumo: { ...m.resumo, valor_mensal: mensal }, plano: { inicio: m.pedido?.data_inicio_cobranca || m.pedido?.data_inicio, fim: m.pedido?.data_fim } });
+      return json({ ok: true, parcelas, cobrancas_abertas: abertas, sofia_videos: sofiaVideos || 0, desconto_atrasadas: Number(m.pedido?.cobranca_desconto_atrasadas) || 35, desconto_mesmo_com_uma: Number(m.pedido?.cobranca_desconto_atrasadas) > 0, total_lib: lib.length, resumo: { ...m.resumo, valor_mensal: mensal }, plano: { inicio: m.pedido?.data_inicio_cobranca || m.pedido?.data_inicio, fim: m.pedido?.data_fim } });
     }
 
     // ===== cliente: pagar uma parcela (Pix ou boleto, valor cheio) ou todas as atrasadas num Pix único com 35% de desconto =====
@@ -238,7 +238,10 @@ Deno.serve(async (req) => {
         alvo = liberadas.filter((p: any) => p.numero === Number(b.numero) && (p.situacao === "atrasado" || p.id === proxima?.id));
       }
       if (!alvo.length) return json({ ok: false, erro: "Não há parcela para pagar." }, 409);
-      const DESC = todasAtrasadas && forma === "pix" && alvo.length > 1 ? 0.35 : 0;
+      // 35% no Pix único das atrasadas (2+ parcelas). Com condição especial autorizada no pedido (pedidos.cobranca_desconto_atrasadas,
+      // ex.: Caliu 35%, Jeferson 07/11/2026), o desconto vale mesmo com uma parcela só.
+      const especial = Number(atual.pedido?.cobranca_desconto_atrasadas) || 0;
+      const DESC = todasAtrasadas && forma === "pix" ? (especial > 0 ? Math.min(0.9, especial / 100) : alvo.length > 1 ? 0.35 : 0) : 0;
       const cheio = alvo.reduce((a: number, p: any) => a + Number(p.valor), 0);
       const valor = Math.round(cheio * (1 - DESC) * 100) / 100;
       const nums = alvo.map((p: any) => p.numero).sort((a: number, b: number) => a - b);
@@ -262,7 +265,7 @@ Deno.serve(async (req) => {
       const desc = alvo.map((p: any) => p.competencia || p.numero).join(", ");
       const payload = (cliente: string) => ({
         customer: cliente, billingType: forma === "boleto" ? "BOLETO" : "PIX", value: valor, dueDate: venc,
-        description: `EXA Mídia · ${String(atual.pedido?.nome_pedido || "campanha").slice(0, 60)} · mensalidade${alvo.length > 1 ? "s" : ""} ${desc}${DESC ? " · 35% de desconto" : ""}`.slice(0, 480),
+        description: `EXA Mídia · ${String(atual.pedido?.nome_pedido || "campanha").slice(0, 60)} · mensalidade${alvo.length > 1 ? "s" : ""} ${desc}${DESC ? ` · ${Math.round(DESC * 100)}% de desconto` : ""}`.slice(0, 480),
         externalReference: "auditoria:" + lote.id,
       });
       let r = await asaas("POST", "/payments", payload(cid));
