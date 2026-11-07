@@ -117,7 +117,7 @@ export default defineConfig(() => ({
             h = h.replace(/(<script src="\.\/scripts\/[^"?]+\.js)"/g, `$1?v=${v}"`).replace(/(<link rel="stylesheet" href="[^"?:]+\.css)"/g, `$1?v=${v}"`);
             h = h.replace("</body>", `  <script src="../compat/gap.js?v=${v}"></script>\n</body>`);
             // modo leve só na TV (?tela=1): tira animações contínuas e recorta a câmera (compat/tv.css)
-            h = h.replace("</head>", `  <link rel="stylesheet" href="../compat/tv.css?v=${v}">\n  <script>if (/[?&]tela=1(&|$)/.test(location.search)) document.documentElement.className += " tv-leve";</script>\n  <script src="../compat/hora.js?v=${v}"></script>\n  <script src="../compat/tv.js?v=${v}"></script>\n</head>`);
+            h = h.replace("</head>", `  <link rel="stylesheet" href="../compat/tv.css?v=${v}">\n  <script>if (/[?&]tela=1(&|$)/.test(location.search)) document.documentElement.className += " tv-leve";</script>\n  <script src="../compat/hora.js?v=${v}"></script>\n  <script src="../compat/tv.js?v=${v}"></script>\n  <script src="../compat/peca.js?v=${v}"></script>\n</head>`);
             fs.writeFileSync(p, h);
           }
           console.log("[painel-web-legado] réplica rebaixada para TV box (Chrome 51+)");

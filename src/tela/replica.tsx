@@ -96,7 +96,7 @@ export function ReplicaElevador({ predioId, alternativa, camera = true }: { pred
     };
     // saúde do vídeo na TV (para saber se trava por decodificação, rede ou troca): quadros perdidos, segundos parado,
     // resolução de cada arquivo e o que mais está decodificando junto (câmera ao vivo, vídeo seguinte)
-    const saude = { seg: 0, parado: 0, preto: 0, trocas: 0, perdidos: 0, quadros: 0, arquivos: {} as Record<string, string>, camera: 0 };
+    const saude = { seg: 0, parado: 0, preto: 0, trocas: 0, perdidos: 0, quadros: 0, arquivos: {} as Record<string, string>, camera: 0, peca: 0 };
     let qAnt = { d: 0, t: 0 };
     let ultimoEnvio = Date.now();
     const id = setInterval(async () => {
@@ -115,8 +115,12 @@ export function ReplicaElevador({ predioId, alternativa, camera = true }: { pred
           jan.addEventListener('unhandledrejection', (ev: any) => { if (janela()) registrarErro(`réplica (promessa): ${txt(ev.reason)}`); });
           if (vp) vp.addEventListener('error', () => { const er = vp.error; if (janela()) registrarErro(`réplica vídeo: código ${er ? er.code : '?'} ${er && (er as any).message ? (er as any).message : ''} ${nomeDoVideo(String(vp.currentSrc))}`.slice(0, 300)); });
         }
-        saude.seg++;
-        if (!vp || !vp.currentSrc) saude.preto++;
+        // quadro HTML intercalado (compat/peca.js) na tela: não é vídeo parado nem tela preta
+        const naPeca = !!(jan && jan.__exaPeca);
+        if (naPeca) saude.peca = (saude.peca || 0) + 1;
+        else saude.seg++;
+        if (naPeca) { /* não mede */ }
+        else if (!vp || !vp.currentSrc) saude.preto++;
         else if (vp.paused || vp.readyState < 3) saude.parado++;
         if (vp) {
           const q: any = (vp as any).getVideoPlaybackQuality ? (vp as any).getVideoPlaybackQuality() : { droppedVideoFrames: (vp as any).webkitDroppedFrameCount || 0, totalVideoFrames: (vp as any).webkitDecodedFrameCount || 0 };
@@ -132,10 +136,12 @@ export function ReplicaElevador({ predioId, alternativa, camera = true }: { pred
           ultimoEnvio = Date.now();
           let tv: any = null; try { tv = (ref.current?.contentWindow as any)?.__tvInfo || null; if (tv) tv = { ...tv }; } catch { /* */ }
           registrarEvento('replica_saude', { ...saude, tv, pct_perdidos: saude.quadros ? Math.round((saude.perdidos / saude.quadros) * 1000) / 10 : null });
-          Object.assign(saude, { seg: 0, parado: 0, preto: 0, trocas: 0, perdidos: 0, quadros: 0, arquivos: {}, camera: 0 });
+          Object.assign(saude, { seg: 0, parado: 0, preto: 0, trocas: 0, perdidos: 0, quadros: 0, arquivos: {}, camera: 0, peca: 0 });
         }
       } catch { /* a página ainda está carregando */ }
       try {
+        // quadro HTML intercalado na tela: fecha a exibição do anúncio anterior (não soma esses segundos a ele)
+        if ((ref.current?.contentWindow as any)?.__exaPeca) { if (atual) { fechar(); atual = ''; } return; }
         const v = ref.current?.contentDocument?.getElementById('video-propaganda') as HTMLVideoElement | null;
         const src = v?.currentSrc || v?.src || '';
         const nome = nomeDoVideo(src);

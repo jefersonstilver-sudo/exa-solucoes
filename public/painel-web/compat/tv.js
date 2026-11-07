@@ -435,6 +435,8 @@
         try { info.autocura_1h = JSON.parse(localStorage.getItem('exa_autocura') || '[]').filter(function (x) { return Date.now() - x < 3600000; }).length; } catch (e) { /* segue */ }
         setInterval(function () {
           try {
+            // quadro HTML intercalado (compat/peca.js) na tela: o anúncio está parado de propósito
+            if (window.__exaPeca) { parouEm = Date.now(); curaTrocou = Date.now(); curaQEm = Date.now(); return; }
             var v = videoElement;
             autoCura(v);
             // com o revezamento desligado o vigia não age: senão, com o vídeo ainda baixando (prédio novo, sem cache),
