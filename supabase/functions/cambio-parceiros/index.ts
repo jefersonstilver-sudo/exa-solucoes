@@ -4,7 +4,8 @@
  *    guardamos quando os valores mudaram (mudou_em) e quando conferimos (consultado_em).
  *  - Fortuna Cambios, tabela "Caixa Aux. Jebai": https://www.fortunacambios.com.py/pt/ — JSON `cotizacionesJebai` no HTML
  *    + "Última atualização" da própria página (atualizado_site).
- *  - Cripto (BTC, ETH, USDT em reais): Mercado Bitcoin (API pública v4, corretora brasileira); se falhar, Binance (pares BRL).
+ *  - Cripto (BTC, ETH, USDT em reais): tenta o Mercado Bitcoin (corretora brasileira, 4 s — dos servidores do Supabase ele não
+ *    responde, 07/11) e usa a Binance (pares BTCBRL, ETHBRL, USDTBRL).
  *    Preço = último negócio; variação = 24 h; compra/venda = melhores ofertas do livro.
  * Público e só leitura (são preços publicados nos sites). Cache de 5 min na memória + tabela cambio_parceiros.
  */
@@ -60,7 +61,7 @@ async function lerFortunaJebai() {
 async function lerCripto() {
   const ativos = ['BTC', 'ETH', 'USDT'];
   try {
-    const r = await fetch('https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL,USDT-BRL', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(12000) });
+    const r = await fetch('https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL,USDT-BRL', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(4000) });
     if (!r.ok) throw new Error('MB HTTP ' + r.status + ' ' + (await r.text()).slice(0, 80));
     const lista = await r.json() as any[];
     const v: Record<string, unknown> = {};
