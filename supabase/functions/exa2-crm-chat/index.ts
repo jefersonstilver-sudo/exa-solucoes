@@ -275,13 +275,25 @@ async function perfilAgente(sb: SupabaseClient, agente: string) {
   try { privacidade = await evoReq("GET", `/chat/fetchPrivacySettings/${inst}`); } catch { privacidade = null; }
   try { conexao = await evoReq("GET", `/instance/connectionState/${inst}`); } catch { conexao = null; }
   const foto = perfil?.picture || perfil?.profilePictureUrl || null;
-  const nome = perfil?.name || perfil?.wuid?.name || null;
+  // o nome vem da instância (fetchProfile não traz o nome do próprio número)
+  let nome: string | null = perfil?.name || perfil?.wuid?.name || null;
+  if (!nome) {
+    try {
+      const lista = await evoReq("GET", `/instance/fetchInstances?instanceName=${inst}`);
+      const it = Array.isArray(lista) ? lista[0] : lista;
+      nome = it?.profileName || it?.instance?.profileName || null;
+    } catch { /* fica sem nome */ }
+  }
   const recado = perfil?.status?.status ?? perfil?.status ?? null;
   // espelha no cadastro da instância (o card da Equipe e o chat usam isso)
   if (a.id && (foto || nome)) {
     await sb.from("evolution_instances").update({ ...(foto ? { profile_picture_url: foto } : {}), ...(nome ? { profile_name: nome } : {}), updated_at: new Date().toISOString() }).eq("id", a.id).then(() => {}, () => {});
   }
-  return { instancia: a.instancia, numero: a.numero, foto, nome, recado: typeof recado === "string" ? recado : null, privacidade: privacidade?.privacy || privacidade || null, conexao: conexao?.instance?.state || conexao?.state || null, bruto: perfil };
+  return {
+    instancia: a.instancia, numero: a.numero, foto, nome, recado: typeof recado === "string" ? recado : null,
+    privacidade: privacidade?.privacy || privacidade || null, conexao: conexao?.instance?.state || conexao?.state || null,
+    business: !!perfil?.isBusiness, descricao: perfil?.description || null, site: perfil?.website || null, bruto: perfil,
+  };
 }
 async function perfilAtualizar(sb: SupabaseClient, agente: string, b: any) {
   const a = await instanciaDoAgente(sb, agente);

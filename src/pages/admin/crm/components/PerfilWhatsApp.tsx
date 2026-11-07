@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { chamarChat, CX_TEMA, type CxAgente } from './chat/ChatEXA';
 import { BOTAO, BOTAO2, CAMPO, ROTULO, Chip, TOM } from '@/components/admin/ui/exa';
 
-export interface PerfilAgente { instancia: string; numero: string; foto: string | null; nome: string | null; recado: string | null; privacidade: Record<string, string> | null; conexao: string | null }
+export interface PerfilAgente { instancia: string; numero: string; foto: string | null; nome: string | null; recado: string | null; privacidade: Record<string, string> | null; conexao: string | null; business?: boolean; descricao?: string | null; site?: string | string[] | null }
 
 export async function lerPerfil(agente: CxAgente): Promise<PerfilAgente> {
   return await chamarChat('perfil', { agente });
@@ -94,7 +94,8 @@ export const PerfilWhatsApp: React.FC<{ agente: CxAgente; aberto: boolean; onFec
                   <span className="text-[15px] font-extrabold">{perfil.nome || '—'}</span>
                   <Chip {...(perfil.conexao === 'open' ? TOM.verde : TOM.vermelho)}>{perfil.conexao === 'open' ? 'conectado' : perfil.conexao || 'sem estado'}</Chip>
                 </div>
-                <div className="text-[12.5px] text-[#6A6B70]">+{perfil.numero} · instância {perfil.instancia}</div>
+                <div className="text-[12.5px] text-[#6A6B70]">+{perfil.numero} · instância {perfil.instancia}{perfil.business ? ' · conta Business' : ''}</div>
+                {(perfil.descricao || perfil.site) && <div className="mt-1 text-[12px] text-[#8A8B90]">{[perfil.descricao, Array.isArray(perfil.site) ? perfil.site.join(', ') : perfil.site].filter(Boolean).join(' · ')} <span title="Descrição e site da conta Business só mudam no aparelho">(só no aparelho)</span></div>}
                 <div className="mt-2 flex gap-2">
                   <button type="button" className={`${BOTAO2} h-8 text-[12.5px]`} onClick={carregar} disabled={carregando}><RefreshCw className={`h-3.5 w-3.5 ${carregando ? 'animate-spin' : ''}`} /> Reler do WhatsApp</button>
                   {perfil.foto && <button type="button" className={`${BOTAO2} h-8 text-[12.5px] text-[#B0261D]`} onClick={removerFoto} disabled={salvando}><Trash2 className="h-3.5 w-3.5" /> Remover foto</button>}
