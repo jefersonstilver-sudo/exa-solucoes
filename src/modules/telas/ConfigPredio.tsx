@@ -28,6 +28,7 @@ export function diferencasDaTela(tela: { config?: any; layout?: string }, predio
     out.push({ chave: 'layout', texto: `Layout: ${tela.layout} (no prédio: ${doPredio || 'não definido'})` });
   }
   if (c.ritmo && Object.keys(c.ritmo).length) out.push({ chave: 'ritmo', texto: 'Notícias e ritmo próprios' });
+  if (c.auto?.max_cameras) out.push({ chave: 'auto', texto: `Ajuste automático (TV lenta: ${c.auto.motivo || 'fluidez baixa'}): no máximo ${c.auto.max_cameras} câmera(s) — volta sozinho quando ficar fluida` });
   return out;
 }
 

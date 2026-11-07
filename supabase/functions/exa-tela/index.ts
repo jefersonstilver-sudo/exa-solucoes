@@ -587,6 +587,94 @@ async function ehEquipe(admin: any, req: Request): Promise<boolean> {
   return (papeis || []).some((p: any) => ['super_admin', 'admin', 'diretora_operacoes', 'gestor_comercial'].includes(String(p.role)));
 }
 
+// 06/11/2026 — VIGIA DE QUALIDADE (pedido do Jeferson: "quando o sistema não exibe alguma coisa ou não está fluido, identifica
+// e já começa a resolver"). A cada 5 min, para cada TV, olha os relatórios dos últimos ~10 min (replica_saude):
+//  1) CÂMERA SUMIU: a TV devia mostrar câmera e ficou 0 s de câmera → recarrega; 10 min depois sem voltar → Nando avisa
+//     (ocorrência + WhatsApp do Jeferson + evento no admin); avisa quando voltar.
+//  2) LENTA: perde > 15% dos quadros ou fica > 20 s parada a cada 2 min → alivia sozinho, um degrau a cada 10 min:
+//     nível 1 = no máximo 3 câmeras; nível 2 = 1 câmera; ainda lenta no nível 2 → Nando avisa.
+//     Fluida (< 7% e < 6 s) por 45 min → volta um degrau (tenta de novo com mais câmeras).
+// Tudo em exa_telas.config.auto (a escolha de quem configurou não é apagada) e em exa_telas_eventos tipo 'auto_ajuste'.
+async function vigiarQualidade(admin: any) {
+  const { data: telas } = await admin.from('exa_telas').select('id, nome, building_id, config, vigia').eq('status', 'ativa').not('building_id', 'is', null);
+  const out: any[] = [];
+  const bIds = [...new Set((telas || []).map((t: any) => t.building_id))];
+  const { data: bs } = bIds.length ? await admin.from('buildings').select('id, nome, tipo_local, telas_ritmo').in('id', bIds) : { data: [] };
+  const bPor = new Map((bs || []).map((x: any) => [x.id, x]));
+  const desde = new Date(Date.now() - 11 * 60000).toISOString();
+  for (const t of telas || []) {
+    if ((t.vigia as any)?.problema) continue; // travada/sem sinal: a escada da auto-cura cuida
+    const b: any = bPor.get(t.building_id) || {};
+    if (b.tipo_local === 'comercio' && !dentroDoHorario(t.config)) continue;
+    const { data: rs } = await admin.from('exa_telas_eventos').select('criado_em, dados').eq('tela_id', t.id).eq('tipo', 'replica_saude')
+      .gte('criado_em', desde).order('criado_em', { ascending: false }).limit(5);
+    if (!rs || rs.length < 3) continue; // pouco dado (TV acabou de abrir)
+    const cfg: any = { ...(t.config || {}) };
+    const auto: any = { ...(cfg.auto || {}) };
+    const nome = `${t.nome || 'Tela'} · ${String(b.nome || '').trim()}`;
+    const agoraIso = new Date().toISOString();
+    const mudancas: string[] = [];
+    let recarregar = false;
+    const soma = (k: string) => rs.reduce((s: number, r: any) => s + (Number(r.dados?.[k]) || 0), 0);
+    const segs = soma('seg'), cam = soma('camera');
+    const pcts = rs.map((r: any) => Number(r.dados?.pct_perdidos)).filter((n: number) => Number.isFinite(n));
+    const perd = pcts.length ? pcts.reduce((a: number, n: number) => a + n, 0) / pcts.length : 0;
+    const parado = soma('parado') / rs.length;
+    const ritmo = { ...(b.telas_ritmo || {}), ...(cfg.ritmo || {}) };
+    const deviaCamera = cfg.camera !== false && ritmo.camera !== false;
+
+    // 1) câmera sumiu
+    if (deviaCamera && segs >= 300 && cam === 0) {
+      const c = auto.camera || {};
+      if (!c.desde) {
+        auto.camera = { desde: agoraIso, passo: 1, passo_em: agoraIso }; recarregar = true; mudancas.push('câmera sumiu: recarreguei a tela');
+      } else if (c.passo === 1 && minDesde(c.passo_em) >= 10) {
+        auto.camera = { ...c, passo: 2, passo_em: agoraIso, avisado_em: agoraIso };
+        try {
+          await admin.from('nando_ocorrencias').insert({ tipo: 'tela_sem_camera', building_id: t.building_id, descricao: `${nome}: a câmera não aparece há ${minDesde(c.desde)} min. A EXA recarregou a tela e não voltou.` });
+          await nandoAvisar(admin, `🟠 *Câmera não aparece* — ${nome}\nHá ${minDesde(c.desde)} min a tela não mostra a câmera. Já recarreguei e não voltou.\nVer: a fonte da câmera (câmera local: o servidor no PC/aparelho ao lado dela; pontes: o gerador de clipes).`);
+        } catch (e) { console.error('[qualidade] aviso câmera', e); }
+        mudancas.push('câmera continua sumida: avisei o Jeferson');
+      }
+    } else if (auto.camera && cam > 0) {
+      if (auto.camera.avisado_em) { try { await nandoAvisar(admin, `🟢 *Câmera voltou* — ${nome}\nFicou ${minDesde(auto.camera.desde)} min sem câmera.`); } catch (_) { /* segue */ } }
+      mudancas.push(`câmera voltou (${minDesde(auto.camera.desde)} min sem)`);
+      delete auto.camera;
+    }
+
+    // 2) fluidez
+    const nivel = Number(auto.nivel) || 0;
+    const ruim = perd > 15 || parado > 20;
+    const bom = perd < 7 && parado < 6;
+    const podeMudar = !auto.mudou_em || minDesde(auto.mudou_em) >= 10;
+    if (ruim && podeMudar && nivel < 2) {
+      auto.nivel = nivel + 1; auto.mudou_em = agoraIso; auto.max_cameras = auto.nivel === 1 ? 3 : 1;
+      auto.motivo = `${Math.round(perd)}% de quadros perdidos, ${Math.round(parado)} s parada a cada 2 min`;
+      recarregar = true; mudancas.push(`lenta (${auto.motivo}): passei para no máximo ${auto.max_cameras} câmera(s)`);
+    } else if (ruim && podeMudar && nivel === 2 && !auto.lenta_avisada_em) {
+      auto.lenta_avisada_em = agoraIso; auto.mudou_em = agoraIso;
+      try {
+        await admin.from('nando_ocorrencias').insert({ tipo: 'tela_lenta', building_id: t.building_id, descricao: `${nome}: continua lenta (${Math.round(perd)}% de quadros perdidos) mesmo com 1 câmera só.` });
+        await nandoAvisar(admin, `🟠 *Tela lenta* — ${nome}\nPerde ${Math.round(perd)}% dos quadros e fica ${Math.round(parado)} s parada a cada 2 min, mesmo com 1 câmera só (já tirei as outras sozinho).\nVer: aparelho quente/sem ventilação, Wi-Fi fraco ou anúncio sem versão leve.`);
+      } catch (e) { console.error('[qualidade] aviso lenta', e); }
+      mudancas.push('continua lenta com 1 câmera: avisei o Jeferson');
+    } else if (bom && nivel > 0 && minDesde(auto.mudou_em) >= 45) {
+      auto.nivel = nivel - 1; auto.mudou_em = agoraIso; delete auto.lenta_avisada_em;
+      if (auto.nivel === 0) { delete auto.nivel; delete auto.max_cameras; delete auto.motivo; } else auto.max_cameras = 3;
+      recarregar = true; mudancas.push(`fluida há 45 min: voltei um degrau (${auto.max_cameras ? 'máx. ' + auto.max_cameras + ' câmeras' : 'todas as câmeras escolhidas'})`);
+    }
+
+    if (!mudancas.length) continue;
+    cfg.auto = Object.keys(auto).length ? auto : undefined;
+    const patch: any = { config: cfg };
+    if (recarregar) { patch.comando = 'recarregar'; patch.comando_em = agoraIso; }
+    await admin.from('exa_telas').update(patch).eq('id', t.id);
+    await admin.from('exa_telas_eventos').insert({ tela_id: t.id, tipo: 'auto_ajuste', dados: { o_que: mudancas, perdidos_pct: Math.round(perd * 10) / 10, parado_s: Math.round(parado), camera_s: cam, nivel: auto.nivel || 0 } });
+    out.push({ tela: nome, o_que: mudancas });
+  }
+  return out;
+}
+
 // 06/11/2026: as TVs Android tocam as câmeras das pontes como CLIPES leves (workflow camera-clipes, 720x480), não ao vivo.
 // O workflow roda ~5h30 e o agendamento do GitHub emenda o próximo — hoje ficou 2h27 sem gerador (15h23–17h50) e todas
 // as TVs caíram no ao vivo pesado (o Zeta travou). O vigia confere o clipe mais novo e religa o gerador se parou.
@@ -765,7 +853,10 @@ Deno.serve(async (req) => {
         const { data: bCfg } = await admin.from('buildings').select('id, telas_config').eq('id', tela.building_id).maybeSingle();
         const cfgC = configEfetiva(tela, bCfg).cameras;
         const escolhidas = Array.isArray(cfgC?.ids) && cfgC.ids.length > 0;
-        const cs = camerasDaTela(await cameras(), cfgC, tela.building_id);
+        let cs = camerasDaTela(await cameras(), cfgC, tela.building_id);
+        // auto-ajuste do vigia (TV lenta): menos câmeras, sem mexer na escolha de quem configurou
+        const maxAuto = Number((tela.config as any)?.auto?.max_cameras) || 0;
+        if (maxAuto > 0 && cs.length > maxAuto) cs = cs.slice(0, maxAuto);
         return json({ ok: true, escolhidas, lives: cs.map((c: any) => ({ url: c.url, nome: c.nome, timing: c.segundos })) });
       }
       if (arq === 'clima') {
@@ -967,11 +1058,13 @@ Deno.serve(async (req) => {
       const base = await vigiar(admin);
       let leves: any = null;
       try { leves = await garantirVersoesLeves(admin); } catch (e) { console.error('[vigia] versões leves', e); }
+      let qualidade: any[] = [];
+      try { qualidade = await vigiarQualidade(admin); } catch (e) { console.error('[vigia] qualidade', e); }
       let clipes: any = null;
       try { clipes = await garantirClipesCameras(admin); } catch (e) { console.error('[vigia] clipes', e); }
       let cura: any[] = [];
       try { cura = await vigiarTravadas(admin); } catch (e) { console.error('[vigia] travadas', e); }
-      return json({ ok: true, ...base, auto_cura: cura, versoes_leves: leves, clipes_cameras: clipes });
+      return json({ ok: true, ...base, auto_cura: cura, versoes_leves: leves, clipes_cameras: clipes, qualidade });
     }
 
     // ---------- portal do restaurante (área do cliente) ----------
