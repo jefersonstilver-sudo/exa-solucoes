@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Pagina, Cabecalho, Busca, Pilulas, Kpi, Chip, TOM, Avatar, Carregando, Vazio, BOTAO2, vidro } from '@/components/admin/ui/exa';
 import { 
   Mail, 
   Send, 
@@ -182,400 +182,87 @@ const ComunicacoesPage = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const [aba, setAba] = useState<'historico' | 'templates'>('historico');
+  const STATUS: Record<string, { l: string; tom: keyof typeof TOM }> = {
+    delivered: { l: 'entregue', tom: 'verde' }, sent: { l: 'enviado', tom: 'azul' }, opened: { l: 'aberto', tom: 'roxo' }, clicked: { l: 'clicado', tom: 'ambar' }, bounced: { l: 'rejeitado', tom: 'vermelho' }, failed: { l: 'falhou', tom: 'vermelho' },
+  };
+  const CAT_TOM: Record<string, keyof typeof TOM> = { auth: 'azul', video: 'roxo', benefits: 'verde', order: 'ambar', system: 'cinza' };
+  const quandoE = (iso: string) => format(new Date(iso), "dd/MM HH:mm", { locale: ptBR });
+  const falhas = emails.filter((e) => ['bounced', 'failed'].includes(e.status)).length;
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-[26px] md:text-3xl font-bold tracking-tight">Comunicações</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerenciamento de templates e envio de emails
-          </p>
-        </div>
-        
-        <AdminPeriodSelector
-          value={periodFilter}
-          onChange={handlePeriodChange}
-          customStartDate={customStartDate}
-          customEndDate={customEndDate}
-          onCustomDateChange={handleCustomDateChange}
-        />
+    <Pagina>
+      <Cabecalho
+        titulo="E-mails"
+        sub="O que o sistema mandou (Resend, de noreply@examidia.com.br), quem abriu e os modelos de cada mensagem."
+        acoes={(
+          <>
+            <AdminPeriodSelector value={periodFilter} onChange={handlePeriodChange} customStartDate={customStartDate} customEndDate={customEndDate} onCustomDateChange={handleCustomDateChange} />
+            <button type="button" className={BOTAO2} onClick={() => { refetchHistory(); refetchStats(); }} disabled={historyLoading} title="Atualizar"><RefreshCw className={`h-4 w-4 ${historyLoading ? 'animate-spin' : ''}`} /></button>
+          </>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+        <Kpi rotulo="Enviados" valor={statsLoading ? '…' : stats.sent.toLocaleString('pt-BR')} sub={`${stats.total.toLocaleString('pt-BR')} no período`} icone={Send} />
+        <Kpi rotulo="Abertura" valor={statsLoading ? '…' : `${stats.openRate.toFixed(0)}%`} sub={`${stats.opened.toLocaleString('pt-BR')} abertos`} icone={Eye} cor="#1E6B47" />
+        <Kpi rotulo="Cliques" valor={statsLoading ? '…' : `${stats.clickRate.toFixed(0)}%`} sub={`${stats.clicked.toLocaleString('pt-BR')} cliques`} icone={ExternalLink} cor="#2B4C8C" />
+        <Kpi rotulo="Falhas" valor={historyLoading ? '…' : falhas} sub="rejeitados ou com erro" icone={AlertCircle} cor={falhas ? '#B0261D' : '#17181A'} />
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Emails</CardTitle>
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <Mail className="h-4 w-4 text-blue-600" />
+      <Busca valor={searchTerm} onChange={setSearchTerm} placeholder={aba === 'historico' ? 'Assunto ou destinatário' : 'Nome do modelo'}>
+        <Pilulas valor={aba} onChange={(v) => setAba(v as any)} opcoes={[{ valor: 'historico', rotulo: 'Enviados', n: totalCount }, { valor: 'templates', rotulo: 'Modelos', n: templates.length }]} />
+        {aba === 'templates' && (
+          <>
+            <Pilulas valor={selectedCategory} onChange={setSelectedCategory} opcoes={[{ valor: 'all', rotulo: 'Todos' }, { valor: 'auth', rotulo: 'Conta' }, { valor: 'video', rotulo: 'Vídeos' }, { valor: 'benefits', rotulo: 'Benefícios' }]} />
+            <EmailTemplateSyncButton />
+          </>
+        )}
+      </Busca>
+
+      {aba === 'historico' ? (
+        historyLoading ? <Carregando texto="Carregando e-mails…" /> : (() => {
+          const q = searchTerm.trim().toLowerCase();
+          const lista = emails.filter((e) => !q || [e.subject, e.recipient_email, e.recipient_name].some((x) => String(x || '').toLowerCase().includes(q)));
+          return !lista.length ? <Vazio icone={<Mail className="h-5 w-5" />} titulo="Nenhum e-mail no período" /> : (
+            <div className={`${vidro} overflow-hidden rounded-[22px]`}>
+              <ul className="divide-y divide-black/[0.06]">
+                {lista.map((email) => {
+                  const st = STATUS[email.status] || STATUS.sent;
+                  return (
+                    <li key={email.id} className="flex items-start gap-3 px-3 py-2.5 md:px-4">
+                      <Avatar nome={email.recipient_name || email.recipient_email} tamanho={38} cor={TOM[st.tom].cor} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><span className="truncate text-[14px] font-bold">{email.subject}</span><Chip {...TOM[st.tom]}>{st.l}</Chip></span>
+                        <span className="block truncate text-[12.5px] text-[#6A6B70]">para {email.recipient_name ? `${email.recipient_name} · ` : ''}{email.recipient_email}{email.opened_at ? ` · aberto ${quandoE(email.opened_at)}` : ''}{email.clicked_at ? ` · clicou ${quandoE(email.clicked_at)}` : ''}</span>
+                        {email.error_message && <span className="mt-1 block rounded-lg bg-[#FDECEC] px-2 py-1 text-[12px] text-[#B0261D]">{email.error_message}</span>}
+                      </span>
+                      <span className="shrink-0 text-[12px] tabular-nums text-[#8A8B90]">{quandoE(email.sent_at)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsLoading ? (
-                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-              ) : (
-                stats.total.toLocaleString('pt-BR')
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {periodFilter === 'all' ? 'Desde o início' : `Últimos ${periodFilter === 'current_month' ? 'mês' : periodFilter} dias`}
-            </p>
-          </CardContent>
-        </Card>
+          );
+        })()
+      ) : (
+        !filteredTemplates.length ? <Vazio icone={<FileText className="h-5 w-5" />} titulo="Nenhum modelo encontrado" /> : (
+          <div className={`${vidro} overflow-hidden rounded-[22px]`}>
+            <ul className="divide-y divide-black/[0.06]">
+              {filteredTemplates.map((t) => (
+                <li key={t.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/70 md:px-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ background: TOM[CAT_TOM[t.category] || 'cinza'].fundo, color: TOM[CAT_TOM[t.category] || 'cinza'].cor }}>{t.icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><span className="truncate text-[14px] font-bold">{t.name}</span><Chip {...TOM[CAT_TOM[t.category] || 'cinza']}>{categoryNames[t.category] || t.category}</Chip></span>
+                    <span className="block truncate text-[12.5px] text-[#6A6B70]">{t.description}</span>
+                  </span>
+                  <button type="button" className={`${BOTAO2} h-9`} onClick={() => openPreview(t)}><Eye className="h-4 w-4" /> Ver e editar</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      )}
 
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enviados</CardTitle>
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <Send className="h-4 w-4 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsLoading ? (
-                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-              ) : (
-                stats.sent.toLocaleString('pt-BR')
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? '...' : `${stats.deliveryRate.toFixed(1)}% do total`}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Abertura</CardTitle>
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <TrendingUp className="h-4 w-4 text-purple-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsLoading ? (
-                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-              ) : (
-                `${stats.openRate.toFixed(1)}%`
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? '...' : `${stats.opened.toLocaleString('pt-BR')} abertos`}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Cliques</CardTitle>
-            <div className="p-2 rounded-lg bg-orange-500/10">
-              <TrendingUp className="h-4 w-4 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsLoading ? (
-                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-              ) : (
-                `${stats.clickRate.toFixed(1)}%`
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {statsLoading ? '...' : `${stats.clicked.toLocaleString('pt-BR')} cliques`}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="templates" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
-          <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-        </TabsList>
-
-        {/* Templates */}
-        <TabsContent value="templates" className="space-y-4">
-          {/* Filtros */}
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-              <div>
-                <CardTitle>Templates de Email</CardTitle>
-                <CardDescription>
-                  {templates.length} templates disponíveis no sistema
-                </CardDescription>
-              </div>
-              <EmailTemplateSyncButton />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar templates..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory('all')}
-                  >
-                    Todos
-                  </Button>
-                  <Button
-                    variant={selectedCategory === 'auth' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory('auth')}
-                  >
-                    Autenticação
-                  </Button>
-                  <Button
-                    variant={selectedCategory === 'video' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory('video')}
-                  >
-                    Vídeos
-                  </Button>
-                  <Button
-                    variant={selectedCategory === 'benefits' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory('benefits')}
-                  >
-                    Benefícios
-                  </Button>
-                </div>
-              </div>
-
-              {/* Lista de Templates */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredTemplates.map((template) => (
-                  <Card key={template.id} className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className={`p-2.5 rounded-lg ${categoryColors[template.category]}`}>
-                            {template.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-base truncate">{template.name}</CardTitle>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
-                        {template.description}
-                      </p>
-                      <div className="flex items-center justify-between pt-2">
-                        <Badge variant="outline" className={categoryColors[template.category]}>
-                          {categoryNames[template.category]}
-                        </Badge>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => openPreview(template)}
-                          className="hover:bg-primary/10"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Visualizar
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {filteredTemplates.length === 0 && (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum template encontrado</h3>
-                  <p className="text-muted-foreground">
-                    Tente ajustar os filtros ou buscar por outro termo
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Histórico */}
-        <TabsContent value="historico" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Histórico de Envios</CardTitle>
-                  <CardDescription>
-                    {totalCount.toLocaleString('pt-BR')} emails registrados • Atualização automática a cada 2 minutos
-                  </CardDescription>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    refetchHistory();
-                    refetchStats();
-                  }}
-                  disabled={historyLoading}
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${historyLoading ? 'animate-spin' : ''}`} />
-                  Atualizar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {historyLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                  <span className="ml-3 text-muted-foreground">Carregando histórico...</span>
-                </div>
-              ) : emails.length === 0 ? (
-                <div className="text-center py-12">
-                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum email encontrado</h3>
-                  <p className="text-muted-foreground">
-                    Não há emails registrados para o período selecionado
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {emails.map((email) => {
-                    const statusConfig = {
-                      delivered: { color: 'bg-green-500/10 text-green-700 border-green-200', icon: CheckCircle2, label: 'Entregue' },
-                      sent: { color: 'bg-blue-500/10 text-blue-700 border-blue-200', icon: Send, label: 'Enviado' },
-                      opened: { color: 'bg-purple-500/10 text-purple-700 border-purple-200', icon: Eye, label: 'Aberto' },
-                      clicked: { color: 'bg-orange-500/10 text-orange-700 border-orange-200', icon: ExternalLink, label: 'Clicado' },
-                      bounced: { color: 'bg-red-500/10 text-red-700 border-red-200', icon: AlertCircle, label: 'Rejeitado' },
-                      failed: { color: 'bg-red-500/10 text-red-700 border-red-200', icon: XCircle, label: 'Falhou' },
-                    };
-                    
-                    const config = statusConfig[email.status as keyof typeof statusConfig] || statusConfig.sent;
-                    const StatusIcon = config.icon;
-                    
-                    return (
-                      <div
-                        key={email.id}
-                        className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-start gap-3">
-                              <div className={`p-2 rounded-lg ${config.color} flex-shrink-0`}>
-                                <StatusIcon className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-sm truncate">{email.subject}</h4>
-                                <p className="text-sm text-muted-foreground truncate">
-                                  Para: {email.recipient_name || email.recipient_email}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground ml-[52px]">
-                              <span>📅 {format(new Date(email.sent_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
-                              {email.opened_at && (
-                                <span>• 👁️ Aberto {format(new Date(email.opened_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                              )}
-                              {email.clicked_at && (
-                                <span>• 🖱️ Clicado {format(new Date(email.clicked_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                              )}
-                              {email.resend_id && (
-                                <span className="font-mono">• ID: {email.resend_id.slice(0, 8)}...</span>
-                              )}
-                            </div>
-                            
-                            {email.error_message && (
-                              <div className="ml-[52px] mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                                <strong>Erro:</strong> {email.error_message}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <Badge variant="outline" className={`${config.color} flex-shrink-0`}>
-                            {config.label}
-                          </Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Configurações */}
-        <TabsContent value="configuracoes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações de Email</CardTitle>
-              <CardDescription>
-                Configurações gerais do sistema de emails
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Provedor de Email</h4>
-                    <p className="text-sm text-muted-foreground">Resend API</p>
-                  </div>
-                  <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-200">
-                    Ativo
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Email Remetente</h4>
-                    <p className="text-sm text-muted-foreground">noreply@examidia.com.br</p>
-                  </div>
-                  <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-200">
-                    Verificado
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div>
-                  <h4 className="font-medium mb-2">Sistema de Customização</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Você pode personalizar o HTML de qualquer template clicando em "Visualizar" e depois em "Editar HTML". 
-                    As customizações salvas serão aplicadas automaticamente em todos os envios futuros.
-                  </p>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">
-                    <strong>💡 Dica:</strong> Templates customizados aparecem com badge "✓ Customizado" e podem ser restaurados ao original a qualquer momento.
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div>
-                  <h4 className="font-medium mb-2">Sistema de Templates</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Sistema modular centralizado em <code className="bg-muted px-1 py-0.5 rounded">supabase/functions/_shared/email-templates/</code>
-                  </p>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Documentação
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Preview Dialog */}
       <EmailTemplatePreviewDialog
         open={previewDialog.open}
         onOpenChange={(open) => setPreviewDialog({ ...previewDialog, open })}
@@ -583,7 +270,7 @@ const ComunicacoesPage = () => {
         templateName={previewDialog.templateName}
         templateCategory={previewDialog.templateCategory}
       />
-    </div>
+    </Pagina>
   );
 };
 

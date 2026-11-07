@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useEffect } from 'react';
+import { Pagina, Cabecalho, Pilulas, BOTAO2, Carregando } from '@/components/admin/ui/exa';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -41,6 +41,8 @@ export default function ConfiguracoesPage() {
   const { config: additionalConfig, loading: additionalLoading, updateConfiguration: updateAdditionalConfig, refetch: refetchAdditional } = useAdditionalConfigurations();
   const [saving, setSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [aba, setAba] = useState(() => { try { return localStorage.getItem('config_aba') || 'site'; } catch { return 'site'; } });
+  useEffect(() => { try { localStorage.setItem('config_aba', aba); } catch { /* sem armazenamento */ } }, [aba]);
   const [showReAuthModal, setShowReAuthModal] = useState(false);
   const [pendingDebugAIValue, setPendingDebugAIValue] = useState(false);
   const [stats, setStats] = useState({
@@ -120,146 +122,30 @@ export default function ConfiguracoesPage() {
 
   const loading = baseLoading || additionalLoading;
 
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Carregando texto="Carregando configurações…" />;
 
+  const ABAS = [
+    { valor: 'site', rotulo: 'Site' }, { valor: 'email', rotulo: 'E-mail' }, { valor: 'security', rotulo: 'Segurança' }, { valor: 'notifications', rotulo: 'Notificações' },
+    { valor: 'system', rotulo: 'Sistema' }, { valor: 'integrations', rotulo: 'Integrações' }, { valor: 'social', rotulo: 'Redes' },
+  ];
   return (
-    <div className="container mx-auto p-1 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-[26px] md:text-3xl font-bold tracking-tight">Configurações</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerenciamento completo da plataforma EXA Soluções Digitais
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleRefreshAll} variant="outline" size="sm" className="max-sm:h-10 max-sm:w-full">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Recarregar Tudo
-          </Button>
-        </div>
+    <Pagina>
+      <Cabecalho
+        titulo="Configurações"
+        sub="Site, e-mail, segurança, notificações, sistema, integrações e redes. Mexa com calma: aqui tudo vale para a plataforma inteira."
+        acoes={<button type="button" className={BOTAO2} onClick={handleRefreshAll}><RefreshCw className="h-4 w-4" /> Recarregar</button>}
+      />
+      <Pilulas valor={aba} onChange={setAba} opcoes={ABAS} />
+      <div className="[&_.rounded-lg]:rounded-2xl [&_.border-border]:border-black/[0.06] [&_.bg-card]:bg-white/80">
+        {aba === 'site' && <SiteInfoTab config={additionalConfig} updateConfig={updateAdditionalConfig} />}
+        {aba === 'email' && <EmailConfigTab config={additionalConfig} updateConfig={updateAdditionalConfig} />}
+        {aba === 'security' && <SecurityTab config={additionalConfig} updateConfig={updateAdditionalConfig} />}
+        {aba === 'notifications' && <NotificationsTab config={additionalConfig} updateConfig={updateAdditionalConfig} />}
+        {aba === 'system' && <SystemTab baseConfig={baseConfig} updateBaseConfig={updateBaseConfig} additionalConfig={additionalConfig} updateAdditionalConfig={updateAdditionalConfig} />}
+        {aba === 'integrations' && <IntegrationsTab config={additionalConfig} updateConfig={updateAdditionalConfig} />}
+        {aba === 'social' && <SocialTab config={additionalConfig} updateConfig={updateAdditionalConfig} />}
       </div>
 
-      <Separator />
-
-      {/* Tabs de Configuração */}
-      <Tabs defaultValue="site" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
-          <TabsTrigger value="site" className="gap-2">
-            <Building2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Site</span>
-          </TabsTrigger>
-          <TabsTrigger value="email" className="gap-2">
-            <Mail className="w-4 h-4" />
-            <span className="hidden sm:inline">Email</span>
-          </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
-            <Shield className="w-4 h-4" />
-            <span className="hidden sm:inline">Segurança</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="w-4 h-4" />
-            <span className="hidden sm:inline">Notificações</span>
-          </TabsTrigger>
-          <TabsTrigger value="system" className="gap-2">
-            <Server className="w-4 h-4" />
-            <span className="hidden sm:inline">Sistema</span>
-          </TabsTrigger>
-          <TabsTrigger value="debug" className="gap-2">
-            <Bot className="w-4 h-4" />
-            <span className="hidden sm:inline">Debug AI</span>
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="gap-2">
-            <Database className="w-4 h-4" />
-            <span className="hidden sm:inline">Integrações</span>
-          </TabsTrigger>
-          <TabsTrigger value="social" className="gap-2">
-            <Share2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Redes</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="site">
-          <SiteInfoTab 
-            config={additionalConfig} 
-            updateConfig={updateAdditionalConfig}
-          />
-        </TabsContent>
-
-        <TabsContent value="email">
-          <EmailConfigTab 
-            config={additionalConfig} 
-            updateConfig={updateAdditionalConfig}
-          />
-        </TabsContent>
-
-        <TabsContent value="security">
-          <SecurityTab 
-            config={additionalConfig} 
-            updateConfig={updateAdditionalConfig}
-          />
-        </TabsContent>
-
-        <TabsContent value="notifications">
-          <NotificationsTab 
-            config={additionalConfig} 
-            updateConfig={updateAdditionalConfig}
-          />
-        </TabsContent>
-
-        <TabsContent value="system">
-          <SystemTab 
-            baseConfig={baseConfig}
-            updateBaseConfig={updateBaseConfig}
-            additionalConfig={additionalConfig}
-            updateAdditionalConfig={updateAdditionalConfig}
-          />
-        </TabsContent>
-
-        <TabsContent value="debug">
-          <DebugAITab 
-            config={baseConfig}
-            stats={stats}
-            onToggleDebugAI={handleDebugAIToggle}
-            onShowHistory={() => setShowHistory(true)}
-          />
-        </TabsContent>
-
-        <TabsContent value="integrations">
-          <IntegrationsTab 
-            config={additionalConfig} 
-            updateConfig={updateAdditionalConfig}
-          />
-        </TabsContent>
-
-        <TabsContent value="social">
-          <SocialTab 
-            config={additionalConfig} 
-            updateConfig={updateAdditionalConfig}
-          />
-        </TabsContent>
-      </Tabs>
-
-      {/* Modals */}
-      <ReAuthModal
-        open={showReAuthModal}
-        onClose={() => setShowReAuthModal(false)}
-        onSuccess={handleDebugAIConfirm}
-        action={pendingDebugAIValue ? 'activate' : 'deactivate'}
-      />
-
-      <AIDebugHistory
-        open={showHistory}
-        onClose={() => setShowHistory(false)}
-      />
-    </div>
+    </Pagina>
   );
 }
