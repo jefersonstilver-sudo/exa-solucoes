@@ -228,6 +228,25 @@ class ClimaWidget {
     }
   }
 
+  alertaCheioHtml() {
+    const a = this.alerta;
+    const sev = String(a.severidade || "Alerta");
+    const cor = /^#[0-9a-f]{6}$/i.test(a.aviso_cor || "") ? a.aviso_cor : "#F96602";
+    const texto = /grande/i.test(sev) ? "#fff" : "#1a1206";
+    const ev = String(a.descricao || "Tempo severo");
+    const risco = String(a.riscos || "").split(/[.;]/)[0].replace(/\s+/g, " ").trim().slice(0, 120);
+    const instr = String(a.instrucoes || "").split(/[.;]/).map(x => x.trim()).filter(x => x.length > 8)[0] || "Evite sair durante a tempestade e não se abrigue sob árvores";
+    const fim = String(a.fim || "").slice(11, 16);
+    return `<div class="clima-alerta-cheio" style="background:${cor};color:${texto}">
+      <div class="cac-tit"><span class="cac-sino">⚠</span>ALERTA DA DEFESA CIVIL</div>
+      <div class="cac-ev">${ev.toUpperCase()}</div>
+      <div class="cac-sev">${sev}${fim ? " · até " + fim : ""}</div>
+      <div class="cac-risco">${risco}.</div>
+      <div class="cac-instr">${instr.slice(0, 90)}.</div>
+      <div class="cac-pe">Emergência: <b>Defesa Civil 199</b> · <b>Bombeiros 193</b></div>
+    </div>`;
+  }
+
   alertaHtml() {
     const a = this.alerta;
     if (!a) return "";
@@ -270,10 +289,16 @@ class ClimaWidget {
       <div class="clima-ceu ${tema.ceu}"></div>
       <div class="clima-cena">${climaCenaHtml(tema.cena)}</div>
       <div class="clima-tit">Foz do Iguaçu · agora</div>
-      <div class="clima-linha"><div class="clima-temp">${Math.round(agora.temp)}<sup>°C</sup></div><div class="clima-cond">${agora.condicao || ""}</div></div>
+      <div class="clima-linha"><div class="clima-temp">${Math.round(agora.temp)}<sup>°C</sup></div><div class="clima-cond${String(agora.condicao || "").length > 18 ? " longa" : ""}">${agora.condicao || ""}</div></div>
       <div class="clima-meta"><span>Chuva <b>${agora.chuva}%</b></span><span>${agora.rajada ? "Rajadas" : "Vento"} <b>${agora.vento} km/h</b></span><span>Umid. <b>${agora.umidade}%</b></span></div>
-      ${this.alerta ? this.alertaHtml() : `<div class="clima-dias ${dias.n === 2 ? "d2" : ""}">${dias.html}</div>`}`;
+      ${this.alerta ? this.alertaHtml() + this.alertaCheioHtml() : `<div class="clima-dias ${dias.n === 2 ? "d2" : ""}">${dias.html}</div>`}`;
     this.container.classList.toggle("com-alerta", !!this.alerta);
+    // modo alerta: o card inteiro alterna a cada 3 s entre o tempo e o alerta da Defesa Civil
+    if (this.alerta && !this.piscaAlerta) {
+      this.piscaAlerta = setInterval(() => { this.container.classList.toggle("mostra-alerta"); }, 3000);
+    } else if (!this.alerta && this.piscaAlerta) {
+      clearInterval(this.piscaAlerta); this.piscaAlerta = null; this.container.classList.remove("mostra-alerta");
+    }
   }
 
   renderErro() {
@@ -289,6 +314,17 @@ class ClimaWidget {
 .clima-alerta .ca-risco{font-size:13px;font-weight:600;line-height:1.25;margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .clima-alerta .ca-pe{font-size:11.5px;margin-top:4px;opacity:.92}
 .c-raio{position:absolute;left:58px;top:58px;width:22px;height:36px;background:#ffd23f;clip-path:polygon(55% 0,0 58%,42% 58%,25% 100%,100% 38%,58% 38%,80% 0);animation:caRaio 3.2s steps(1) infinite}
+.clima-cond.longa{font-size:15px}
+.widget-clima .clima-alerta-cheio{position:absolute;top:0;left:0;right:0;bottom:0;z-index:6;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;gap:3px;opacity:0;transition:opacity .45s ease;pointer-events:none}
+.widget-clima.mostra-alerta .clima-alerta-cheio{opacity:1}
+.clima-alerta-cheio .cac-tit{font-size:14px;font-weight:800;letter-spacing:2px;display:flex;align-items:center;gap:8px}
+.clima-alerta-cheio .cac-sino{font-size:22px;animation:caSino 1s ease-in-out infinite}
+.clima-alerta-cheio .cac-ev{font-size:40px;font-weight:900;letter-spacing:.5px;line-height:1.02}
+.clima-alerta-cheio .cac-sev{font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:1.4px}
+.clima-alerta-cheio .cac-risco{font-size:14px;font-weight:600;line-height:1.25;margin-top:4px}
+.clima-alerta-cheio .cac-instr{font-size:13px;line-height:1.25;opacity:.95}
+.clima-alerta-cheio .cac-pe{font-size:14px;margin-top:6px}
+@keyframes caSino{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
 @keyframes caPulso{0%,100%{filter:none}50%{filter:brightness(1.12)}}
 @keyframes caRaio{0%,70%{opacity:0}72%,76%{opacity:1}78%,100%{opacity:0}}`;
   try { const st = document.createElement("style"); st.textContent = css; (document.head || document.documentElement).appendChild(st); } catch (e) {}
