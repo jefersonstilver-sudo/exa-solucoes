@@ -42,10 +42,19 @@ async function buscarNoticiasCNN() {
   const browser = await abrirNavegador(log);
   const page = await browser.newPage();
   await page.setUserAgent(UA);
-  await page.goto("https://www.cnnbrasil.com.br/", { waitUntil: "networkidle2", timeout: 45000 });
-  try { await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "OK"); if (b) b.click(); }); await sleep(800); } catch {}
-  await page.evaluate(() => window.scrollBy(0, 3000)); await sleep(2000);
-  const lista = await page.evaluate(() => {
+  // 07/11/2026: no fim de semana a home traz poucas matérias (11 → 2 aprovadas) — completa com as editorias
+  const PAGINAS = ["https://www.cnnbrasil.com.br/", "https://www.cnnbrasil.com.br/nacional/", "https://www.cnnbrasil.com.br/internacional/",
+    "https://www.cnnbrasil.com.br/economia/", "https://www.cnnbrasil.com.br/esportes/",
+    "https://www.cnnbrasil.com.br/saude/", "https://www.cnnbrasil.com.br/tecnologia/"];
+  const lista = [], vistos = new Set();
+  for (const [ip, urlPag] of PAGINAS.entries()) {
+    const aproveitaveis = lista.filter(n => !CATS_BLOQUEADAS.includes(n.cat)).length;
+    if (ip > 0 && aproveitaveis >= QTD + 10) break;
+    try {
+      await page.goto(urlPag, { waitUntil: "networkidle2", timeout: 45000 });
+      if (ip === 0) { try { await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "OK"); if (b) b.click(); }); await sleep(800); } catch {} }
+      await page.evaluate(() => window.scrollBy(0, 3000)); await sleep(2000);
+      const achadas = await page.evaluate(() => {
     const out = [], seen = new Set();
     document.querySelectorAll("a").forEach(a => {
       const href = a.href; if (!href.includes("cnnbrasil.com.br/") || href.includes("stories.cnn") || seen.has(href)) return;
@@ -56,6 +65,10 @@ async function buscarNoticiasCNN() {
     });
     return out;
   });
+      let novas = 0; for (const n of achadas) { const k = n.url.replace(/[?#].*$/, "").replace(/\/$/, ""); if (vistos.has(k)) continue; vistos.add(k); lista.push(n); novas++; }
+      if (ip > 0) log(`  + ${novas} da editoria ${urlPag.split("/").slice(-2, -1)[0]}`);
+    } catch (e) { log(`  página ${urlPag} falhou: ${e.message}`); }
+  }
   await browser.close();
   log(`${lista.length} notícias encontradas`);
   const ok = lista.filter(n => {

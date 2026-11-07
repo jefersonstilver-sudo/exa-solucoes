@@ -1,4 +1,4 @@
 publicar=sim
-quais=brasil e foz
+quais=brasil
 incluir=
-# 07/11 07h50: manha nao rodou (agendamento do GitHub atrasou) - disparo manual
+# 07/11 08h: Brasil de novo, agora buscando tambem nas editorias da CNN
