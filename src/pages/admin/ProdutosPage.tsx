@@ -40,20 +40,24 @@ const deProduto = (p?: ProdutoExa | null): EdProd => ({
   vendido_no_site: !!p?.vendido_no_site, contratacao_parcial: !!p?.contratacao_parcial, resolucao: p?.resolucao || '', ativo: p?.ativo ?? true,
 });
 
-const CartaoProduto: React.FC<{ titulo: string; sub: string; icone: React.ReactNode; produto?: ProdutoExa | null; ed: EdProd; setEd: (f: (e: EdProd) => EdProd) => void; salvar: () => void; salvando: boolean }> = ({ titulo, sub, icone, produto, ed, setEd, salvar, salvando }) => (
-  <section className={`${CARD} p-5 sm:p-6`}>
+const CartaoProduto: React.FC<{ titulo: string; sub: string; icone: React.ReactNode; produto?: ProdutoExa | null; ed: EdProd; setEd: (f: (e: EdProd) => EdProd) => void; salvar: () => void; salvando: boolean }> = ({ titulo, sub, icone, produto, ed, setEd, salvar, salvando }) => {
+  const [aberto, setAberto] = useState(false);
+  return (
+  <section className={`${CARD} p-4 sm:p-5`}>
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-center gap-3">
         <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-white text-[#9C1E1E] shadow-sm ring-1 ring-black/[0.06]">{icone}</span>
         <div>
           <div className="flex items-center gap-2"><span className="text-[17px] font-extrabold tracking-[-0.02em] text-[#17181A]">{titulo}</span>
-            {ed.vendido_no_site ? <Chip fundo="#EAF5EF" cor="#1E6B47">No site</Chip> : <Chip>Só pela Sofia</Chip>}</div>
-          <div className="text-[12.5px] text-[#6A6B70]">{sub}</div>
+            {ed.vendido_no_site ? <Chip fundo="#EAF5EF" cor="#1E6B47">No site</Chip> : <Chip>Só pela Sofia</Chip>}{!ed.ativo && <Chip>Inativo</Chip>}</div>
+          <div className="text-[12.5px] text-[#6A6B70]">{sub} · {ed.duracao_video_segundos}s · {ed.max_clientes_por_painel} por tela{ed.contratacao_parcial ? ' · pode escolher prédios' : ''}</div>
         </div>
       </div>
-      <Toggle on={ed.ativo} onChange={(v) => setEd((e) => ({ ...e, ativo: v }))} label={ed.ativo ? 'Ativo' : 'Inativo'} />
+      <button type="button" className={BTN2} onClick={() => setAberto((v) => !v)}>{aberto ? 'Fechar' : 'Editar'}</button>
     </div>
-    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    {aberto && (<>
+    <div className="mt-4 flex justify-end"><Toggle on={ed.ativo} onChange={(v) => setEd((e) => ({ ...e, ativo: v }))} label={ed.ativo ? 'Ativo' : 'Inativo'} /></div>
+    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <label><span className={LABEL}>Duração (s)</span><input type="number" className={INPUT} value={ed.duracao_video_segundos} onChange={(e) => setEd((x) => ({ ...x, duracao_video_segundos: Number(e.target.value) || 0 }))} /></label>
       <label><span className={LABEL}>Anunciantes por tela</span><input type="number" className={INPUT} value={ed.max_clientes_por_painel} onChange={(e) => setEd((x) => ({ ...x, max_clientes_por_painel: Number(e.target.value) || 0 }))} /></label>
       <label><span className={LABEL}>Vídeos por pedido</span><input type="number" className={INPUT} value={ed.max_videos_por_pedido ?? ''} onChange={(e) => setEd((x) => ({ ...x, max_videos_por_pedido: Number(e.target.value) || null }))} /></label>
@@ -67,14 +71,17 @@ const CartaoProduto: React.FC<{ titulo: string; sub: string; icone: React.ReactN
       <span className="text-[11.5px] text-[#8A8B90]">{produto?.ultima_alteracao_em ? <><Clock className="mr-1 inline h-3 w-3" />{new Date(produto.ultima_alteracao_em).toLocaleString('pt-BR')}{produto.ultima_alteracao_por ? ` · ${produto.ultima_alteracao_por}` : ''}</> : ''}</span>
       <button type="button" className={BTN} onClick={salvar} disabled={salvando}>{salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar</button>
     </div>
+    </>)}
   </section>
-);
+  );
+};
 
 const vazia = (ordem: number): Partial<PromocaoExa> => ({ codigo: '', titulo: '', descricao: '', produto: 'horizontal', unidade: 'predio', preco: 0, plano_meses: 6, inclui_videos: true, vagas_total: null, vagas_usadas: 0, inicio: null, fim: null, ativo: true, ordem, onde: 'site', cliente_id: null, bonus_predios: 0 });
 
 const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; onExcluido: () => void }> = ({ p, onSalvo, onExcluido }) => {
   const [ed, setEd] = useState<Partial<PromocaoExa>>(p);
   const [salvando, setSalvando] = useState(false);
+  const [aberto, setAberto] = useState(!p.id);
   useEffect(() => setEd(p), [p]);
   const vale = ed.id ? promocaoValendo(ed as PromocaoExa) : false;
   const rest = ed.id ? vagasRestantes(ed as PromocaoExa) : null;
@@ -105,8 +112,21 @@ const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; o
           <span className={vale ? 'text-[#0f5f2d]' : 'text-[#6A6B70]'}>{!ed.id ? 'Nova' : vale ? (ed.onde === 'renovacao' ? (ed.cliente_id ? 'Cupom de 1 cliente (só a Sofia)' : 'Renovação (só a Sofia)') : 'No ar no site') : ed.ativo ? 'Fora do período ou sem vagas' : 'Desligada'}</span>
           {rest != null && <span className="rounded-full bg-white px-2 py-0.5 text-[#17181A]">{rest} {rest === 1 ? 'vaga' : 'vagas'}</span>}
         </div>
-        <Toggle on={!!ed.ativo} onChange={(v) => set('ativo', v)} label={ed.ativo ? 'Ligada' : 'Desligada'} />
+        <div className="flex items-center gap-3">
+          <Toggle on={!!ed.ativo} onChange={(v) => set('ativo', v)} label={ed.ativo ? 'Ligada' : 'Desligada'} />
+          <button type="button" className="text-[12.5px] font-bold text-[#9C1E1E] hover:underline" onClick={() => setAberto((v) => !v)}>{aberto ? 'Fechar' : 'Editar'}</button>
+        </div>
       </div>
+      {!aberto && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+          <div className="min-w-0">
+            <div className="truncate text-[15px] font-extrabold text-[#17181A]">{ed.titulo || 'Sem título'}</div>
+            <div className="truncate text-[12.5px] text-[#6A6B70]">{[ed.codigo, ed.produto === 'vertical_premium' ? 'vertical' : 'horizontal', `${ed.plano_meses || 1} ${Number(ed.plano_meses) === 1 ? 'mês' : 'meses'}`, ed.inclui_videos ? 'vídeos inclusos' : '', ed.bonus_predios ? `+${ed.bonus_predios} prédio(s) bônus` : '', ed.inicio || ed.fim ? `${ed.inicio ? new Date(ed.inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '…'} → ${ed.fim ? new Date(ed.fim + 'T12:00:00').toLocaleDateString('pt-BR') : '…'}` : 'sem prazo'].filter(Boolean).join(' · ')}</div>
+          </div>
+          <span className="text-[15px] font-extrabold text-[#17181A]">{brl(Number(ed.preco) || 0)}<span className="text-[11px] font-semibold text-[#6A6B70]">/mês{ed.unidade === 'predio' ? ' por prédio' : ' pela rede'}</span></span>
+        </div>
+      )}
+      {aberto && (<>
       <div className="grid gap-3 p-5 sm:grid-cols-2">
         <label className="sm:col-span-2"><span className={LABEL}>Título (aparece no site)</span><input className={INPUT} value={ed.titulo || ''} onChange={(e) => set('titulo', e.target.value)} /></label>
         <label className="sm:col-span-2"><span className={LABEL}>Descrição curta</span><input className={INPUT} value={ed.descricao || ''} onChange={(e) => set('descricao', e.target.value)} /></label>
@@ -134,6 +154,7 @@ const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; o
           <button type="button" className={BTN} onClick={salvar} disabled={salvando}>{salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar</button>
         </div>
       </div>
+      </>)}
     </section>
   );
 };
@@ -222,8 +243,13 @@ const ProdutosPage = () => {
         </div>
       </section>
 
-      {/* rodada e configurações */}
-      <section className={`${CARD} p-5 sm:p-6`}>
+      {/* rodada e configurações (recolhida por padrão: muda raramente) */}
+      <details className={`${CARD} group p-5 sm:p-6`}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+          <div><div className={EYEBROW}>Como a tela roda</div><div className="text-[14px] font-bold text-[#17181A]">{nf(rod.rodadasDia)} rodadas por dia · {nf(rod.horizontal.mes)} exibições/mês por horizontal · {horas}h por dia, {dias} dias no mês</div></div>
+          <span className="text-[12.5px] font-bold text-[#9C1E1E]">Ajustar</span>
+        </summary>
+        <div className="mt-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className={EYEBROW}>Como a tela roda</div>
@@ -253,7 +279,8 @@ const ProdutosPage = () => {
           <p className="text-[12.5px] text-[#6A6B70]"><Building2 className="mr-1 inline h-3.5 w-3.5" />Aplica a conta acima a todos os prédios (exibições por mês por tela).</p>
           <button type="button" className={BTN2} onClick={() => sincronizarBuildings()} disabled={isSincronizando}>{isSincronizando ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Recalcular os prédios</button>
         </div>
-      </section>
+        </div>
+      </details>
 
       <p className="flex items-center gap-2 text-[12px] text-[#8A8B90]"><Sparkles className="h-3.5 w-3.5" /> Sem vendedor por produto: quem atende é a Sofia, pelo WhatsApp do site.</p>
     </div>
