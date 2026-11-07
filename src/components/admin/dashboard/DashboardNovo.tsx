@@ -48,7 +48,7 @@ const Kpi: React.FC<{ rotulo: string; valor: React.ReactNode; sub?: React.ReactN
     <>
       <I className="absolute right-3.5 top-3.5 h-4 w-4 text-black/20" aria-hidden="true" />
       <span className="block text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#6A6B70]">{rotulo}</span>
-      <span className="mt-1 block text-[28px] font-extrabold leading-none tracking-[-0.03em] tabular-nums" style={{ color: cor }}>{valor}</span>
+      <span className={`mt-1 block font-extrabold leading-none tracking-[-0.03em] tabular-nums ${String(valor).length > 9 ? 'text-[20px] xl:text-[24px]' : 'text-[28px]'}`} style={{ color: cor }}>{valor}</span>
       {sub && <span className="mt-1.5 block truncate text-[12px] font-semibold text-[#8A8B90]">{sub}</span>}
     </>
   );
