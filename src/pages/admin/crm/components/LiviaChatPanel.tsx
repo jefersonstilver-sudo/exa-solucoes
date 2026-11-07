@@ -154,7 +154,9 @@ export const LiviaChatPanel: React.FC<{ onVoltar?: () => void; telefoneAgente?: 
     await call('enviar', { alvo: sel, texto: t });
   };
 
-  const novaConversa = async (tel: string) => {
+  const canon = (t: string) => { let d = t.replace(/\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; if (!d.startsWith('55')) return d; const ddd = d.slice(2, 4); let num = d.slice(4); if (num.length === 8) num = '9' + num; return num.length === 9 ? `55${ddd}${num}` : d; };
+  const novaConversa = async (telBruto: string) => {
+    const tel = canon(telBruto);
     const achada = todas.find((c) => c.telefone.replace(/\D/g, '').slice(-8) === tel.slice(-8));
     if (achada) { setSel(achada.telefone); return; }
     const nova: Conversa = {
