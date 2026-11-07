@@ -4,6 +4,8 @@
  *    guardamos quando os valores mudaram (mudou_em) e quando conferimos (consultado_em).
  *  - Fortuna Cambios, tabela "Caixa Aux. Jebai": https://www.fortunacambios.com.py/pt/ — JSON `cotizacionesJebai` no HTML
  *    + "Última atualização" da própria página (atualizado_site).
+ *  - Cripto (BTC, ETH, USDT em reais): Mercado Bitcoin (API pública v4, corretora brasileira); se falhar, Binance (pares BRL).
+ *    Preço = último negócio; variação = 24 h; compra/venda = melhores ofertas do livro.
  * Público e só leitura (são preços publicados nos sites). Cache de 5 min na memória + tabela cambio_parceiros.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -55,6 +57,37 @@ async function lerFortunaJebai() {
   };
 }
 
+async function lerCripto() {
+  const ativos = ['BTC', 'ETH', 'USDT'];
+  try {
+    const r = await fetch('https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL,USDT-BRL', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(12000) });
+    if (!r.ok) throw new Error('MB HTTP ' + r.status);
+    const lista = await r.json() as any[];
+    const v: Record<string, unknown> = {};
+    for (const a of ativos) {
+      const x = lista.find((y) => y.pair === a + '-BRL');
+      const ult = Number(x?.last), ab = Number(x?.open);
+      if (!(ult > 0)) throw new Error('MB sem ' + a);
+      v[a] = { preco: ult, compra: Number(x.buy), venda: Number(x.sell), var24h: ab > 0 ? Math.round(((ult - ab) / ab) * 10000) / 100 : null };
+    }
+    return { valores: v, atualizado_site: new Date(Number(lista[0]?.date) * 1000 || Date.now()).toISOString(), fonte: 'Mercado Bitcoin' };
+  } catch (e) {
+    console.error('[cambio-parceiros] MB falhou, tentando Binance', String(e));
+    const q = encodeURIComponent(JSON.stringify(ativos.map((a) => a + 'BRL')));
+    const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=' + q, { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) throw new Error('Binance HTTP ' + r.status);
+    const lista = await r.json() as any[];
+    const v: Record<string, unknown> = {};
+    for (const a of ativos) {
+      const x = lista.find((y) => y.symbol === a + 'BRL');
+      const ult = Number(x?.lastPrice);
+      if (!(ult > 0)) throw new Error('Binance sem ' + a);
+      v[a] = { preco: ult, compra: Number(x.bidPrice), venda: Number(x.askPrice), var24h: Math.round(Number(x.priceChangePercent) * 100) / 100 };
+    }
+    return { valores: v, atualizado_site: new Date(Number(lista[0]?.closeTime) || Date.now()).toISOString(), fonte: 'Binance' };
+  }
+}
+
 async function guardar(id: string, valores: unknown, atualizado_site: string | null) {
   const agora = new Date().toISOString();
   const { data: antes } = await admin.from('cambio_parceiros').select('valores, mudou_em').eq('id', id).maybeSingle();
@@ -69,6 +102,7 @@ async function montar() {
   const fontes: [string, () => Promise<{ valores: unknown; atualizado_site: string | null }>][] = [
     ['k2', async () => ({ valores: await lerK2(), atualizado_site: null })],
     ['fortuna_jebai', lerFortunaJebai],
+    ['cripto', async () => { const c = await lerCripto(); return { valores: { ...c.valores, fonte: c.fonte }, atualizado_site: c.atualizado_site }; }],
   ];
   for (const [id, ler] of fontes) {
     try {
@@ -89,7 +123,7 @@ async function montar() {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   try {
-    if (!cache || Date.now() - cache.em > 5 * 60 * 1000) cache = { em: Date.now(), corpo: JSON.stringify(await montar()) };
+    if (!cache || Date.now() - cache.em > 2 * 60 * 1000) cache = { em: Date.now(), corpo: JSON.stringify(await montar()) };
     return new Response(cache.corpo, { headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' } });
   } catch (e) {
     return new Response(JSON.stringify({ erro: String((e as Error)?.message || e) }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
