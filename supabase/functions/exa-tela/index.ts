@@ -587,6 +587,35 @@ async function ehEquipe(admin: any, req: Request): Promise<boolean> {
   return (papeis || []).some((p: any) => ['super_admin', 'admin', 'diretora_operacoes', 'gestor_comercial'].includes(String(p.role)));
 }
 
+// 06/11/2026: as TVs Android tocam as câmeras das pontes como CLIPES leves (workflow camera-clipes, 720x480), não ao vivo.
+// O workflow roda ~5h30 e o agendamento do GitHub emenda o próximo — hoje ficou 2h27 sem gerador (15h23–17h50) e todas
+// as TVs caíram no ao vivo pesado (o Zeta travou). O vigia confere o clipe mais novo e religa o gerador se parou.
+async function garantirClipesCameras(admin: any) {
+  let idadeMin = 9999;
+  try {
+    const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/camera-clipes/fozpontedaamizadesentidobrasil/atual.json?t=${Date.now()}`, { signal: AbortSignal.timeout(8000) });
+    if (r.ok) { const j = await r.json(); idadeMin = (Date.now() - new Date(j.em).getTime()) / 60000; }
+  } catch { /* sem clipe */ }
+  if (idadeMin < 8) return { idade_min: Math.round(idadeMin) };
+  const tok = Deno.env.get('GH_DISPATCH_TOKEN'), repo = Deno.env.get('GH_REPO');
+  if (!tok || !repo) return { idade_min: Math.round(idadeMin), disparo: 'sem token' };
+  const h = { Authorization: `Bearer ${tok}`, Accept: 'application/vnd.github+json', 'User-Agent': 'exa-tela' };
+  // já tem um gerador rodando (ou começando)? não abre outro
+  try {
+    for (const st of ['in_progress', 'queued']) {
+      const r = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/camera-clipes.yml/runs?status=${st}&per_page=1`, { headers: h });
+      if (r.ok && ((await r.json())?.total_count || 0) > 0) return { idade_min: Math.round(idadeMin), disparo: `já ${st}` };
+    }
+  } catch { /* segue: o limite de 20 min abaixo evita disparo dobrado */ }
+  const { data: ult } = await admin.from('exa2_config').select('valor').eq('chave', 'clipes_disparo_em').maybeSingle();
+  if (ult?.valor && Date.now() - Number(ult.valor) < 20 * 60000) return { idade_min: Math.round(idadeMin), disparo: 'aguardando' };
+  const r = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/camera-clipes.yml/dispatches`, {
+    method: 'POST', headers: { ...h, 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: 'main' }),
+  });
+  await admin.from('exa2_config').upsert({ chave: 'clipes_disparo_em', valor: String(Date.now()) }, { onConflict: 'chave' });
+  return { idade_min: Math.round(idadeMin), disparo: r.ok ? 'ok' : `erro ${r.status}` };
+}
+
 // vídeos que as TVs Android dos prédios tocam (para as versões leves)
 async function listaVideosTv(admin: any): Promise<{ pasta: string; video: string }[]> {
   const { data: ts } = await admin.from('exa_telas').select('building_id').eq('status', 'ativa').not('building_id', 'is', null);
@@ -938,9 +967,11 @@ Deno.serve(async (req) => {
       const base = await vigiar(admin);
       let leves: any = null;
       try { leves = await garantirVersoesLeves(admin); } catch (e) { console.error('[vigia] versões leves', e); }
+      let clipes: any = null;
+      try { clipes = await garantirClipesCameras(admin); } catch (e) { console.error('[vigia] clipes', e); }
       let cura: any[] = [];
       try { cura = await vigiarTravadas(admin); } catch (e) { console.error('[vigia] travadas', e); }
-      return json({ ok: true, ...base, auto_cura: cura, versoes_leves: leves });
+      return json({ ok: true, ...base, auto_cura: cura, versoes_leves: leves, clipes_cameras: clipes });
     }
 
     // ---------- portal do restaurante (área do cliente) ----------
