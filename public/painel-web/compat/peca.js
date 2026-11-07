@@ -10,14 +10,21 @@
  */
 (function () {
   try {
-    if (!/[?&]tela=1(&|$)/.test(location.search)) return;
-    var PREDIOS = ['969f12ca']; // LOCAL DE TESTE NOVO
-    var p = (location.search.match(/[?&]p=([0-9a-f]{8})/i) || [])[1];
-    if (!p || PREDIOS.indexOf(p.toLowerCase()) < 0) return;
+    if (window.__pecaCarregado) return; // pode vir pelo compat (réplica) e pelo scripts/ (NUC): só uma vez
+    window.__pecaCarregado = true;
+    var naTv = /[?&]tela=1(&|$)/.test(location.search);
+    // TVs Android (réplica): prédio pelo ?p=<8 primeiros do id>. NUCs: cliente_id do updates.json (4 letras).
+    var PREDIOS_TV = ['969f12ca'];          // LOCAL DE TESTE NOVO
+    var CLIENTES_NUC = ['cd19'];            // Renoir (teste 07/11/2026)
+    if (naTv) {
+      var p = (location.search.match(/[?&]p=([0-9a-f]{8})/i) || [])[1];
+      if (!p || PREDIOS_TV.indexOf(p.toLowerCase()) < 0) return;
+    }
     var NOTICIAS_BRASIL = 'c08f3154-e0dc-4c39-b8a2-721d8acdde7f';
-    var URL_PECA = '/painel-web/pecas/cambio.html?v=' + Date.now();
+    var URL_PECA = (location.hostname.indexOf('examidia.com.br') >= 0 ? '' : 'https://examidia.com.br') + '/painel-web/pecas/cambio.html?v=' + Date.now();
     var vez = 1; // a 1ª vez que as Notícias Brasil chegam já entra o quadro (para testar logo); depois alterna
-    var quadro = null, caixa = null, interno = null, prontoEm = 0;
+    var quadro = null, caixa = null, interno = null, prontoEm = 0, durPeca = 0;
+    window.addEventListener('message', function (ev) { try { if (ev.data && ev.data.exaPeca === 'dur' && ev.data.ms > 0) durPeca = ev.data.ms; } catch (e) { /* segue */ } });
     var info = window.__pecaInfo = { mostrou: 0, noticias: 0, ultimo: null };
 
     function montar() {
@@ -43,7 +50,10 @@
 
     function mostrar(seguir) {
       var dur = 45000;
-      try { var jw = quadro.contentWindow; if (jw && jw.exaReiniciar) dur = jw.exaReiniciar() || dur; } catch (e) { /* segue com 45 s */ }
+      if (durPeca > 0) dur = durPeca;
+      // mesmo site (réplica): chama direto; outro endereço (NUC): por mensagem
+      try { var jw = quadro.contentWindow; if (jw && jw.exaReiniciar) dur = jw.exaReiniciar() || dur; else throw 0; }
+      catch (e) { try { quadro.contentWindow.postMessage({ exaPeca: 'reiniciar' }, '*'); } catch (e2) { /* segue */ } }
       window.__exaPeca = true;
       info.mostrou++; info.ultimo = new Date().toISOString();
       try { var v = document.getElementById('video-propaganda'); if (v) v.pause(); } catch (e) { /* segue */ }
@@ -87,6 +97,11 @@
       tentativas++;
       try {
         if (typeof window.tocarProximo !== 'function') return;
+        if (!naTv) {
+          var cid = typeof clienteId !== 'undefined' ? String(clienteId) : '0';
+          if (cid === '0' || cid === '') return; // ainda não leu a programação
+          if (CLIENTES_NUC.indexOf(cid.toLowerCase()) < 0) { clearInterval(vigia); return; }
+        }
         montar();
         // espera o revezamento do tv.js se instalar (ou desistir) antes de envolver
         if (window.__tvDuplo === undefined && !window.__tvSemDuplo && tentativas < 40) return;

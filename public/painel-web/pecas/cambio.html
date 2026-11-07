@@ -378,6 +378,10 @@
     timer = setInterval(proxima, DURACAO);
     return cenasProntas().length * DURACAO;
   };
+  // NUC: o quadro abre de outro endereço, então a tela pede por mensagem e o quadro avisa quanto dura
+  function avisarDuracao() { try { if (window.parent !== window) window.parent.postMessage({ exaPeca: "dur", ms: cenasProntas().length * DURACAO }, "*"); } catch (e) { /* segue */ } }
+  window.addEventListener("message", function (ev) { try { if (ev.data && ev.data.exaPeca === "reiniciar") { window.exaReiniciar(); avisarDuracao(); } } catch (e) { /* segue */ } });
+  avisarDuracao(); setInterval(avisarDuracao, 30000);
 </script>
 </body>
 </html>

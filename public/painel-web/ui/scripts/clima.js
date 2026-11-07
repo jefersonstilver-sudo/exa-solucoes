@@ -339,3 +339,13 @@ document.addEventListener("DOMContentLoaded", () => {
   window.climaWidget = new ClimaWidget();
   window.__climaLoaded = true;
 });
+
+// 07/11/2026: quadro de câmbio intercalado nas Notícias Brasil (scripts/peca.js decide em quais prédios liga)
+(function () {
+  try {
+    if (window.__pecaCarregado || /[?&]tela=1(&|$)/.test(location.search)) return; // na réplica vem pelo compat/
+    var s = document.createElement("script");
+    s.src = "scripts/peca.js?v=" + Date.now();
+    (document.head || document.documentElement).appendChild(s);
+  } catch (e) { /* sem o quadro */ }
+})();
