@@ -117,7 +117,7 @@ export default function DashboardNovo() {
   const nome = (userProfile as any)?.nome?.split(' ')[0] || (userProfile as any)?.name?.split(' ')[0] || '';
   const h = new Date().getHours();
   const mesNome = new Date().toLocaleDateString('pt-BR', { month: 'long' });
-  const titulo = (p: OrderOrAttempt) => p.nome_pedido || p.empresa_nome || p.client_name || `Pedido #${p.id.slice(0, 8)}`;
+  const titulo = (p: OrderOrAttempt) => p.empresa_nome || p.nome_pedido || p.client_name || `Pedido #${p.id.slice(0, 8)}`;
   const diasRestantes = (p: OrderOrAttempt) => (p.data_fim ? Math.ceil((new Date(p.data_fim).getTime() - Date.now()) / DIA) : null);
 
   return (

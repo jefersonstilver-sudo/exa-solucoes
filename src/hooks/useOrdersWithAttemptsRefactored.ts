@@ -48,8 +48,12 @@ export const useOrdersWithAttemptsRefactored = () => {
       const tipoProdutoMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.tipo_produto]));
       // nome da empresa do cliente (users.empresa_nome): o card mostra a empresa, não a pessoa (Jeferson, 07/11/2026)
       const clientIds = [...new Set((pedidosComClientes || []).map((p: any) => p.client_id).filter(Boolean))];
-      const { data: usersEmp } = clientIds.length ? await supabase.from('users').select('id, empresa_nome').in('id', clientIds) : { data: [] as any[] };
+      const [{ data: usersEmp }, { data: marcas }] = clientIds.length
+        ? await Promise.all([supabase.from('users').select('id, empresa_nome').in('id', clientIds), (supabase as any).from('marcas_clientes').select('client_id, empresa, created_at').in('client_id', clientIds).order('created_at', { ascending: false })])
+        : [{ data: [] as any[] }, { data: [] as any[] }];
+      // a marca cadastrada (ex.: "Gotas de Ouro") vale mais que a razão social da conta ("55.304.605 SERGIO LUIS...")
       const empresaMap = new Map((usersEmp || []).map((u: any) => [u.id, u.empresa_nome]));
+      for (const m of [...(marcas || [])].reverse()) if (m.empresa) empresaMap.set(m.client_id, m.empresa);
       const isMasterMap = new Map((pedidosExtra || []).map((p: any) => [p.id, p.is_master]));
       const contactMap = new Map((pedidosExtra || []).map(p => [p.id, p]));
       const autorizadosMap = await contarAutorizados(pedidoIds);
