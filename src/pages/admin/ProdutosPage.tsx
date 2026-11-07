@@ -2,6 +2,7 @@
 // Premium) sem campos de vendedor, a rodada calculada ao vivo, as configurações de exibição e as PROMOÇÕES
 // (R$ 99 por prédio em novembro, rede completa por R$ 999 com 10 vagas, Vertical Premium R$ 1.999 com 1 vaga).
 // O site (/loja e a tarja do topo) lê as promoções daqui.
+// 07/11/2026: visual alinhado à página Painéis EXA (vidro, cabeçalho grande, chips, botões retos) a pedido do Jeferson.
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Building2, Clock, Loader2, Monitor, Plus, RefreshCw, Save, Smartphone, Sparkles, Trash2 } from 'lucide-react';
@@ -11,18 +12,21 @@ import { calcularRodada } from '@/lib/exibicoesRodada';
 import { useProdutosExa, type ProdutoExa } from '@/hooks/useProdutosExa';
 import { usePromocoesExa, promocaoValendo, vagasRestantes, type PromocaoExa } from '@/hooks/usePromocoesExa';
 
-const CARD = 'rounded-[24px] bg-white shadow-[0_1px_2px_rgba(30,15,18,.05),0_8px_24px_-14px_rgba(30,15,18,.16)]';
-const EYEBROW = 'text-[12px] font-bold uppercase tracking-[0.11em] text-[#9C1E1E]';
-const H2 = 'mt-1 text-[21px] font-extrabold tracking-tight text-[#1b1719]';
-const LABEL = 'block text-[12px] font-bold text-[#8b8285]';
-const INPUT = 'mt-1 h-10 w-full rounded-xl border border-[#1b1719]/10 bg-[#f7f5f6] px-3 text-[14px] font-semibold text-[#1b1719] outline-none focus:border-[#9C1E1E]/40 focus:bg-white';
-const BTN = 'inline-flex min-h-[40px] items-center gap-2 rounded-full bg-[#9C1E1E] px-4 text-[13px] font-bold text-white transition hover:bg-[#7c1428] disabled:opacity-50';
-const BTN2 = 'inline-flex min-h-[40px] items-center gap-2 rounded-full border border-[#1b1719]/15 bg-white px-4 text-[13px] font-bold text-[#1b1719] transition hover:bg-[#f7f5f6] disabled:opacity-50';
+const CARD = 'rounded-[22px] border border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_30px_-22px_rgba(70,20,20,0.3)]';
+const EYEBROW = 'text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#6A6B70]';
+const H2 = 'mt-1 text-[22px] font-extrabold leading-tight tracking-[-0.03em] text-[#17181A]';
+const LABEL = 'block text-[11px] font-bold uppercase tracking-[0.04em] text-[#6A6B70]';
+const INPUT = 'mt-1 h-10 w-full rounded-xl border border-black/10 bg-white px-3 text-[14px] font-semibold text-[#17181A] outline-none focus:ring-2 focus:ring-[#B4231C]';
+const BTN = 'inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#9C1E1E] px-3.5 text-sm font-bold text-white shadow-[0_10px_24px_-12px_rgba(156,30,30,0.8)] transition hover:bg-[#7c1428] disabled:opacity-50';
+const BTN2 = 'inline-flex h-10 items-center gap-2 rounded-xl border border-black/[0.08] bg-white/70 px-3.5 text-sm font-semibold text-[#17181A] backdrop-blur transition hover:bg-white disabled:opacity-50';
+const Chip = ({ children, fundo = 'rgba(23,24,26,0.05)', cor = '#45464A' }: { children: React.ReactNode; fundo?: string; cor?: string }) => (
+  <span className="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold" style={{ background: fundo, color: cor }}>{children}</span>
+);
 const brl = (v: number) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const nf = (v: number) => Math.round(v).toLocaleString('pt-BR');
 
 const Toggle: React.FC<{ on: boolean; onChange: (v: boolean) => void; label: string }> = ({ on, onChange, label }) => (
-  <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#1b1719]">
+  <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#17181A]">
     <span className={`relative h-6 w-11 flex-none rounded-full transition ${on ? 'bg-[#13a24a]' : 'bg-[#d9d2d4]'}`}>
       <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${on ? 'left-[22px]' : 'left-0.5'}`} />
     </span>
@@ -40,10 +44,11 @@ const CartaoProduto: React.FC<{ titulo: string; sub: string; icone: React.ReactN
   <section className={`${CARD} p-5 sm:p-6`}>
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-[#f8e9ec] text-[#9C1E1E]">{icone}</span>
+        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-white text-[#9C1E1E] shadow-sm ring-1 ring-black/[0.06]">{icone}</span>
         <div>
-          <div className="text-[17px] font-extrabold tracking-tight text-[#1b1719]">{titulo}</div>
-          <div className="text-[12.5px] text-[#8b8285]">{sub}</div>
+          <div className="flex items-center gap-2"><span className="text-[17px] font-extrabold tracking-[-0.02em] text-[#17181A]">{titulo}</span>
+            {ed.vendido_no_site ? <Chip fundo="#EAF5EF" cor="#1E6B47">No site</Chip> : <Chip>Só pela Sofia</Chip>}</div>
+          <div className="text-[12.5px] text-[#6A6B70]">{sub}</div>
         </div>
       </div>
       <Toggle on={ed.ativo} onChange={(v) => setEd((e) => ({ ...e, ativo: v }))} label={ed.ativo ? 'Ativo' : 'Inativo'} />
@@ -59,7 +64,7 @@ const CartaoProduto: React.FC<{ titulo: string; sub: string; icone: React.ReactN
       <Toggle on={ed.contratacao_parcial} onChange={(v) => setEd((e) => ({ ...e, contratacao_parcial: v }))} label="Pode escolher só alguns prédios" />
     </div>
     <div className="mt-5 flex items-center justify-between gap-3">
-      <span className="text-[11.5px] text-[#a39a9d]">{produto?.ultima_alteracao_em ? <><Clock className="mr-1 inline h-3 w-3" />{new Date(produto.ultima_alteracao_em).toLocaleString('pt-BR')}{produto.ultima_alteracao_por ? ` · ${produto.ultima_alteracao_por}` : ''}</> : ''}</span>
+      <span className="text-[11.5px] text-[#8A8B90]">{produto?.ultima_alteracao_em ? <><Clock className="mr-1 inline h-3 w-3" />{new Date(produto.ultima_alteracao_em).toLocaleString('pt-BR')}{produto.ultima_alteracao_por ? ` · ${produto.ultima_alteracao_por}` : ''}</> : ''}</span>
       <button type="button" className={BTN} onClick={salvar} disabled={salvando}>{salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar</button>
     </div>
   </section>
@@ -94,11 +99,11 @@ const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; o
   };
   return (
     <section className={`${CARD} overflow-hidden`}>
-      <div className={`flex flex-wrap items-center justify-between gap-2 px-5 py-3 ${vale ? (ed.onde === 'renovacao' ? 'bg-[#fff4e5]' : 'bg-[#ecf9f0]') : 'bg-[#f7f5f6]'}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-2 px-5 py-3 ${vale ? (ed.onde === 'renovacao' ? 'bg-[#FFF4E5]' : 'bg-[#EAF5EF]') : 'bg-white/70'}`}>
         <div className="flex items-center gap-2 text-[12px] font-bold">
           <span className={`h-2 w-2 rounded-full ${vale ? 'bg-[#13a24a]' : 'bg-[#b3aaad]'}`} />
-          <span className={vale ? 'text-[#0f5f2d]' : 'text-[#8b8285]'}>{!ed.id ? 'Nova' : vale ? (ed.onde === 'renovacao' ? (ed.cliente_id ? 'Cupom de 1 cliente (só a Sofia)' : 'Renovação (só a Sofia)') : 'No ar no site') : ed.ativo ? 'Fora do período ou sem vagas' : 'Desligada'}</span>
-          {rest != null && <span className="rounded-full bg-white px-2 py-0.5 text-[#1b1719]">{rest} {rest === 1 ? 'vaga' : 'vagas'}</span>}
+          <span className={vale ? 'text-[#0f5f2d]' : 'text-[#6A6B70]'}>{!ed.id ? 'Nova' : vale ? (ed.onde === 'renovacao' ? (ed.cliente_id ? 'Cupom de 1 cliente (só a Sofia)' : 'Renovação (só a Sofia)') : 'No ar no site') : ed.ativo ? 'Fora do período ou sem vagas' : 'Desligada'}</span>
+          {rest != null && <span className="rounded-full bg-white px-2 py-0.5 text-[#17181A]">{rest} {rest === 1 ? 'vaga' : 'vagas'}</span>}
         </div>
         <Toggle on={!!ed.ativo} onChange={(v) => set('ativo', v)} label={ed.ativo ? 'Ligada' : 'Desligada'} />
       </div>
@@ -122,10 +127,10 @@ const CartaoPromocao: React.FC<{ p: Partial<PromocaoExa>; onSalvo: () => void; o
         <label><span className={LABEL}>Começa em</span><input type="date" className={INPUT} value={ed.inicio || ''} onChange={(e) => set('inicio', e.target.value || null)} /></label>
         <label><span className={LABEL}>Termina em</span><input type="date" className={INPUT} value={ed.fim || ''} onChange={(e) => set('fim', e.target.value || null)} /></label>
       </div>
-      <div className="flex items-center justify-between gap-3 border-t border-[#f1edee] px-5 py-3">
+      <div className="flex items-center justify-between gap-3 border-t border-black/[0.06] px-5 py-3">
         <button type="button" className="inline-flex items-center gap-1 text-[12.5px] font-bold text-[#c62828]" onClick={excluir}><Trash2 className="h-3.5 w-3.5" /> Excluir</button>
         <div className="flex items-center gap-3">
-          <span className="text-[13px] font-extrabold text-[#1b1719]">{brl(Number(ed.preco) || 0)}<span className="text-[11px] font-semibold text-[#8b8285]">/mês{ed.unidade === 'predio' ? ' por prédio' : ' pela rede'}</span></span>
+          <span className="text-[13px] font-extrabold text-[#17181A]">{brl(Number(ed.preco) || 0)}<span className="text-[11px] font-semibold text-[#6A6B70]">/mês{ed.unidade === 'predio' ? ' por prédio' : ' pela rede'}</span></span>
           <button type="button" className={BTN} onClick={salvar} disabled={salvando}>{salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar</button>
         </div>
       </div>
@@ -154,17 +159,44 @@ const ProdutosPage = () => {
   };
   const recarregarPromos = () => qc.invalidateQueries({ queryKey: ['promocoes-exa'] });
 
-  if (isLoading) return <div className="flex min-h-[320px] items-center justify-center text-[#8b8285]"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (isLoading) return <div className="flex min-h-[320px] items-center justify-center text-[#6A6B70]"><Loader2 className="h-5 w-5 animate-spin" /></div>;
   const lista = promos.data || [];
   const valendo = lista.filter((p) => promocaoValendo(p));
 
   return (
-    <div className="mx-auto max-w-[1040px] space-y-6 p-4 sm:p-6">
-      <header>
-        <div className={EYEBROW}>Admin</div>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-[#1b1719]">Produtos e promoções</h1>
-        <p className="mt-1 text-[14px] text-[#6F6669]">O que a EXA vende, como cada tela roda e as promoções que o site mostra agora.</p>
+    <div className="mx-auto max-w-[1400px] space-y-5 text-[#17181A] md:space-y-6" style={{ fontFeatureSettings: '"tnum"' }}>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="text-[26px] font-extrabold leading-none tracking-[-0.03em] md:text-[30px]">Produtos</h1>
+          <span className="text-xs font-bold text-[#6A6B70]">o que a EXA vende, como a tela roda e as promoções</span>
+        </div>
+        <button type="button" className={BTN} onClick={() => setNovas((n) => [...n, vazia(lista.length + n.length + 1)])}><Plus className="h-4 w-4" /><span className="hidden sm:inline">Nova promoção</span></button>
       </header>
+
+      {/* resumo, no mesmo desenho da página Painéis */}
+      <section aria-label="Resumo" className={`${CARD} grid gap-4 p-4 md:grid-cols-[1.2fr_2fr] md:items-center md:p-5`}>
+        <div>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#1E6B47]">No ar no site</span>
+          <span className="mt-1 flex items-baseline gap-2">
+            <span className="text-[40px] font-extrabold leading-none tracking-[-0.03em] text-[#1E6B47]">{valendo.filter((p) => (p.onde || 'site') === 'site' && !p.cliente_id).length}</span>
+            <span className="text-base font-bold text-[#8A8B90]">promoções · {valendo.filter((p) => p.onde === 'renovacao' || p.cliente_id).length} só de renovação</span>
+          </span>
+          <span className="mt-2 block text-xs font-bold text-[#6A6B70]">Uma rodada dura {rod.rodadaSegundos >= 60 ? `${Math.floor(rod.rodadaSegundos / 60)} min ${String(rod.rodadaSegundos % 60).padStart(2, '0')} s` : `${rod.rodadaSegundos} s`} · {nf(rod.rodadasDia)} rodadas por dia em cada tela</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { r: 'Por prédio', v: (() => { const p = valendo.find((x) => x.unidade === 'predio' && (x.onde || 'site') === 'site'); return p ? brl(Number(p.preco)) : '—'; })(), d: 'por mês, no site' },
+            { r: 'Rede completa', v: (() => { const p = valendo.find((x) => x.unidade === 'rede' && x.produto === 'horizontal' && (x.onde || 'site') === 'site'); return p ? brl(Number(p.preco)) : '—'; })(), d: 'cliente novo' },
+            { r: 'Renovação', v: (() => { const p = valendo.find((x) => x.unidade === 'rede' && x.onde === 'renovacao'); return p ? brl(Number(p.preco)) : '—'; })(), d: 'quem já é cliente' },
+          ].map((k) => (
+            <div key={k.r} className="rounded-2xl bg-white/70 px-3 py-2.5">
+              <span className="block text-[11px] font-bold text-[#6A6B70]">{k.r}</span>
+              <span className="block text-[22px] font-extrabold leading-tight tracking-[-0.02em]">{k.v}</span>
+              <span className="block text-[11px] font-semibold text-[#8A8B90]">{k.d}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* promoções */}
       <section className="space-y-3">
@@ -172,9 +204,8 @@ const ProdutosPage = () => {
           <div>
             <div className={EYEBROW}>Promoções</div>
             <h2 className={H2}>{valendo.length ? `${valendo.filter((p) => (p.onde || 'site') === 'site' && !p.cliente_id).length} no ar no site · ${valendo.filter((p) => p.onde === 'renovacao' || p.cliente_id).length} de renovação` : 'Nenhuma no ar'}</h2>
-            <p className="mt-1 text-[13.5px] text-[#6F6669]">O site e a loja (/loja) mostram o que é do site, ligado, dentro do período e com vaga. As de renovação só a Sofia oferece a quem já é cliente (cliente novo paga o preço do site). Quando fechar uma venda, suba as vagas usadas.</p>
+            <p className="mt-1 text-[13.5px] text-[#6A6B70]">O site e a loja (/loja) mostram o que é do site, ligado, dentro do período e com vaga. As de renovação só a Sofia oferece a quem já é cliente (cliente novo paga o preço do site). Quando fechar uma venda, suba as vagas usadas.</p>
           </div>
-          <button type="button" className={BTN2} onClick={() => setNovas((n) => [...n, vazia(lista.length + n.length + 1)])}><Plus className="h-4 w-4" /> Nova promoção</button>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {lista.map((p) => <CartaoPromocao key={p.id} p={p} onSalvo={recarregarPromos} onExcluido={recarregarPromos} />)}
@@ -211,20 +242,20 @@ const ProdutosPage = () => {
             [nf(rod.horizontal.mes), 'exibições por mês', 'de cada horizontal, por tela'],
             [nf(rod.vertical.mes), 'exibições por mês', 'de cada vertical, por tela'],
           ].map(([v, t, d]) => (
-            <div key={t} className="rounded-2xl bg-[#f7f5f6] p-4">
-              <div className="text-[24px] font-extrabold tracking-tight text-[#1b1719] tabular-nums">{v}</div>
-              <div className="text-[13px] font-bold text-[#1b1719]">{t}</div>
-              <div className="text-[12px] text-[#8b8285]">{d}</div>
+            <div key={t} className="rounded-2xl bg-white/70 p-4">
+              <div className="text-[24px] font-extrabold tracking-tight text-[#17181A] tabular-nums">{v}</div>
+              <div className="text-[13px] font-bold text-[#17181A]">{t}</div>
+              <div className="text-[12px] text-[#6A6B70]">{d}</div>
             </div>
           ))}
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#f1edee] pt-4">
-          <p className="text-[12.5px] text-[#8b8285]"><Building2 className="mr-1 inline h-3.5 w-3.5" />Aplica a conta acima a todos os prédios (exibições por mês por tela).</p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-4">
+          <p className="text-[12.5px] text-[#6A6B70]"><Building2 className="mr-1 inline h-3.5 w-3.5" />Aplica a conta acima a todos os prédios (exibições por mês por tela).</p>
           <button type="button" className={BTN2} onClick={() => sincronizarBuildings()} disabled={isSincronizando}>{isSincronizando ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Recalcular os prédios</button>
         </div>
       </section>
 
-      <p className="flex items-center gap-2 text-[12px] text-[#a39a9d]"><Sparkles className="h-3.5 w-3.5" /> Sem vendedor por produto: quem atende é a Sofia, pelo WhatsApp do site.</p>
+      <p className="flex items-center gap-2 text-[12px] text-[#8A8B90]"><Sparkles className="h-3.5 w-3.5" /> Sem vendedor por produto: quem atende é a Sofia, pelo WhatsApp do site.</p>
     </div>
   );
 };
