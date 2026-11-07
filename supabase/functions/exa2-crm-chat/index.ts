@@ -597,7 +597,7 @@ Deno.serve(async (req) => {
           const a = fila.shift()!;
           try {
             const d = await destino(sb, agente, a);
-            const j = await evoPost(`/chat/fetchProfilePictureUrl/${encodeURIComponent(d.instancia)}`, { number: d.numero });
+            const j = await evoPost(`/chat/fetchProfilePictureUrl/${encodeURIComponent(d.instancia)}`, { number: d.jid && d.jid.endsWith("@lid") ? d.jid : d.numero });
             fotos[a] = (j?.profilePictureUrl as string) || null;
           } catch { fotos[a] = null; }
         }
