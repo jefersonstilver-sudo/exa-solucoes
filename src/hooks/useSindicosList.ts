@@ -109,13 +109,17 @@ export function useSindicosList() {
           r.sindico_nome,
           r.nome_completo,
           r.protocolo,
+          r.endereco_bairro,
+          r.endereco_cidade,
         ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
         if (!haystack.includes(term)) return false;
       }
-      if (filters.status !== 'all' && r.status !== filters.status) return false;
+      // etapas do funil (07/11/2026): um filtro pode cobrir vários status do banco
+      const ETAPAS: Record<string, string[]> = { em_contato: ['em_contato', 'contatado', 'interessado'], aprovado: ['aprovado', 'instalado'], perdido: ['recusado', 'nao_interessado', 'arquivado'] };
+      if (filters.status !== 'all' && r.status !== filters.status && !(ETAPAS[filters.status] || []).includes(r.status)) return false;
       if (filters.startDate) {
         if (new Date(r.created_at) < filters.startDate) return false;
       }
