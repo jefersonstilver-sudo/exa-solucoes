@@ -3,6 +3,7 @@ import { DentroDoLayout } from '@/components/loading/MarcaCarregando';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
+import { WhatsAppFlutuante } from './WhatsAppFlutuante';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import ConviteAvisos from '@/components/avisos/ConviteAvisos';
@@ -68,6 +69,7 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
             </main>
             {isMobile && !isFullscreenMode && <MobileBottomNav />}
             <ConviteAvisos publico="equipe" />
+            {!isMobile && <WhatsAppFlutuante />}
           </SidebarInset>
 
           {/* Voz da Sofia desativada em 28/10/2026 (decisão do CEO): sem botão flutuante no painel. */}

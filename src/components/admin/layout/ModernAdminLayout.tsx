@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AdminMenuButton from './AdminMenuButton';
 import { ADMIN_FUNDO_CLASSE } from './ModernSuperAdminLayout';
 import ModernAdminSidebar from './ModernAdminSidebar';
+import { WhatsAppFlutuante } from './WhatsAppFlutuante';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import ConviteAvisos from '@/components/avisos/ConviteAvisos';
@@ -61,6 +62,7 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
           </main>
           {isMobile && <MobileBottomNav />}
           <ConviteAvisos publico="equipe" />
+            {!isMobile && <WhatsAppFlutuante />}
         </SidebarInset>
       </div>
     </SidebarProvider>

@@ -67,7 +67,7 @@ const CRMEvolutionPage: React.FC = () => {
       // Get current DB rows (need instance_name to match)
       const { data: rows } = await (supabase as any)
         .from('evolution_instances')
-        .select('id, instance_name, profile_picture_url, profile_name, status, owner_jid');
+        .select('id, instance_name, collaborator_name, profile_picture_url, profile_name, status, owner_jid');
 
       let updated = 0;
       for (const row of (rows ?? []) as any[]) {
@@ -93,8 +93,11 @@ const CRMEvolutionPage: React.FC = () => {
               : row.status;
 
         const patch: Record<string, unknown> = {};
-        if (pic && pic !== row.profile_picture_url) patch.profile_picture_url = pic;
-        if (pname && pname !== row.profile_name) patch.profile_name = pname;
+        // 07/11/2026: para Sofia, Nando e Lívia a foto/nome vêm do fetchProfile (exa2-crm-chat › perfil), que é ao vivo;
+        // o fetchInstances devolve a foto em cache da Evolution (ficava atrasada e sobrescrevia a certa)
+        const agenteVivo = /sofia|nando|notificacoes|livia/i.test(`${row.instance_name} ${row.collaborator_name || ''}`);
+        if (!agenteVivo && pic && pic !== row.profile_picture_url) patch.profile_picture_url = pic;
+        if (!agenteVivo && pname && pname !== row.profile_name) patch.profile_name = pname;
         if (owner && owner !== row.owner_jid) patch.owner_jid = owner;
         if (status && status !== row.status) {
           patch.status = status;
@@ -124,17 +127,16 @@ const CRMEvolutionPage: React.FC = () => {
   };
 
   useEffect(() => {
-    (async () => {
-      await load();
-      // Auto-sync silently on first mount to refresh profile pics
-      syncFromEvolution(true);
-    })();
     // 07/11/2026: foto/nome/recado iguais ao WhatsApp — relê o perfil dos três ao abrir e a cada 2 min (espelha em evolution_instances)
     const relerPerfis = async () => {
       await Promise.all((['sofia', 'nando', 'livia'] as CxAgente[]).map((a) => lerPerfil(a).catch(() => null)));
       load();
     };
-    relerPerfis();
+    (async () => {
+      await load();
+      await syncFromEvolution(true); // status/owner dos outros números (não mexe na foto dos três agentes)
+      relerPerfis();
+    })();
     const t = setInterval(relerPerfis, 120000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
