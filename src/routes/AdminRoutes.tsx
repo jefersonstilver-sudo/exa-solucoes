@@ -15,7 +15,6 @@ const ComunicacoesPage = lazy(() => import('@/pages/admin/ComunicacoesPage'));
 const VideoManagement = lazy(() => import('@/pages/admin/VideoManagement'));
 const VideosSitePage = lazy(() => import('@/pages/admin/VideosSitePage'));
 const LeadsExa = lazy(() => import('@/pages/admin/LeadsExa'));
-const LogosAdmin = lazy(() => import('@/components/admin/LogosAdmin'));
 const ProviderBenefits = lazy(() => import('@/pages/admin/ProviderBenefits'));
 const PaineisExa = lazy(() => import('@/pages/admin/PaineisExa'));
 const BenefitPurchaseInstructions = lazy(() => import('@/pages/admin/BenefitPurchaseInstructions'));
@@ -134,7 +133,6 @@ const VendasPage = lazy(() => import('@/pages/admin/vendas/VendasPage'));
 // Lazy imports para páginas do monitoramento-ia (agora integradas)
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
 const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').then(m => ({ default: m.Agentes })));
-const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
 const EntregaTelasPage = lazy(() => import('@/pages/admin/EntregaTelasPage'));
 const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/PaineisEXA'));
 const TelasPage = lazy(() => import('@/modules/telas/TelasPage'));
@@ -384,13 +382,6 @@ const AdminRoutes = () => {
           </Suspense>
         </ProtectedModuleRoute>
       } />
-      <Route path="exa-alerts" element={
-        <ProtectedModuleRoute moduleKey={MODULE_KEYS.exa_alerts}>
-          <Suspense fallback={<GlobalLoadingPage message="Carregando EXA Alerts..." />}>
-            <AlertasPage />
-          </Suspense>
-        </ProtectedModuleRoute>
-      } />
       <Route path="sofia-executive" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.agentes_sofia}>
           <Suspense fallback={<GlobalLoadingPage message="Carregando Sofia Executive..." />}>
@@ -468,16 +459,6 @@ const AdminRoutes = () => {
       <Route path="videos-site" element={
         <ProtectedModuleRoute moduleKey={MODULE_KEYS.videos_site}>
           <VideosSitePage />
-        </ProtectedModuleRoute>
-      } />
-      <Route path="ticker" element={
-        <ProtectedModuleRoute moduleKey={MODULE_KEYS.ticker}>
-          <LogosAdmin />
-        </ProtectedModuleRoute>
-      } />
-      <Route path="logos" element={
-        <ProtectedModuleRoute moduleKey={MODULE_KEYS.ticker}>
-          <LogosAdmin />
         </ProtectedModuleRoute>
       } />
       <Route path="homepage-config" element={
@@ -674,7 +655,6 @@ const AdminRoutes = () => {
       <Route path="monitoramento-ia/paineis" element={<Navigate to="/admin/paineis-exa" replace />} />
       <Route path="monitoramento-ia/crm" element={<Navigate to="/admin/crm-evolution" replace />} />
       <Route path="monitoramento-ia/agentes" element={<Navigate to="/admin/agentes-sofia" replace />} />
-      <Route path="monitoramento-ia/alertas" element={<Navigate to="/admin/exa-alerts" replace />} />
       <Route path="monitoramento-ia/escalacoes" element={<Navigate to="/admin/escalacoes" replace />} />
     </Routes>
     </Suspense>

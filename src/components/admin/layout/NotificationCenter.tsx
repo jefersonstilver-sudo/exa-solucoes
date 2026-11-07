@@ -80,7 +80,7 @@ const NotificationCenter = () => {
     } else if (notification.type.startsWith('crm_')) {
       navigate(`${basePath}/monitoramento-ia/conversas`);
     } else if (notification.type.startsWith('panel_')) {
-      navigate(`${basePath}/monitoramento-ia/alertas`);
+      navigate(`${basePath}/paineis-exa`);
     } else if (notification.type === 'sale' && notification.metadata?.pedido_id) {
       navigate(`${basePath}/pedidos/${notification.metadata.pedido_id}`);
     }

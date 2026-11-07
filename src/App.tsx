@@ -138,7 +138,6 @@ const MinimalDisplayPanel = lazy(() => import('./pages/public/MinimalDisplayPane
 const BuildingDisplayCommercial = lazy(() => import('./pages/public/BuildingDisplayCommercial'));
 const PublicBuildingDisplay = lazy(() => import('./pages/public/PublicBuildingDisplay'));
 const BuildingDisplayEmbed = lazy(() => import('./pages/public/BuildingDisplayEmbed'));
-const LogosTickerEmbed = lazy(() => import('./pages/embed/LogosTickerEmbed'));
 const PainelAguardandoVinculo = lazy(() => import('./pages/public/PainelAguardandoVinculo'));
 const MonitorPublicPage = lazy(() => import('./pages/public/MonitorPublicPage'));
 
@@ -384,13 +383,6 @@ const AppContent = () => {
             </Suspense>
           } />
           
-          {/* Embed do ticker de logos de clientes - para iframe em sites externos */}
-          <Route path="/embed/logos-ticker" element={
-            <Suspense fallback={<div className="w-full h-28" style={{ background: '#7D1818' }} />}>
-              <LogosTickerEmbed />
-            </Suspense>
-          } />
-
           {/* ROTAS LEGADAS (UUID) - Manter compatibilidade */}
           <Route path="/embed/:buildingId" element={
             <Suspense fallback={<div className="w-full h-full bg-black" />}>

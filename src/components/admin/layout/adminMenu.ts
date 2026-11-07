@@ -43,7 +43,6 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
     items: [
       { title: 'Agenda', path: 'tarefas', icon: Sunrise, moduleKey: MODULE_KEYS.minha_manha },
       { title: 'Dashboard', path: '', icon: LayoutDashboard, moduleKey: MODULE_KEYS.dashboard },
-      { title: 'Alertas', path: 'exa-alerts', icon: Brain, moduleKey: MODULE_KEYS.exa_alerts },
     ],
   },
   {
@@ -83,7 +82,6 @@ export const ADMIN_MENU: AdminMenuGroup[] = [
     icon: Mail,
     items: [
       { title: 'E-mails', path: 'comunicacoes', icon: Mail, moduleKey: MODULE_KEYS.emails },
-      { title: 'Logos (ticker)', path: 'ticker', icon: Images, moduleKey: MODULE_KEYS.ticker },
     ],
   },
   {

@@ -99,7 +99,6 @@ export const MODULE_ROUTES: Record<string, { path: string; label: string }> = {
   videos_site: { path: '/admin/videos-site', label: 'Vídeos Site' },
   editor_videos: { path: '/admin/editor-video-controle', label: 'Editor Vídeos' },
   agentes_sofia: { path: '/admin/agentes-sofia', label: 'Agentes Sofia' },
-  exa_alerts: { path: '/admin/exa-alerts', label: 'EXA Alerts' },
   escalacoes: { path: '/admin/escalacoes', label: 'Escalações' },
   financeiro: { path: '/admin/financeiro/categorias', label: 'Financeiro' },
   relatorios: { path: '/admin/relatorios-financeiros', label: 'Relatórios' },

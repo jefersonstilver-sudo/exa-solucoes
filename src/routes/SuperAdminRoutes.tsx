@@ -21,7 +21,6 @@ const VideoManagement = lazy(() => import('@/pages/admin/VideoManagement'));
 const VideosSitePage = lazy(() => import('@/pages/admin/VideosSitePage'));
 const VideoEditorAccessControl = lazy(() => import('@/pages/video-editor/VideoEditorAccessControl'));
 const LeadsExa = lazy(() => import('@/pages/admin/LeadsExa'));
-const LogosPage = lazy(() => import('@/pages/admin/LogosPage'));
 const ProviderBenefits = lazy(() => import('@/pages/admin/ProviderBenefits'));
 const BenefitPurchaseInstructions = lazy(() => import('@/pages/admin/BenefitPurchaseInstructions'));
 const BenefitManagement = lazy(() => import('@/pages/admin/BenefitManagement'));
@@ -32,7 +31,6 @@ const ZApiDiagnostics = lazy(() => import('@/pages/admin/ZApiDiagnostics'));
 const AssinaturasPage = lazy(() => import('@/pages/admin/AssinaturasPage'));
 const EmailLogs = lazy(() => import('@/pages/admin/EmailLogs'));
 const FormulariosSindicosPage = lazy(() => import('@/pages/admin/FormulariosSindicosPage'));
-const LogosAdmin = lazy(() => import('@/components/admin/LogosAdmin'));
 import GlobalLoadingPage from '@/components/loading/CarregandoConteudo';
 const QrScansAdminPage = lazy(() => import('@/pages/admin/QrScansAdminPage'));
 const QrVideosAdminPage = lazy(() => import('@/pages/admin/QrVideosAdminPage'));
@@ -54,7 +52,6 @@ const RelatorioPlaylistPage = lazy(() => import('@/pages/admin/RelatorioPlaylist
 // Lazy imports para páginas do monitoramento-ia (integradas)
 const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
 const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').then(m => ({ default: m.Agentes })));
-const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
 const EntregaTelasPage = lazy(() => import('@/pages/admin/EntregaTelasPage'));
 const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/PaineisEXA'));
 const TelasPage = lazy(() => import('@/modules/telas/TelasPage'));
@@ -258,11 +255,6 @@ const SuperAdminRoutes = () => {
           <AgentKnowledge />
         </Suspense>
       } />
-      <Route path="exa-alerts" element={
-        <Suspense fallback={<GlobalLoadingPage message="Carregando EXA Alerts..." />}>
-          <AlertasPage />
-        </Suspense>
-      } />
       
       {/* ============ VENDAS (FASE 2) ============ */}
       <Route path="vendas" element={
@@ -308,8 +300,6 @@ const SuperAdminRoutes = () => {
       {/* ============ CONTEÚDO ============ */}
       <Route path="videos" element={<VideoManagement />} />
       <Route path="videos-site" element={<VideosSitePage />} />
-      <Route path="ticker" element={<LogosAdmin />} />
-      <Route path="logos" element={<LogosPage />} />
       <Route path="editor-video-controle" element={<VideoEditorAccessControl />} />
       <Route path="homepage-config" element={<HomepageImagesPage />} />
       <Route path="comunicacoes" element={<ComunicacoesPage />} />
@@ -340,7 +330,6 @@ const SuperAdminRoutes = () => {
       <Route path="monitoramento-ia/paineis" element={<Navigate to="/super_admin/paineis-exa" replace />} />
       <Route path="monitoramento-ia/crm" element={<Navigate to="/super_admin/crm-evolution" replace />} />
       <Route path="monitoramento-ia/agentes" element={<Navigate to="/super_admin/agentes-sofia" replace />} />
-      <Route path="monitoramento-ia/alertas" element={<Navigate to="/super_admin/exa-alerts" replace />} />
       <Route path="monitoramento-ia/escalacoes" element={<Navigate to="/super_admin/escalacoes" replace />} />
     </Routes>
     </Suspense>
