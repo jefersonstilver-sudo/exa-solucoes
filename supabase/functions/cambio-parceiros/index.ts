@@ -27,7 +27,9 @@ async function lerK2() {
     re.lastIndex = i;
     const a = re.exec(t), b = re.exec(t);
     if (!a || !b || b.index - i > 120) throw new Error('K2 valores de ' + nome);
-    return { compra: num(a[1]), venda: num(b[1]) };
+    const v = { compra: num(a[1]), venda: num(b[1]) };
+    if (!(v.compra > 0) || !(v.venda > 0)) throw new Error('K2 valor inválido em ' + nome);
+    return v;
   };
   return { dolar: pega('DÓLAR', 'R$'), euro: pega('EURO', 'R$'), peso: pega('PESO ARG', 'P$'), guarani: pega('GUARANI', 'G$') };
 }
@@ -42,7 +44,9 @@ async function lerFortunaJebai() {
   const porNome = (n: string) => {
     const x = lista.find((y) => String(y.NOMBRE).trim().toLowerCase() === n.toLowerCase());
     if (!x) throw new Error('Fortuna sem ' + n);
-    return { compra: Number(x.COMPRA), venda: Number(x.VENDA) };
+    const v = { compra: Number(x.COMPRA), venda: Number(x.VENTA) };
+    if (!(v.compra > 0) || !(v.venda > 0)) throw new Error('Fortuna valor inválido em ' + n);
+    return v;
   };
   const u = h.match(/Caixa Aux\.\s*Jebai\s*<\/h2>\s*<p[^>]*update-status[^>]*>\s*[^<]*?(\d{2}\/\d{2}\/\d{4}\s+\d{1,2}:\d{2}\s*[AP]M)/i);
   return {
