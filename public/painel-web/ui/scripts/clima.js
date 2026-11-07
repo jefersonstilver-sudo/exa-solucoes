@@ -181,6 +181,9 @@ class ClimaWidget {
       const rajada = Math.max(c.wind_gusts_10m || 0, (h.wind_gusts_10m || [])[i0 + 1] || 0);
       const prob = Math.max((h.precipitation_probability || [])[i0] || 0, (h.precipitation_probability || [])[i0 + 1] || 0);
       const noite = c.is_day === 0;
+      // tempo ruim agora ou nas proximas 3 h? (para o alerta de tempestade nao ficar piscando com o tempo bom)
+      const cods = [c.weather_code].concat(h.weather_code || []), mms = h.precipitation || [], raj = h.wind_gusts_10m || [];
+      this.tempoRuim = cods.some(x => x >= 61) || mms.some(x => x >= 1) || raj.some(x => x >= 50) || (c.wind_gusts_10m || 0) >= 50;
       this.data = {
         agora: {
           temp: c.temperature_2m,
@@ -294,10 +297,12 @@ class ClimaWidget {
       ${this.alerta ? this.alertaHtml() + this.alertaCheioHtml() : `<div class="clima-dias ${dias.n === 2 ? "d2" : ""}">${dias.html}</div>`}`;
     this.container.classList.toggle("com-alerta", !!this.alerta);
     // modo alerta: o card inteiro alterna a cada 3 s entre o tempo e o alerta da Defesa Civil
-    if (this.alerta && !this.piscaAlerta) {
+    // aviso de chuva/tempestade/vento com o tempo firme (agora e nas proximas 3 h): fica so a faixa, sem tomar o card
+    const eventoDeChuva = this.alerta && /tempest|chuva|vendaval|granizo|tornado|ciclone/i.test(String(this.alerta.descricao || ""));
+    const piscar = this.alerta && !(eventoDeChuva && this.tempoRuim === false);
+    if (!piscar && this.piscaAlerta) { clearInterval(this.piscaAlerta); this.piscaAlerta = null; this.container.classList.remove("mostra-alerta"); }
+    if (piscar && !this.piscaAlerta) {
       this.piscaAlerta = setInterval(() => { this.container.classList.toggle("mostra-alerta"); }, 3000);
-    } else if (!this.alerta && this.piscaAlerta) {
-      clearInterval(this.piscaAlerta); this.piscaAlerta = null; this.container.classList.remove("mostra-alerta");
     }
   }
 
