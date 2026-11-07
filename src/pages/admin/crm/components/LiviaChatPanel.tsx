@@ -113,9 +113,10 @@ export const LiviaChatPanel: React.FC<{ onVoltar?: () => void; telefoneAgente?: 
       : c.empresa ? `${c.empresa}${c.papel ? ` · ${PAPEL[c.papel] || c.papel}` : ''}`
       : c.tipo === 'sem_cadastro' ? `Sem pedido ativo · ${fone(c.telefone)}` : fone(c.telefone);
 
+  const tituloDe = (c: Conversa) => c.nome && c.nome !== c.telefone ? c.nome : c.telefone.startsWith('lid:') ? 'Contato sem número' : fone(c.telefone);
   const cxConversas: CxConversa[] = filtradas.map((c) => ({
     id: c.telefone,
-    titulo: c.nome,
+    titulo: tituloDe(c),
     sub: subConversa(c),
     subMarca: !!c.empresa,
     hora: cxQuando(c.ultima_em),
@@ -125,7 +126,7 @@ export const LiviaChatPanel: React.FC<{ onVoltar?: () => void; telefoneAgente?: 
   }));
   const atual = todas.find((c) => c.telefone === sel) || null;
   if (atual && !cxConversas.some((c) => c.id === atual.telefone)) {
-    cxConversas.push({ id: atual.telefone, titulo: atual.nome, sub: subConversa(atual), subMarca: !!atual.empresa, hora: '', preview: '', naoLidas: 0, humano: atual.modo === 'humano' });
+    cxConversas.push({ id: atual.telefone, titulo: tituloDe(atual), sub: subConversa(atual), subMarca: !!atual.empresa, hora: '', preview: '', naoLidas: 0, humano: atual.modo === 'humano' });
   }
 
   const cxMsgs: CxMsg[] = msgs.map((m) => ({
@@ -172,7 +173,7 @@ export const LiviaChatPanel: React.FC<{ onVoltar?: () => void; telefoneAgente?: 
   const gaveta = fichaAberta && atual ? (
     <CxGaveta
       titulo="Ficha financeira"
-      nome={atual.nome}
+      nome={tituloDe(atual)}
       sub={`${fone(atual.telefone)}${atual.papel ? ` · ${PAPEL[atual.papel] || atual.papel}` : ''}`}
       kpis={[
         { v: atual.pedidos, l: atual.pedidos === 1 ? 'pedido vivo' : 'pedidos vivos' },
